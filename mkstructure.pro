@@ -7,7 +7,7 @@
 ;; systems.
  
 
-pro mkstructure, nplanets=nplanets, bands=bands, circular=circular, $
+pro mkstructure, nplanets=nplanets, bands=bands, circular=circular, chen=chen,$
                     fitslope=fitslope, fitquad=fitquad, ttv=ttv, tdv=tdv, $
                     rm=rm, eprior4=eprior4, fittran=fittran, fitrv=fitrv
 

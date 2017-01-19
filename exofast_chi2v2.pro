@@ -326,22 +326,22 @@ G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 ;; Mass radius relation 
 ;; Chen & Kipping, 2017 (http://adsabs.harvard.edu/abs/2017ApJ...834...17C)
 for j=0, ss.nplanets-1 do begin
-   if not ss.planet[j].fitrv then begin
+   if not ss.planet[j].chen then begin
       if ss.planet[j].rpearth.value le 0d0 then return, !values.d_infinity
 
       if ss.planet[j].mpearth.value lt 2.04d0 then begin
          mp = ss.planet[j].rpearth.value^0.279d0
-         err = mp*0.0403;*3d0
+         err = mp*0.0403
       endif else if ss.planet[j].mpearth.value lt 131.58079d0  then begin ;; 0.414 M_earth
          mp = 2.04d0^(0.279d0-0.589d0)*ss.planet[j].rpearth.value^0.589d0
-         err = mp*0.1460;*3d0
+         err = mp*0.1460
       endif else begin
          mp = 2.04d0^(0.279d0-0.589d0)*131.58079d0^(0.589d0+0.44d0)*ss.planet[j].rpearth.value^(-0.44d0)
-         err = mp*0.0737;*3d0
+         err = mp*0.0737
       endelse
       ;; add a chi2 penalty for deviation from the mass-radius relation
 ;      print, ((mp - ss.planet[j].mpearth.value)/err)^2, j
-      chi2 += ((mp - ss.planet[j].mpearth.value)/err)^2
+      chi2 += ((mp - ss.planet[j].mpearth.value)/(3d0*err))^2
 
 ;      stop
    endif

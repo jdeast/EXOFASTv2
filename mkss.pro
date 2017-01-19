@@ -1,9 +1,125 @@
-;; This makes a stellar system structure that describes an arbitrary
-;; number of planets, observed bands, rv telescopes (a new zero point
-;; for each), and observed transits.  This structure is the input to
-;; basically everything in EXOFASTv2 and is significantly more general.
+;+
+;
+; NAME:
+;   EXOFAST
+;
+; PURPOSE:
+;
+; Creates a stellar system structure that describes an arbitrary
+; number of planets, observed bands, rv telescopes (a new zero point
+; for each), and observed transits.  This structure is the input to
+; basically everything in EXOFASTv2 and is designed to be easily
+; extensible. To add a new derived parameter to the output table, add it here,
+; then calculate it in DERIVEPARS. To add a new fitted parameter, add
+; it here, then use it in EXOFAST_CHI2V2 to influence the model or
+; the likelihood/chi^2 directly.
+;
+; Priors may be applied to any parameter (fitted or derived).
+;
+; CALLING SEQUENCE:
+;   ss = mkss(nplanets=nplanets, circular=circular, $
+;             fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
+;             rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
+;             nvalues=nvalues, debug=debug, priorfile=priorfile, $
+;             rvpath=rvpath, tranpath=tranpath, longcadence=longcadence, earth=earth)
+;
+; INPUTS:
+; 
+;  NPLANETS - The number of planets to fit
+;  CIRCULAR - An NPLANETS boolean array describing which
+;             planets should be fixed to have circular orbits. If not
+;             specified, all planets will be fit with eccentric models.
+;  FITTRAN  - An NPLANETS boolean array specifying which planets
+;             should be fit with a transit model. By default, all
+;             planets are fit with transit photometry. 
+;  FITRV    - An NPLANETS boolean array specifying which planets
+;             should be fit with a radial velocity model. By default, all
+;             planets are fit with radial velocities.
+;  CHENMASS - An NPLANETS boolean array specifying which planets
+;             should have the Chen & Kipping, 2017 mass-radius
+;             relation applied to constrain the mass from the measured
+;             radius. By default 
+;             CHENMASS = not FITRV 
+;             That is, only apply the mass-radius prior when RV is not
+;             fitted. If FITRV and CHENMASS are both false for a given
+;             planet, the RV semi-amplitude (planet mass) and all
+;             derived parameters will not be quoted. Multi-planet
+;             systems will be constrained not to cross orbits, but the
+;             Hill Sphere will be set to zero.
+;  CHENRAD  - An NPLANETS boolean array specifying which planets
+;             should have the Chen & Kipping, 2017 mass-radius
+;             relation applied to constrain the radius from the
+;             measured mass. By default,
+;             CHENRAD = not FITTRAN
+;             That is, only apply the mass-radius prior to constrain
+;             the radius when a transit is not fitted.
+;             If FITTRAN and CHENRAD are both false for a given
+;             planet, the planetary radius and all derived parameters
+;             will not be quoted. 
+;  NVALUES  - ?? (I probably should have documented that when I made it...)
+;
+;  PRIORFILE - The name of the file that specifies all the priors. The
+;              prior file is an ASCII file with each line containing
+;              three white space delimited columns: NAME, VALUE,
+;              WIDTH. NAME must match a parameter.label. If in an
+;              array (e.g., of planets), add "_i", where "i" is the
+;              zero-indexed index into the array.  If WIDTH is set to
+;              0, the parameter is fixed at VALUE (this is generally
+;              not recommended; it's far better to apply a realistic
+;              prior). If WIDTH is set to -1, the fit starts at VALUE,
+;              but there is no penalty if the model deviates from
+;              VALUE. If WIDTH is positive, a gaussian prior is
+;              applied. That is, a chi^2 penalty equal to ((parameter
+;              - VALUE)/WIDTH)^2 is applied to the likelihood
+;              function. Here is the contents of a sample priorfile
+;              for the EPXXXXXXXXX system published in Eastman et al,
+;              2017:
+;
+;              teff 6167 78 # Gaussian prior on T_eff of 6167 +/- 78 K
+;              feh -0.04 0.1 # Gaussian prior on [Fe/H] of -0.04 +/- 0.1 dex
+;              logg 4.22 0.06 # Gaussian prior on logg of 4.22 +/- 0.06
+;              vsini 9400 300 # Gaussian prior on vsini of 9400 +/- 300 (ignored since vsini is not fitted)
+;              av 0.15 0.30 # Gaussian prior on A_V (extinction) of 0.15 +/- 0.30
+;              ma 11.529 0.142 # Gaussian prior on ma (apparent V mag) of 11.529 +/- 0.142
+;              distance 247.87 57.223 # Gaussian prior on distance of 247.87 +/- 57.223 pc
+;              tc_0 2457166.0543 -1 # start the fit with a TC for planet 0 (EPXXXXXXXXb) at BJD_TDB=2457166.0543
+;              p_0 0.020 -1 # start the fit with Rp/Rstar for planet 0 at 0.020
+;              period_0 26.847 -1 # start the fit with period for planet 0 at 26.847 days
+;              tc_1 2457213.5328 -1 # start the fit with a TC for planet 1 (EPXXXXXXXXc) at BJD_TDB=2457213.5328
+;              p_1 0.02 -1 # start the fit with Rp/Rstar for planet 1 at 0.020
+;              period_1 39.5419 -1 # start the fit with period for planet 0 at 39.5419 days
+;              tc_2 2457191.8894 -1 # start the fit with a TC for planet 2 (EPXXXXXXXXd) at BJD_TDB=2457191.8894
+;              p_2 0.020 -1 # start the fit with Rp/Rstar for planet 2 at 0.020
+;              period_2 125 -1 # start the fit with period for planet 2 at 125 days
+;              tc_3 2457170.4990 -1 # start the fit with a TC for planet 3 (EPXXXXXXXXe) at BJD_TDB=2457170.4990
+;              p_3 0.029 -1 # start the fit with Rp/Rstar for planet 3 at 0.020
+;              period_3 160 -1 # start the fit with period for planet 3 at 160 days
+;
+; KEYWORDS:
+;  FITSLOPE - Fit a linear trend to the RV data
+;  FITQUAD  - Fit a quadratic trend to the RV data
+;  TTVS     - Fit an independent (non-periodic) transit time for each transit
+;  TDVS     - Fit an indepdedent depth to each transit
+;  ROSSITER - Fit lambda and V_rot*sin(I_*) from RV data during
+;             transit using the Ohta approximations (has known issues)
+;  DOPTOM   - Fit Doppler tomography (***unsupported***)
+;  EPRIOR4  - Parameterize the eccentricity and argument of
+;             periastron as e^(1/4)*sin(omega) and
+;             e^(1/4)*cos(omega) to more closely match the observed
+;             eccentricity distribution 
+;  DEBUG    - Output various debugging information and plots at each
+;             step.
 
-function mkss, nplanets=nplanets, circular=circular, $
+; PARAMETER STRUCTURE
+; parameter.value -- the parameter's numerical value in
+;                    parameter.unit units. For the MCMC, this is an
+;                    array for all links.
+; parameter.prior -- the parameter's prior
+
+
+  
+;-
+function mkss, nplanets=nplanets, circular=circular,chenmass=chenmass,chenrad=chenrad, $
                fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
                rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
@@ -49,28 +165,31 @@ if n_elements(nvalues) ne 0 then value = dblarr(nvalues) $
 else value = 0d0
 nsteps = n_elements(value)
 
-if n_elements(fittran) eq 0 then fittran = indgen(nplanets)
-if n_elements(fitrv) eq 0 then fitrv = indgen(nplanets)
+if n_elements(fittran) eq ne nplanets then fittran = bytarr(nplanets)+1B
+if n_elements(fitrv) eq ne nplanets then fitrv = bytarr(nplanets)+1B
+if n_elements(chenmass) ne nplanets then chenmass = (not fitrv)
+if n_elements(chenrad) ne nplanets then chenrad = (not fittran)
 
-;; each parameter is a structure
+
+;; each parameter is a structure, as defined here
 parameter = create_struct('value',value,$     ;; its numerical value
                           'prior',0d0,$       ;; its prior value
-                          'priorwidth',!values.d_infinity,$ ;; its prior width
-                          'label','',$        ;; what do i call it?
-                          'cgs',1d0,$         ;; conversion to cgs
-                          'link',ptr_new(),$ ;; a pointer to a linked variable
-                          'fit',0B,$          ;; is it fit?
+                          'priorwidth',!values.d_infinity,$ ;; its prior width (infinity => no constraint)
+                          'label','',$        ;; what do I call it?
+                          'cgs',1d0,$         ;; conversion from unit to cgs
+                          'link',ptr_new(),$  ;; a pointer to a linked variable (not implemented)
                           'scale',0d0,$       ;; scale for amoeba
                           'best',!values.d_nan,$ ;; best-fit parameter
-                          'latex','',$        ;; to build the latex table
+                          'latex','',$        ;; latex label for the latex table
                           'description','',$  ;; a verbose description
-                          'unit','',$         ;; units ("Degrees" and "Radians" have special meaning)
+                          'unit','',$         ;; units ("Degrees" and "Radians" trigger special periodic behavior)
                           'medvalue','',$     ;; median value
-                          'upper','',$        ;; upper error bar
-                          'lower','',$        ;; lower error bar
-                          'derive',1B)        ;; quote it in the final table?
+                          'upper','',$        ;; upper error bar (68% confidence)
+                          'lower','',$        ;; lower error bar (68% confidence)
+                          'fit', 0B,$         ;; If true, step in this parameter during the MCMC
+                          'derive',1B)        ;; If true, derive this parameter and quote it in the final table
                           
-;; define each parameter (derived and fitted) (and ignored!)
+;; define each parameter (derived, fitted, and ignored)
 logmstar = parameter
 logmstar.value = 0d0
 logmstar.unit = ''
@@ -844,6 +963,7 @@ planet = create_struct($
          'beam',beam,$     ;; other
          'fittran',1B,$
          'fitrv',1B,$
+         'chen',0B,$
          'rootlabel','Planetary Parameters:',$
          'label','')
 
@@ -949,6 +1069,7 @@ for i=0, nplanets-1 do begin
 
    ss.planet[i].fittran = fittran[i]
    ss.planet[i].fitrv = fitrv[i]
+   ss.planet[i].chen = chen[i]
 
    if not fittran[i] then begin
       ss.planet[i].cosi.fit = 0
