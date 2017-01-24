@@ -94,6 +94,11 @@
 ;              tc_3 2457170.4990 -1 # start the fit with a TC for planet 3 (EPXXXXXXXXe) at BJD_TDB=2457170.4990
 ;              p_3 0.029 -1 # start the fit with Rp/Rstar for planet 3 at 0.020
 ;              period_3 160 -1 # start the fit with period for planet 3 at 160 days
+;  RVPATH   - The path of the RV files. Each RV files is fit with a
+;             separate zero point.
+;  TRANPATH - The path of the transit data. Each file is fit with a
+;             separate normalization. If TTVS is set, each file is fit
+;with a diff
 ;
 ; KEYWORDS:
 ;  FITSLOPE - Fit a linear trend to the RV data
@@ -123,7 +128,7 @@ function mkss, nplanets=nplanets, circular=circular,chenmass=chenmass,chenrad=ch
                fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
                rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
-               rvpath=rvpath, tranpath=tranpath, longcadence=longcadence, earth=earth
+               rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, longcadence=longcadence, earth=earth
 
 if not keyword_set(debug) then debug=0B
 
@@ -165,8 +170,8 @@ if n_elements(nvalues) ne 0 then value = dblarr(nvalues) $
 else value = 0d0
 nsteps = n_elements(value)
 
-if n_elements(fittran) eq ne nplanets then fittran = bytarr(nplanets)+1B
-if n_elements(fitrv) eq ne nplanets then fitrv = bytarr(nplanets)+1B
+if n_elements(fittran) ne nplanets then fittran = bytarr(nplanets)+1B
+if n_elements(fitrv) ne nplanets then fitrv = bytarr(nplanets)+1B
 if n_elements(chenmass) ne nplanets then chenmass = (not fitrv)
 if n_elements(chenrad) ne nplanets then chenrad = (not fittran)
 
@@ -176,7 +181,7 @@ parameter = create_struct('value',value,$     ;; its numerical value
                           'prior',0d0,$       ;; its prior value
                           'priorwidth',!values.d_infinity,$ ;; its prior width (infinity => no constraint)
                           'label','',$        ;; what do I call it?
-                          'cgs',1d0,$         ;; conversion from unit to cgs
+                          'cgs',1d0,$         ;; multiply value by this to convert to cgs units
                           'link',ptr_new(),$  ;; a pointer to a linked variable (not implemented)
                           'scale',0d0,$       ;; scale for amoeba
                           'best',!values.d_nan,$ ;; best-fit parameter
@@ -232,13 +237,14 @@ feh.description = 'Metalicity'
 feh.latex = '[Fe/H]'
 feh.label = 'feh'
 feh.fit=1
-feh.scale = 0.5
+feh.scale = 0.5d0
 
 Av = parameter
 Av.description = 'V-band extinction'
 Av.latex = 'A_v'
 Av.label = 'Av'
 Av.fit = 1
+Av.scale = 0.3d0
 
 Ma = parameter
 Ma.unit = ''
@@ -258,7 +264,14 @@ distance.unit = 'pc'
 distance.description = 'Distance'
 distance.latex = 'd'
 distance.label = 'd'
-distance.cgs = 3.08567758d18
+distance.cgs = 3.08567758d18 ;; cm/pc
+
+parallax = parameter
+parallax.unit = 'mas'
+parallax.description = 'Parallax'
+parallax.latex = '\pi'
+parallax.label = 'parallax'
+parallax.cgs = 3600d3*180d0/!dpi ;; rad/mas
 
 gamma = parameter
 gamma.unit = 'm/s'
@@ -310,7 +323,7 @@ age.scale = 10d0
 
 lstar = parameter
 lstar.unit = '\lsun'
-lstar.description = 'Lstar'
+lstar.description = 'Luminosity'
 lstar.latex = 'L_*'
 lstar.label = 'lstar'
 lstar.cgs = 3600d0*24d0*365.242d0*1d9
@@ -592,7 +605,8 @@ logk.description = 'Log of RV semi-amplitude'
 logk.latex = 'logK'
 logk.label = 'logk'
 logk.fit = 1
-logk.scale = 0.1d0
+logk.value = 1d0
+logk.scale = 1d0
 
 k = parameter
 k.value = 0.08 ;; earth
@@ -862,7 +876,7 @@ jitter = parameter
 jitter.description = 'RV Jitter'
 jitter.latex = '\sigma_J'
 jitter.label = 'jitter'
-jitter.fit=0
+jitter.fit=1
 
 variance = parameter
 variance.description = 'Added Variance'
@@ -871,6 +885,14 @@ variance.label = 'variance'
 variance.value = 0d0
 variance.scale = 1d0
 variance.fit=1
+
+errscale = parameter
+errscale.description = 'Error scaling'
+errscale.latex = 'Error scaling'
+errscale.label = 'errscale'
+errscale.value = 1d0
+errscale.scale = 10d0
+errscale.fit=1
 
 ;; Create the structures -- The order here dictates the order in the
 ;;                          output table.
@@ -887,10 +909,13 @@ star = create_struct('mstar',mstar,$
                      'logmstar',logmstar,$
                      'vsini',vsini,$
                      'macturb',macturb,$
+                     'fluxfile','',$
                      'Av',Av,$
                      'Ma',Ma,$
                      'Mv',Mv,$
+                     'errscale',errscale,$
                      'distance',distance,$
+                     'parallax',parallax,$
                      'ellip',0d0,$
                      'ra',0d0,$ ;; for astrometry?
                      'dec',0d0,$ ;; for astrometry?
@@ -901,6 +926,9 @@ star = create_struct('mstar',mstar,$
                      'rootlabel','Stellar Parameters:',$
                      'label','')
             
+if n_elements(fluxfile) ne 0 then $
+   if file_test(fluxfile) then star.fluxfile = fluxfile
+
 ;; for each planet 
 planet = create_struct($
          'a',a,$              ;; fundamental parameters
@@ -963,7 +991,8 @@ planet = create_struct($
          'beam',beam,$     ;; other
          'fittran',1B,$
          'fitrv',1B,$
-         'chen',0B,$
+         'chenmass',0B,$
+         'chenrad',0B,$
          'rootlabel','Planetary Parameters:',$
          'label','')
 
@@ -982,15 +1011,15 @@ band = create_struct('u1',u1,$ ;; linear limb darkening
 
 ;; for each telescope
 telescope = create_struct('gamma',gamma,$
-                          'variance',variance,$
+                          'jitter',jitter,$
                           'rvptrs',ptr_new(),$
                           'name','',$
                           'chi2',0L,$
                           'rootlabel','Telescope parameters',$
                           'label','')
 if ntel le 0 then begin
-   telescope.variance.fit = 0
-   telescope.variance.derive = 0
+   telescope.jitter.fit = 0
+   telescope.jitter.derive = 0
 endif
 
 ;; for each transit
@@ -1069,7 +1098,8 @@ for i=0, nplanets-1 do begin
 
    ss.planet[i].fittran = fittran[i]
    ss.planet[i].fitrv = fitrv[i]
-   ss.planet[i].chen = chen[i]
+   ss.planet[i].chenmass = chenmass[i]
+   ss.planet[i].chenrad = chenrad[i]
 
    if not fittran[i] then begin
       ss.planet[i].cosi.fit = 0

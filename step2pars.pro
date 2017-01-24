@@ -29,6 +29,8 @@ logteff = alog10(ss.star.teff.value)
 BC = total(flowercoeffs*[1d0,logteff,logteff^2,logteff^3,logteff^4])
 ss.star.Mv.value = -2.5d0*alog10(ss.star.lstar.value)+4.732-BC  ;; Absolute V-band Magnitude
 ss.star.distance.value = 10d0^((ss.star.Ma.value-ss.star.Mv.value-ss.star.Av.value)/5d0 + 1d0)
+ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
+;print, ss.star.distance.value, ss.star.parallax.value, ss.star.av.value
 
 for i=0, ss.nplanets-1 do begin
 
@@ -55,6 +57,8 @@ for i=0, ss.nplanets-1 do begin
    else ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
                                          ss.planet[i].i.value, ss.planet[i].period.value, $
                                          ss.star.mstar.value)
+
+   if ss.planet[i].mpsun.value gt 0.08d0 then return, -1 ;; planet above the hydrogen burning limit
    ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup
    ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth
 
@@ -80,6 +84,7 @@ for i=0, ss.nplanets-1 do begin
 
    ;; for multi-planet systems, make sure they don't enter each other's hill spheres
    ;; if mp unknown, mp=0 => hill radius=0 => planets can't cross orbits
+   ;; **** ignores mutual inclination; a priori excludes systems like Neptune and Pluto!! ****
    hillradius = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value*(ss.planet[i].mpsun.value/(3d0*ss.star.mstar.value))^(1d0/3d0)
    mindist[i] = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value - hillradius
    maxdist[i] = (1d0+ss.planet[i].e.value)*ss.planet[i].a.value + hillradius

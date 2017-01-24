@@ -109,7 +109,7 @@
 ;           model.
 ;
 ;           gamma     = pars[0]       ;; systemic velocity
-;           slope     = pars[1]       ;; slope in RV
+;           slope     = pars[1]       ;; slope in RVs
 ;           tc        = pars[2]       ;; transit center time
 ;           logP      = pars[3]       ;; alog10(Period/days)
 ;           qecosw    = pars[4]       ;; eccentricity/arg of periastron
@@ -241,6 +241,8 @@ ss.star.mstar.value = 10^ss.star.logmstar.value
 ;; use the YY tracks to guide the stellar parameters
 chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar)
 
+if ss.star.errscale.value le 0 then chi2 = !values.d_infinity
+
 if ~finite(chi2) then begin
    if ss.debug then print, 'star is bad'
    return, !values.d_infinity
@@ -323,29 +325,50 @@ G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 ;   endif
 ;endfor
 
-;; Mass radius relation 
+;; Apply the Mass-Radius relation 
 ;; Chen & Kipping, 2017 (http://adsabs.harvard.edu/abs/2017ApJ...834...17C)
 for j=0, ss.nplanets-1 do begin
-   if not ss.planet[j].chen then begin
+   if ss.planet[j].chenmass or ss.planet[j].chenrad then begin
+
+      ;; negative radii are allowed to assess the significance of the
+      ;; transit. That breaks these relations, so exclude them here
       if ss.planet[j].rpearth.value le 0d0 then return, !values.d_infinity
 
       if ss.planet[j].mpearth.value lt 2.04d0 then begin
          mp = ss.planet[j].rpearth.value^0.279d0
-         err = mp*0.0403
+         mperr = mp*0.0403
+         rp = ss.planet[j].mpearth.value^(1d0/0.279d0)
+         rperr = rp*0.0403 ;; *** MADE UP ***
       endif else if ss.planet[j].mpearth.value lt 131.58079d0  then begin ;; 0.414 M_earth
-         mp = 2.04d0^(0.279d0-0.589d0)*ss.planet[j].rpearth.value^0.589d0
-         err = mp*0.1460
+         norm = 2.04d0^(0.279d0-0.589d0)
+         mp = norm*ss.planet[j].rpearth.value^0.589d0
+         mperr = mp*0.1460
+         rp = ss.planet[j].mpearth.value^(1d0/0.589d0)/norm
+         rperr = rp*0.1460 ;; *** MADE UP ***
       endif else begin
-         mp = 2.04d0^(0.279d0-0.589d0)*131.58079d0^(0.589d0+0.44d0)*ss.planet[j].rpearth.value^(-0.44d0)
-         err = mp*0.0737
+         norm = 2.04d0^(0.279d0-0.589d0)*131.58079d0^(0.589d0+0.44d0)
+         mp = norm*ss.planet[j].rpearth.value^(-0.44d0)
+         mperr = mp*0.0737
+         rp = ss.planet[j].rpearth.value^(-1d0/0.44d0)/norm
+         rperr = rp*0.0737 ;; *** MADE UP ***
       endelse
+      mperr = mp*0.2d0 ;; *** MADE UP ***
+      rperr = rp*0.2d0 ;; *** MADE UP ***
       ;; add a chi2 penalty for deviation from the mass-radius relation
-;      print, ((mp - ss.planet[j].mpearth.value)/err)^2, j
-      chi2 += ((mp - ss.planet[j].mpearth.value)/(3d0*err))^2
-
-;      stop
+      if ss.planet[j].chenmass then chi2 += ((mp - ss.planet[j].mpearth.value)/mperr)^2
+      if ss.planet[j].chenrad  then chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
    endif
 endfor
+
+;; fit the SED
+if file_test(ss.star.fluxfile) then begin
+   dummy = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
+                       ss.star.av.value, ss.star.distance.value, $
+                       logg=ss.star.logg.value,met=ss.star.feh.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep)
+   sedchi2 = exofast_like(f-fp,0d0,ss.star.errscale.value*ep,/chi2)
+   if ~finite(sedchi2) then return, !values.d_infinity
+   chi2 += sedchi2
+endif
 
 ;; RV model (non-interacting planets)
 for j=0, ntelescopes-1 do begin
@@ -386,7 +409,7 @@ for j=0, ntelescopes-1 do begin
    chi2 += rvchi2
 ;   chi2 += total(((rv.rv - modelrv)/rv.err)^2)
 endfor
-if (ss.debug or keyword_set(psname)) and (where(ss.planet.logk.fit))[0] ne -1 then plotrv, ss, psname=psname
+if (ss.debug or keyword_set(psname)) and (where(ss.planet.fitrv))[0] ne -1 then plotrv, ss, psname=psname
 ;stop
 
 ;; Transit model

@@ -232,7 +232,7 @@
 ;             multiple planets, mulitple bands, multiple instrumental
 ;             offsets). Now easily extensible.
 ;-
-pro exofastv2, rvpath=rvpath, tranpath=tranpath, band=band, priors=priors, $
+pro exofastv2, rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, band=band, priors=priors, $
                prefix=prefix,$
                circular=circular,fitslope=fitslope, secondary=secondary, $
                rossiter=rossiter,$
@@ -258,7 +258,7 @@ if double(!version.release) ge 6.4d0 then $
    resolve_all, resolve_function=[chi2func,'exofast_random'],/cont,/quiet
 
 ;; create the master structure
-ss = mkss(rvpath=rvpath, tranpath=tranpath, nplanets=nplanets, $
+ss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets, $
           debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
           circular=circular,fitslope=fitslope, fitquad=fitquad,ttv=ttv, $
           rossiter=rossiter,longcadence=longcadence, earth=earth)

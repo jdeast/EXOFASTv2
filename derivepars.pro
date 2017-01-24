@@ -27,6 +27,7 @@ logteff = alog10(ss.star.teff.value)
 BC = total(flowercoeffs*transpose([[replicate(1d0,nsteps)],[logteff],[logteff^2],[logteff^3],[logteff^4]]),1)
 ss.star.Mv.value = -2.5d0*alog10(ss.star.lstar.value)+4.732-BC  ;; Absolute V-band Magnitude
 ss.star.distance.value = 10d0^((ss.star.Ma.value-ss.star.Mv.value-ss.star.Av.value)/5d0 + 1d0)
+ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
 
 for i=0, ss.nplanets-1 do begin
 
