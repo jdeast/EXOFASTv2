@@ -328,43 +328,39 @@ G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 ;; Apply the Mass-Radius relation 
 ;; Chen & Kipping, 2017 (http://adsabs.harvard.edu/abs/2017ApJ...834...17C)
 for j=0, ss.nplanets-1 do begin
-   if ss.planet[j].chenmass or ss.planet[j].chenrad then begin
+   if ss.planet[j].chen then begin
 
       ;; negative radii are allowed to assess the significance of the
       ;; transit. That breaks these relations, so exclude them here
       if ss.planet[j].rpearth.value le 0d0 then return, !values.d_infinity
 
       if ss.planet[j].mpearth.value lt 2.04d0 then begin
-         mp = ss.planet[j].rpearth.value^0.279d0
-         mperr = mp*0.0403
-         rp = ss.planet[j].mpearth.value^(1d0/0.279d0)
-         rperr = rp*0.0403 ;; *** MADE UP ***
-      endif else if ss.planet[j].mpearth.value lt 131.58079d0  then begin ;; 0.414 M_earth
+         rp = ss.planet[j].mpearth.value^0.279d0
+         rperr = rp*0.0403d0
+      endif else if ss.planet[j].mpearth.value lt 131.58079d0  then begin ;; 0.414 M_jupiter
          norm = 2.04d0^(0.279d0-0.589d0)
-         mp = norm*ss.planet[j].rpearth.value^0.589d0
-         mperr = mp*0.1460
-         rp = ss.planet[j].mpearth.value^(1d0/0.589d0)/norm
-         rperr = rp*0.1460 ;; *** MADE UP ***
+         rp = norm*ss.planet[j].mpearth.value^0.589d0
+         rperr = rp*0.1460d0
       endif else begin
          norm = 2.04d0^(0.279d0-0.589d0)*131.58079d0^(0.589d0+0.44d0)
-         mp = norm*ss.planet[j].rpearth.value^(-0.44d0)
-         mperr = mp*0.0737
-         rp = ss.planet[j].rpearth.value^(-1d0/0.44d0)/norm
-         rperr = rp*0.0737 ;; *** MADE UP ***
+         rp = norm*ss.planet[j].mpearth.value^(-0.44d0)
+         rperr = rp*0.0737d0
       endelse
-      mperr = mp*0.2d0 ;; *** MADE UP ***
-      rperr = rp*0.2d0 ;; *** MADE UP ***
+;      rperr = rp*0.2d0 ;; inflate the uncertainty to account for systematics
       ;; add a chi2 penalty for deviation from the mass-radius relation
-      if ss.planet[j].chenmass then chi2 += ((mp - ss.planet[j].mpearth.value)/mperr)^2
-      if ss.planet[j].chenrad  then chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
+      ;; if the radius is well-constrained (by transit depth), it
+      ;; becomes an implicit constraint on mass. If the mass is well
+      ;; constrained (by RV), it becomes an implicit constraint on radius
+      chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
    endif
 endfor
 
 ;; fit the SED
 if file_test(ss.star.fluxfile) then begin
-   dummy = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
+   sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
                        ss.star.av.value, ss.star.distance.value, $
                        logg=ss.star.logg.value,met=ss.star.feh.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep)
+   if ~finite(sedchi2) then return, !values.d_infinity
    sedchi2 = exofast_like(f-fp,0d0,ss.star.errscale.value*ep,/chi2)
    if ~finite(sedchi2) then return, !values.d_infinity
    chi2 += sedchi2

@@ -35,29 +35,21 @@
 ;  FITRV    - An NPLANETS boolean array specifying which planets
 ;             should be fit with a radial velocity model. By default, all
 ;             planets are fit with radial velocities.
-;  CHENMASS - An NPLANETS boolean array specifying which planets
+;  CHEN     - An NPLANETS boolean array specifying which planets
 ;             should have the Chen & Kipping, 2017 mass-radius
-;             relation applied to constrain the mass from the measured
-;             radius. By default 
-;             CHENMASS = not FITRV 
-;             That is, only apply the mass-radius prior when RV is not
-;             fitted. If FITRV and CHENMASS are both false for a given
-;             planet, the RV semi-amplitude (planet mass) and all
-;             derived parameters will not be quoted. Multi-planet
-;             systems will be constrained not to cross orbits, but the
-;             Hill Sphere will be set to zero.
-;  CHENRAD  - An NPLANETS boolean array specifying which planets
-;             should have the Chen & Kipping, 2017 mass-radius
-;             relation applied to constrain the radius from the
-;             measured mass. By default,
-;             CHENRAD = not FITTRAN
-;             That is, only apply the mass-radius prior to constrain
-;             the radius when a transit is not fitted.
-;             If FITTRAN and CHENRAD are both false for a given
-;             planet, the planetary radius and all derived parameters
-;             will not be quoted. 
+;             relation applied. By default CHEN = FITRV xor
+;             FITTRAN. That is, only apply the mass-radius prior when
+;             RV is not fit (to derive the planet mass) or when a
+;             transit is not fit (to derive the radius). If the
+;             defaults have been overridden and FITRV and CHEN are
+;             both false for a given planet, the RV semi-amplitude
+;             (planet mass) and all derived parameters will not be
+;             quoted. Multi-planet systems will be constrained not to
+;             cross orbits, but the Hill Sphere will be set to zero.
+;             If FITTRAN and CHEN are both false for a given planet,
+;             the planetary radius and all derived parameters will not
+;             be quoted.
 ;  NVALUES  - ?? (I probably should have documented that when I made it...)
-;
 ;  PRIORFILE - The name of the file that specifies all the priors. The
 ;              prior file is an ASCII file with each line containing
 ;              three white space delimited columns: NAME, VALUE,
@@ -124,7 +116,7 @@
 
   
 ;-
-function mkss, nplanets=nplanets, circular=circular,chenmass=chenmass,chenrad=chenrad, $
+function mkss, nplanets=nplanets, circular=circular,chen=chen, $
                fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
                rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
@@ -172,8 +164,7 @@ nsteps = n_elements(value)
 
 if n_elements(fittran) ne nplanets then fittran = bytarr(nplanets)+1B
 if n_elements(fitrv) ne nplanets then fitrv = bytarr(nplanets)+1B
-if n_elements(chenmass) ne nplanets then chenmass = (not fitrv)
-if n_elements(chenrad) ne nplanets then chenrad = (not fittran)
+if n_elements(chen) ne nplanets then chen = fittran xor fitrv
 
 
 ;; each parameter is a structure, as defined here
@@ -991,8 +982,7 @@ planet = create_struct($
          'beam',beam,$     ;; other
          'fittran',1B,$
          'fitrv',1B,$
-         'chenmass',0B,$
-         'chenrad',0B,$
+         'chen',0B,$
          'rootlabel','Planetary Parameters:',$
          'label','')
 
@@ -1098,8 +1088,7 @@ for i=0, nplanets-1 do begin
 
    ss.planet[i].fittran = fittran[i]
    ss.planet[i].fitrv = fitrv[i]
-   ss.planet[i].chenmass = chenmass[i]
-   ss.planet[i].chenrad = chenrad[i]
+   ss.planet[i].chen = chen[i]
 
    if not fittran[i] then begin
       ss.planet[i].cosi.fit = 0
