@@ -82,6 +82,8 @@ mcmcscale = [[seedscale],[seedscale]]
 
 for i=0, nfit-1 do begin
 
+   if i eq 3 then debug=1
+
     for j=0,1 do begin
 
         testpars = bestpars
