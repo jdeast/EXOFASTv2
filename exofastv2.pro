@@ -260,20 +260,6 @@
 ;                 CHEN are both false for a given planet, the
 ;                 planetary radius and all derived parameters will not
 ;                 be quoted.
-
-pro exofastv2, priorfile=priorfile, $
-               rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile,$
-               prefix=prefix,$
-               circular=circular,fitslope=fitslope, secondary=secondary, $
-               rossiter=rossiter,$
-               nthin=nthin, maxsteps=maxsteps, $
-               debug=debug, randomfunc=randomfunc, seed=seed,$
-               bestonly=bestonly, plotonly=plotonly,$
-               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
-               logfile=logfile, $
-               maxgr=maxgr, mintz=mintz, $
-               noyy=noyy, tides=tides, nplanets=nplanets, $
-               priorfile=priorfile, fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth
 ;
 ; OPTIONAL KEYWORDS:
 ;   FITSLOPE  - If set, it will fit a linear trend to the RV data.
@@ -385,7 +371,7 @@ pro exofastv2, priorfile=priorfile, $
                logfile=logfile, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, tides=tides, nplanets=nplanets, $
-               priorfile=priorfile, fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth
+               fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth
 
 ;; this is the stellar system structure
 COMMON chi2_block, ss
