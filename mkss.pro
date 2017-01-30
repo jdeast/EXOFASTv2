@@ -153,6 +153,7 @@ endelse
 if n_elements(rvpath) ne 0 then rvfiles = file_search(rvpath,count=ntel) $
 else ntel = 0
 
+if n_elements(nplanets) eq 0 then nplanets = 1
 if n_elements(circular) ne nplanets then circular = bytarr(nplanets)
 
 if n_elements(rossiter) ne nplanets then rossiter = bytarr(nplanets)
@@ -165,6 +166,11 @@ nsteps = n_elements(value)
 if n_elements(fittran) ne nplanets then fittran = bytarr(nplanets)+1B
 if n_elements(fitrv) ne nplanets then fitrv = bytarr(nplanets)+1B
 if n_elements(chen) ne nplanets then chen = fittran xor fitrv
+
+
+if (where((~fitrv) and (~fittran)))[0] ne -1 then $
+   message, 'Either a transit or RV must be fit for each planet'
+
 
 
 ;; each parameter is a structure, as defined here

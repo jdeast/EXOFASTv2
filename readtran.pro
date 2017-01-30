@@ -1,5 +1,9 @@
 function readtran, filename
 
+if not file_test(filename) then message, 'Transit file (' + filename + ') does not exist'
+
+if n_elements(strsplit(filename,'.',/extract)) lt 3 then message, 'filename (' + filename + ') must have format nYYYYMMDD.FILTER.TELESCOPE.whateveryouwant'
+
 ;; Read the transit data file into a structure
 ;; (with an arbitary number of detrending variables)
 band = (strsplit(filename,'.',/extract))(1)
@@ -20,6 +24,13 @@ endif else if band eq 'z' then begin
    band = 'Sloanz'
    bandname = "z"
 endif else bandname = band
+
+allowedbands = ['U','B','V','R','I','J','H','K',$
+                'Sloanu','Sloang','Sloanr','Sloani','Sloanz',$
+                'Kepler','CoRoT','Spit36','Spit45','Spit58','Spit80',$
+                'u','b','v','y']
+
+if (where(allowedbands eq band))[0] eq -1 then message, 'Filter (' + band + ') not allowed'
 
 line = ""
 openr, lun, filename, /get_lun

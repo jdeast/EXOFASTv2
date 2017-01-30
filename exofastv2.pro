@@ -10,7 +10,7 @@
 ;   to jeastman@lcogt.net
 ;
 ; CALLING SEQUENCE:
-;   exofast, [RVPATH=, TRANPATH=, BAND=, PRIORS=, PREFIX=, /CIRCULAR,
+;   exofast, [RVPATH=, TRANPATH=, PRIORFILE=, FLUXFILE=, PREFIX=, /CIRCULAR,
 ;             /NOSLOPE, /SECONDARY, /UPDATE, PNAME=, SIGCLIP=, NTHIN=,
 ;             MAXSTEPS=, MINPERIOD=, MAXPERIOD=, NMIN=, /DISPLAY,
 ;             /DEBUG, RANDOMFUNC=, SEED=, /SPECPRIORS, /BESTONLY,
@@ -18,14 +18,60 @@
 ;
 ; INPUTS:
 ;
-;   RVPATH      - The path to the RV data file. The file must have 3 columns:
+;   PRIORFILE  - An ASCII file with each line containing three white
+;                space delimited columns: NAME, VALUE, WIDTH. NAME
+;                must match a parameter.label defined in MKSS.pro. If
+;                the parameter is in an array (e.g., of planets), add
+;                "_i", where "i" is the zero-indexed index into the
+;                array. If WIDTH is set to 0, the parameter is fixed
+;                at VALUE (this is generally not recommended; it's far
+;                better to apply a realistic prior). If WIDTH is set
+;                to -1, it only overrides the default starting guess
+;                for that parameter, but there is no penalty if the
+;                model deviates from VALUE. If WIDTH is positive, a
+;                gaussian prior is applied. That is, a chi^2 penalty
+;                equal to ((parameter - VALUE)/WIDTH)^2 is applied to
+;                the likelihood function. Here is the contents of a
+;                sample priorfile for the EPXXXXXXXXX system published
+;                in Eastman et al, 2017:
+;
+;                teff 6167 78 # Gaussian prior on T_eff of 6167 +/- 78 K
+;                feh -0.04 0.1 # Gaussian prior on [Fe/H] of -0.04 +/- 0.1 dex
+;                logg 4.22 0.06 # Gaussian prior on logg of 4.22 +/- 0.06
+;                vsini 9400 300 # Gaussian prior on vsini of 9400 +/- 300 (ignored since vsini is not fitted without RM data)
+;                # parallax 4.034 0.93 # Gaussian prior on parallax of 4.036 +/- 0.93 mas. However, it is commented out, so not applied.
+;                tc_0 2457166.0543 -1 # start the fit with a TC for planet 0 (EPXXXXXXXXb) at BJD_TDB=2457166.0543
+;                p_0 0.020 -1 # start the fit with Rp/Rstar for planet 0 at 0.020
+;                period_0 26.847 -1 # start the fit with period for planet 0 at 26.847 days
+;                tc_1 2457213.5328 -1 # start the fit with a TC for planet 1 (EPXXXXXXXXc) at BJD_TDB=2457213.5328
+;                p_1 0.02 -1 # start the fit with Rp/Rstar for planet 1 at 0.020
+;                period_1 39.5419 -1 # start the fit with period for planet 0 at 39.5419 days
+;                tc_2 2457191.8894 -1 # start the fit with a TC for planet 2 (EPXXXXXXXXd) at BJD_TDB=2457191.8894
+;                p_2 0.020 -1 # start the fit with Rp/Rstar for planet 2 at 0.020
+;                period_2 125 -1 # start the fit with period for planet 2 at 125 days
+;                tc_3 2457170.4990 -1 # start the fit with a TC for planet 3 (EPXXXXXXXXe) at BJD_TDB=2457170.4990
+;                p_3 0.029 -1 # start the fit with Rp/Rstar for planet 3 at 0.020
+;                period_3 160 -1 # start the fit with period for planet 3 at 160 days
+;
+; OPTIONAL INPUTS:
+;   NPLANETS    - The number of planets you wish to fit to the
+;                 data. Default is 1.
+;   RVPATH      - The path to the RV data file(s). The file must have 3 columns:
 ;                   1) Time (BJD_TDB -- See Eastman et al., 2010)
 ;                   2) RV (m/s)
 ;                   3) err (m/s)
-;                 NOTE: The units must be as specified, or the fit
-;                 will be wrong or fail.
-;                 NOTE 2: If omitted, just the transit data will be fit
-;   TRANPATH    - The path to the transit data file. The file must
+;                 NOTE 1: The units must be as specified, or the fit
+;                 will be wrong or fail. 
+;                 NOTE 2: Other input time stamps will likely not
+;                 break the code, but can introduce errors in the
+;                 reported times of more than a minute. The output
+;                 table will display BJD_TDB but makes no attempt to
+;                 convert input times.  See
+;                 http://adsabs.harvard.edu/abs/2010PASP..122..935E
+;                 for an explanation of times
+;                 NOTE 3: If omitted, just the transit data will be
+;                 fit.
+;   TRANPATH    - The path to the transit data file(s). The file(s) must
 ;                 have at least 3 columns:
 ;                   1) Time (BJD_TDB -- See Eastman et al., 2010)
 ;                   2) Normalized flux
@@ -33,69 +79,122 @@
 ;                   4) Detrend parameter 1
 ;                   ....
 ;                   N+3) Detrend parameter N
-;                 NOTE: The units must be as specified, or the fit
+;
+;                 The names of the files describing the transits
+;                 *must* adhere to a certain format:
+;                 nYYYYMMDD.filtername.telescope.whateveryouwant. 
+;
+;                 nYYYYMMDD -- The UTC date of mid transit. This is only
+;                 necessary if the data has a single transit. This is
+;                 used to label the transits in the output plot.
+; 
+;                 filtername -- The name of the observed
+;                 filter. Only certain values are allowed (use the
+;                 closest approximation if yours is not in this list;
+;                 see quadld.pro): 
+;
+;                 Johnson/Cousins: 'U','B','V','R','I','J','H','K'
+;                 Sloan: 'Sloanu','Sloang','Sloanr','Sloani','Sloanz'
+;                 Kepler: 'Kepler'
+;                 CoRoT: 'CoRoT'
+;                 Spitzer: 'Spit36','Spit45','Spit58','Spit80'
+;                 Stromgren: 'u','b','v','y'
+;
+;                 This is used to define the limb darkening for the
+;                 transit.
+;
+;                 telescope -- a description of the telescope used for
+;                 the observations. Anything is allowed, but all
+;                 observations observed with the same telescope should
+;                 have the same name. This is used in the output plot
+;                 and color codes the TTV plot.
+;
+;                 whateveryouwant -- any string you want to
+;                 include for it to make sense to you. This is not
+;                 used by the code.
+;
+;                 So a transit taken on UTC 2017-01-27 with MINERVA in
+;                 the V band would be "n20170127.V.MINERVA.dat"
+;
+;                 NOTE 2: The units must be as specified, or the fit
 ;                 will be wrong or fail.
-;                 NOTE 2: If omitted, just the RV data will bit fit
-;   BAND        - The bandpass of the observed transit (see quadld.pro
-;                 for allowed values).
-;                 NOTE: only required if TRANPATH is specified.
-;   PRIORS      - Priors on each of the parameters. See EXOFAST_CHI2
-;                 for parameter definitions. Must be an N x 2
-;                 elements array, where N is 15 + the number of
-;                 detrending variables. If set, all non-zero values of
-;                 priors[0,*] are used to start the fit, and a penalty
-;                 equal to:
-;                    total(((pars-priors[0,*])/priors[1,*])^2)
-;                 is added to the total chi^2. 
+;                 NOTE 3: Other input time stamps will likely not
+;                 break the code, but can introduce errors in the
+;                 reported times of more than a minute. The output
+;                 table will display BJD_TDB but makes no attempt to
+;                 convert input times.  See
+;                 http://adsabs.harvard.edu/abs/2010PASP..122..935E
+;                 for an explanation of times
+;                 NOTE 4: If omitted, just the RV data will bit fit
 ;
-;                 NOTE 1: For no prior, set the width to infinity. i.e., 
-;                    priors[1,*] = !values.d_infinity.
-;                 NOTE 2: Typically, the default starting guesses are
-;                 good enough and need not be changed.
+;   FLUXFILE   - An ASCII file with each line containing three white
+;                space delimited columns: FILTER, MAG,
+;                UNCERTAINTY. This file describes the apparent
+;                broad-band magnitudes of the host star to fit the SED
+;                and derive a distance, luminosity, and
+;                extinction. Only certain FILTERS are allowed.  See
+;                mag2fluxconv.pro for more info and citations. If not
+;                specified, the distance and extinction are not fit
+;                and the resultant constraint on the stellar
+;                luminosity is not applied. 
+;                NOTE: FLUXFILE must be specified for a parallax to
+;                constrain the stellar luminosity/radius.
 ;
-;                 TRANSIT+RV or TRANSIT-ONLY FITS: Priors on Teff and
-;                 [Fe/H] (priors[*,11:12]) must be specified, either by
-;                 declaring the priors array or specifying a planet
-;                 name and setting the /SPECPRIORS keyword.
+;                Galex: 'galNUV', 'galFUV' 
+;                NOTE: the SED models are not great at UV, you may find it
+;                better not to use Galex
+;                WISE: 'WISE1','WISE2','WISE3','WISE4'
+;                Sloan: 'uSDSS','gSDSS','rSDSS','iSDSS','zSDSS'
+;                Panstarrs: 'zPS'
+;                Johnson: 'U','B','V','R',
+;                Cousins: 'RC', 'IC','J2M','H2M','K2M'
+;                Tycho: 'BT','VT'
+;                Kepler INT: 'U_KIS','gKIS','rKIS','iKIS'
 ;
-;                 RV-ONLY FITS: Priors on logg, Teff and [Fe/H]
-;                 (priors[*,10:12]) must be specified, either by
-;                 declaring the priors array or specifying a planet
-;                 name and setting the /SPECPRIORS keyword.
+;                The contents of this file for EPXXXXXXX is below:
+; 
+;                B      11.949 0.129
+;                V      11.572 0.142
+;                J2M    10.872 0.022
+;                H2M    10.665 0.025
+;                K2M    10.601 0.020
+;                WISE1  10.537 0.023
+;                WISE2  10.583 0.021
+;                WISE3  10.618 0.097
+;                uSDSS 14.51798 0.05
+;                gSDSS 12.14652 0.03
+;                rSDSS 11.81735 0.03
+;                iSDSS 11.70544 0.03
+;                zSDSS 13.20863 0.03
 ;
-; OPTIONAL INPUTS:
 ;   PREFIX      - Each of the output files will have this string as a
-;                 prefix. Default is RVFILE without the
-;                 extension. Cannot contain an underscore, "_".
-;   MINPERIOD   - The minimum period to consider. The default is 1 day.
-;   MAXPERIOD   - The maximum period to consider. The default is the
-;                 range of the RV input times.
-;   NMIN        - The number of minima in the Lomb-Scargle Periodogram
-;                 to fit a full Keplerian orbit. Default is 5. If the
-;                 eccentricity is large, this may need to be
-;                 increased. The execution time of the initial global
-;                 fit is directly proportional to this value (though
-;                 is a small fraction of the total time of the MCMC fit).
-;   PNAME       - If set, starting values from exoplanets.org for the
-;                 planet PNAME will be used to seed the fit. It is
-;                 insensitive to extra spaces and capitalization.
-;                 e.g., "WASP-12 b" is the same as "wasp-12b".
-;   SIGCLIP     - If set, an iterative fit will be performed excluding
-;                 data points more than SIGCLIP*error from the best
-;                 fit. Default is no clipping.
-;   NTHIN       - If set, only every NTHINth element will be
-;                 kept. This typically doesn't affect the
-;                 resultant fit because there is a high correlation
-;                 between adjacent steps and has the advantage of
-;                 improved memory management and faster generation of
-;                 the final plots.
+;                 prefix. Default is 'planet.'
 ;   MAXSTEPS    - The maximum number of steps to take in the MCMC
-;                 chain. Note that a 32-bit installation of IDL
-;                 cannot allocate more than 260 million
-;                 double-precision numbers, and redundant copies of
-;                 each parameter are required. A very large number
-;                 will cause memory management problems. Default is
-;                 100,000.
+;                 chain. Note that a 32-bit installation of IDL cannot
+;                 allocate more than 260 million double-precision
+;                 numbers, and redundant copies of each parameter are
+;                 required. Even a 64-bit installation may require
+;                 very slow disk swapping. A very large number will
+;                 cause memory management problems. Default is
+;                 100,000, and larger values are strongly
+;                 discouraged. Increase NTHIN if the chains are not
+;                 well-mixed. 
+;                 NOTE: If the MCMC chains run to MAXSTEPS,
+;                 doubling this value will double the runtime. Short
+;                 test runs (MAXSTEPS=100) are strongly encouraged
+;                 before running week-long fits.
+;   NTHIN       - If set, only every NTHINth element will be
+;                 kept. Values as high as 1/acceptance rate typically
+;                 don't degrade the resultant fit because there is a
+;                 high correlation between adjacent steps and has the
+;                 advantage of improved memory management and faster
+;                 generation of the final plots. Default is 1.
+;                 NOTE: Only kept links in the chain count toward
+;                 MAXSTEPS, so if the MCMC chains run to MAXSTEPS,
+;                 doubling this value will double the runtime.
+;   LOGFILE     - A string specifying the name of a file to redirect
+;                 the output to. Useful when running many fits or for
+;                 a more permanent record of any errors or warnings.
 ;   RANDOMFUNC  - A string specifying the name of the random number
 ;                 generator to use. This generator must be able to
 ;                 return 1,2 or 3 dimensional uniform or normal random
@@ -112,138 +211,180 @@
 ;                 centered on the input time.
 ;                 For a dicussion on binning, see:
 ;                 http://adsabs.harvard.edu/abs/2010MNRAS.408.1758K
-;   RSTAR       - A two-element array specifying the prior (rstar[0])
-;                 and prior width(rstar[1]) for the stellar radius, in
-;                 units of Rsun. 
-;                 This will override the use of the Torres relation. 
-;                 Teff and logg priors should still be specified to
-;                 constrain the limb darkening.
-;                 This will typically be, but need not be used
-;                 in conjunction with MSTAR. This will typically be
-;                 used for MSTAR < 0.6 Msun, when Torres is no longer
-;                 applicable.
-;   MSTAR       - Same as RSTAR, but for the stellar mass, in units of
-;                 Msun.
 ;   MAXGR       - The maximum Gelman Rubin statistic that is
 ;                 considered well-mixed (default=1.01)
 ;   MINTZ       - The minimum number of independent draws that is
 ;                 considered well-mixed (default=1000)
-;
-; OPTIONAL KEYWORDS:
-;   CIRCULAR  - If set, the fit will be forced to be circular (e=0,
-;               omega_star=pi/2)
-;   NOSLOPE   - If set, it will not fit a slope to the RV data.
-;   SECONDARY - If set, fit a secondary eclipse. This feature is not
-;               well-tested -- use at your own risk.
-;   UPDATE    - Update the local copy of the exoplanets.org file (only
-;               applied if PNAME is specified).
-;   DISPLAY   - If set, the plots (below) will be displayed via
-;               ghostview (gv).
-;   SPECPRIORS- If set (and PNAME is specified), spectroscopic priors
-;               from exoplanets.org will be used for logg, Teff, and
-;               [Fe/H].
-;   BESTONLY  - If set, only the best fit (using AMOEBA) will be
-;               performed.
-;   DEBUG     - If set, various debugging outputs will be printed and
-;               plotted.
-;   LONGCADENCE - If set, EXPTIME=29.425 and NINTERP=10 are set to handle
-;                 long cadence data from Kepler.
-;   YY        - If set, use the YY evolutionary tracks (see
-;               http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=2001ApJS..136..417Y)
-;               to constrain the mass/radius relation of the star
-;               instead of the Torres relation. This requires an
-;               additional installation step (see
-;               $EXOFAST_PATH/other/README), and significantly slows
-;               down the code (~10x), but is more accurate and more
-;               general than the Torres relation, and determines the
-;               stellar age.
-;   TIDES     - If set, when (1-Rstar/a-rp/a) < e < (1-3*Rstar/a), we
-;               set the eccentricity to zero (see Eastman, 2013).
-;
-; OUTPUTS:
-;
-;   Each of the output files will be preceeded by PREFIX (defined
-;   above). The first "?" will be either "c" for circular if /circular
-;   is set or "e" for eccentric. The second "?" will be either "f" for
-;   flat (if /noslope is set) or "m "for slope.
-;
-;   mcmc.?.?.idl   - An IDL save file that contains the full chains
-;                    for each parameter, including derived paramters,
-;                    the corresponding names, the chi2 at each link,
-;                    and the index of the burn-in period.
-;   pdfs.?.?.ps    - A postscript plot of each posterior distribution
-;                    function, 8 to a page.
-;   covars.?.?.ps  - A postscript plot of the covariances between each
-;                    parameter, 16 to a page. The title of each plot is the
-;                    correlation coefficient.
-;   median.?.?.tex - The LaTeX source code for a deluxe table of the median
-;                    values and 68% confidence interval, rounded appropriately. 
-;   best.?.?.tex   - The LaTeX source code for a deluxe table of the best fit
-;                    values and 68% confidence interval, rounded appropriately.
-;   model.?.?.ps   - An postscript plot of the best-fit models and residuals.
-;   model.?.?.rv   - A text file containing the best-fit model RV for each
-;                    input time
-;   model.?.?.flux - A text file containing the best-fit model flux for each
-;                    input time
-;
-;   NOTE: To extract a single page out of a multi-page PS file, use:
-;           psselect -p# input.ps output.ps
-;         where # is the page number to extract.
-;
-; COMMON BLOCKS:
-;   CHI2_BLOCK:
-;     RV      - A structure with three tags, corresponding to each
-;               column of RVFILE.
-;     TRANSIT - A structure with 3 + N tags, corresponding to each
-;               column of the TRANFILE.
-;     PRIORS  - The priors on each of the parameters
-;     BAND    - The band of the observed transit
-;     DEBUG   - A flag to specify if the data/fit should be
-;               plotted. This is intended for debugging only; it
-;               dramatically increases the execution time.
-;     NORV    - A boolean to indicate the RV should not be fit
-;     NOTRAN  - A boolean to indicate the transit should not be fit
-;   RV_BLOCK:
-;     RVDATA  - A structure with three tags, corresponding to each
-;               column of RVFILE. This is to prefit the data with a
-;               lomb-scargle periodogram
-; EXAMPLES:  
-;   ;; fit HAT-P-3b example data (using priors from exoplanets.org):
-;   exofast, rvpath='hat3.rv',tranpath='hat3.flux',pname='HAT-P-3b',$
-;            band='Sloani',/circular,/noslope,/specpriors,minp=2.85,maxp=2.95
-;
-;   ;; fit HAT-P-3b without using exoplanets.org 
-;   ;; include a prior on the period too 
-;   ;; this reproduces results from Eastman et al., 2013
-;   per = 2.899703d0
-;   uper = 5.4d-5
-;   priors = dblarr(2,19)
-;   priors[1,*] = !values.d_infinity
-;   priors[*, 3] = [alog10(per),uper/(alog(10d0)*per)] ;; logp prior
-;   priors[*,10] = [4.61d0,0.05d0] ;; logg prior
-;   priors[*,11] = [5185d0,  80d0] ;; Teff prior
-;   priors[*,12] = [0.27d0,0.08d0] ;; logg prior
-;   exofast,rvpath='hat3.rv',tranpath='hat3.flux',band='Sloani',/circular,$
-;           /noslope,priors=priors,minp=2.85,maxp=2.95,prefix='example.'
-;
-; MODIFICATION HISTORY
-; 
-;  2013/05 -- Complete rewrite of exofast.pro. More general (fits
-;             multiple planets, mulitple bands, multiple instrumental
-;             offsets). Now easily extensible.
-;-
-pro exofastv2, rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, band=band, priors=priors, $
+;   FITRV       - An NPLANETS boolean array that specifies which
+;                 planets should be fit with an RV model. 
+;                 If RVPATH is specified, default is bytarr(nplanets) + 1B.
+;                 If RVPATH is not specified, default is bytarr(nplanets).
+;                 At least one of FITRV and FITTRAN should be true for each planet
+;   FITTRAN     - An NPLANETS boolean array that specifies which
+;                 planets should be fit with a transit model. 
+;                 If TRANPATH is specified, default is bytarr(nplanets) + 1B.
+;                 If TRANPATH is not specified, default is bytarr(nplanets). 
+;                 At least one of FITRV and FITTRAN should be true for each planet
+;   CIRCULAR    - An NPLANETS boolean array that specifies which planets
+;                 should be fixed to be circular (1) or left with
+;                 eccentricity free (0). 
+;                 Default is bytarr(nplanets) + 1B.
+;   SECONDARY   - An NPLANETS boolean array that specifies which planets
+;                 should have a secondary eclipse modeled. 
+;                 Default is bytarr(nplanets)
+;                 ***NOT YET IMPLEMENTED***
+;   ROSSITER    - An NPLANETS boolean array that specifies which planets
+;                 should fit the Rossiter-McLaughlin effect to the RV
+;                 data using the Ohta approximation. If a run was
+;                 dedicated to RM, it should be separated into its own
+;                 file to fit a different zero point and jitter
+;                 parameter to it.
+;                 Default is bytarr(nplanets)
+;                 ***NOT YET IMPLEMENTED***
+;   DOPTOM      - An NPLANETS boolean array that specifies which planets
+;                 should fit using a Doppler Tomography model.
+;                 Default is bytarr(nplanets)
+;                 ***NOT YET IMPLEMENTED***
+;   CHEN        - An NPLANET boolean array that specifies which
+;                 planets should have the Chen & Kipping, 2017
+;                 mass-radius relation applied. By default CHEN =
+;                 FITRV xor FITTRAN. That is, only apply the
+;                 mass-radius prior when RV is not fit (to derive the
+;                 planet mass) or when a transit is not fit (to derive
+;                 the radius). If the defaults have been overridden
+;                 and FITRV and CHEN are both false for a given
+;                 planet, the RV semi-amplitude (planet mass) and all
+;                 derived parameters will not be quoted. Multi-planet
+;                 systems will be constrained not to cross orbits, but
+;                 the Hill Sphere will be set to zero.  If FITTRAN and
+;                 CHEN are both false for a given planet, the
+;                 planetary radius and all derived parameters will not
+;                 be quoted.
+
+pro exofastv2, priorfile=priorfile, $
+               rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile,$
                prefix=prefix,$
                circular=circular,fitslope=fitslope, secondary=secondary, $
                rossiter=rossiter,$
-               update=update, pname=pname, sigclip=sigclip,$
                nthin=nthin, maxsteps=maxsteps, $
-               minperiod=minperiod, maxperiod=maxperiod, nmin=nmin, $
-               display=display,debug=debug, randomfunc=randomfunc,seed=seed,$
-               specpriors=specpriors, bestonly=bestonly, plotonly=plotonly,$
+               debug=debug, randomfunc=randomfunc, seed=seed,$
+               bestonly=bestonly, plotonly=plotonly,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                logfile=logfile, $
-               maxgr=maxgr, mintz=mintz, yy=yy, tides=tides, nplanets=nplanets, $
+               maxgr=maxgr, mintz=mintz, $
+               noyy=noyy, tides=tides, nplanets=nplanets, $
+               priorfile=priorfile, fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth
+;
+; OPTIONAL KEYWORDS:
+;   FITSLOPE  - If set, it will fit a linear trend to the RV data.
+;   FITQUAD   - If set, it will fit a quadratic trend to the RV data.
+;   NOYY      - If set, do not use the YY evolutionary tracks (see
+;               http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=2001ApJS..136..417Y)
+;               to constrain the mass/radius of the star. If set,
+;               \log(rstar) is fit instead of age. This should be set
+;               for low-mass stars and an external constraint on the
+;               stellar mass and radius should be supplied.
+;   TORRES    - If set, use the Torres relations to constrain the mass
+;               and radius of the star. This may be useful to
+;               investigate potential systematics and should probably
+;               be accompanied by the NOYY keyword (but is not
+;               enforced). This is not a substitute for YY for low
+;               mass stars; the Torres relations are equally
+;               inapplicable.
+;   NOCLARET  - If set, ignore the Claret & Bloeman limb darkening
+;               tables and just fit the limb darkening. This should be
+;               specified for low-mass stars where these tables are
+;               unreliable.
+;   LONGCADENCE - If set, EXPTIME=29.425 and NINTERP=10 are set to handle
+;               long cadence data from Kepler. This overwrites
+;               NINTERP and EXPTIME inputs.
+;   TIDES     - If set, when (1-Rstar/a-rp/a) < e < (1-3*Rstar/a), we
+;               set the eccentricity to zero, presuming that the tidal
+;               circularization timescale is much much smaller than
+;               the age of the system.
+;   EPRIOR4   - Parameterize the eccentricity and argument of
+;               periastron as e^(1/4)*sin(omega) and
+;               e^(1/4)*cos(omega) to more closely match the observed
+;               eccentricity distribution
+;   TTV       - If set, non-periodic transit times are allowed. The
+;               period is constrained by a linear fit to all transit
+;               times at each step. Otherwise, a linear ephemeris is
+;               assumed.
+;               ***NOT YET IMPLEMENTED***
+;   TDV       - If set, a new transit depth is fit for each transit
+;               ***NOT YET IMPLEMENTED***              
+;   BESTONLY  - If set, only the best fit (using AMOEBA) will be
+;               performed.
+;               ***NOT YET IMPLEMENTED***
+;   PLOTONLY  - If set, only a plot of the initial guesses over the
+;               data is made. This is useful when refining initial
+;               guesses.
+;               ***NOT YET IMPLEMENTED***
+;   EARTH     - If set, the output units of Mp and Rp are in Earth
+;               units, not Jupiter units.
+;   DEBUG     - If set, various debugging outputs will be printed and
+;               plotted. If the fit is failing, this is your first
+;               step to figuring out what's going
+;               wrong. Usually a parameter starts too far from its
+;               correct value to find or some parameter is not
+;               constrained.
+; OUTPUTS:
+;
+;   Each of the output files will be preceeded by PREFIX (defined
+;   above).
+;
+;   mcmc.idl   - An IDL save file that contains the stellar structure
+;                with the full chains for each parameter, including
+;                derived parameters, the chi2 at each link, and the
+;                index of the burn-in period.
+;   pdf.ps     - A postscript plot of each posterior distribution
+;                function, 8 to a page.
+;   covar.ps   - A postscript plot of the covariances between each
+;                parameter, 16 to a page. The title of each plot is
+;                the correlation coefficient between the two
+;                parameters
+;   median.tex - The LaTeX source code for a deluxe table of the
+;                median values and 68% confidence interval, rounded to
+;                two sig figs in the uncertainty.
+;   model.ps   - An postscript plot of the best-fit models and residuals.
+;                *** Fairly cursory at the moment ***
+;   model.rv   - A text file containing the best-fit model RV for each
+;                input time
+;   model.flux - A text file containing the best-fit model flux for
+;                each input time
+;
+;   NOTE: To extract a single page out of a multi-page PS file, use:
+;         psselect -p# input.ps output.ps where # is the page number
+;         to extract.
+;
+; COMMON BLOCKS:
+;   CHI2_BLOCK:
+;     SS      - A structure that describes the entire stellar system
+;
+; EXAMPLES:  
+;   ;; fit EPXXXXXXX, a 4 planet system with only K2 data
+;   exofastv2, nplanets=4, tranpath='ep?????????.Kepler.K2.dat3',fluxfile='ep?????????.flux.txt',$
+;           priorfile='ep?????????.priors',debug=debug, prefix='epXXXXXXXXX.eeee.nopilogg.',$
+;           fittran=[1,1,1,1],fitrv=[0,0,0,0],circular=[0,0,0,0],/longcadence, /earth
+;
+; MODIFICATION HISTORY
+; 
+;  2017/01 -- Complete rewrite of exofast.pro. More general (fits
+;             multiple planets, mulitple bands, multiple instrumental
+;             offsets). Now easily extensible.
+;-
+pro exofastv2, priorfile=priorfile, $
+               rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile,$
+               prefix=prefix,$
+               circular=circular,fitslope=fitslope, secondary=secondary, $
+               rossiter=rossiter,$
+               nthin=nthin, maxsteps=maxsteps, $
+               debug=debug, randomfunc=randomfunc, seed=seed,$
+               bestonly=bestonly, plotonly=plotonly,$
+               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
+               logfile=logfile, $
+               maxgr=maxgr, mintz=mintz, $
+               noyy=noyy, tides=tides, nplanets=nplanets, $
                priorfile=priorfile, fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth
 
 ;; this is the stellar system structure
@@ -329,10 +470,9 @@ plottran, ss, psname=prefix + 'model.ps'
 
 ;; do the MCMC fit
 if not keyword_set(bestonly) then begin
-;ss.debug=1
    exofast_demc, best, chi2func, pars, chi2=chi2,$
                  nthin=nthin,maxsteps=maxsteps,$
-                 burnndx=burnndx, seed=seed, randomfunc=randomfunc0, $
+                 burnndx=burnndx, seed=seed, randomfunc=randomfunc, $
                  gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
                  derived=rstar
    if pars[0] eq -1 then begin
