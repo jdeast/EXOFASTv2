@@ -2,7 +2,7 @@ function readtran, filename
 
 if not file_test(filename) then message, 'Transit file (' + filename + ') does not exist'
 
-if n_elements(strsplit(filename,'.',/extract)) lt 3 then message, 'filename (' + filename + ') must have format nYYYYMMDD.FILTER.TELESCOPE.whateveryouwant'
+if n_elements(strsplit(filename,'.',/extract)) lt 3 then message, 'filename (' + filename + ') must have format nYYYYMMDD.FILTER.TELESCOPE.whateveryouwant (see readtran.pro for details)'
 
 ;; Read the transit data file into a structure
 ;; (with an arbitary number of detrending variables)

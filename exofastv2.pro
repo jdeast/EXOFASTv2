@@ -371,7 +371,8 @@ pro exofastv2, priorfile=priorfile, $
                logfile=logfile, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, tides=tides, nplanets=nplanets, $
-               fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth
+               fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth,$
+               i180=i180
 
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -388,7 +389,7 @@ if double(!version.release) ge 6.4d0 then $
 ss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets, $
           debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
           circular=circular,fitslope=fitslope, fitquad=fitquad,ttv=ttv, $
-          rossiter=rossiter,longcadence=longcadence, earth=earth)
+          rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180)
 
 ;mcmc2str, pars, ss
 ;stop

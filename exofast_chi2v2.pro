@@ -208,8 +208,8 @@ if nbad gt 0 then begin
    return, !values.d_infinity
 endif
 
-;; 0 <= cosi <= 1
-bad = where(ss.planet.cosi.value gt 1 or ss.planet.cosi.value lt 0,nbad)
+;; 0 <= cosi <= 1 (or -1 <= cosi <= 1 if i180 keyword set)
+bad = where(ss.planet.cosi.value gt 1 or (ss.planet.cosi.value lt 0 and ~ss.planet.i180) or (ss.planet.cosi.value lt -1),nbad)
 if nbad gt 0 then begin
    if ss.debug then print, 'cosi is bad (' + strtrim(bad,2) + ')'
    return, !values.d_infinity

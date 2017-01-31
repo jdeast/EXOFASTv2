@@ -49,6 +49,16 @@
 ;             If FITTRAN and CHEN are both false for a given planet,
 ;             the planetary radius and all derived parameters will not
 ;             be quoted.
+;  I180     - An NPLANETS boolean array specifying which planets'
+;             inclination should be allowed to be between 0 and 180
+;             instead of the default of 0 to 90. Note that a normal
+;             transiting planet has a perfect degeneracy between i and
+;             180-i which is likely to cause convergence
+;             problems. Additional information (e.g., from astrometry
+;             or mutual eclipses) must be used for this keyword to be
+;             used properly. Even in the case of mutual eclipses
+;             (which is currently not supported), at least one planet must be
+;             arbitrarily constrained from 0 to 90.
 ;  NVALUES  - ?? (I probably should have documented that when I made it...)
 ;  PRIORFILE - The name of the file that specifies all the priors. The
 ;              prior file is an ASCII file with each line containing
@@ -116,7 +126,7 @@
 
   
 ;-
-function mkss, nplanets=nplanets, circular=circular,chen=chen, $
+function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
                rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
@@ -166,6 +176,7 @@ nsteps = n_elements(value)
 if n_elements(fittran) ne nplanets then fittran = bytarr(nplanets)+1B
 if n_elements(fitrv) ne nplanets then fitrv = bytarr(nplanets)+1B
 if n_elements(chen) ne nplanets then chen = fittran xor fitrv
+if n_elements(i180) ne nplanets then i180 = bytarr(nplanets)
 
 
 if (where((~fitrv) and (~fittran)))[0] ne -1 then $
@@ -989,6 +1000,7 @@ planet = create_struct($
          'fittran',1B,$
          'fitrv',1B,$
          'chen',0B,$
+         'i180',0B,$
          'rootlabel','Planetary Parameters:',$
          'label','')
 
@@ -1111,6 +1123,8 @@ for i=0, nplanets-1 do begin
       ss.planet[i].mpearth.derive = 0
 
    endif
+
+   if i180[i] then ss.planet[i].i180 = 1
 
    ;; now constrained by the mass radius-relation
 ;   if not fitrv[i] then ss.planet[i].logk.fit = 0
