@@ -67,8 +67,11 @@ xrange = [xmin,xmax]
 
 
 j=0
+t0 = 2457000
 trandata = (*(ss.transit[j].transitptrs)) 
 time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+time = trandata.bjd - t0
+
 xmin = min(time,max=xmax)
 xrange=[xmin,xmax]
 
@@ -77,12 +80,13 @@ noise = 0.0001d0
 ymin = 1d0 - 3d0*max(depth)
 ymax = 1d0 + 3*noise + spacing*((ss.ntran-1d0)>0)
 yrange = [ymin,ymax]
-
-
+yrange = [0.994,1.001]
+xtitle='Time - T!DC!N (hrs)'
+xtitle='BJD_TDB - ' + strtrim(t0,2)
 
 ;; position keyword required for proper bounding box
 plot, [0],[0],yrange=yrange, xrange=xrange,/xstyle,/ystyle,position=[0.15, 0.05, 0.93, 0.93],$
-      ytitle='Normalized flux + Constant',xtitle='Time - T!DC!N (hrs)'
+      ytitle='Normalized flux + Constant',xtitle=xtitle
 
 xrange = [xmin,xmax]
 
@@ -100,6 +104,7 @@ for j=0, ss.ntran-1 do begin
    for i=0, ss.nplanets-1 do begin
 
       if ss.planet[i].fittran then begin
+
          prettyflux += (exofast_tran(prettytime, $
                                      ss.planet[i].i.value, $
                                      ss.planet[i].ar.value, $
@@ -115,7 +120,14 @@ for j=0, ss.ntran-1 do begin
                                      reflect=band.reflect.value, $
                                      dilute=band.dilute.value,$
                                      tc=ss.planet[i].tc.value,$
-                                     rstar=ss.star.rstar.value/AU)-1)
+                                     rstar=ss.star.rstar.value/AU)-1d0)
+         
+         minepoch = floor((ss.planet[i].tc.value - minbjd)/ss.planet[i].period.value)
+         maxepoch = ceil((maxbjd - ss.planet[i].tc.value)/ss.planet[i].period.value)
+         epochs = -minepoch + dindgen(maxepoch+minepoch)
+         tcs = ss.planet[i].tc.value + epochs*ss.planet[i].period.value
+         xyouts, tcs-t0, epochs*0d0+(ymax+1d0)/2d0, ss.planet[i].label, align=0.5d0
+
       endif
    endfor
    prettyflux *= ss.transit[j].f0.value
@@ -123,10 +135,14 @@ for j=0, ss.ntran-1 do begin
 
 ;   dummy = min(abs(trandata.bjd - ss.planet[*].tc.value),match)
    time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+   time = trandata.bjd - 2457000d0
+
 ;   if max(time) gt period*12d0 or min(time) lt -period*12d0 then time = time mod (period*24d0)
 
 
-   prettytime = (prettytime - ss.planet[ss.transit[j].pndx].tc.value  - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+;   prettytime = (prettytime - ss.planet[ss.transit[j].pndx].tc.value  - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+   prettytime = prettytime - 2457000d0
+
 ;   if max(prettytime) gt period*12d0 or min(prettytime) lt -period*12d0 then prettytime = prettytime mod (period*24d0)
 ;   sorted = sort(prettytime)
 ;   prettytime = prettytime[sorted]
@@ -135,7 +151,10 @@ for j=0, ss.ntran-1 do begin
    oplot, time, trandata.flux + spacing*(ss.ntran-j-1), psym=8, symsize=symsize
    oplot, prettytime, prettyflux + spacing*(ss.ntran-j-1), thick=2, color=red;, linestyle=0
    xyouts, 0, 1.0075 + spacing*(ss.ntran-j-1), trandata.label,charsize=charsize,alignment=0.5
+;         stop
 
+;   wset, 1
+;   plot, time, trandata.flux-
 endfor
 
 if keyword_set(psname) then begin

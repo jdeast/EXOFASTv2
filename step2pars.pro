@@ -1,4 +1,4 @@
-function step2pars, ss
+function step2pars, ss, verbose=verbose
 
 G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 AU = 215.094177d0 ;; R_sun
@@ -58,7 +58,11 @@ for i=0, ss.nplanets-1 do begin
                                          ss.planet[i].i.value, ss.planet[i].period.value, $
                                          ss.star.mstar.value)
 
-   if ss.planet[i].mpsun.value gt 0.08d0 then return, -1 ;; planet above the hydrogen burning limit
+   if ss.planet[i].mpsun.value gt 0.08d0 then begin
+      if keyword_set(verbose) then print, 'Planet ' + strtrim(i,2) + ' mass (' + strtrim(ss.planet[i].mpsun.value/mjup,2) + ' M_J) above hydrogen burning limit'
+      return, -1 ;; planet above the hydrogen burning limit
+   endif
+
    ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup
    ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth
 
@@ -71,6 +75,14 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup
    ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth
 
+   ss.planet[i].esinw.value = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
+   ss.planet[i].b.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value) ;; eq 7, Winn 2010
+
+   ;; no transit and we're fitting a transit! This causes major problems; exclude this model
+   if ss.planet[i].fittran and (ss.planet[i].b.value gt (1d0+ss.planet[i].p.value)) then begin
+      if keyword_set(verbose) then print, 'Planet does not transit!'
+      return, -1
+   endif
 
    ;; limit eccentricity to avoid collision with star during periastron
    ;; the ignored tidal effects would become important long before this,
@@ -79,6 +91,8 @@ for i=0, ss.nplanets-1 do begin
    ;; abs(p) because p is allowed to be negative to eliminate bias
    if not (ss.planet[i].e.value lt (1d0-1d0/ss.planet[i].ar.value-abs(ss.planet[i].p.value)/$
                               ss.planet[i].ar.value)) then begin
+      if keyword_set(verbose) then print, 'Planet ' + strtrim(i,2) + ' will collide with the star! e=' + strtrim(ss.planet[i].e.value,2) + '; a/Rstar=' + strtrim(ss.planet[i].ar.value,2) + '; Rp/Rstar=' + strtrim(ss.planet[i].p.value,2) + '; Rstar=' + strtrim(ss.star.rstar.value,2)
+      if keyword_set(verbose) then print, 'Rstar is derived from YY isochrones; adjust starting values for Age, Teff, [Fe/H], or Mstar to change it'
       return, -1
    endif
 
@@ -92,8 +106,10 @@ for i=0, ss.nplanets-1 do begin
       if ((mindist[i] ge mindist[j]) and (mindist[i] le maxdist[j])) or $
          ((maxdist[i] ge mindist[j]) and (maxdist[i] le maxdist[j])) or $
          ((mindist[j] ge mindist[i]) and (mindist[j] le maxdist[i])) or $
-         ((maxdist[j] ge mindist[i]) and (maxdist[j] le maxdist[i])) then $
-            return, -1
+         ((maxdist[j] ge mindist[i]) and (maxdist[j] le maxdist[i])) then begin
+         if keyword_set(verbose) then print, 'Planets ' + strtrim(j,2) + ' (' + strtrim(mindist[j],2) + ',' + strtrim(maxdist[j],2) + ') and ' + strtrim(i,2) + ' (' + strtrim(mindist[i],2) + ',' + strtrim(maxdist[i],2) + ') cross paths'
+         return, -1
+      endif
    endfor
 
    ;; tighter (empirical) constraint on eccentricity (see Eastman 2013)
@@ -119,5 +135,5 @@ for i=0, ss.nband-1 do begin
    ss.band[i].u2.prior = coeffs[1]
 endfor
 
-return, 0
+return, 1
 end

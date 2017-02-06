@@ -1,5 +1,4 @@
 ;+
-;
 ; NAME:
 ;   EXOFAST
 ;
@@ -122,9 +121,6 @@
 ;                    parameter.unit units. For the MCMC, this is an
 ;                    array for all links.
 ; parameter.prior -- the parameter's prior
-
-
-  
 ;-
 function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
@@ -188,6 +184,8 @@ if (where((~fitrv) and (~fittran)))[0] ne -1 then $
 parameter = create_struct('value',value,$     ;; its numerical value
                           'prior',0d0,$       ;; its prior value
                           'priorwidth',!values.d_infinity,$ ;; its prior width (infinity => no constraint)
+                          'lowerbound',-!values.d_infinity,$ ;; values lower than this have zero likelihood
+                          'upperbound',!values.d_infinity,$ ;; values higher than this have zero likelihood
                           'label','',$        ;; what do I call it?
                           'cgs',1d0,$         ;; multiply value by this to convert to cgs units
                           'link',ptr_new(),$  ;; a pointer to a linked variable (not implemented)
@@ -271,7 +269,7 @@ distance = parameter
 distance.unit = 'pc'
 distance.description = 'Distance'
 distance.latex = 'd'
-distance.label = 'd'
+distance.label = 'distance'
 distance.cgs = 3.08567758d18 ;; cm/pc
 
 parallax = parameter
@@ -316,7 +314,7 @@ rstar.value = 1d0
 rstar.unit = '\rsun'
 rstar.description = 'Radius'
 rstar.latex = 'R_*'
-rstar.label = 'radius'
+rstar.label = 'rstar'
 rstar.cgs = 6.955d10
 
 age = parameter
@@ -327,7 +325,7 @@ age.latex = 'Age'
 age.label = 'age'
 age.cgs = 3600d0*24d0*365.242d0*1d9
 age.fit = 1
-age.scale = 10d0
+age.scale = 1d0
 
 lstar = parameter
 lstar.unit = '\lsun'
@@ -557,7 +555,7 @@ taus = parameter
 taus.unit = 'days'
 taus.description = 'Ingress/egress duration'
 taus.latex = '\tau_S'
-taus.label = 'tau'
+taus.label = 'taus'
 taus.cgs = 86400d0
 
 lambda = parameter
@@ -628,7 +626,7 @@ period = parameter
 period.unit = 'days'
 period.description = 'Period'
 period.latex = 'P'
-period.label = 'P'
+period.label = 'Period'
 period.cgs = 86400d0
 
 a = parameter
@@ -906,31 +904,32 @@ errscale.fit=1
 ;;                          output table.
 
 ;; for each star
-star = create_struct('mstar',mstar,$
-                     'rstar',rstar,$
-                     'rhostar',rhostar,$
-                     'logg',logg,$
-                     'teff',teff,$
-                     'feh',feh,$
-                     'lstar',lstar,$
-                     'age',age,$
-                     'logmstar',logmstar,$
-                     'vsini',vsini,$
-                     'macturb',macturb,$
+star = create_struct(mstar.label,mstar,$
+                     rstar.label,rstar,$
+                     rhostar.label,rhostar,$
+                     logg.label,logg,$
+                     teff.label,teff,$
+                     feh.label,feh,$
+                     lstar.label,lstar,$
+                     age.label,age,$
+                     logmstar.label,logmstar,$
+                     vsini.label,vsini,$
+                     macturb.label,macturb,$
+                     Av.label,Av,$
+                     Ma.label,Ma,$
+                     Mv.label,Mv,$
+                     errscale.label,errscale,$
+                     distance.label,distance,$
+                     parallax.label,parallax,$
+;                     ellip.label,0d0,$
+;                     ra.label,0d0,$       ;; for astrometry?
+;                     dec.label,0d0,$ ;; for astrometry?
+;                     bigomega.label,0d0,$ ;; for astrometry
+;                     pmra.label,pmra,$    ;; astrometry
+;                     pmdec.label,pmdec,$ ;; astrometry
+                     slope.label,slope,$
+                     quad.label,quad,$
                      'fluxfile','',$
-                     'Av',Av,$
-                     'Ma',Ma,$
-                     'Mv',Mv,$
-                     'errscale',errscale,$
-                     'distance',distance,$
-                     'parallax',parallax,$
-                     'ellip',0d0,$
-                     'ra',0d0,$ ;; for astrometry?
-                     'dec',0d0,$ ;; for astrometry?
-                     'bigomega',0d0,$ ;; for astrometry
-                     'pm',[0d0,0d0],$ ;; astrometry
-                     'slope',slope,$
-                     'quad',quad,$
                      'rootlabel','Stellar Parameters:',$
                      'label','')
             
@@ -939,65 +938,65 @@ if n_elements(fluxfile) ne 0 then $
 
 ;; for each planet 
 planet = create_struct($
-         'a',a,$              ;; fundamental parameters
-         'period',period,$
-         'logP',logp,$  
-         'mp',mp,$
-         'mpsun',mpsun,$
-         'mpearth',mpearth,$
-         'rp',rp,$
-         'rpsun',rpsun,$
-         'rpearth',rpearth,$
-         'e',e,$
-         'omega',omega,$
-         'omegadeg',omegadeg,$
-         'lambda',lambda,$
-         'lambdadeg',lambdadeg,$
-         'i',i,$
-         'ideg',ideg,$
-         'rhop',rhop,$
-         'loggp',loggp,$
-         'teq',teq,$
-         'safronov',safronov,$
-         'fave',fave,$
-         'tc',tc,$
-         'tp',tp,$
-         'ts',ts,$
-         'ta',ta,$
-         'td',td,$
-         'phase',phase,$
-         'K',k,$             ;; RV parameters
-         'logK',logk,$
-         'ecosw',ecosw,$
-         'esinw',esinw,$
-         'secosw',secosw,$
-         'sesinw',sesinw,$
-         'qecosw',qecosw,$
-         'qesinw',qesinw,$
-         'msini',msini,$
-         'msiniearth',msiniearth,$
-         'q',q,$
-         'p',p,$           ;; Primary Transit parameters
-         'ar',ar,$
-         'arsun',arsun,$
-         'dr',dr,$
-         'b',b,$
-         'cosi',cosi,$
-         'delta',delta,$
-         'depth',depth,$
-         'pt',pt,$
-         'ptg',ptg,$
-         'tfwhm',tfwhm,$
-         'tau',tau,$
-         't14',t14,$
-         'bs',bs,$          ;; secondary eclipse parameters
-         'tfwhms',tfwhms,$
-         'taus',taus,$
-         't14s',t14s,$
-         'ps',ps,$                 
-         'psg',psg,$     
-         'beam',beam,$     ;; other
-         'fittran',1B,$
+         a.label,a,$              ;; fundamental parameters
+         period.label,period,$
+         logP.label,logp,$  
+         mp.label,mp,$
+         mpsun.label,mpsun,$
+         mpearth.label,mpearth,$
+         rp.label,rp,$
+         rpsun.label,rpsun,$
+         rpearth.label,rpearth,$
+         e.label,e,$
+         omega.label,omega,$
+         omegadeg.label,omegadeg,$
+         lambda.label,lambda,$
+         lambdadeg.label,lambdadeg,$
+         i.label,i,$
+         ideg.label,ideg,$
+         rhop.label,rhop,$
+         loggp.label,loggp,$
+         teq.label,teq,$
+         safronov.label,safronov,$
+         fave.label,fave,$
+         tc.label,tc,$
+         tp.label,tp,$
+         ts.label,ts,$
+         ta.label,ta,$
+         td.label,td,$
+         phase.label,phase,$
+         K.label,k,$             ;; RV parameters
+         logK.label,logk,$
+         ecosw.label,ecosw,$
+         esinw.label,esinw,$
+         secosw.label,secosw,$
+         sesinw.label,sesinw,$
+         qecosw.label,qecosw,$
+         qesinw.label,qesinw,$
+         msini.label,msini,$
+         msiniearth.label,msiniearth,$
+         q.label,q,$
+         p.label,p,$           ;; Primary Transit parameters
+         ar.label,ar,$
+         arsun.label,arsun,$
+         dr.label,dr,$
+         b.label,b,$
+         cosi.label,cosi,$
+         delta.label,delta,$
+         depth.label,depth,$
+         pt.label,pt,$
+         ptg.label,ptg,$
+         tfwhm.label,tfwhm,$
+         tau.label,tau,$
+         t14.label,t14,$
+         bs.label,bs,$          ;; secondary eclipse parameters
+         tfwhms.label,tfwhms,$
+         taus.label,taus,$
+         t14s.label,t14s,$
+         ps.label,ps,$                 
+         psg.label,psg,$     
+         beam.label,beam,$     ;; other
+         'fittran',1B,$        ;; booleans
          'fitrv',1B,$
          'chen',0B,$
          'i180',0B,$
@@ -1005,22 +1004,22 @@ planet = create_struct($
          'label','')
 
 ;; for each wavelength
-band = create_struct('u1',u1,$ ;; linear limb darkening
-                     'u2',u2,$ ;; quadratic limb darkening
-                     'u3',u3,$ ;; 1st non-linear limb darkening
-                     'u4',u4,$ ;; 2nd non-linear limb darkening
-                     'thermal',thermal,$ ;; thermal emission
-                     'dilute',dilute,$   ;; dilution
-                     'reflect',reflect,$ ;; reflection
-                     'mag',mag,$
+band = create_struct(u1.label,u1,$ ;; linear limb darkening
+                     u2.label,u2,$ ;; quadratic limb darkening
+                     u3.label,u3,$ ;; 1st non-linear limb darkening
+                     u4.label,u4,$ ;; 2nd non-linear limb darkening
+                     thermal.label,thermal,$ ;; thermal emission
+                     dilute.label,dilute,$   ;; dilution
+                     reflect.label,reflect,$ ;; reflection
+                     mag.label,mag,$
                      'name','',$
                      'rootlabel','Wavelength Parameters',$
                      'label','')
 
 ;; for each telescope
-telescope = create_struct('gamma',gamma,$
-                          'jitter',jitter,$
-                          'rvptrs',ptr_new(),$
+telescope = create_struct(gamma.label,gamma,$
+                          jitter.label,jitter,$
+                          'rvptrs', ptr_new(),$
                           'name','',$
                           'chi2',0L,$
                           'rootlabel','Telescope parameters',$
@@ -1031,16 +1030,16 @@ if ntel le 0 then begin
 endif
 
 ;; for each transit
-transit = create_struct('variance',variance,$ ;; Red noise
-                        'ttv',ttv,$ ;; Transit Timing Variation
-                        'tbv',0d0,$ ;; Transit b variation
-                        'tdv',0d0,$ ;; Transit depth variation
+transit = create_struct(variance.label,variance,$ ;; Red noise
+                        ttv.label,ttv,$ ;; Transit Timing Variation
+;                        tbv.label,0d0,$ ;; Transit b variation
+;                        tdv.label,0d0,$ ;; Transit depth variation
+                        f0.label,f0,$ ;; normalization
                         'transitptrs',ptr_new(),$ ;; Data
                         'bandndx',0L,$
                         'exptime',0d0,$
                         'ninterp',1d0,$
                         'name','',$
-                        'f0',f0,$
                         'epoch',0.0,$
                         'pndx',0L,$ ;; index to which planet this corresponds to (-1=>all)
                         'chi2',0L,$
@@ -1064,7 +1063,8 @@ ss = create_struct('star',star,$
                    'nplanets',nplanets,$
                    'nsteps',nsteps,$
 ;                   'nbad',0L,$
-                   'burnndx',0L)
+                   'burnndx',0L,$
+                   'chi2',ptr_new(1))
 
 ;; populate the planet fitting parameters
 ;; planetary labels, a bit optimistic...
@@ -1189,11 +1189,110 @@ endif else begin
 endelse
 
 ;; make the prior array
-readcol, priorfile, priorname, priorval, priorwidth, format='a,d,d',/silent,/nan,comment='#'
-
 priors = [-1,-1,-1]
 
 ;; for each input prior
+openr, lun, priorfile, /get_lun
+line = ''
+i=0
+while not eof(lun) do begin
+   readf, lun, line
+   ;; skip commented lines
+   if strpos(line,'#') eq 0 then continue
+
+   ;; strip everything after comments
+   entries = strsplit((strsplit(line,'#',/extract))[0],/extract)
+
+   nentries = n_elements(entries)
+   ;; each line must have at least a name and value
+   if nentries le 2 or nentries gt 5 then begin
+      message, 'WARNING: line ' + strtrim(i,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE [UNCERTAINTY] [LOWERBOUND] [UPPERBOUND]); ignoring: ' + line, /continue
+      continue
+   endif 
+
+   ;; extract Name, value, uncertainty, lowerbound, and upper bound
+   ;; (or default to Name, Value, no uncertainty, -Inf, +Inf)
+   priorname = entries[0]
+   priorval = double(entries[1])
+   if nentries ge 3 then priorwidth = double(entries[2]) $
+   else priorwidth = -1
+   if nentries ge 4 then begin
+      if entries[3] eq '-Inf' then lowerbound = -!values.d_infinity $
+      else lowerbound = double(entries[3])
+   endif else lowerbound = -!values.d_infinity
+   if nentries ge 5 then begin
+      if entries[4] eq 'Inf' then upperbound = !values.d_infinity $
+      else upperbound = double(entries[4])
+   endif else upperbound = !values.d_infinity
+
+
+   ;; determine the subscript
+   tmp = strsplit(priorname,'_',/extract)
+   if n_elements(tmp) eq 2 then priornum = long(tmp[1]) $
+   else priornum = 0
+   priorlabel = tmp[0]
+
+   found=0
+   ;; look for the name in the structure
+   for i=0, n_tags(ss)-1 do begin
+      if (n_elements(ss.(i))-1) ge priornum then begin
+         for k=0, n_tags(ss.(i)[priornum])-1 do begin
+            if tag_exist(ss.(i)[priornum],priorlabel,index=ndx) then begin
+               ;; found it! change the default starting guess to the value
+               ss.(i)[priornum].(ndx).prior = priorval
+               ss.(i)[priornum].(ndx).value = priorval
+               ss.(i)[priornum].(ndx).upperbound = upperbound
+               ss.(i)[priornum].(ndx).lowerbound = lowerbound
+
+               if priorwidth eq 0d0 then begin
+                  ;; priorwidth = 0 => fix it at the prior value
+                  ss.(i)[priornum].(ndx).fit = 0d0                  
+                  print, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)'                                
+               endif else if finite(priorwidth) and priorwidth gt 0d0 then begin
+                  ;; apply a Gaussian prior with width = priorwidth
+                  ss.(i)[priornum].(ndx).priorwidth = priorwidth
+                  priors=[[priors],[i,priornum,ndx]]
+                  ss.(i)[priornum].(ndx).scale = priorwidth*3d0
+                  
+                  print, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
+                  
+               endif else begin
+                  ;; else no prior, just change the default starting value
+                  print, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
+               endelse
+               
+               found=1
+               i = n_tags(ss)-1
+               break
+            endif else found=0
+         endfor
+      endif
+   endfor
+
+   ;; didn't find it, warn user
+   if not found then message, "WARNING: No parameter matches '" + $
+                              priorname + "' from " + priorfile + "; not applying prior",/continue
+                
+endwhile
+free_lun, lun
+
+if 0 then begin
+
+;; do some error checking on the prior file
+openr, lun, priorfile, /get_lun
+line = ''
+i=0
+while not eof(lun) do begin
+   i+=1
+   readf, lun, line
+   if strpos(line,'#') ne 0 then begin
+      entries = strsplit((strsplit(line,'#',/extract))[0])
+      if n_elements(entries) ne 3 then $
+         message, 'WARNING: line ' + strtrim(i,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE UNCERTAINTY); ignoring: ' + line, /continue
+   endif
+endwhile
+readcol, priorfile, priorname, priorval, priorwidth, format='a,d,d',/nan,comment='#';,/silent
+
 for j=0, n_elements(priorname)-1 do begin
    found = 0
 
@@ -1208,7 +1307,7 @@ for j=0, n_elements(priorname)-1 do begin
       if (n_elements(ss.(i))-1) ge priornum then begin
          for k=0, n_tags(ss.(i)[priornum])-1 do begin
             if tag_exist(ss.(i)[priornum],priorlabel,index=ndx) then begin
-               ;; found it!
+               ;; found it! change the default starting guess to the value
                ss.(i)[priornum].(ndx).prior = priorval[j]
                ss.(i)[priornum].(ndx).value = priorval[j]
                
@@ -1228,7 +1327,7 @@ for j=0, n_elements(priorname)-1 do begin
                   print, priorname[j] + ' = ' + strtrim(priorval[j],2) + ' +/- ' + strtrim(priorwidth[j],2)
                   
                endif else begin
-                  ;; else no prior, only change the default starting value
+                  ;; else no prior, just change the default starting value
                   print, priorname[j] + ' = ' + strtrim(priorval[j],2) + ' (no prior constraint)'
                endelse
                
@@ -1236,16 +1335,18 @@ for j=0, n_elements(priorname)-1 do begin
                found=1
                i = n_tags(ss)-1
                break
-            endif
+            endif else found=0
          endfor
       endif
    endfor
 
    ;; didn't find it, warn user
-   if not found then message, 'WARNING: No parameter name ' + $
-                              priorname[j] + '; not applying prior',/continue
+   if not found then message, "WARNING: No parameter matches '" + $
+                              priorname[j] + "' from " + priorfile + "; not applying prior",/continue
    
 endfor ;; each input prior
+endif
+
 
 ;; do we have enough information to derive the distance?
 ;if (where(priorname eq 'distance'))[0] ne -1 
@@ -1254,7 +1355,12 @@ endfor ;; each input prior
 priors = priors[*,1:*]
 *(ss.priors) = priors
 
-;; make the fit index array
+;; creates an array of indicies into the stellar structure to map which parameters should be fit
+;; fit[*,0] indexes the object [star=0, planet=1, band=2, telescope=3, or transit=4]
+;; fit[*,1] each object can have any number of copies. 
+;; This indexes which copy (e.g., planet b=0, planet c=1 or B band=0, V band=1) 
+;; fit[*,2] indexes the parameter of the object (e.g., Teff=0, [Fe/H]=1)
+;; this assumes a certain structure of the parameters... is that ok?
 tofit = [-1,-1,-1]
 for i=0, n_tags(ss)-1 do begin
    for j=0, n_elements(ss.(i))-1 do begin
@@ -1275,34 +1381,15 @@ for i=0, ntran-1 do begin
    ss.transit[i].epoch = min(round((mean((*(ss.transit[i].transitptrs)).bjd) - ss.planet[ss.transit[i].pndx].tc.value)/ss.planet[ss.transit[i].pndx].period.value))
 endfor
 
-;; derive all step parameters
-;; ok = pars2step(ss)
+if n_elements(ss.star.mstar.value) eq 1 then begin
+   ;; derive all step parameters
+   ok = pars2step(ss)
+
+   ;; return an error if the starting stellar system is not allowed
+   if step2pars(ss,/verbose) eq -1 then message, 'Warning: starting values for stellar system not allowed; refine priors'
+endif
 
 return, ss
-
-end
-
-
-function mkfit, ss
-;; this assumes a certain structure of the parameters... is that ok?
-tofit = [-1,-1,-1]
-for i=0, n_tags(ss)-1 do begin
-   for j=0, n_elements(ss.(i))-1 do begin
-      for k=0, n_tags(ss.(i)[j])-1 do begin
-;         print, n_tags(ss.(i)[j].(k))
-         if n_tags(ss.(i)[j].(k)) ne 0 then begin
-            if tag_exist(ss.(i)[j].(k),'fit') then begin
-               if ss.(i)[j].(k).fit then tofit = [[tofit],[i,j,k]]
-            endif
-         endif
-      endfor
-   endfor
-endfor
-
-tofit = tofit[*,1:*]
-*(ss.tofit) = tofit
-print, tofit
-return, tofit
 
 end
 

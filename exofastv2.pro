@@ -52,6 +52,11 @@
 ;                tc_3 2457170.4990 -1 # start the fit with a TC for planet 3 (EPXXXXXXXXe) at BJD_TDB=2457170.4990
 ;                p_3 0.029 -1 # start the fit with Rp/Rstar for planet 3 at 0.020
 ;                period_3 160 -1 # start the fit with period for planet 3 at 160 days
+;              
+;                NOTE: if the parameters you put a prior on are not
+;                explicitly fit, you must make sure they are
+;                appropriately derived in $EXOFAST_PATH/pars2step.pro
+;                and $EXOFAST_PATH/step2pars.pro
 ;
 ; OPTIONAL INPUTS:
 ;   NPLANETS    - The number of planets you wish to fit to the
@@ -391,12 +396,6 @@ ss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets
           circular=circular,fitslope=fitslope, fitquad=fitquad,ttv=ttv, $
           rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180)
 
-;mcmc2str, pars, ss
-;stop
-
-;; derive the step parameters from the priors
-ok = pars2step(ss)
-
 ;; output to file instead of screen
 if n_elements(logfile) ne 0 then openw, lun, logfile, /get_lun $
 else lun = -1
@@ -441,6 +440,7 @@ if keyword_set(plotonly) then begin
 endif
 
 pars = str2pars(ss,scale=scale,name=name)
+
 ;; these are the starting values for all step parameters
 forprint, indgen(n_elements(name)), name, pars, scale,/t,format='(i3,x,a15,x,f14.6,x,f14.6)'
 
@@ -495,9 +495,9 @@ endelse
 ;; generate the model fit from the best MCMC values, not AMOEBA
 bestamoeba = best
 best = pars[*,bestndx]
-modelfile = prefix + 'model.ps'
-;bestchi2 = call_function(chi2func,best,psname=modelfile, $
-;                         modelrv=modelrv, modelflux=modelflux)
+modelfile = prefix + 'model.mcmc.ps'
+bestchi2 = call_function(chi2func,best,psname=modelfile, $
+                         modelrv=modelrv, modelflux=modelflux)
 
 ;; make a new stellar system structure with only fitted and derived
 ;; parameters, populated by the pars array
@@ -511,6 +511,7 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, nplanets=nplanets, $
               nvalues=nsteps*nchains,ttvs=ttv,longcadence=longcadence)
 mcmcss.burnndx = burnndx
 mcmcss.star.rstar.value = rstar
+*(mcmcss.chi2) = chi2
 
 pars2str, pars, mcmcss
 

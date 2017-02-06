@@ -1,3 +1,15 @@
+;+
+; NAME:
+;   PARS2STR
+;
+; PURPOSE: 
+;   Translates a parameter array (for use with EXOFAST_DEMC) into the
+;   stellar system structure (for use with EXOFASTv2)
+;
+; CALLING SEQUENCE:
+;    pars2str(pars,str)
+;-
+
 pro pars2str, pars, str
 
   tofit = *(str.tofit)

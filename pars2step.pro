@@ -1,30 +1,59 @@
 function pars2step, ss
 
-;; derive the stellar radius
+;; derive the stellar mass
 ss.star.mstar.value = 10^ss.star.logmstar.value
-junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar)
-ss.star.rstar.value = rstar
+
+;; if a starting value for the stellar radius was given, 
+;; use it to derive a starting point for the age
+if ss.star.rstar.value ne 0d0 then begin
+   ntries = 100
+   age = dindgen(ntries)/(ntries-1)*13.82
+   rstars = dblarr(ntries)
+   for i=0, ntries-1 do begin
+      junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, age[i], ss.star.teff.value,yyrstar=rstar)
+      rstars[i] = rstar
+   endfor
+   junk = min(abs(rstars-ss.star.rstar.value),ndx)
+   ss.star.age.value = age[ndx]
+endif else begin
+   ;; otherwise derive the stellar radius
+   junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar)
+   ss.star.rstar.value = rstar
+endelse
+
 G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 
 nplanets = n_elements(ss.planet)
 ;; derive quantities we'll use later
 for i=0, nplanets-1 do begin
+
    ;; derive quantities we'll use later
-   ss.planet[i].logp.value = alog10(ss.planet[i].period.value)
-   ss.planet[i].qecosw.value = (ss.planet[i].e.value)^(0.25d0)*cos(ss.planet[i].omega.value)
-   ss.planet[i].qesinw.value = (ss.planet[i].e.value)^(0.25d0)*sin(ss.planet[i].omega.value)
-   ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
+   if ss.planet[i].logp.value eq 0d0 and ss.planet[i].period.value gt 0d0 then $
+      ss.planet[i].logp.value = alog10(ss.planet[i].period.value)
+   if ss.planet[i].logk.value eq 0d0 and ss.planet[i].k.value gt 0d0 then $
+      ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
+
+
+   if ss.planet[i].qecosw.value eq 0d0 then ss.planet[i].qecosw.value = (ss.planet[i].e.value)^(0.25d0)*cos(ss.planet[i].omega.value)
+   if ss.planet[i].qesinw.value eq 0d0 then ss.planet[i].qesinw.value = (ss.planet[i].e.value)^(0.25d0)*sin(ss.planet[i].omega.value)
+   if ss.planet[i].secosw.value eq 0d0 then ss.planet[i].secosw.value = sqrt(ss.planet[i].e.value)*cos(ss.planet[i].omega.value)
+   if ss.planet[i].sesinw.value eq 0d0 then ss.planet[i].sesinw.value = sqrt(ss.planet[i].e.value)*sin(ss.planet[i].omega.value)
 
    ;; scale of cosi (scales with projected disk size)
-   ss.planet[i].i.value = acos(ss.planet[i].cosi.value)
-   ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
-                                    ss.planet[i].i.value, ss.planet[i].period.value, $
-                                    ss.star.mstar.value)
-   ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
-                             (4d0*!dpi^2))^(1d0/3d0)                    ;; rsun
-   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value ;; unitless
-   ss.planet[i].a.value = ss.planet[i].arsun.value/215.094177d0         ;; AU
-   ss.planet[i].cosi.scale = 1d0/ss.planet[i].ar.value
+   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].i.value = acos(ss.planet[i].cosi.value)
+   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
+                                                                           ss.planet[i].i.value, ss.planet[i].period.value, $
+                                                                           ss.star.mstar.value)
+   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
+                                                                    (4d0*!dpi^2))^(1d0/3d0)                    ;; rsun
+   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value                                        ;; unitless
+   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].a.value = ss.planet[i].arsun.value/215.094177d0         ;; AU
+   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].cosi.scale = 1d0/ss.planet[i].ar.value
+
+   if ss.planet[i].tc.value eq 0d0 and ss.planet[i].tp.value ne 0 then begin
+      phase = exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value, /primary)
+      ss.planet[i].tc.value = ss.planet[i].tp.value + ss.planet[i].period.value*phase
+   endif
 
    ;; limit eccentricity to avoid collision with star during periastron
    ;; the ignored tidal effects would become important long before this,
