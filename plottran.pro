@@ -80,7 +80,7 @@ noise = 0.0001d0
 ymin = 1d0 - 3d0*max(depth)
 ymax = 1d0 + 3*noise + spacing*((ss.ntran-1d0)>0)
 yrange = [ymin,ymax]
-yrange = [0.994,1.001]
+;yrange = [0.994,1.001]
 xtitle='Time - T!DC!N (hrs)'
 xtitle='BJD_TDB - ' + strtrim(t0,2)
 

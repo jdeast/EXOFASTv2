@@ -385,7 +385,7 @@ for j=0, ntelescopes-1 do begin
 
    rv = *(ss.telescope[j].rvptrs)
 
-   if (where(rv.err^2 + ss.telescope[j].variance.value le 0d0))[0] ne -1 then return, !values.d_infinity
+   if (where(rv.err^2 + ss.telescope[j].jitter.value le 0d0))[0] ne -1 then return, !values.d_infinity
 
    modelrv = dblarr(n_elements(rv.rv))
    for i=0, nplanets-1 do begin
@@ -414,7 +414,7 @@ for j=0, ntelescopes-1 do begin
    modelrv += ss.telescope[j].gamma.value
 
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
-   rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].variance.value,rv.err,/chi2)
+   rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jitter.value,rv.err,/chi2)
    if ~finite(rvchi2) then stop
    chi2 += rvchi2
 ;   chi2 += total(((rv.rv - modelrv)/rv.err)^2)

@@ -882,6 +882,8 @@ jitter = parameter
 jitter.description = 'RV Jitter'
 jitter.latex = '\sigma_J'
 jitter.label = 'jitter'
+jitter.value = 0d0
+jitter.scale = 1d0
 jitter.fit=1
 
 variance = parameter
