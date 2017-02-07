@@ -49,7 +49,7 @@ for i=0, nplanets-1 do begin
          ss.planet[i].logk.scale = ss.planet[i].k.scale/(alog(10d0)*ss.planet[i].k.value)
    endif
 
-   stop
+;   stop
 
 
    if ss.planet[i].qecosw.value eq 0d0 then ss.planet[i].qecosw.value = (ss.planet[i].e.value)^(0.25d0)*cos(ss.planet[i].omega.value)
