@@ -418,7 +418,7 @@ for j=0, ntelescopes-1 do begin
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
    rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jitter.value,rv.err,/chi2)
 
-   stop
+;   stop
 
    if ~finite(rvchi2) then stop
 
