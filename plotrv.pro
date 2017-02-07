@@ -82,7 +82,7 @@ for i=0, ss.nplanets-1 do begin
          xtitle=TeXtoIDL('Phase + (T_P - T_C)/P + 0.25'), ytitle='RV (m/s)'
    oplot, prettyphase[sorted], prettymodel[sorted], color=red
 
-   stop
+;   stop
 
    for j=0, ss.ntel-1 do begin 
       rv = *(ss.telescope[j].rvptrs)
@@ -118,6 +118,6 @@ for j=0, ss.ntel-1 do begin
    oploterr, rv.bjd-bjd0, rv.rv-ss.telescope[j].gamma.value, rv.err, 8
 endfor
 
-stop
+;stop
 
 end
