@@ -14,6 +14,7 @@ endif else begin
    green = '00ff00'x
    symsize = 1d0
    charsize = 2
+   mydevice = !d.name
    device,window_state=win_state
 ;   if win_state[20] eq 1 then wset, 20 $
 ;   else window, 20, retain=2
@@ -123,5 +124,9 @@ for j=0, ss.ntel-1 do begin
    plotsym, symbols[j], symsize, fill=fills[j], color=colors[j]
    oploterr, rv.bjd-bjd0, rv.rv-ss.telescope[j].gamma.value, rv.err, 8
 endfor
+
+if not keyword_set(psname) then set_plot, mydevice
+
+;stop
 
 end

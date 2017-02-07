@@ -41,7 +41,7 @@ for i=0, nplanets-1 do begin
 
    endif
 
-   if ss.planet[i].logk.value eq 0d0 and ss.planet[i].k.value gt 0d0 then begin
+   if ss.planet[i].logk.value eq 1d0 and ss.planet[i].k.value gt 0d0 then begin
       ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
 
       ;; translate the stepping scale from K to logK

@@ -405,15 +405,16 @@ for j=0, ntelescopes-1 do begin
          modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
                                0d0,ss.planet[i].K.value,$
                                ss.planet[i].e.value,ss.planet[i].omega.value,$
-                               slope=ss.star.slope.value, $
+                               slope=0, $
                                /rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
                                p=ss.planet[i].p.value,vsini=ss.star.vsini.value,$
                                lambda=ss.planet[i].lambda.value,$
-                               u1=0d0, t0=0d0,deltarv=deltarv)
+                               u1=0d0,t0=t0,deltarv=deltarv)
+
       endif
    endfor
-   ;; add instrumental offset
-   modelrv += ss.telescope[j].gamma.value
+   ;; add instrumental offset, slope, and quadratic term
+   modelrv += ss.telescope[j].gamma.value + ss.star.slope.value*(rv.bjd-t0) + ss.star.quad.value*(rv.bjd-t0)^2
 
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
    rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jitter.value,rv.err,/chi2)
@@ -512,9 +513,6 @@ if (ss.debug or arg_present(psname)) and ((where(ss.planet.fittran))[0] ne -1) t
 ;   plot, transitbjd, transit.flux, psym=1,/ynoz
 ;   oplot, transitbjd, modelflux, color=red
 
-
-
-
 ;; print all the parameters and the chi^2
 if ss.debug then print, ss.star.rstar.value, pars, chi2, format='(' + strtrim(n_elements(pars)+2,2) + '(f0.8,x))'
 
@@ -522,8 +520,11 @@ if ss.debug then print, ss.star.rstar.value, pars, chi2, format='(' + strtrim(n_
 ;wait, 0.1
 ;stop
 
+if keyword_set(psname) then set_plot, mydevice
+
 ;; if this stop is triggered, you've found a bug!!
 if ~finite(chi2) then stop
+
 
 return, chi2
 

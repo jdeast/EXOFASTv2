@@ -58,10 +58,10 @@ for i=0, ss.nplanets-1 do begin
                                          ss.planet[i].i.value, ss.planet[i].period.value, $
                                          ss.star.mstar.value)
 
-   if ss.planet[i].mpsun.value gt 0.08d0 then begin
-      if keyword_set(verbose) then print, 'Planet ' + strtrim(i,2) + ' mass (' + strtrim(ss.planet[i].mpsun.value/mjup,2) + ' M_J) above hydrogen burning limit'
-      return, -1 ;; planet above the hydrogen burning limit
-   endif
+;   if ss.planet[i].mpsun.value gt 0.08d0 then begin
+;      if keyword_set(verbose) then print, 'Planet ' + strtrim(i,2) + ' mass (' + strtrim(ss.planet[i].mpsun.value/mjup,2) + ' M_J) above hydrogen burning limit'
+;      return, -1 ;; planet above the hydrogen burning limit
+;   endif
 
    ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup
    ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth
