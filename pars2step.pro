@@ -2,6 +2,10 @@ function pars2step, ss
 
 ;; derive the stellar mass
 ss.star.mstar.value = 10^ss.star.logmstar.value
+if ss.star.mstar.scale ne 0d0 then $
+   ss.star.logmstar.scale = ss.star.mstar.scale/(alog(10d0)*ss.star.mstar.value)
+
+
 
 ;; if a starting value for the stellar radius was given, 
 ;; use it to derive a starting point for the age
@@ -28,10 +32,24 @@ nplanets = n_elements(ss.planet)
 for i=0, nplanets-1 do begin
 
    ;; derive quantities we'll use later
-   if ss.planet[i].logp.value eq 0d0 and ss.planet[i].period.value gt 0d0 then $
+   if ss.planet[i].logp.value eq 0d0 and ss.planet[i].period.value gt 0d0 then begin
       ss.planet[i].logp.value = alog10(ss.planet[i].period.value)
-   if ss.planet[i].logk.value eq 0d0 and ss.planet[i].k.value gt 0d0 then $
+
+      ;; translate the stepping scale from P to logP
+      if ss.planet[i].period.scale ne 0d0 then $
+         ss.planet[i].logp.scale = ss.planet[i].period.scale/(alog(10d0)*ss.planet[i].period.value)
+
+   endif
+
+   if ss.planet[i].logk.value eq 0d0 and ss.planet[i].k.value gt 0d0 then begin
       ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
+
+      ;; translate the stepping scale from K to logK
+      if ss.planet[i].k.scale ne 0d0 then $
+         ss.planet[i].logk.scale = ss.planet[i].k.scale/(alog(10d0)*ss.planet[i].k.value)
+   endif
+
+   stop
 
 
    if ss.planet[i].qecosw.value eq 0d0 then ss.planet[i].qecosw.value = (ss.planet[i].e.value)^(0.25d0)*cos(ss.planet[i].omega.value)

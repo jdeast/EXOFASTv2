@@ -180,13 +180,15 @@ chi2 = 0.d0
 determinant = 1d0
 
 ;; physical limb darkening
-bad = where(ss.band.u1.value + ss.band.u2.value gt 1d0 or $
-            ss.band.u1.value + ss.band.u2.value lt 0d0 or $
-            ss.band.u2.value lt -1 or ss.band.u2.value gt 1d0, nbad)
-
-if nbad gt 0 then begin
-   if ss.debug then print, strtrim(nbad,2) + ' limb darkening parameters are bad'
-   return, !values.d_infinity
+if (where(ss.planet.fittran))[0] ne -1 then begin
+   bad = where(ss.band.u1.value + ss.band.u2.value gt 1d0 or $
+               ss.band.u1.value + ss.band.u2.value lt 0d0 or $
+               ss.band.u2.value lt -1 or ss.band.u2.value gt 1d0, nbad)
+   
+   if nbad gt 0 then begin
+      if ss.debug then print, strtrim(nbad,2) + ' limb darkening parameters are bad'
+      return, !values.d_infinity
+   endif
 endif
 
 ;; prevent runaways
@@ -415,12 +417,18 @@ for j=0, ntelescopes-1 do begin
 
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
    rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jitter.value,rv.err,/chi2)
+
+   stop
+
    if ~finite(rvchi2) then stop
+
+
    chi2 += rvchi2
 ;   chi2 += total(((rv.rv - modelrv)/rv.err)^2)
 endfor
+
+;; if at least one RV planet is fit, plot it
 if (ss.debug or keyword_set(psname)) and (where(ss.planet.fitrv))[0] ne -1 then plotrv, ss, psname=psname
-;stop
 
 ;; Transit model
 for j=0, ntransits-1 do begin
@@ -497,9 +505,9 @@ for j=0, ntransits-1 do begin
 
 endfor
 
-;; plot the transit model and data
-if ss.debug or arg_present(psname) then plottran, ss, psname=psname
-;stop
+;; plot the transit model and data 
+;; if a transit is fit for at least one planet
+if (ss.debug or arg_present(psname)) and ((where(ss.planet.fittran))[0] ne -1) then plottran, ss, psname=psname
 
 ;   plot, transitbjd, transit.flux, psym=1,/ynoz
 ;   oplot, transitbjd, modelflux, color=red
@@ -516,6 +524,8 @@ if ss.debug then print, ss.star.rstar.value, pars, chi2, format='(' + strtrim(n_
 
 ;; if this stop is triggered, you've found a bug!!
 if ~finite(chi2) then stop
+
+;stop
 
 return, chi2
 

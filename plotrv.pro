@@ -1,13 +1,23 @@
 pro plotrv, ss, psname=psname
 
-red = '0000ff'x
-black = 'ffffff'x
-blue = 'ff0000'x
-green = '00ff00'x
-symsize = 1d0
-device,window_state=win_state
-if win_state[0] eq 1 then wset, 0 $
-else window, 0, retain=2
+if keyword_set(psname) then begin
+   ;; do stuff?
+   loadct, 39, /silent
+   red = 254
+   black = 0
+   blue = 63
+   green = 144
+endif else begin
+   red = '0000ff'x
+   black = 'ffffff'x
+   blue = 'ff0000'x
+   green = '00ff00'x
+   symsize = 1d0
+   device,window_state=win_state
+   if win_state[20] eq 1 then wset, 20 $
+   else window, 20, retain=2
+
+endelse
 
 symbols = [0,8,4,0,8,4]
 fills = [1,1,1,0,0,0]
@@ -30,8 +40,8 @@ allprettymodel = prettytime*0d0
 for i=0, ss.nplanets-1 do begin
    
    if not keyword_set(psname) then begin
-      if win_state[i] eq 1 then wset, i $
-      else window, i, retain=2
+      if win_state[21+i] eq 1 then wset, 21+i $
+      else window, 21+i, retain=2
    endif
 
    ;; pretty model without slope or gamma
@@ -72,6 +82,8 @@ for i=0, ss.nplanets-1 do begin
          xtitle=TeXtoIDL('Phase + (T_P - T_C)/P + 0.25'), ytitle='RV (m/s)'
    oplot, prettyphase[sorted], prettymodel[sorted], color=red
 
+   stop
+
    for j=0, ss.ntel-1 do begin 
       rv = *(ss.telescope[j].rvptrs)
       modelrv = exofast_rv(rv.bjd,ss.planet[i].tp.value,$
@@ -105,5 +117,7 @@ for j=0, ss.ntel-1 do begin
    plotsym, symbols[j], symsize, fill=fills[j], color=colors[j]
    oploterr, rv.bjd-bjd0, rv.rv-ss.telescope[j].gamma.value, rv.err, 8
 endfor
+
+stop
 
 end

@@ -452,8 +452,7 @@ if best[0] eq -1 then begin
 endif
 
 ;; output the best-fit model fluxes/rvs
-bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux)
-plottran, ss, psname=prefix + 'model.ps'
+bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model.ps')
 
 ;; do the MCMC fit
 if not keyword_set(bestonly) then begin

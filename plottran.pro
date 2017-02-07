@@ -20,13 +20,12 @@ endif else begin
    device,window_state=win_state
    xsize = 600
    ysize=(xsize/aspect_ratio + (ss.ntran)*150) < screen[1]
-   if win_state(3) then wset, 3 $
-   else window, 3, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0
+   if win_state[30] then wset, 30 $
+   else window, 30, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0
    red = '0000ff'x
    black = 'ffffff'x
    symsize = 0.5         
    charsize = 1.0
-
 endelse
 plotsym, 0, /fill, color=black
 
@@ -156,6 +155,70 @@ for j=0, ss.ntran-1 do begin
 ;   wset, 1
 ;   plot, time, trandata.flux-
 endfor
+
+
+if 0 then begin
+;; make a phased plot for each planet
+for i=0, ss.nplanets-1 do begin
+   if not keyword_set(psname) then begin
+      if win_state[31+i] then wset, 31+i $
+      else window, 31+i, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0
+   endif
+   
+   if ss.planet[i].fittran then begin
+      
+      prettyflux += (exofast_tran(prettytime, $
+                                  ss.planet[i].i.value, $
+                                  ss.planet[i].ar.value, $
+                                  ss.planet[i].tp.value, $
+                                  ss.planet[i].period.value, $
+                                  ss.planet[i].e.value,$
+                                  ss.planet[i].omega.value,$
+                                  ss.planet[i].p.value,$
+                                  band.u1.value, $
+                                  band.u2.value, $
+                                  1d0, $
+                                  thermal=band.thermal.value, $
+                                  reflect=band.reflect.value, $
+                                  dilute=band.dilute.value,$
+                                  tc=ss.planet[i].tc.value,$
+                                  rstar=ss.star.rstar.value/AU)-1d0)
+      
+      time = (trandata.bjd-ss.planet[i].tc.value) mod ss.planet[i].period.value
+      
+      prettytime = minbjd + (maxbjd-minbjd)*dindgen(npretty)/(npretty-1d0)
+      
+      prettyflux = dblarr(npretty) + 1
+      
+      ;; plot the shell, model, and data
+      plot, [0],[0], xstyle=1,ystyle=1, yrange=[ymin,ymax],xtickformat='(A1)',$
+            ytitle='Normalized flux', xrange=[xmin,xmax],position=position1
+      oplot, time, detrenddata, psym=8, symsize=symsize
+      oplot, x, ms, thick=2, color=red, linestyle=0
+      
+      ;;  pad the plot to the nearest 5 in the second sig-fig
+      ymin = round5(min(detrenddata-m - transit.err,/nan))
+      ymax = round5(max(detrenddata-m + transit.err,/nan))
+      
+      ;; make the plot symmetric about 0
+      if ymin lt -ymax then ymax = -ymin
+      if ymax gt -ymin then ymin = -ymax
+      
+      ;; plot the residuals below
+      plot, [0],[0],xstyle=1,ystyle=1, yrange=[ymin,ymax],ytitle='O-C',$
+            xrange=[xmin,xmax],xtitle=xtitle,position=position2,/noerase,$
+            yminor=2,yticks=2
+      oplot, time,detrenddata-m,psym=8,symsize=symsize
+      oplot, [xmin,xmax],[0,0],linestyle=2,color=red  
+      if keyword_set(psname) then begin
+         device, /close
+         !p.font=-1
+         set_plot, mydevice
+      endif
+   endif
+endfor
+
+endif
 
 if keyword_set(psname) then begin
    device, /close
