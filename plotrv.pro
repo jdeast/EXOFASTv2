@@ -13,10 +13,10 @@ endif else begin
    blue = 'ff0000'x
    green = '00ff00'x
    symsize = 1d0
+   charsize = 2
    device,window_state=win_state
-   if win_state[20] eq 1 then wset, 20 $
-   else window, 20, retain=2
-
+;   if win_state[20] eq 1 then wset, 20 $
+;   else window, 20, retain=2
 endelse
 
 symbols = [0,8,4,0,8,4]
@@ -37,13 +37,18 @@ nsteps = 1000
 prettytime = allmindate + (allmaxdate-allmindate)*dindgen(nsteps)/(nsteps-1.d0)
 allprettymodel = prettytime*0d0
 
+nrvfit = n_elements(where(ss.planet.fitrv))
+nx = ceil(sqrt(nrvfit))
+ny = ceil(nrvfit/double(nx))
+!p.multi = [0,nx,ny]
+
+if not keyword_set(psname) then begin
+   if win_state[20] eq 1 then wset, 20 $
+   else window, 20, retain=2
+endif
+
 for i=0, ss.nplanets-1 do begin
    
-   if not keyword_set(psname) then begin
-      if win_state[21+i] eq 1 then wset, 21+i $
-      else window, 21+i, retain=2
-   endif
-
    ;; pretty model without slope or gamma
    prettymodel = exofast_rv(prettytime,ss.planet[i].tp.value,$
                             ss.planet[i].period.value,0d0,ss.planet[i].K.value,$
@@ -79,10 +84,9 @@ for i=0, ss.nplanets-1 do begin
       if maxrv gt allmaxrv then allmaxrv = maxrv
    endfor
    plot, [0], [0], xrange=[0,1], yrange=[allminrv,allmaxrv], $
-         xtitle=TeXtoIDL('Phase + (T_P - T_C)/P + 0.25'), ytitle='RV (m/s)'
+         xtitle=TeXtoIDL('Phase + (T_P - T_C)/P + 0.25'), ytitle='RV (m/s)', charsize=charsize, title=ss.planet[i].label
    oplot, prettyphase[sorted], prettymodel[sorted], color=red
 
-;   stop
 
    for j=0, ss.ntel-1 do begin 
       rv = *(ss.telescope[j].rvptrs)
@@ -98,10 +102,12 @@ for i=0, ss.nplanets-1 do begin
 
 endfor
 
+!p.multi=0
+
 ;; now plot all planets, unphased (slope and gamma subtracted)
 if not keyword_set(psname) then begin
-   if win_state[i] eq 1 then wset, i $
-   else window, i, retain=2
+   if win_state[21] eq 1 then wset, 21 $
+   else window, 21, retain=2
 endif
 
 roundto = 10L^(strlen(strtrim(floor(allmaxdate-allmindate),2))+1L) 
@@ -117,7 +123,5 @@ for j=0, ss.ntel-1 do begin
    plotsym, symbols[j], symsize, fill=fills[j], color=colors[j]
    oploterr, rv.bjd-bjd0, rv.rv-ss.telescope[j].gamma.value, rv.err, 8
 endfor
-
-;stop
 
 end

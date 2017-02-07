@@ -291,9 +291,9 @@ if ss.debug or keyword_set(psname) then begin
    endif else begin
       red = '0000ff'x
       symsize = 1
-      device,window_state=win_state
-      if win_state[0] eq 1 then wset, 0 $
-      else window, 0, retain=2
+;      device,window_state=win_state
+;      if win_state[0] eq 1 then wset, 0 $
+;      else window, 0, retain=2
       position1 = [0.07, 0.22, 0.97, 0.95]    ;; data plot
       position2 = [0.07, 0.07, 0.97, 0.22]    ;; residual plot
    endelse
@@ -524,8 +524,6 @@ if ss.debug then print, ss.star.rstar.value, pars, chi2, format='(' + strtrim(n_
 
 ;; if this stop is triggered, you've found a bug!!
 if ~finite(chi2) then stop
-
-;stop
 
 return, chi2
 
