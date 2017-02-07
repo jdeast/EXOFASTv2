@@ -192,8 +192,8 @@ if (where(ss.planet.fittran))[0] ne -1 then begin
 endif
 
 ;; prevent runaways
-;bad = where(ss.planet.logp.value gt 7d0 or ss.planet.logp.value lt -1d0,nbad)
-bad = where(ss.planet.logp.value gt 3d0 or ss.planet.logp.value lt 0d0,nbad)
+bad = where(ss.planet.logp.value gt 7d0 or ss.planet.logp.value lt -1d0,nbad)
+;bad = where(ss.planet.logp.value gt 3d0 or ss.planet.logp.value lt 0d0,nbad)
 if nbad gt 0 then begin
    if ss.debug then print, 'logP is bad (' + strtrim(bad,2) + ')'
    return, !values.d_infinity
