@@ -1177,7 +1177,10 @@ if ntran gt 0 then begin
       ss.transit[i].bandndx = where(ss.band[*].name eq band)
       ss.transit[i].label = (*(ss.transit[i].transitptrs)).label
    endfor
-endif else ss.transit[0].f0.fit = 0
+endif else begin
+   ss.transit[0].f0.fit = 0
+   ss.transit[0].variance.fit = 0
+endelse
 
 ;; read in the RV files
 if ntel gt 0 then begin
@@ -1194,6 +1197,10 @@ endelse
 priors = [-1,-1,-1]
 
 ;; for each input prior
+print
+print, 'These are the priors that will be applied to the fit.'
+print, 'Those with "no prior constraint" only affect the starting values of the fit:'
+print
 openr, lun, priorfile, /get_lun
 line = ''
 i=0
@@ -1277,78 +1284,7 @@ while not eof(lun) do begin
                 
 endwhile
 free_lun, lun
-
-if 0 then begin
-
-;; do some error checking on the prior file
-openr, lun, priorfile, /get_lun
-line = ''
-i=0
-while not eof(lun) do begin
-   i+=1
-   readf, lun, line
-   if strpos(line,'#') ne 0 then begin
-      entries = strsplit((strsplit(line,'#',/extract))[0])
-      if n_elements(entries) ne 3 then $
-         message, 'WARNING: line ' + strtrim(i,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE UNCERTAINTY); ignoring: ' + line, /continue
-   endif
-endwhile
-readcol, priorfile, priorname, priorval, priorwidth, format='a,d,d',/nan,comment='#';,/silent
-
-for j=0, n_elements(priorname)-1 do begin
-   found = 0
-
-   ;; determine the subscript
-   tmp = strsplit(priorname[j],'_',/extract)
-   if n_elements(tmp) eq 2 then priornum = long(tmp[1]) $
-   else priornum = 0
-   priorlabel = tmp[0]
-   
-   ;; look for it in the structure
-   for i=0, n_tags(ss)-1 do begin
-      if (n_elements(ss.(i))-1) ge priornum then begin
-         for k=0, n_tags(ss.(i)[priornum])-1 do begin
-            if tag_exist(ss.(i)[priornum],priorlabel,index=ndx) then begin
-               ;; found it! change the default starting guess to the value
-               ss.(i)[priornum].(ndx).prior = priorval[j]
-               ss.(i)[priornum].(ndx).value = priorval[j]
-               
-               if priorwidth[j] eq 0 then begin
-                  ;; priorwidth = 0; fix it at the prior value
-                  ss.(i)[priornum].(ndx).fit = 0d0
-                  
-                  print, priorname[j] + ' = ' + strtrim(priorval[j],2) + ' (fixed)'
-                  
-                  
-               endif else if finite(priorwidth[j]) and priorwidth[j] gt 0d0 then begin
-                  ;; apply a Gaussian prior with width = priorwidth[j]
-                  ss.(i)[priornum].(ndx).priorwidth = priorwidth[j]
-                  priors=[[priors],[i,priornum,ndx]]
-                  ss.(i)[priornum].(ndx).scale = priorwidth[j]*3d0
-                  
-                  print, priorname[j] + ' = ' + strtrim(priorval[j],2) + ' +/- ' + strtrim(priorwidth[j],2)
-                  
-               endif else begin
-                  ;; else no prior, just change the default starting value
-                  print, priorname[j] + ' = ' + strtrim(priorval[j],2) + ' (no prior constraint)'
-               endelse
-               
-               
-               found=1
-               i = n_tags(ss)-1
-               break
-            endif else found=0
-         endfor
-      endif
-   endfor
-
-   ;; didn't find it, warn user
-   if not found then message, "WARNING: No parameter matches '" + $
-                              priorname[j] + "' from " + priorfile + "; not applying prior",/continue
-   
-endfor ;; each input prior
-endif
-
+print
 
 ;; do we have enough information to derive the distance?
 ;if (where(priorname eq 'distance'))[0] ne -1 

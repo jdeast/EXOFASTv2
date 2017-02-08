@@ -442,14 +442,34 @@ endif
 pars = str2pars(ss,scale=scale,name=name)
 
 ;; these are the starting values for all step parameters
-forprint, indgen(n_elements(name)), name, pars, scale,/t,format='(i3,x,a15,x,f14.6,x,f14.6)'
+print, 'These are the starting values for all the step parameters'
+print, 'and the amoeba stepping scale, which is roughly the range'
+print, 'of parameter space it will explore around the starting value'
+print, 'and is equal to 3x any input priors. When priors are not '
+print, 'specified in ' + priorfile + ', a default guess is used.'
+print, 'The parameter number is useful for tracking down unconstrained parameters'
+print 
+print, '**************************************************************'
+print, '*** ESPECIALLY DURING BETA TESTING, YOU SHOULD MAKE SURE   ***' 
+print, '*** THESE MAKE SENSE AND AGREE WITH YOUR EXPECTATION FROM  ***' 
+print, '*** PRIORFILE. IF NOT, YOUR STARTING PRIORS ARE LIKELY NOT ***'
+print, '*** BEING TRANSLATED INTO THE STEPPING PARAMETERIZATION    ***'
+print, '*** CORRECTLY BY pars2step.pro.                            ***'
+print, '**************************************************************'
+print
+print, 'Par #      Par Name    Par Value       Ameoba Scale'
+for i=0, n_elements(name)-1 do print, i, name[i], pars[i], scale[i], format='(i3,x,a15,x,f14.6,x,f14.6)'
+;forprint, indgen(n_elements(name)), name, pars, scale,/t,format='(i3,x,a15,x,f14.6,x,f14.6)'
+print 
 
+print, 'Beginning AMOEBA fit'
 best = exofast_amoeba(1d-8,function_name=chi2func,p0=pars,scale=scale,nmax=1d5)
 if best[0] eq -1 then begin
    printf, lun, 'ERROR: Could not find best combined fit'
    if lun ne -1 then free_lun, lun
    return
 endif
+print, 'Finished AMOEBA fit'
 
 ;; output the best-fit model fluxes/rvs
 bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model.ps')

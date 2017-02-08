@@ -1,13 +1,19 @@
+;; this function translates the starting guesses into the step parameters
+
 function pars2step, ss
 
 ;; derive the stellar mass
+if ss.star.mstar.value ne 1d0 then begin
+   ss.star.logmstar.value = alog10( ss.star.mstar.value )
+   if ss.star.mstar.scale ne 0d0 then $
+      ss.star.logmstar.scale = ss.star.mstar.scale/(alog(10d0)*ss.star.mstar.value)
+endif
+
 ss.star.mstar.value = 10^ss.star.logmstar.value
-if ss.star.mstar.scale ne 0d0 then $
-   ss.star.logmstar.scale = ss.star.mstar.scale/(alog(10d0)*ss.star.mstar.value)
 
 ;; if a starting value for the stellar radius was given, 
 ;; use it to derive a starting point for the age
-if ss.star.rstar.value ne 0d0 then begin
+if ss.star.rstar.value ne 1d0 then begin
    ntries = 100
    age = dindgen(ntries)/(ntries-1)*13.82
    rstars = dblarr(ntries)
