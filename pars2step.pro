@@ -78,6 +78,7 @@ for i=0, nplanets-1 do begin
    if ss.planet[i].tc.value eq 0d0 and ss.planet[i].tp.value ne 0 then begin
       phase = exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value, /primary)
       ss.planet[i].tc.value = ss.planet[i].tp.value + ss.planet[i].period.value*phase
+      ss.planet[i].tc.prior = ss.planet[i].tc.value 
    endif
 
    ;; limit eccentricity to avoid collision with star during periastron

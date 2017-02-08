@@ -462,6 +462,11 @@ for i=0, n_elements(name)-1 do print, i, name[i], pars[i], scale[i], format='(i3
 ;forprint, indgen(n_elements(name)), name, pars, scale,/t,format='(i3,x,a15,x,f14.6,x,f14.6)'
 print 
 
+if ss.debug then begin
+   print, 'program halted to give you time to inspect the priors. Type ".con" to continue'
+   stop
+end
+
 print, 'Beginning AMOEBA fit'
 best = exofast_amoeba(1d-8,function_name=chi2func,p0=pars,scale=scale,nmax=1d5)
 if best[0] eq -1 then begin
@@ -470,6 +475,7 @@ if best[0] eq -1 then begin
    return
 endif
 print, 'Finished AMOEBA fit'
+
 
 ;; output the best-fit model fluxes/rvs
 bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model.ps')
