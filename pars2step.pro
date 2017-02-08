@@ -5,8 +5,6 @@ ss.star.mstar.value = 10^ss.star.logmstar.value
 if ss.star.mstar.scale ne 0d0 then $
    ss.star.logmstar.scale = ss.star.mstar.scale/(alog(10d0)*ss.star.mstar.value)
 
-
-
 ;; if a starting value for the stellar radius was given, 
 ;; use it to derive a starting point for the age
 if ss.star.rstar.value ne 0d0 then begin
@@ -49,8 +47,11 @@ for i=0, nplanets-1 do begin
          ss.planet[i].logk.scale = ss.planet[i].k.scale/(alog(10d0)*ss.planet[i].k.value)
    endif
 
-;   stop
-
+   ;; translate from omegadeg to omega
+   if ss.planet[i].omegadeg.value ne 0 then begin
+      ss.planet[i].omega.value = ss.planet[i].omegadeg.value*!pi/180d0
+      if ss.planet[i].omegadeg.scale ne 0 then ss.planet[i].omega.scale = ss.planet[i].omegadeg.scale*!pi/180d0
+   endif
 
    if ss.planet[i].qecosw.value eq 0d0 then ss.planet[i].qecosw.value = (ss.planet[i].e.value)^(0.25d0)*cos(ss.planet[i].omega.value)
    if ss.planet[i].qesinw.value eq 0d0 then ss.planet[i].qesinw.value = (ss.planet[i].e.value)^(0.25d0)*sin(ss.planet[i].omega.value)
