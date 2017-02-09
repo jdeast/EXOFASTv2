@@ -238,7 +238,7 @@ endif
 ;; derive the model parameters from the stepping parameters (return if unphysical)
 ss.star.mstar.value = 10^ss.star.logmstar.value
 ;; use the YY tracks to guide the stellar parameters
-chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar)
+chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug)
 
 if ss.star.errscale.value le 0 then chi2 = !values.d_infinity
 
@@ -269,8 +269,6 @@ for i=0, n_elements(priors[0,*])-1 do begin
 
 endfor
 
-
-
 ;; prepare the plotting device
 if ss.debug or keyword_set(psname) then begin
    if keyword_set(psname) then begin
@@ -291,7 +289,7 @@ if ss.debug or keyword_set(psname) then begin
    endif else begin
       red = '0000ff'x
       symsize = 1
-;      device,window_state=win_state
+      device,window_state=win_state
 ;      if win_state[0] eq 1 then wset, 0 $
 ;      else window, 0, retain=2
       position1 = [0.07, 0.22, 0.97, 0.95]    ;; data plot
@@ -419,11 +417,7 @@ for j=0, ntelescopes-1 do begin
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
    rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jitter.value,rv.err,/chi2)
 
-;   stop
-
    if ~finite(rvchi2) then stop
-
-
    chi2 += rvchi2
 ;   chi2 += total(((rv.rv - modelrv)/rv.err)^2)
 endfor
@@ -520,7 +514,10 @@ if ss.debug then print, ss.star.rstar.value, pars, chi2, format='(' + strtrim(n_
 ;wait, 0.1
 ;stop
 
-if keyword_set(psname) then set_plot, mydevice
+if keyword_set(psname) then begin
+   device, /close
+   set_plot, mydevice
+endif
 
 ;; if this stop is triggered, you've found a bug!!
 if ~finite(chi2) then stop

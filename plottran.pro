@@ -3,13 +3,6 @@ AU = 215.094177d0
 
 aspect_ratio=1.5
 if keyword_set(psname) then begin
-   mydevice = !d.name
-   set_plot, 'PS'
-   xsize = 10.5
-   ysize=xsize/aspect_ratio + (ss.ntran)*2
-   !p.font=0
-   device, xsize=xsize,ysize=ysize,/color,bits=24
-   device, filename=psname
    loadct, 39, /silent
    red = 254
    symsize = 0.33
@@ -210,20 +203,11 @@ for i=0, ss.nplanets-1 do begin
             yminor=2,yticks=2
       oplot, time,detrenddata-m,psym=8,symsize=symsize
       oplot, [xmin,xmax],[0,0],linestyle=2,color=red  
-      if keyword_set(psname) then begin
-         device, /close
-         !p.font=-1
-         set_plot, mydevice
-      endif
    endif
 endfor
 
 endif
 
-if keyword_set(psname) then begin
-   device, /close
-   set_plot, mydevice
-endif
 
 ;for j=0, ss.nplanet-1 do begin
 ;endfor

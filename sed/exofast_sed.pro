@@ -48,8 +48,6 @@ endfor
 
 if keyword_set(verbose) then begin
    if keyword_set(ps) then begin
-      set_plot, 'PS'
-      device, filename='sed.ps',/color,bits=24
       loadct, 39, /silent
       colors=[0,254,68,128]
    endif else begin
@@ -61,6 +59,7 @@ if keyword_set(verbose) then begin
    plotsym, 0, /fill, color=colors[1]
    plot, w1, flux,/xlog,/ylog,xtitle=textoidl('\lambda (\mum)'), ytitle=textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
    oploterr, wp, f, ep, 8
+
 endif
 
 f0 = f
@@ -68,6 +67,7 @@ fp0 = fp
 ep0 = ep
 ;chi2 = total( (alog10(f[m]) - alog10(fp[m]))^2 / (ep[m]/fp[m]*alog(10)/2.5)^2)
 chi2 = total(((f-fp)/ep)^2)
+
 return, chi2
 
 end

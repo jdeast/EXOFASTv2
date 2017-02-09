@@ -126,8 +126,6 @@ wav=w1
 
 if keyword_set(verbose) then begin 
    if keyword_set(ps) then begin
-      set_plot, 'PS'
-      device, filename='sed.ps',/color,bits=24
       loadct, 39, /silent
       colors=[0,254,68,128]
    endif else begin
@@ -141,6 +139,7 @@ if keyword_set(verbose) then begin
    plot,wav,smooth(lamflam1,15),/xlog,/ylog,yr=[ymax/20,ymax*1.2],xr=[0.2,30],/xs,/ys,xtitle=textoidl('\lambda (\mum)'), ytitle=textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
    oplot,wav,smooth(lamflam2,15),col=colors[1]
    oplot,wav,smooth(lamflam,15),col=colors[2]
+
 endif
 
 end

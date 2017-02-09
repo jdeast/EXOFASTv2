@@ -1148,6 +1148,11 @@ for i=0, nband-1 do begin
 
 endfor
 
+if nband eq 0 then begin
+   ss.band[0].u1.fit=0B
+   ss.band[0].u2.fit=0B
+endif
+
 ;; read in the transit files
 if ntran gt 0 then begin
 
