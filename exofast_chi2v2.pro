@@ -238,7 +238,11 @@ endif
 ;; derive the model parameters from the stepping parameters (return if unphysical)
 ss.star.mstar.value = 10^ss.star.logmstar.value
 ;; use the YY tracks to guide the stellar parameters
-chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug)
+if keyword_set(psname) then begin
+   chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug, psname=psname+'.yy.ps')
+endif else begin
+   chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug)
+endelse
 
 if ss.star.errscale.value le 0 then chi2 = !values.d_infinity
 
@@ -269,6 +273,7 @@ for i=0, n_elements(priors[0,*])-1 do begin
 
 endfor
 
+if 0 then begin
 ;; prepare the plotting device
 if ss.debug or keyword_set(psname) then begin
    if keyword_set(psname) then begin
@@ -295,6 +300,7 @@ if ss.debug or keyword_set(psname) then begin
       position1 = [0.07, 0.22, 0.97, 0.95]    ;; data plot
       position2 = [0.07, 0.07, 0.97, 0.22]    ;; residual plot
    endelse
+endif
 endif
 
 ;; derive quantities we'll use later
@@ -371,9 +377,16 @@ endfor
 
 ;; fit the SED
 if file_test(ss.star.fluxfile) then begin
-   sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
-                       ss.star.av.value, ss.star.distance.value, $
-                       logg=ss.star.logg.value,met=ss.star.feh.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep)
+   if keyword_set(psname) then begin
+      sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
+                            ss.star.av.value, ss.star.distance.value, $
+                            logg=ss.star.logg.value,met=ss.star.feh.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep, psname=psname+'.sed.ps')
+   endif else begin
+      sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
+                            ss.star.av.value, ss.star.distance.value, $
+                            logg=ss.star.logg.value,met=ss.star.feh.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep)
+   endelse 
+
    if ~finite(sedchi2) then return, !values.d_infinity
    sedchi2 = exofast_like(f-fp,0d0,ss.star.errscale.value*ep,/chi2)
    if ~finite(sedchi2) then return, !values.d_infinity
@@ -404,7 +417,7 @@ for j=0, ntelescopes-1 do begin
                                0d0,ss.planet[i].K.value,$
                                ss.planet[i].e.value,ss.planet[i].omega.value,$
                                slope=0, $
-                               /rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
+                               rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
                                p=ss.planet[i].p.value,vsini=ss.star.vsini.value,$
                                lambda=ss.planet[i].lambda.value,$
                                u1=0d0,t0=t0,deltarv=deltarv)
@@ -423,7 +436,13 @@ for j=0, ntelescopes-1 do begin
 endfor
 
 ;; if at least one RV planet is fit, plot it
-if (ss.debug or keyword_set(psname)) and (where(ss.planet.fitrv))[0] ne -1 then plotrv, ss, psname=psname
+if (where(ss.planet.fitrv))[0] ne -1 then begin
+   if keyword_set(psname) then begin
+      plotrv, ss, psname=psname + '.rv.ps'
+   endif else if ss.debug then begin
+      plotrv, ss
+   endif
+endif
 
 ;; Transit model
 for j=0, ntransits-1 do begin
@@ -502,7 +521,13 @@ endfor
 
 ;; plot the transit model and data 
 ;; if a transit is fit for at least one planet
-if (ss.debug or arg_present(psname)) and ((where(ss.planet.fittran))[0] ne -1) then plottran, ss, psname=psname
+if ((where(ss.planet.fittran))[0] ne -1) then begin
+   if keyword_set(psname) then begin
+      plottran, ss, psname=psname + '.transit.ps'
+   endif else if ss.debug then begin
+      plottran, ss
+   endif
+endif
 
 ;   plot, transitbjd, transit.flux, psym=1,/ynoz
 ;   oplot, transitbjd, modelflux, color=red
@@ -514,10 +539,10 @@ if ss.debug then print, ss.star.rstar.value, pars, chi2, format='(' + strtrim(n_
 ;wait, 0.1
 ;stop
 
-if keyword_set(psname) then begin
-   device, /close
-   set_plot, mydevice
-endif
+;if keyword_set(psname) then begin
+;   device, /close
+;   set_plot, mydevice
+;endif
 
 ;; if this stop is triggered, you've found a bug!!
 if ~finite(chi2) then stop

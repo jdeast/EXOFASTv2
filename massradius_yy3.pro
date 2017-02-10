@@ -1,4 +1,4 @@
-function massradius_yy3, mstar, feh, age, teff, yyrstar=yyrstar, uteff,afe=afe,debug=debug,yyteff=yyteff, quad=quad, lsquad=lsquad,yytrack=yytrack
+function massradius_yy3, mstar, feh, age, teff, yyrstar=yyrstar, uteff,afe=afe,debug=debug,yyteff=yyteff, quad=quad, lsquad=lsquad,yytrack=yytrack, psname=psname
 
 ;; this is the approximate error in the YY isochrone modeling
 uteff = 50d0 
@@ -162,20 +162,21 @@ if yyrstar le 0 then return, !values.d_infinity
 chi2 = ((yyteff-teff)/(yyteff*0.01))^2
 
 ;; prepare the plotting device
+mydevice=!d.name
 if keyword_set(psname) then begin
    ;; astrobetter.com tip on making pretty IDL plots
-;   mydevice=!d.name
-;   set_plot, 'PS'
-;   aspect_ratio=1
-;   xsize=10.5/1.5
-;   ysize=xsize/aspect_ratio
-;   !p.font=0
-;   device, filename=psname, /color, bits=24
-;   device, xsize=xsize,ysize=ysize
+   set_plot, 'PS'
+   aspect_ratio=1
+   xsize=10.5/1.5
+   ysize=xsize/aspect_ratio
+   !p.font=0
+   device, filename=psname, /color, bits=24
+   device, xsize=xsize,ysize=ysize
    loadct, 39, /silent
    red = 254
    symsize = 0.33
 endif else begin
+   set_plot, 'x'
    if keyword_set(debug) then begin
       red = '0000ff'x
       symsize = 1
@@ -184,6 +185,7 @@ endif else begin
       else window, 0, retain=2
    endif
 endelse
+
 
 if 0 then begin
 if keyword_set(debug) or keyword_set(psname) then begin
@@ -229,6 +231,12 @@ endif
    oploterror, alog10([teff]), [logg], 0.00222,0.01,/lobar
    oploterror, alog10([teff]), [logg], 0.00316978,0.011,/hibar
 endif
+endif
+
+
+if keyword_set(psname) then begin
+   device, /close
+   set_plot, mydevice
 endif
 
 return, chi2

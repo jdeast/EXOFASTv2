@@ -1,13 +1,21 @@
 pro plotrv, ss, psname=psname
 
+mydevice=!d.name
 if keyword_set(psname) then begin
-   ;; do stuff?
+   set_plot, 'PS'
+   aspect_ratio=1.5
+   xsize=10.5
+   ysize=xsize/aspect_ratio
+   !p.font=0
+   device, filename=psname, /color, bits=24
+   device, xsize=xsize,ysize=ysize
    loadct, 39, /silent
    red = 254
    black = 0
    blue = 63
    green = 144
 endif else begin
+   set_plot, 'X'
    red = '0000ff'x
    black = 'ffffff'x
    blue = 'ff0000'x
@@ -54,7 +62,7 @@ for i=0, ss.nplanets-1 do begin
                             ss.planet[i].period.value,0d0,ss.planet[i].K.value,$
                             ss.planet[i].e.value,ss.planet[i].omega.value,$
                             slope=0,$
-                            /rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
+                            rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
                             p=ss.planet[i].p.value,vsini=ss.star.vsini.value,$
                             lambda=ss.planet[i].lambda.value,$
                             u1=0d0, t0=0d0,deltarv=deltarv)
@@ -74,7 +82,7 @@ for i=0, ss.nplanets-1 do begin
                            ss.planet[i].period.value,0d0,$
                            ss.planet[i].K.value,ss.planet[i].e.value,$
                            ss.planet[i].omega.value,slope=0,$
-                           /rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
+                           rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
                            p=ss.planet[i].p.value,vsini=ss.star.vsini.value,$
                            lambda=ss.planet[i].lambda.value,$
                            u1=0d0, t0=0d0,deltarv=deltarv)
@@ -108,7 +116,10 @@ endfor
 if not keyword_set(psname) then begin
    if win_state[21] eq 1 then wset, 21 $
    else window, 21, retain=2
-endif
+endif else begin
+   device, /close
+endelse
+set_plot, mydevice
 
 roundto = 10L^(strlen(strtrim(floor(allmaxdate-allmindate),2))+1L) 
 bjd0 = floor(allmindate/roundto)*roundto

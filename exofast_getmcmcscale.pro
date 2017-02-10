@@ -57,7 +57,7 @@
 
 function exofast_getmcmcscale, bestpars, chi2func, tofit=tofit, $
                                seedscale=seedscale, bestchi2=bestchi2,$
-                               angular=angular0, debug=debug
+                               angular=angular0, debug=debug, skipiter=skipiter
 
 npars = n_elements(bestpars)
 if n_elements(tofit) eq 0 then tofit = indgen(npars)
@@ -80,9 +80,9 @@ endif
 
 mcmcscale = [[seedscale],[seedscale]]
 
-for i=0, nfit-1 do begin
+betterfound = 0B
 
-   if i eq 3 then debug=1
+for i=0, nfit-1 do begin
 
     for j=0,1 do begin
 
@@ -141,6 +141,7 @@ for i=0, nfit-1 do begin
                       ' to ' + $
                       strtrim(string(testpars[tofit[i]],format='(f40.10)'),2)+$
                       ' (' + strtrim(chi2,2) + ')'
+                    betterfound = 1B
                 endif
                 
                 ;; chi2 is actually lower! (Didn't find the best fit)
@@ -218,6 +219,12 @@ for i=0, nfit-1 do begin
          endrep until abs(chi2 - bestchi2 - 1.d0) lt 1d-8
     endfor    
 endfor
+
+;; let's iterate to see if we can do better
+if betterfound and ~keyword_set(skipiter) then $
+   return, exofast_getmcmcscale(bestpars, chi2func, tofit=tofit, $
+                                seedscale=seedscale, bestchi2=bestchi2,$
+                                angular=angular0, debug=debug, skipiter=skipiter)
 
 ;; replace undefined errors with the other
 bad = where(~finite(mcmcscale[*,0]))

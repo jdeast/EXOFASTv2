@@ -2,13 +2,22 @@ pro plottran, ss, psname=psname
 AU = 215.094177d0
 
 aspect_ratio=1.5
+mydevice=!d.name
 if keyword_set(psname) then begin
+   set_plot, 'PS'
+   aspect_ratio=1.5
+   xsize=10.5
+   ysize=xsize/aspect_ratio
+   !p.font=0
+   device, filename=psname, /color, bits=24
+   device, xsize=xsize,ysize=ysize
    loadct, 39, /silent
    red = 254
    symsize = 0.33
    black = 0
 endif else begin
    !p.multi=0
+   set_plot, 'X'
    screen = GET_SCREEN_SIZE()
    device,window_state=win_state
    xsize = 600
@@ -150,7 +159,14 @@ for j=0, ss.ntran-1 do begin
 endfor
 
 
+if keyword_set(psname) then begin
+   device, /close
+endif
+set_plot, mydevice
+
 if 0 then begin
+
+
 ;; make a phased plot for each planet
 for i=0, ss.nplanets-1 do begin
    if not keyword_set(psname) then begin

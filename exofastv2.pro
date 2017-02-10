@@ -429,17 +429,21 @@ msun = GMsun/GSI       ;; kg
 
 G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 
-;; plot the data + starting guess
-if keyword_set(plotonly) then begin
-   modelfile = prefix + 'model.ps'
-   bestchi2 = call_function(chi2func, psname=modelfile, $
-                            modelrv=modelrv, modelflux=modelflux)
-   if keyword_set(display) then spawn, 'gv ' + modelfile + ' &'
-   if lun ne -1 then free_lun, lun
-   return
-endif
-
 pars = str2pars(ss,scale=scale,name=name)
+
+;; plot the data + starting guess
+modelfile = prefix + 'start.model'
+bestchi2 = call_function(chi2func, pars, psname=modelfile)
+
+if keyword_set(display) then spawn, 'gv ' + modelfile + ' &'
+if lun ne -1 then free_lun, lun
+if keyword_set(plotonly) then return
+
+;; do it again for accurate timing 
+;; after loading all the files into cache, not including plotting
+t0 = systime(/seconds)
+bestchi2 = call_function(chi2func, pars)
+modeltime = systime(/seconds)-t0
 
 ;; these are the starting values for all step parameters
 print, 'These are the starting values for all the step parameters'
@@ -467,8 +471,9 @@ if ss.debug then begin
    stop
 end
 
-print, 'Beginning AMOEBA fit'
-best = exofast_amoeba(1d-8,function_name=chi2func,p0=pars,scale=scale,nmax=1d5)
+nmax = 1d5
+print, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nmax/60d0,format='(f0.1)') + ' minutes'
+best = exofast_amoeba(1d-8,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
 if best[0] eq -1 then begin
    printf, lun, 'ERROR: Could not find best combined fit'
    if lun ne -1 then free_lun, lun
@@ -478,7 +483,7 @@ print, 'Finished AMOEBA fit'
 
 
 ;; output the best-fit model fluxes/rvs
-bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model.ps')
+bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model')
 
 ;; do the MCMC fit
 if not keyword_set(bestonly) then begin
@@ -520,7 +525,7 @@ endelse
 ;; generate the model fit from the best MCMC values, not AMOEBA
 bestamoeba = best
 best = pars[*,bestndx]
-modelfile = prefix + 'model.mcmc.ps'
+modelfile = prefix + 'model.mcmc'
 bestchi2 = call_function(chi2func,best,psname=modelfile, $
                          modelrv=modelrv, modelflux=modelflux)
 

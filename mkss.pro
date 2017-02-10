@@ -58,6 +58,11 @@
 ;             used properly. Even in the case of mutual eclipses
 ;             (which is currently not supported), at least one planet must be
 ;             arbitrarily constrained from 0 to 90.
+;  ROSSITER - An NPLANETS boolean array specify which planets to fit a
+;             rossiter model to the RV data. Fit lambda and
+;             V_rot*sin(I_*) from RV data during transit using the
+;             Ohta approximations (has known issues)
+;  DOPTOM   - Fit Doppler tomography (***unsupported***)
 ;  NVALUES  - ?? (I probably should have documented that when I made it...)
 ;  PRIORFILE - The name of the file that specifies all the priors. The
 ;              prior file is an ASCII file with each line containing
@@ -106,9 +111,6 @@
 ;  FITQUAD  - Fit a quadratic trend to the RV data
 ;  TTVS     - Fit an independent (non-periodic) transit time for each transit
 ;  TDVS     - Fit an indepdedent depth to each transit
-;  ROSSITER - Fit lambda and V_rot*sin(I_*) from RV data during
-;             transit using the Ohta approximations (has known issues)
-;  DOPTOM   - Fit Doppler tomography (***unsupported***)
 ;  EPRIOR4  - Parameterize the eccentricity and argument of
 ;             periastron as e^(1/4)*sin(omega) and
 ;             e^(1/4)*cos(omega) to more closely match the observed
@@ -1002,6 +1004,7 @@ planet = create_struct($
          'fitrv',1B,$
          'chen',0B,$
          'i180',0B,$
+         'rossiter',0B,$
          'rootlabel','Planetary Parameters:',$
          'label','')
 
@@ -1097,6 +1100,7 @@ for i=0, nplanets-1 do begin
    endif
 
    if rossiter[i] or doptom[i] then begin
+      ss.planet[i].rossiter = 1B
       ss.planet[i].lambda.fit = 1
       ss.star.vsini.fit = 1
       if doptom[i] then ss.star.macturb.fit = 1

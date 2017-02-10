@@ -1,4 +1,4 @@
-function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose
+function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname
 
 common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m
 
@@ -46,8 +46,16 @@ for i=0,n-1 do begin
    f[i]=mean(flux[l:u])
 endfor
 
-if keyword_set(verbose) then begin
-   if keyword_set(ps) then begin
+if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
+   mydevice=!d.name
+   if keyword_set(psname) then begin
+      set_plot, 'PS'
+      aspect_ratio=1.5
+      xsize=10.5
+      ysize=xsize/aspect_ratio
+      !p.font=0
+      device, filename=psname, /color, bits=24
+      device, xsize=xsize,ysize=ysize
       loadct, 39, /silent
       colors=[0,254,68,128]
    endif else begin
@@ -59,7 +67,10 @@ if keyword_set(verbose) then begin
    plotsym, 0, /fill, color=colors[1]
    plot, w1, flux,/xlog,/ylog,xtitle=textoidl('\lambda (\mum)'), ytitle=textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
    oploterr, wp, f, ep, 8
-
+   if keyword_set(psname) then begin
+      device, /close
+   endif
+   set_plot, mydevice
 endif
 
 f0 = f
