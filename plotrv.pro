@@ -91,8 +91,11 @@ for i=0, ss.nplanets-1 do begin
       if minrv lt allminrv then allminrv = minrv
       if maxrv gt allmaxrv then allmaxrv = maxrv
    endfor
+
+;   xtitle=TeXtoIDL('Phase + (T_P - T_C)/P + 0.25')
+   xtitle1='Phase + (T_P - T_C)/P + 0.25'
    plot, [0], [0], xrange=[0,1], yrange=[allminrv,allmaxrv], $
-         xtitle=TeXtoIDL('Phase + (T_P - T_C)/P + 0.25'), ytitle='RV (m/s)', charsize=charsize, title=ss.planet[i].label
+         xtitle=xtitle1,ytitle='RV (m/s)', charsize=charsize, title=ss.planet[i].label
    oplot, prettyphase[sorted], prettymodel[sorted], color=red
 
 
@@ -124,9 +127,12 @@ set_plot, mydevice
 roundto = 10L^(strlen(strtrim(floor(allmaxdate-allmindate),2))+1L) 
 bjd0 = floor(allmindate/roundto)*roundto
 
+xtitle2='BJD_TDB - ' + string(bjd0,format='(i7)') 
 plot, [0], [0], xrange=[allmindate,allmaxdate]-bjd0, $
-      yrange=[allminrv,allmaxrv], xtitle=TeXtoIDL('BJD_{TDB} - ') + $
-      string(bjd0,format='(i7)'), ytitle='RV (m/s)'
+      yrange=[allminrv,allmaxrv], xtitle=xtitle2,$
+      ytitle='RV (m/s)'
+
+;TeXtoIDL('BJD_{TDB} - ') + string(bjd0,format='(i7)'), 
 oplot, prettytime-bjd0, allprettymodel, color=red
 
 for j=0, ss.ntel-1 do begin 

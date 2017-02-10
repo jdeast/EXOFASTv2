@@ -58,14 +58,19 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
       device, xsize=xsize,ysize=ysize
       loadct, 39, /silent
       colors=[0,254,68,128]
+      xtitle = textoidl('\lambda (\mum)')
+      ytitle = textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
    endif else begin
+      set_plot, 'X'
       device,window_state=win_state
       if win_state[5] eq 1 then wset, 5 $
       else window, 5
       colors = ['ffffff'x,'0000ff'x,'00ff00'x,'ff0000'x]
+      xtitle = 'lambda (um)'
+      ytitle = 'log(lambda F_lambda) (erg/s/cm^2)'
    endelse
    plotsym, 0, /fill, color=colors[1]
-   plot, w1, flux,/xlog,/ylog,xtitle=textoidl('\lambda (\mum)'), ytitle=textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
+   plot, w1, flux,/xlog,/ylog,xtitle=xtitle,ytitle=ytitle
    oploterr, wp, f, ep, 8
    if keyword_set(psname) then begin
       device, /close

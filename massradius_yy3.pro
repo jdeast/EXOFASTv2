@@ -162,29 +162,33 @@ if yyrstar le 0 then return, !values.d_infinity
 chi2 = ((yyteff-teff)/(yyteff*0.01))^2
 
 ;; prepare the plotting device
-mydevice=!d.name
-if keyword_set(psname) then begin
-   ;; astrobetter.com tip on making pretty IDL plots
-   set_plot, 'PS'
-   aspect_ratio=1
-   xsize=10.5/1.5
-   ysize=xsize/aspect_ratio
-   !p.font=0
-   device, filename=psname, /color, bits=24
-   device, xsize=xsize,ysize=ysize
-   loadct, 39, /silent
-   red = 254
-   symsize = 0.33
-endif else begin
-   set_plot, 'x'
-   if keyword_set(debug) then begin
+if keyword_set(debug) or keyword_set(psname) then begin
+   mydevice=!d.name
+   if keyword_set(psname) then begin
+      ;; astrobetter.com tip on making pretty IDL plots
+      set_plot, 'PS'
+      aspect_ratio=1
+      xsize=10.5/1.5
+      ysize=xsize/aspect_ratio
+      !p.font=0
+      device, filename=psname, /color, bits=24
+      device, xsize=xsize,ysize=ysize
+      loadct, 39, /silent
+      red = 254
+      symsize = 0.33
+      xtitle=textoidl('log(T_{eff})')
+      ytitle=textoidl('\log(g_*)')
+   endif else begin
+      set_plot, 'X'
       red = '0000ff'x
       symsize = 1
       device,window_state=win_state
       if win_state[0] eq 1 then wset, 0 $
       else window, 0, retain=2
-   endif
-endelse
+      xtitle='log(T_eff)'
+      ytitle='log g'
+   endelse
+endif
 
 
 if 0 then begin
@@ -226,7 +230,7 @@ endif
    yrange=[3,5]
 ;   xrange=[3.8,3.5]
    plotsym,0,/fill
-   plot, alog10(yyteffall), yyloggall,xtitle=textoidl('log(T_{eff})'),ytitle='log g', xrange=[xmax,xmin],yrange=yrange
+   plot, alog10(yyteffall), yyloggall, xrange=[xmax,xmin],yrange=yrange,xtitle=xtitle,ytitle=ytitle
    oplot, alog10([teff]), [logg], psym=8,symsize=0.5
    oploterror, alog10([teff]), [logg], 0.00222,0.01,/lobar
    oploterror, alog10([teff]), [logg], 0.00316978,0.011,/hibar
