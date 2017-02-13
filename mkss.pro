@@ -938,7 +938,8 @@ star = create_struct(mstar.label,mstar,$
                      'label','')
             
 if n_elements(fluxfile) ne 0 then $
-   if file_test(fluxfile) then star.fluxfile = fluxfile
+   if file_test(fluxfile) then star.fluxfile = fluxfile $
+   else print, 'Could not find ' + fluxfile
 
 ;; for each planet 
 planet = create_struct($
