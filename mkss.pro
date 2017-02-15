@@ -937,9 +937,15 @@ star = create_struct(mstar.label,mstar,$
                      'rootlabel','Stellar Parameters:',$
                      'label','')
             
-if n_elements(fluxfile) ne 0 then $
-   if file_test(fluxfile) then star.fluxfile = fluxfile $
-   else print, 'Could not find ' + fluxfile
+star.errscale.fit = 0
+star.errscale.derive = 0
+if n_elements(fluxfile) ne 0 then begin
+   if file_test(fluxfile) then begin
+      star.fluxfile = fluxfile
+      star.errscale.fit = 1
+      star.errscale.derive = 1
+   endif else print, 'Could not find ' + fluxfile
+endif
 
 ;; for each planet 
 planet = create_struct($
@@ -1070,6 +1076,7 @@ ss = create_struct('star',star,$
                    'nsteps',nsteps,$
 ;                   'nbad',0L,$
                    'burnndx',0L,$
+                   'amoeba',0L,$
                    'chi2',ptr_new(1))
 
 ;; populate the planet fitting parameters
@@ -1244,12 +1251,16 @@ while not eof(lun) do begin
       else upperbound = double(entries[4])
    endif else upperbound = !values.d_infinity
 
-
    ;; determine the subscript
    tmp = strsplit(priorname,'_',/extract)
-   if n_elements(tmp) eq 2 then priornum = long(tmp[1]) $
-   else priornum = 0
+   if n_elements(tmp) eq 2 then priornum = tmp[1] $
+   else priornum = '0'
    priorlabel = tmp[0]
+
+   ;; allow labels 'b','c','d', etc.
+   numndx = (where(plabels eq strtrim(priornum,2)))[0]
+   if numndx ne -1 then priornum = numndx
+   priornum = long(priornum)
 
    found=0
    ;; look for the name in the structure
@@ -1266,7 +1277,7 @@ while not eof(lun) do begin
                if priorwidth eq 0d0 then begin
                   ;; priorwidth = 0 => fix it at the prior value
                   ss.(i)[priornum].(ndx).fit = 0d0                  
-                  print, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)'                                
+                  print, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)'
                endif else if finite(priorwidth) and priorwidth gt 0d0 then begin
                   ;; apply a Gaussian prior with width = priorwidth
                   ss.(i)[priornum].(ndx).priorwidth = priorwidth

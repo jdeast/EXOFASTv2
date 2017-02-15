@@ -59,11 +59,14 @@ endif else begin
    ndetrend=0
 endelse
 
+residuals = flux*0d0
+model = flux*0d0
+
 night = strmid(filename,1,4)+'-'+strmid(filename,5,2)+'-'+strmid(filename,7,2)
 label = (strsplit(filename,'.',/extract))(2) + ' UT ' + night + ' ('+ bandname + ')'
 transit=create_struct('bjd',bjd,'flux',flux,'err',err,'band',band,'ndx',0,$
                       'epoch',0.0,'detrendadd',da,'detrendmult',da,'label',$
-                      label,'ndetrend',ndetrend)
+                      label,'ndetrend',ndetrend,'residuals',residuals,'model',model)
 return, transit
 
 end

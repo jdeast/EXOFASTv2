@@ -67,6 +67,7 @@ maxiter = 1d4
 
 if n_elements(bestchi2) eq 0 then $
   bestchi2 = call_function(chi2func, bestpars)
+origbestchi2 = bestchi2
 
 ;; which values are angular values (error if step > 2*pi)
 if n_elements(angular0) eq 0 then angular = [-1] $
@@ -221,10 +222,13 @@ for i=0, nfit-1 do begin
 endfor
 
 ;; let's iterate to see if we can do better
-if betterfound and ~keyword_set(skipiter) then $
+if betterfound and ~keyword_set(skipiter) then begin
+   print, 'Better Chi^2 found (' + strtrim(bestchi2,2) + ' vs ' + strtrim(origbestchi2,2) + ' while finding MCMC scale. Restarting EXOFAST_GETMCMCSCALE'
+   print, 'This means that AMOEBA is not finding the best fit'
    return, exofast_getmcmcscale(bestpars, chi2func, tofit=tofit, $
                                 seedscale=seedscale, bestchi2=bestchi2,$
                                 angular=angular0, debug=debug, skipiter=skipiter)
+endif
 
 ;; replace undefined errors with the other
 bad = where(~finite(mcmcscale[*,0]))

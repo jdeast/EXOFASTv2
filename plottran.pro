@@ -34,7 +34,7 @@ plotsym, 0, /fill, color=black
 
 ;; breaks for grazing transits...
 depth = max(ss.planet.p.value^2)
-depth = 0.0004
+;depth = 0.0004
 
 if keyword_set(noresiduals) then spacing = depth*3d0 $;0.035d0 $
 else spacing = depth*4d0;0.045d0
@@ -78,7 +78,7 @@ xrange=[xmin,xmax]
 
 
 noise = 0.0001d0
-ymin = 1d0 - 3d0*max(depth)
+ymin = 1d0 - depth - 3*noise
 ymax = 1d0 + 3*noise + spacing*((ss.ntran-1d0)>0)
 yrange = [ymin,ymax]
 ;yrange = [0.994,1.001]
@@ -158,71 +158,82 @@ for j=0, ss.ntran-1 do begin
 ;   plot, time, trandata.flux-
 endfor
 
+;; make a phased plot for each planet
+ntranfit = n_elements(where(ss.planet.fittran))
+nx = ceil(sqrt(ntranfit))
+ny = ceil(ntranfit/double(nx))
+!p.multi = [0,nx,ny]
+if not keyword_set(psname) then begin
+   if win_state[31] then wset, 31 $
+   else window, 31, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0
+endif
+
+trandata = (*(ss.transit[0].transitptrs)) 
+
+for i=0, ss.nplanets-1 do begin
+   
+   if ss.planet[i].fittran then begin
+      ymax = 1d0 + 3*noise + spacing*((ss.ntran-1d0)>0)
+
+      time = trandata.bjd ; (trandata.bjd-ss.planet[i].tc.value) mod ss.planet[i].period.value     
+      modelflux = (exofast_tran(time, $
+                                ss.planet[i].i.value, $
+                                ss.planet[i].ar.value, $
+                                ss.planet[i].tp.value, $
+                                ss.planet[i].period.value, $
+                                ss.planet[i].e.value,$
+                                ss.planet[i].omega.value,$
+                                ss.planet[i].p.value,$
+                                band.u1.value, $
+                                band.u2.value, $
+                                1d0, $
+                                thermal=band.thermal.value, $
+                                reflect=band.reflect.value, $
+                                dilute=band.dilute.value,$
+                                tc=ss.planet[i].tc.value,$
+                                rstar=ss.star.rstar.value/AU))
+      
+      ymin = min(modelflux) - 3d0*noise
+
+      phasetime = ((time - ss.planet[i].tc.value) mod ss.planet[i].period.value)*24d0
+      sorted = sort(phasetime)
+
+      sini = sin(acos(ss.planet[i].cosi.value))
+      esinw = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
+      bp = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+esinw)
+      t14 = (ss.planet[i].period.value/!dpi*asin(sqrt((1d0+ss.planet[i].p.value)^2 - bp^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+esinw))*24d0
+
+      ;; plot the shell, model, and data
+      plot, [0],[0], xstyle=1,ystyle=1,$; xtickformat='(A1)',$
+            ytitle='Normalized flux',yrange=[ymin,ymax],xrange=[-t14,t14],$
+            xtitle='Time - Tc (Hrs)',title=ss.planet[i].label ;, position=position1
+      oplot, phasetime[sorted], modelflux[sorted], thick=2, color=red, linestyle=0
+      oplot, phasetime, trandata.residuals + modelflux, psym=8, symsize=symsize
+      
+      ;;  pad the plot to the nearest 5 in the second sig-fig
+;      ymin = round5(min(trandata.residuals + modelflux - trandata.err,/nan))
+;      ymax = round5(max(trandata.residuals + modelflux + trandata.err,/nan))
+      
+      ;; make the plot symmetric about 0
+;      if ymin lt -ymax then ymax = -ymin
+;      if ymax gt -ymin then ymin = -ymax
+      
+;      ;; plot the residuals below
+;      plot, [0],[0],xstyle=1,ystyle=1, yrange=[ymin,ymax],ytitle='O-C',$
+;            xrange=[xmin,xmax],xtitle=xtitle,position=position2,/noerase,$
+;            yminor=2,yticks=2,/ynoz
+;      oplot, time,trandata.residuals,psym=8,symsize=symsize
+;      oplot, [xmin,xmax],[0,0],linestyle=2,color=red  
+
+   endif
+endfor
+!p.multi=0
 
 if keyword_set(psname) then begin
    device, /close
 endif
 set_plot, mydevice
 
-if 0 then begin
-
-
-;; make a phased plot for each planet
-for i=0, ss.nplanets-1 do begin
-   if not keyword_set(psname) then begin
-      if win_state[31+i] then wset, 31+i $
-      else window, 31+i, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0
-   endif
-   
-   if ss.planet[i].fittran then begin
-      
-      prettyflux += (exofast_tran(prettytime, $
-                                  ss.planet[i].i.value, $
-                                  ss.planet[i].ar.value, $
-                                  ss.planet[i].tp.value, $
-                                  ss.planet[i].period.value, $
-                                  ss.planet[i].e.value,$
-                                  ss.planet[i].omega.value,$
-                                  ss.planet[i].p.value,$
-                                  band.u1.value, $
-                                  band.u2.value, $
-                                  1d0, $
-                                  thermal=band.thermal.value, $
-                                  reflect=band.reflect.value, $
-                                  dilute=band.dilute.value,$
-                                  tc=ss.planet[i].tc.value,$
-                                  rstar=ss.star.rstar.value/AU)-1d0)
-      
-      time = (trandata.bjd-ss.planet[i].tc.value) mod ss.planet[i].period.value
-      
-      prettytime = minbjd + (maxbjd-minbjd)*dindgen(npretty)/(npretty-1d0)
-      
-      prettyflux = dblarr(npretty) + 1
-      
-      ;; plot the shell, model, and data
-      plot, [0],[0], xstyle=1,ystyle=1, yrange=[ymin,ymax],xtickformat='(A1)',$
-            ytitle='Normalized flux', xrange=[xmin,xmax],position=position1
-      oplot, time, detrenddata, psym=8, symsize=symsize
-      oplot, x, ms, thick=2, color=red, linestyle=0
-      
-      ;;  pad the plot to the nearest 5 in the second sig-fig
-      ymin = round5(min(detrenddata-m - transit.err,/nan))
-      ymax = round5(max(detrenddata-m + transit.err,/nan))
-      
-      ;; make the plot symmetric about 0
-      if ymin lt -ymax then ymax = -ymin
-      if ymax gt -ymin then ymin = -ymax
-      
-      ;; plot the residuals below
-      plot, [0],[0],xstyle=1,ystyle=1, yrange=[ymin,ymax],ytitle='O-C',$
-            xrange=[xmin,xmax],xtitle=xtitle,position=position2,/noerase,$
-            yminor=2,yticks=2
-      oplot, time,detrenddata-m,psym=8,symsize=symsize
-      oplot, [xmin,xmax],[0,0],linestyle=2,color=red  
-   endif
-endfor
-
-endif
 
 
 ;for j=0, ss.nplanet-1 do begin

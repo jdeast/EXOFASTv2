@@ -368,7 +368,7 @@ pro exofastv2, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile,$
                prefix=prefix,$
                circular=circular,fitslope=fitslope, secondary=secondary, $
-               rossiter=rossiter,$
+               rossiter=rossiter,chen=chen,$
                nthin=nthin, maxsteps=maxsteps, $
                debug=debug, randomfunc=randomfunc, seed=seed,$
                bestonly=bestonly, plotonly=plotonly,$
@@ -394,7 +394,8 @@ if double(!version.release) ge 6.4d0 then $
 ss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets, $
           debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
           circular=circular,fitslope=fitslope, fitquad=fitquad,ttv=ttv, $
-          rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180)
+          rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
+          chen=chen)
 
 ;; output to file instead of screen
 if n_elements(logfile) ne 0 then openw, lun, logfile, /get_lun $
@@ -461,7 +462,7 @@ print, '*** BEING TRANSLATED INTO THE STEPPING PARAMETERIZATION    ***'
 print, '*** CORRECTLY BY pars2step.pro.                            ***'
 print, '**************************************************************'
 print
-print, 'Par #      Par Name    Par Value       Ameoba Scale'
+print, 'Par #      Par Name    Par Value       Amoeba Scale'
 for i=0, n_elements(name)-1 do print, i, name[i], pars[i], scale[i], format='(i3,x,a15,x,f14.6,x,f14.6)'
 ;forprint, indgen(n_elements(name)), name, pars, scale,/t,format='(i3,x,a15,x,f14.6,x,f14.6)'
 print 
@@ -473,7 +474,26 @@ end
 
 nmax = 1d5
 print, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nmax/60d0,format='(f0.1)') + ' minutes'
+
+;; AMOEBA does not handle the high covariance of the Chen & Kipping
+;; relation; exclude the mass/radius from the amoeba fit
+ss.amoeba = 1
 best = exofast_amoeba(1d-8,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
+for i=0, ss.nplanets-1 do begin
+   if ss.planet[i].chen then begin
+      if ss.planet[i].fitrv and ~ss.planet[i].fittran then begin
+         ss.planet[i].p.value = massradius_chen(ss.planet[i].mpearth.value)*ss.star.rstar.value*0.0091705248 ;; r_sun
+      endif 
+      if ~ss.planet[i].fitrv and ss.planet[i].fittran then begin
+         ss.planet[i].mp.value = massradius_chenreverse(ss.planet[i].rpearth.value)*0.00000300245 ;; m_sun
+         k = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mp.value)^2))^(1d0/3d0)*$
+             ss.planet[i].mp.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value)*rsun/86400d0 ;; m/s
+         ss.planet[i].logk.value = alog10(k)
+      endif
+   endif
+endfor
+ss.amoeba = 0
+
 if best[0] eq -1 then begin
    printf, lun, 'ERROR: Could not find best combined fit'
    if lun ne -1 then free_lun, lun

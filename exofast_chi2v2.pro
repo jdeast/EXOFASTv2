@@ -347,30 +347,21 @@ G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 
 ;; Apply the Mass-Radius relation 
 ;; Chen & Kipping, 2017 (http://adsabs.harvard.edu/abs/2017ApJ...834...17C)
+;; this introduces a near perfect correlation between K and p, which
+;; AMOEBA finds challenging to work with (but is handled naturally by DEMC)
 for j=0, ss.nplanets-1 do begin
-   if ss.planet[j].chen then begin
-
+   if ss.planet[j].chen and ~ss.amoeba then begin
       ;; negative radii are allowed to assess the significance of the
       ;; transit. That breaks these relations, so exclude them here
       if ss.planet[j].rpearth.value le 0d0 then return, !values.d_infinity
 
-      if ss.planet[j].mpearth.value lt 2.04d0 then begin
-         rp = ss.planet[j].mpearth.value^0.279d0
-         rperr = rp*0.0403d0
-      endif else if ss.planet[j].mpearth.value lt 131.58079d0  then begin ;; 0.414 M_jupiter
-         norm = 2.04d0^(0.279d0-0.589d0)
-         rp = norm*ss.planet[j].mpearth.value^0.589d0
-         rperr = rp*0.1460d0
-      endif else begin
-         norm = 2.04d0^(0.279d0-0.589d0)*131.58079d0^(0.589d0+0.44d0)
-         rp = norm*ss.planet[j].mpearth.value^(-0.44d0)
-         rperr = rp*0.0737d0
-      endelse
+      rp = massradius_chen(ss.planet[j].mpearth.value,rperr=rperr)
 ;      rperr = rp*0.2d0 ;; inflate the uncertainty to account for systematics
       ;; add a chi2 penalty for deviation from the mass-radius relation
       ;; if the radius is well-constrained (by transit depth), it
       ;; becomes an implicit constraint on mass. If the mass is well
-      ;; constrained (by RV), it becomes an implicit constraint on radius
+      ;; constrained (by RV), it becomes an implicit constraint on
+      ;; radius
       chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
    endif
 endfor
@@ -506,6 +497,8 @@ for j=0, ntransits-1 do begin
    
    ;; chi^2
    transitchi2 = exofast_like(transit.flux - modelflux,ss.transit[j].variance.value,transit.err,/chi2)
+   (*ss.transit[j].transitptrs).residuals = transit.flux - modelflux
+   (*ss.transit[j].transitptrs).model = modelflux
    if ~finite(transitchi2) then stop
    chi2 += transitchi2
 ;   chi2 += total(((transit.flux - modelflux)/transit.err)^2)
