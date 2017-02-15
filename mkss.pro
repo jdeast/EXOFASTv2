@@ -128,7 +128,8 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
                rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
-               rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, longcadence=longcadence, earth=earth
+               rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, longcadence=longcadence,$
+               earth=earth, silent=silent
 
 if not keyword_set(debug) then debug=0B
 
@@ -1214,10 +1215,10 @@ endelse
 priors = [-1,-1,-1]
 
 ;; for each input prior
-print
-print, 'These are the priors that will be applied to the fit.'
-print, 'Those with "no prior constraint" only affect the starting values of the fit:'
-print
+if ~keyword_set(silent) then print
+if ~keyword_set(silent) then print, 'These are the priors that will be applied to the fit.'
+if ~keyword_set(silent) then print, 'Those with "no prior constraint" only affect the starting values of the fit:'
+if ~keyword_set(silent) then print
 openr, lun, priorfile, /get_lun
 line = ''
 i=0
@@ -1277,18 +1278,18 @@ while not eof(lun) do begin
                if priorwidth eq 0d0 then begin
                   ;; priorwidth = 0 => fix it at the prior value
                   ss.(i)[priornum].(ndx).fit = 0d0                  
-                  print, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)'
+                  if ~keyword_set(silent) then print, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)'
                endif else if finite(priorwidth) and priorwidth gt 0d0 then begin
                   ;; apply a Gaussian prior with width = priorwidth
                   ss.(i)[priornum].(ndx).priorwidth = priorwidth
                   priors=[[priors],[i,priornum,ndx]]
                   ss.(i)[priornum].(ndx).scale = priorwidth*3d0
                   
-                  print, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
+                  if ~keyword_set(silent) then print, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
                   
                endif else begin
                   ;; else no prior, just change the default starting value
-                  print, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
+                  if ~keyword_set(silent) then print, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
                endelse
                
                found=1
@@ -1305,7 +1306,7 @@ while not eof(lun) do begin
                 
 endwhile
 free_lun, lun
-print
+if ~keyword_set(silent) then print
 
 ;; do we have enough information to derive the distance?
 ;if (where(priorname eq 'distance'))[0] ne -1 

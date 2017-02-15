@@ -558,7 +558,7 @@ bestchi2 = call_function(chi2func,best,psname=modelfile, $
 mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, nplanets=nplanets, $
               debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
               circular=circular,fitslope=fitslope, fitquad=fitquad,$
-              nvalues=nsteps*nchains,ttvs=ttv,longcadence=longcadence)
+              nvalues=nsteps*nchains,ttvs=ttv,longcadence=longcadence,/silent)
 mcmcss.burnndx = burnndx
 mcmcss.star.rstar.value = rstar
 *(mcmcss.chi2) = chi2
