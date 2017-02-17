@@ -12,9 +12,9 @@ if not keyword_set(met) then met=0.0
 if not keyword_set(xmin) then xmin=0.1
 if not keyword_set(xmax) then xmax=35.
 
-c=2.9979e14
-pc=3.0857e18
-rsun=6.96e10
+c=2.9979e14 ;; um/s
+pc=3.0857e18 ;; cm
+rsun=6.96e10 ;; cm
 
 ;; don't do this every time
 if n_elements(fp) eq 0 then begin

@@ -65,15 +65,15 @@ for i=0, nplanets-1 do begin
    if ss.planet[i].sesinw.value eq 0d0 then ss.planet[i].sesinw.value = sqrt(ss.planet[i].e.value)*sin(ss.planet[i].omega.value)
 
    ;; scale of cosi (scales with projected disk size)
-   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].i.value = acos(ss.planet[i].cosi.value)
-   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
-                                                                           ss.planet[i].i.value, ss.planet[i].period.value, $
-                                                                           ss.star.mstar.value)
-   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
-                                                                    (4d0*!dpi^2))^(1d0/3d0)                    ;; rsun
-   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value                                        ;; unitless
-   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].a.value = ss.planet[i].arsun.value/215.094177d0         ;; AU
-   if ss.planet[i].logp.value eq 0d0 then ss.planet[i].cosi.scale = 1d0/ss.planet[i].ar.value
+   if ss.planet[i].i.value eq 0d0 then ss.planet[i].i.value = acos(ss.planet[i].cosi.value)
+   if ss.planet[i].mpsun.value eq 0d0 then ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
+                                                                            ss.planet[i].i.value, ss.planet[i].period.value, $
+                                                                            ss.star.mstar.value)
+   if ss.planet[i].arsun.value eq 0d0 then ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
+                                                                     (4d0*!dpi^2))^(1d0/3d0)                    ;; rsun
+   if ss.planet[i].ar.value eq 0d0 then ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value                                        ;; unitless
+   if ss.planet[i].a.value eq 0d0 then ss.planet[i].a.value = ss.planet[i].arsun.value/215.094177d0         ;; AU
+   if ss.planet[i].cosi.value eq 0d0 then ss.planet[i].cosi.scale = 1d0/ss.planet[i].ar.value
 
    if ss.planet[i].tc.value eq 0d0 and ss.planet[i].tp.value ne 0 then begin
       phase = exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value, /primary)

@@ -244,7 +244,10 @@ endif else begin
    chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug)
 endelse
 
-if ss.star.errscale.value le 0 then chi2 = !values.d_infinity
+if ss.star.errscale.value le 0 then begin
+   if ss.debug then print, 'error scale is bad'
+   chi2 = !values.d_infinity
+endif
 
 if ~finite(chi2) then begin
    if ss.debug then print, 'star is bad'
@@ -264,8 +267,14 @@ for i=0, n_elements(priors[0,*])-1 do begin
 
    ;; apply user-defined bounds
    if ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value gt ss.(priors[0,i])[priors[1,i]].(priors[2,i]).upperbound or $
-      ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value lt ss.(priors[0,i])[priors[1,i]].(priors[2,i]).lowerbound then $
-         return, !values.d_infinity
+      ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value lt ss.(priors[0,i])[priors[1,i]].(priors[2,i]).lowerbound then begin
+      if ss.debug then $
+         print, ss.(priors[0,i])[priors[1,i]].(priors[2,i]).label + '_' + strtrim(priors[1,i],2) + $
+                ' (' + strtrim(ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value,2) + ') is out of bounds (' +$
+                strtrim(ss.(priors[0,i])[priors[1,i]].(priors[2,i]).upperbound,2) + ',' + strtrim(ss.(priors[0,i])[priors[1,i]].(priors[2,i]).lowerbound,2) + ')'
+      stop
+      return, !values.d_infinity
+   endif
 
    chi2 += ((ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value - $
              ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior)/$
@@ -350,19 +359,23 @@ G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 ;; this introduces a near perfect correlation between K and p, which
 ;; AMOEBA finds challenging to work with (but is handled naturally by DEMC)
 for j=0, ss.nplanets-1 do begin
-   if ss.planet[j].chen and ~ss.amoeba then begin
+   if ss.planet[j].chen then begin
+
       ;; negative radii are allowed to assess the significance of the
-      ;; transit. That breaks these relations, so exclude them here
+      ;; transit depth. That breaks these relations, so exclude them here
       if ss.planet[j].rpearth.value le 0d0 then return, !values.d_infinity
 
-      rp = massradius_chen(ss.planet[j].mpearth.value,rperr=rperr)
-;      rperr = rp*0.2d0 ;; inflate the uncertainty to account for systematics
-      ;; add a chi2 penalty for deviation from the mass-radius relation
-      ;; if the radius is well-constrained (by transit depth), it
-      ;; becomes an implicit constraint on mass. If the mass is well
-      ;; constrained (by RV), it becomes an implicit constraint on
-      ;; radius
-      chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
+      if not ss.amoeba then begin
+
+         rp = massradius_chen(ss.planet[j].mpearth.value,rperr=rperr)
+
+         ;; add a chi2 penalty for deviation from the mass-radius relation
+         ;; if the radius is well-constrained (by transit depth), it
+         ;; becomes an implicit constraint on mass. If the mass is well
+         ;; constrained (by RV), it becomes an implicit constraint on
+         ;; radius
+         chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
+      endif
    endif
 endfor
 

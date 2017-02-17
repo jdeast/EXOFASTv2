@@ -109,6 +109,7 @@ for i=0, ss.nplanets-1 do begin
             ss.planet[i].period.value+1.25d0) mod 1
       plotsym, symbols[j], symsize, fill=fills[j], color=colors[j]
       oploterr, time, rv.residuals+modelrv, rv.err, 8
+
    endfor
 
 endfor

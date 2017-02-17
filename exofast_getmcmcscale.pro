@@ -142,8 +142,9 @@ for i=0, nfit-1 do begin
                       ' to ' + $
                       strtrim(string(testpars[tofit[i]],format='(f40.10)'),2)+$
                       ' (' + strtrim(chi2,2) + ')'
-                    betterfound = 1B
                 endif
+
+                if (origbestchi2 - bestchi2) gt 0.1 then betterfound = 1B
                 
                 ;; chi2 is actually lower! (Didn't find the best fit)
                 ;; attempt to fix
@@ -223,8 +224,10 @@ endfor
 
 ;; let's iterate to see if we can do better
 if betterfound and ~keyword_set(skipiter) then begin
-   print, 'Better Chi^2 found (' + strtrim(bestchi2,2) + ' vs ' + strtrim(origbestchi2,2) + ' while finding MCMC scale. Restarting EXOFAST_GETMCMCSCALE'
-   print, 'This means that AMOEBA is not finding the best fit'
+   print, 'Better Chi^2 found (' + strtrim(bestchi2,2) + ' vs ' + strtrim(origbestchi2,2) + '. Restarting EXOFAST_GETMCMCSCALE at new best fit'
+   print, 'This means the best fit was not properly identified and MCMC results may be slow or suspect!'
+   print, 'If the chi^2 difference is large, you may want to revise your starting parameters and/or check your priors, then restart'
+   print, 'Proceed with caution and skepticism'
    return, exofast_getmcmcscale(bestpars, chi2func, tofit=tofit, $
                                 seedscale=seedscale, bestchi2=bestchi2,$
                                 angular=angular0, debug=debug, skipiter=skipiter)

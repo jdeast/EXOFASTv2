@@ -360,8 +360,7 @@ logp.label = 'logp'
 logp.cgs = !values.d_nan
 logp.fit = 1
 logp.derive=0
-;logp.scale = 0.05d0
-logp.scale = 1d0
+logp.scale = 0.01d0
 
 qesinw = parameter
 qesinw.unit = ''
@@ -1059,6 +1058,7 @@ transit = create_struct(variance.label,variance,$ ;; Red noise
                         'rootlabel','Transit Parameters',$
                         'label','') 
                         
+
 ;; a stellar system has a star, planets, observed bands, observed
 ;; transits, priors, and global options
 ss = create_struct('star',star,$
@@ -1123,26 +1123,58 @@ for i=0, nplanets-1 do begin
    ss.planet[i].fitrv = fitrv[i]
    ss.planet[i].chen = chen[i]
 
-   if not fittran[i] then begin
-      ss.planet[i].cosi.fit = 0
-      ss.planet[i].p.fit = 0
+   ;; we can marginalize over these parameters 
+   ;; even if a transit is not fit.
+   ;; And with the Chen & Kipping relation, we can get a decent value
+   ;; on the radius and density
+   if not fittran[i] and chen[i] then ss.planet[i].cosi.scale = 1d0
 
-      ss.planet[i].cosi.derive = 0
-      ss.planet[i].p.derive = 0
-      ss.planet[i].ideg.derive = 0
-      ss.planet[i].delta.derive = 0
-      ss.planet[i].b.derive = 0
-      ss.planet[i].bs.derive = 0
-      ss.planet[i].depth.derive = 0
-      ss.planet[i].mp.derive = 0
-      ss.planet[i].mpearth.derive = 0
+   ;; Chen & Kipping prior can be used to fit planetary radius 
+   ;; and we can marginalize over cosi
+   if not chen[i] then begin
+      if not fittran[i] then begin
+         ss.planet[i].cosi.fit = 0
+         ss.planet[i].p.fit = 0
+         ss.planet[i].cosi.derive = 0
+        
+         ss.planet[i].p.derive = 0
+         ss.planet[i].ideg.derive = 0
+         ss.planet[i].delta.derive = 0
+         ss.planet[i].depth.derive = 0
+         ss.planet[i].mp.derive = 0
+         ss.planet[i].mpearth.derive = 0
+         
+         ;; transit derived pars
+         ss.planet[i].b.derive = 0
+         ss.planet[i].tfwhm.derive = 0
+         ss.planet[i].t14.derive = 0
+         ss.planet[i].tau.derive = 0
+         ss.planet[i].bs.derive = 0
+         
+         ;; eclipse derived pars
+         ss.planet[i].tfwhms.derive = 0
+         ss.planet[i].t14s.derive = 0
+         ss.planet[i].taus.derive = 0
+         
+         ;; requires mass and radius
+         ss.planet[i].rhop.derive = 0
+         ss.planet[i].loggp.derive = 0
+         ss.planet[i].safronov.derive = 0
+      endif
 
+      ;; now constrained by the mass radius-relation
+      if not fitrv[i] then begin
+         ss.planet[i].logk.fit = 0
+         ss.planet[i].mp.derive = 0
+         ss.planet[i].mpearth.derive = 0
+         ss.planet[i].rhop.derive = 0
+         ss.planet[i].loggp.derive = 0
+         ss.planet[i].safronov.derive = 0
+      endif
    endif
 
    if i180[i] then ss.planet[i].i180 = 1
 
-   ;; now constrained by the mass radius-relation
-;   if not fitrv[i] then ss.planet[i].logk.fit = 0
 
 endfor
 
@@ -1164,6 +1196,8 @@ endfor
 if nband eq 0 then begin
    ss.band[0].u1.fit=0B
    ss.band[0].u2.fit=0B
+   ss.band[0].u1.derive=0B
+   ss.band[0].u2.derive=0B
 endif
 
 ;; read in the transit files
@@ -1197,7 +1231,9 @@ if ntran gt 0 then begin
    endfor
 endif else begin
    ss.transit[0].f0.fit = 0
+   ss.transit[0].f0.derive = 0
    ss.transit[0].variance.fit = 0
+   ss.transit[0].variance.derive = 0
 endelse
 
 ;; read in the RV files
@@ -1232,7 +1268,7 @@ while not eof(lun) do begin
 
    nentries = n_elements(entries)
    ;; each line must have at least a name and value
-   if nentries le 2 or nentries gt 5 then begin
+   if nentries lt 2 or nentries gt 5 then begin
       message, 'WARNING: line ' + strtrim(i,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE [UNCERTAINTY] [LOWERBOUND] [UPPERBOUND]); ignoring: ' + line, /continue
       continue
    endif 
@@ -1341,13 +1377,19 @@ for i=0, ntran-1 do begin
    ss.transit[i].epoch = min(round((mean((*(ss.transit[i].transitptrs)).bjd) - ss.planet[ss.transit[i].pndx].tc.value)/ss.planet[ss.transit[i].pndx].period.value))
 endfor
 
+;; don't do these when creating the MCMC structure
 if n_elements(ss.star.mstar.value) eq 1 then begin
    ;; derive all step parameters
    ok = pars2step(ss)
 
    ;; return an error if the starting stellar system is not allowed
    if step2pars(ss,/verbose) eq -1 then message, 'Warning: starting values for stellar system not allowed; refine priors'
+
+   ;; calculate the right period stepping scale for AMOEBA based on the
+   ;; input data
+   perscale, ss
 endif
+
 
 return, ss
 

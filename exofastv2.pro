@@ -7,7 +7,7 @@
 ;   planets, transits, RV sources. Please cite Eastman et al., 2013
 ;   (http://adsabs.harvard.edu/abs/2013PASP..125...83E) if you make
 ;   use of this routine in your research. Please report errors or bugs
-;   to jeastman@lcogt.net
+;   to jason.eastman@cfa.harvard.edu
 ;
 ; CALLING SEQUENCE:
 ;   exofast, [RVPATH=, TRANPATH=, PRIORFILE=, FLUXFILE=, PREFIX=, /CIRCULAR,
@@ -437,7 +437,6 @@ modelfile = prefix + 'start.model'
 bestchi2 = call_function(chi2func, pars, psname=modelfile)
 
 if keyword_set(display) then spawn, 'gv ' + modelfile + ' &'
-if lun ne -1 then free_lun, lun
 if keyword_set(plotonly) then return
 
 ;; do it again for accurate timing 
@@ -552,13 +551,11 @@ bestchi2 = call_function(chi2func,best,psname=modelfile, $
 ;; make a new stellar system structure with only fitted and derived
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
-
-
-;; derive all parameters where derive=1 (final values)
-mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, nplanets=nplanets, $
+mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets, $
               debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
-              circular=circular,fitslope=fitslope, fitquad=fitquad,$
-              nvalues=nsteps*nchains,ttvs=ttv,longcadence=longcadence,/silent)
+              circular=circular,fitslope=fitslope, fitquad=fitquad, ttv=ttv,$
+              rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
+              chen=chen,nvalues=nsteps*nchains,/silent)
 mcmcss.burnndx = burnndx
 mcmcss.star.rstar.value = rstar
 *(mcmcss.chi2) = chi2

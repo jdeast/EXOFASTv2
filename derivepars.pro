@@ -154,8 +154,8 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].taus.value = (ss.planet[i].t14s.value-t23s)/2d0
    ss.planet[i].tfwhms.value = ss.planet[i].t14s.value-ss.planet[i].taus.value
 
-   if (where(~finite(ss.planet[i].tfwhms.value)))[0] ne -1 then stop
-   if (where(~finite(ss.planet[i].taus.value)))[0] ne -1 then stop
+   if ss.planet[i].tfwhms.derive and (where(~finite(ss.planet[i].tfwhms.value)))[0] ne -1 then stop
+   if ss.planet[i].taus.derive and (where(~finite(ss.planet[i].taus.value)))[0] ne -1 then stop
 
    ss.planet[i].psg.value = (ss.star.rstar.value+ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2) ;; eq 9, Winn 2010
    ss.planet[i].ps.value = (ss.star.rstar.value-ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2)  ;; eq 9, Winn 2010

@@ -183,8 +183,8 @@ if keyword_set(debug) or keyword_set(psname) then begin
       red = '0000ff'x
       symsize = 1
       device,window_state=win_state
-      if win_state[0] eq 1 then wset, 0 $
-      else window, 0, retain=2
+;      if win_state[0] eq 1 then wset, 0 $
+;      else window, 0, retain=2
       xtitle='log(T_eff)'
       ytitle='log g'
    endelse
