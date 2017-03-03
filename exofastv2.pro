@@ -397,6 +397,25 @@ ss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets
           rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
           chen=chen)
 
+npars = 0
+for i=0, n_tags(ss)-1 do begin
+   for j=0, n_elements(ss.(i))-1 do begin
+      for k=0, n_tags(ss.(i)[j])-1 do begin
+         if n_tags(ss.(i)[j].(k)) ne 0 then begin
+            if tag_exist(ss.(i)[j].(k),'fit') then begin
+               npars += 1
+            endif
+         endif
+      endfor
+   endfor
+endfor
+
+nchains = n_elements((*ss.tofit)[0,*])*2
+memused = nchains*maxsteps*npars*8d0/(1024d0^3)
+print, 'Fit will require ' + strtrim(memused,2) + ' GB of RAM for the final structure'
+if memused gt 2d0 then message, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue'
+print
+
 ;; output to file instead of screen
 if n_elements(logfile) ne 0 then openw, lun, logfile, /get_lun $
 else lun = -1

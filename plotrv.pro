@@ -14,6 +14,7 @@ if keyword_set(psname) then begin
    black = 0
    blue = 63
    green = 144
+   symsize=0.1
 endif else begin
    set_plot, 'X'
    red = '0000ff'x
@@ -23,6 +24,7 @@ endif else begin
    symsize = 1d0
    charsize = 2
    device,window_state=win_state
+   symsize=0.25
 ;   if win_state[20] eq 1 then wset, 20 $
 ;   else window, 20, retain=2
 endelse
