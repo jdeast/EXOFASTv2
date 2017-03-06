@@ -377,7 +377,7 @@ pro exofastv2, priorfile=priorfile, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, tides=tides, nplanets=nplanets, $
                fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth,$
-               i180=i180
+               i180=i180, covar=covar
 
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -411,9 +411,9 @@ for i=0, n_tags(ss)-1 do begin
 endfor
 
 nchains = n_elements((*ss.tofit)[0,*])*2
-memused = nchains*maxsteps*npars*8d0/(1024d0^3)
-print, 'Fit will require ' + strtrim(memused,2) + ' GB of RAM for the final structure'
-if memused gt 2d0 then message, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue'
+memrequired = nchains*maxsteps*npars*8d0/(1024d0^3)
+print, 'Fit will require ' + strtrim(memrequired,2) + ' GB of RAM for the final structure'
+if memrequired gt 2d0 then message, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue'
 print
 
 ;; output to file instead of screen
@@ -595,7 +595,10 @@ parfile = prefix + 'pdf.ps'
 covarfile = prefix + 'covar.ps'
 texfile = prefix + 'median.tex'
 
-exofast_plotdist2, mcmcss, pdfname=parfile, covarname=covarfile;,/nocovar
+if keyword_set(covar) then nocovar = 0 $
+else nocovar = 1
+
+exofast_plotdist2, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 
 ;; display all the plots, if desired
