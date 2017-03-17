@@ -8,6 +8,8 @@ if keyword_set(psname) then begin
    aspect_ratio=1.5
    xsize=10.5
    ysize=xsize/aspect_ratio
+   ysize = xsize/aspect_ratio + (ss.ntran-1)*0.6
+;   ysize=(xsize/aspect_ratio + (ss.ntran)*0.2) < screen[1]
    !p.font=0
    device, filename=psname, /color, bits=24
    device, xsize=xsize,ysize=ysize
@@ -68,29 +70,47 @@ xrange = [xmin,xmax]
 
 
 j=0
-t0 = 2457000
 trandata = (*(ss.transit[j].transitptrs)) 
 time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
-time = trandata.bjd - t0
+;t0 = 2450000
 
 xmin = min(time,max=xmax)
 xrange=[xmin,xmax]
 
 
 noise = 0.0001d0
+noise = stdev(trandata.residuals)
 ymin = 1d0 - depth - 3*noise
-ymax = 1d0 + 3*noise + spacing*((ss.ntran-1d0)>0)
+if ss.ntran eq 1 then ymax = 1+3*noise $
+else ymax = 1d0 + 3*noise + spacing*(ss.ntran-1)
 yrange = [ymin,ymax]
 ;yrange = [0.994,1.001]
 xtitle='Time - T!DC!N (hrs)'
+
+i=0
+sini = sin(acos(ss.planet[i].cosi.value))
+esinw = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
+bp = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+esinw)
+t14 = (ss.planet[i].period.value/!dpi*asin(sqrt((1d0+ss.planet[i].p.value)^2 - bp^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+esinw))*24d0
+
+trandata = (*(ss.transit[0].transitptrs)) 
+minbjd = min(trandata.bjd,max=maxbjd)
+minbjd -= 0.25 & maxbjd += 0.25d0
+t0 = floor(minbjd)
 xtitle='BJD_TDB - ' + strtrim(t0,2)
 
+if maxbjd - minbjd lt 1 then xrange=[-t14,t14] $
+else xrange = [minbjd,maxbjd]-t0
+
+
+;stop
 ;; position keyword required for proper bounding box
-plot, [0],[0],yrange=yrange, xrange=xrange,/xstyle,/ystyle,position=[0.15, 0.05, 0.93, 0.93],$
+plot, [0],[0],yrange=yrange, xrange=xrange,/xstyle,/ystyle,$;position=[0.15, 0.05, 0.93, 0.93],$
       ytitle='Normalized flux + Constant',xtitle=xtitle
 
-xrange = [xmin,xmax]
+;xrange = [xmin,xmax]
 
+;; make a plot for each input file
 for j=0, ss.ntran-1 do begin
 
    trandata = (*(ss.transit[j].transitptrs)) 
@@ -123,26 +143,30 @@ for j=0, ss.ntran-1 do begin
                                      tc=ss.planet[i].tc.value,$
                                      rstar=ss.star.rstar.value/AU)-1d0)
          
-         minepoch = floor((ss.planet[i].tc.value - minbjd)/ss.planet[i].period.value)
-         maxepoch = ceil((maxbjd - ss.planet[i].tc.value)/ss.planet[i].period.value)
-         epochs = -minepoch + dindgen(maxepoch+minepoch)
+         minepoch = floor((minbjd-ss.planet[i].tc.value)/ss.planet[i].period.value)
+         maxepoch = ceil((maxbjd-ss.planet[i].tc.value)/ss.planet[i].period.value)
+         epochs = -minepoch + dindgen(maxepoch-minepoch+1)
          tcs = ss.planet[i].tc.value + epochs*ss.planet[i].period.value
          xyouts, tcs-t0, epochs*0d0+(ymax+1d0)/2d0, ss.planet[i].label, align=0.5d0
-
       endif
    endfor
    prettyflux *= ss.transit[j].f0.value
    period = ss.planet[ss.transit[j].pndx].period.value
 
 ;   dummy = min(abs(trandata.bjd - ss.planet[*].tc.value),match)
-   time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
-   time = trandata.bjd - 2457000d0
+   if maxbjd - minbjd lt 1 then begin
+      time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+      prettytime = (prettytime - ss.planet[ss.transit[j].pndx].tc.value  - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+   endif else begin
+      time = trandata.bjd - t0
+      prettytime -= t0
+   endelse
 
 ;   if max(time) gt period*12d0 or min(time) lt -period*12d0 then time = time mod (period*24d0)
 
 
-;   prettytime = (prettytime - ss.planet[ss.transit[j].pndx].tc.value  - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
-   prettytime = prettytime - 2457000d0
+
+;   prettytime = prettytime - 2457000d0
 
 ;   if max(prettytime) gt period*12d0 or min(prettytime) lt -period*12d0 then prettytime = prettytime mod (period*24d0)
 ;   sorted = sort(prettytime)
@@ -152,8 +176,6 @@ for j=0, ss.ntran-1 do begin
    oplot, time, trandata.flux + spacing*(ss.ntran-j-1), psym=8, symsize=symsize
    oplot, prettytime, prettyflux + spacing*(ss.ntran-j-1), thick=2, color=red;, linestyle=0
    xyouts, 0, 1.0075 + spacing*(ss.ntran-j-1), trandata.label,charsize=charsize,alignment=0.5
-;         stop
-
 ;   wset, 1
 ;   plot, time, trandata.flux-
 endfor
@@ -196,6 +218,8 @@ for i=0, ss.nplanets-1 do begin
       ymin = min(modelflux) - 3d0*noise
 
       phasetime = ((time - ss.planet[i].tc.value) mod ss.planet[i].period.value)*24d0
+      toohigh = where(phasetime gt (ss.planet[i].period.value/2d0*24d0))
+      if toohigh[0] ne -1 then phasetime[toohigh] -= ss.planet[i].period.value*24d0
       sorted = sort(phasetime)
 
       sini = sin(acos(ss.planet[i].cosi.value))

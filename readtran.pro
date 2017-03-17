@@ -1,4 +1,4 @@
-function readtran, filename
+function readtran, filename, detrendpar=detrend
 
 if not file_test(filename) then message, 'Transit file (' + filename + ') does not exist'
 
@@ -59,6 +59,10 @@ endif else begin
    ndetrend=0
 endelse
 
+detrendpars = replicate(detrend,ndetrend > 1)
+detrendpars.label = 'C_' + strtrim(indgen(ndetrend > 1),2)
+if ndetrend eq 0 then detrendpars.fit = 0
+
 residuals = flux*0d0
 model = flux*0d0
 
@@ -66,7 +70,7 @@ night = strmid(filename,1,4)+'-'+strmid(filename,5,2)+'-'+strmid(filename,7,2)
 label = (strsplit(filename,'.',/extract))(2) + ' UT ' + night + ' ('+ bandname + ')'
 transit=create_struct('bjd',bjd,'flux',flux,'err',err,'band',band,'ndx',0,$
                       'epoch',0.0,'detrendadd',da,'detrendmult',da,'label',$
-                      label,'ndetrend',ndetrend,'residuals',residuals,'model',model)
+                      label,'ndetrend',ndetrend,'residuals',residuals,'model',model, 'detrendpars',detrendpars)
 return, transit
 
 end

@@ -129,9 +129,10 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, longcadence=longcadence,$
-               earth=earth, silent=silent
+               earth=earth, silent=silent, noyy=noyy
 
 if not keyword_set(debug) then debug=0B
+if not keyword_set(noyy) then noyy=0B
 
 ;; read in the transit files
 if n_elements(tranpath) ne 0 then begin
@@ -319,6 +320,7 @@ rstar.description = 'Radius'
 rstar.latex = 'R_*'
 rstar.label = 'rstar'
 rstar.cgs = 6.955d10
+if keyword_set(noyy) and ~keyword_set(torres) then rstar.fit = 1
 
 age = parameter
 age.value = 7d0
@@ -653,6 +655,15 @@ f0.latex = 'F_0'
 f0.label = 'f0'
 f0.scale = 1d-2
 f0.fit = 1
+
+detrend = parameter
+detrend.value = 0d0
+detrend.description = 'Detrending variable'
+detrend.latex = ''
+detrend.label = 'detrend'
+detrend.scale = 1
+detrend.fit = 1
+detrend.derive = 1
 
 beam = parameter
 beam.description = 'Doppler Beaming'
@@ -1048,6 +1059,7 @@ transit = create_struct(variance.label,variance,$ ;; Red noise
 ;                        tdv.label,0d0,$ ;; Transit depth variation
                         f0.label,f0,$ ;; normalization
                         'transitptrs',ptr_new(),$ ;; Data
+                        'detrend',ptr_new(/allocate_heap),$ ;; array of detrending parameters
                         'bandndx',0L,$
                         'exptime',0d0,$
                         'ninterp',1d0,$
@@ -1074,6 +1086,7 @@ ss = create_struct('star',star,$
                    'ntran',ntran,$
                    'nband',nband,$
                    'nplanets',nplanets,$
+                   'noyy', noyy,$
                    'nsteps',nsteps,$
 ;                   'nbad',0L,$
                    'burnndx',0L,$
@@ -1220,8 +1233,13 @@ if ntran gt 0 then begin
 
    ss.transit[*].transitptrs = ptrarr(ntran,/allocate_heap)
    for i=0, ntran-1 do begin
-      *(ss.transit[i].transitptrs) = readtran(tranfiles[i])
+      *(ss.transit[i].transitptrs) = readtran(tranfiles[i], detrendpar=detrend)
       
+      ;; create an array of detrending variables 
+      ;; (one for each extra column in the transit file)
+      ndetrend = (*(ss.transit[i].transitptrs)).ndetrend
+      if ndetrend ge 1 then *(ss.transit[i].detrend) = replicate(detrend,ndetrend)
+
       ss.transit.exptime = exptime[i]
       ss.transit.ninterp = ninterp[i]
       
@@ -1357,13 +1375,28 @@ priors = priors[*,1:*]
 ;; This indexes which copy (e.g., planet b=0, planet c=1 or B band=0, V band=1) 
 ;; fit[*,2] indexes the parameter of the object (e.g., Teff=0, [Fe/H]=1)
 ;; this assumes a certain structure of the parameters... is that ok?
-tofit = [-1,-1,-1]
-for i=0, n_tags(ss)-1 do begin
-   for j=0, n_elements(ss.(i))-1 do begin
-      for k=0, n_tags(ss.(i)[j])-1 do begin
-         if n_tags(ss.(i)[j].(k)) ne 0 then begin
+tofit = [-1,-1,-1,-1,-1]
+for i=0L, n_tags(ss)-1 do begin
+   for j=0L, n_elements(ss.(i))-1 do begin
+      for k=0L, n_tags(ss.(i)[j])-1 do begin
+
+         ;; this captures the detrending variables
+         if (size(ss.(i)[j].(k)))[1] eq 10 then begin
+            if ss.(i)[j].(k) ne !NULL then begin
+               for l=0L, n_tags(*(ss.(i)[j].(k)))-1 do begin
+                  if (size((*(ss.(i)[j].(k))).(l)))[2] eq 8 then begin 
+                     for m=0L, n_elements((*(ss.(i)[j].(k))).(l))-1 do begin
+                        if tag_exist((*(ss.(i)[j].(k))).(l)[m],'fit') then begin
+                           if (*(ss.(i)[j].(k))).(l)[m].fit then tofit = [[tofit],[i,j,k,l,m]]
+                        endif
+                     endfor
+                  endif
+               endfor
+            endif            
+         endif else if n_tags(ss.(i)[j].(k)) ne 0 then begin
+            ;; and this captures everything else
             if tag_exist(ss.(i)[j].(k),'fit') then begin
-               if ss.(i)[j].(k).fit then tofit = [[tofit],[i,j,k]]
+               if ss.(i)[j].(k).fit then tofit = [[tofit],[i,j,k,-1,-1]]
             endif
          endif
       endfor
@@ -1389,7 +1422,6 @@ if n_elements(ss.star.mstar.value) eq 1 then begin
    ;; input data
    perscale, ss
 endif
-
 
 return, ss
 

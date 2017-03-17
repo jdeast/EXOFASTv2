@@ -199,9 +199,9 @@ for j=0, nchains-1 do begin
    ;; repeat until a finite chi^2 
    ;; i.e., don't start outside a boundary; you'll never get back
    repeat begin
-      ;; start 5 steps from best value
+      ;; start 3 steps from best value
       pars[0:nfit-1,0,j] = bestpars[tofit] + $
-                           5d0*scale*call_function(randomfunc,seed,nfit,/normal)
+                           3d0*scale*call_function(randomfunc,seed,nfit,/normal)
       newpars[tofit] = pars[0:nfit-1,0,j]
       ;; find the chi^2
       chi2[0,j] = call_function(chi2func, newpars, determinant=det, derived=dpar)

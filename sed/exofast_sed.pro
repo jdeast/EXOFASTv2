@@ -30,7 +30,7 @@ logg1 = double(round(logg*2d0))/2d0
 met1 = double(round(met*2d0))/2d0
 
 exofast_interp_model,teff,logg1,met1,w1,lamflam1temp,/next
-if ~finite(lamflam1temp[0]) then return, !values.d_infinity
+if ~finite(lamflam1temp[0]) then stop;return, !values.d_infinity
 lamflam1=lamflam1temp*rstar*rstar*rsun*rsun/d/d/pc/pc
 kapp1 = interpol(kkap,klam,w1)
 taul1 = kapp1/kapv/1.086*Av

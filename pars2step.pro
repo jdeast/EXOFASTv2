@@ -13,7 +13,7 @@ ss.star.mstar.value = 10^ss.star.logmstar.value
 
 ;; if a starting value for the stellar radius was given, 
 ;; use it to derive a starting point for the age
-if ss.star.rstar.value ne 1d0 then begin
+if ss.star.rstar.value ne 1d0 and ~ss.noyy then begin
    ntries = 100
    age = dindgen(ntries)/(ntries-1)*13.82
    rstars = dblarr(ntries)
@@ -23,11 +23,11 @@ if ss.star.rstar.value ne 1d0 then begin
    endfor
    junk = min(abs(rstars-ss.star.rstar.value),ndx)
    ss.star.age.value = age[ndx]
-endif else begin
+endif else if ~ss.noyy then begin
    ;; otherwise derive the stellar radius
    junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar)
    ss.star.rstar.value = rstar
-endelse
+endif
 
 G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 

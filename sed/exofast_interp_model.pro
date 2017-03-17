@@ -43,8 +43,8 @@ if n_params() lt 3 then begin
   retall
 endif
 
-atnum1 = strtrim(string(fix(t/100)), 2)
-atnum2 = strtrim(string(fix((t+100)/100)), 2)
+atnum1 = strtrim(string(round(t/100d0)), 2)
+atnum2 = strtrim(string(round((t+100d0)/100d0)), 2)
 
 if keyword_set(nextgen) then atdir=getenv('EXOFAST_PATH') + '/sed/nextgenfin/lte'
 

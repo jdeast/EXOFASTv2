@@ -91,98 +91,132 @@ medianpars = []
 for i=0, n_tags(ss)-1 do begin
    for j=0, n_elements(ss.(i))-1 do begin
       for k=0, n_tags(ss.(i)[j])-1 do begin
-         if n_tags(ss.(i)[j].(k)) ne 0 then begin
-            if tag_exist(ss.(i)[j].(k),'derive') then begin
-               if ss.(i)[j].(k).derive then begin
-                  
-                  ;; trim the burn in
+
+         derive = 0
+         m=-1
+         ;; this captures the detrending variables
+         if (size(ss.(i)[j].(k)))[1] eq 10 then begin
+            if (size(ss.(i)[j].(k)))[0] ne 0 then begin
+               for l=0L, n_tags(*(ss.(i)[j].(k)))-1 do begin
+                  if (size((*(ss.(i)[j].(k))).(l)))[2] eq 8 then begin 
+                     for m=0L, n_elements((*(ss.(i)[j].(k))).(l))-1 do begin
+                        if tag_exist((*(ss.(i)[j].(k))).(l)[m],'derive') then begin
+                           if (*(ss.(i)[j].(k))).(l)[m].derive then begin
+                              pars = (*(ss.(i)[j].(k))).(l)[m].value[burnndx:*,*]
+                              derive = 1
+                              label = (*(ss.(i)[j].(k))).(l)[m].label
+                              unit = (*(ss.(i)[j].(k))).(l)[m].unit
+                              latex = (*(ss.(i)[j].(k))).(l)[m].latex
+                              best = (*(ss.(i)[j].(k))).(l)[m].best
+                           endif
+                        endif
+                     endfor
+                  endif
+               endfor
+            endif            
+         endif else if n_tags(ss.(i)[j].(k)) ne 0 then begin
+            if n_tags(ss.(i)[j].(k)) ne 0 then begin
+               if tag_exist(ss.(i)[j].(k),'derive') then begin
                   pars = ss.(i)[j].(k).value[burnndx:*,*]
-                  if n_elements(allpars) eq 0 then allpars = transpose(pars) $
-                  else allpars = [allpars,transpose(pars)]
-
-                  ;; check for bad values
-                  bad = where(~finite(pars),complement=good)
-                  if bad[0] ne -1 then message, $
-                     "ERROR: NaNs in " + ss.(i)[j].(k).label + " distribution"
-                  
-                  ;; if angular, center distribution about the mode
-                  if strupcase(ss.(i)[j].(k).unit) eq 'DEGREES' then halfrange = 180d0 $
-                  else if strupcase(ss.(i)[j].(k).unit) eq 'RADIANS' then halfrange = !dpi
-                  if strupcase(ss.(i)[j].(k).unit) eq 'DEGREES' or $
-                     strupcase(ss.(i)[j].(k).unit) eq 'RADIANS' then begin
-                         
-                     ;; find the mode
-                     hist = histogram(pars,nbins=100,locations=x,/nan)
-                     max = max(hist,modendx)
-                     mode = x[modendx]
-
-                     toohigh = where(pars gt (mode + halfrange))
-                     if toohigh[0] ne -1 then pars[toohigh] -= 2.d0*halfrange
-
-                     toolow = where(pars lt (mode - halfrange))
-                     if toolow[0] ne -1 then pars[toolow] += 2.d0*halfrange
-                  endif                     
-
-                  ;; 68% confidence interval
-                  sorted = sort(pars)
-                  medvalue = pars[sorted[medndx]]
-                  upper = pars[sorted[hisigndx]] - medvalue
-                  lower = medvalue - pars[sorted[lowsigndx]]
-
-                  if n_elements(medianpars) eq 0 then medianpars = [medvalue,upper,lower] $
-                  else medianpars = [[medianpars],[[medvalue,upper,lower]]]
-                  
-                  xmax = (medvalue + 4*upper) < max(pars)
-                  xmin = (medvalue - 4*lower) > min(pars)
-                  parnames = [parnames,ss.(i)[j].(k).latex]
-
-                  if xmin eq xmax then begin
-                     message, 'WARNING: ' + ss.(i)[j].(k).label +$
-                              ' is singularly valued.',/continue
-                  endif else begin
-
-                     ;; plot labels
-                     xtitle='!3' + textoidl(ss.(i)[j].(k).latex + '_{' + ss.(i)[j].label + '}')
-                     ytitle='!3Probability'
-                     
-                     hist = histogram(pars,nbins=100,locations=x,min=xmin,max=xmax)
-                     plot, x, hist/double(nsteps), psym=10, xtitle=xtitle, ytitle=ytitle,$
-                           charsize=charsize,xstyle=1, xrange=[xmin,xmax], font=1
-                     
-                     ;; if the best parameters are given, overplot them on the PDFs
-                     if finite(ss.(i)[j].(k).best) then $
-                        oplot, [ss.(i)[j].(k).best,ss.(i)[j].(k).best],[-9d9,9d9]
-                  endelse
-
-
-                  ;; format values for table (rounded appropriately)
-                  ;; round the high error to 2 sig figs
-                  exphi=fix(alog10(upper))
-                  if (upper lt 1d0) then exphi=exphi-1
-                  roundhi=round(upper/10.d0^(exphi-1d0),/L64)*10.d0^(exphi-1d0)
-                  if (roundhi gt 10) then errhi = strtrim(round(roundhi,/L64),2) $
-                  else errhi = string(roundhi,format='(f255.'+strtrim(1-exphi,2)+')')
-                  
-                  ;; round the low error to 2 sig figs
-                  explo=fix(alog10(lower))
-                  if (lower lt 1d0) then explo=explo-1
-                  roundlo=round(lower/10.d0^(explo-1d0),/L64)*10.d0^(explo-1d0)
-                  if (roundlo gt 10) then errlo = strtrim(round(roundlo,/L64),2) $
-                  else errlo = string(roundlo,format='(f255.'+strtrim(1-explo,2)+')')
-                  
-                  ;; round the value to the greater number of sig figs
-                  ndec = long(1 - (exphi < explo))
-                  if ndec eq 0 then value = string(medvalue,format='(i255)') $
-                  else if ndec lt 0 then $
-                     value=round(round(medvalue/10.d0^(-ndec),/L64)*10.d0^(-ndec),/L64) $
-                  else value = string(medvalue,format='(f255.'+strtrim(ndec,2)+')')
-
-                  ss.(i)[j].(k).medvalue = strtrim(value,2)
-                  ss.(i)[j].(k).upper = strtrim(errhi,2)
-                  ss.(i)[j].(k).lower = strtrim(errlo,2)
-
+                  derive = 1
+                  label = ss.(i)[j].(k).label 
+                  unit = ss.(i)[j].(k).unit
+                  latex = ss.(i)[j].(k).latex
+                  best = ss.(i)[j].(k).best
                endif
             endif
+         endif
+
+         if derive then begin
+
+            if n_elements(allpars) eq 0 then allpars = transpose(pars) $
+            else allpars = [allpars,transpose(pars)]
+
+            ;; check for bad values
+            bad = where(~finite(pars),complement=good)
+            if bad[0] ne -1 then message, $
+               "ERROR: NaNs in " + label + " distribution"
+            
+            ;; if angular, center distribution about the mode
+            if unit eq 'DEGREES' then halfrange = 180d0 $
+            else if unit eq 'RADIANS' then halfrange = !dpi
+            if unit eq 'DEGREES' or unit eq 'RADIANS' then begin
+               
+               ;; find the mode
+               hist = histogram(pars,nbins=100,locations=x,/nan)
+               max = max(hist,modendx)
+               mode = x[modendx]
+               
+               toohigh = where(pars gt (mode + halfrange))
+               if toohigh[0] ne -1 then pars[toohigh] -= 2.d0*halfrange
+               
+               toolow = where(pars lt (mode - halfrange))
+               if toolow[0] ne -1 then pars[toolow] += 2.d0*halfrange
+            endif                     
+            
+            ;; 68% confidence interval
+            sorted = sort(pars)
+            medvalue = pars[sorted[medndx]]
+            upper = pars[sorted[hisigndx]] - medvalue
+            lower = medvalue - pars[sorted[lowsigndx]]
+            
+            if n_elements(medianpars) eq 0 then medianpars = [medvalue,upper,lower] $
+            else medianpars = [[medianpars],[[medvalue,upper,lower]]]
+            
+            xmax = (medvalue + 4*upper) < max(pars)
+            xmin = (medvalue - 4*lower) > min(pars)
+            parnames = [parnames,latex]
+            
+            if xmin eq xmax then begin
+               message, 'WARNING: ' + label + ' is singularly valued.',/continue
+            endif else begin
+               
+               ;; plot labels
+               xtitle='!3' + textoidl(latex + '_{' + ss.(i)[j].label + '}')
+               ytitle='!3Probability'
+               
+               hist = histogram(pars,nbins=100,locations=x,min=xmin,max=xmax)
+               plot, x, hist/double(nsteps), psym=10, xtitle=xtitle, ytitle=ytitle,$
+                     charsize=charsize,xstyle=1, xrange=[xmin,xmax], font=1
+               
+               ;; if the best parameters are given, overplot them on the PDFs
+               if finite(best) then $
+                  oplot, [best,best],[-9d9,9d9]
+            endelse
+            
+            
+            ;; format values for table (rounded appropriately)
+            ;; round the high error to 2 sig figs
+            exphi=fix(alog10(upper))
+            if (upper lt 1d0) then exphi=exphi-1
+            roundhi=round(upper/10.d0^(exphi-1d0),/L64)*10.d0^(exphi-1d0)
+            if (roundhi gt 10) then errhi = strtrim(round(roundhi,/L64),2) $
+            else errhi = string(roundhi,format='(f255.'+strtrim(1-exphi,2)+')')
+            
+            ;; round the low error to 2 sig figs
+            explo=fix(alog10(lower))
+            if (lower lt 1d0) then explo=explo-1
+            roundlo=round(lower/10.d0^(explo-1d0),/L64)*10.d0^(explo-1d0)
+            if (roundlo gt 10) then errlo = strtrim(round(roundlo,/L64),2) $
+            else errlo = string(roundlo,format='(f255.'+strtrim(1-explo,2)+')')
+            
+            ;; round the value to the greater number of sig figs
+            ndec = long(1 - (exphi < explo))
+            if ndec eq 0 then value = string(medvalue,format='(i255)') $
+            else if ndec lt 0 then $
+               value=round(round(medvalue/10.d0^(-ndec),/L64)*10.d0^(-ndec),/L64) $
+            else value = string(medvalue,format='(f255.'+strtrim(ndec,2)+')')
+            
+            if m ne -1 then begin
+               (*ss.(i)[j].(k)).(l)[m].medvalue = strtrim(value,2)
+               (*ss.(i)[j].(k)).(l)[m].upper = strtrim(errhi,2)
+               (*ss.(i)[j].(k)).(l)[m].lower = strtrim(errlo,2)
+            endif else begin
+               ss.(i)[j].(k).medvalue = strtrim(value,2)
+               ss.(i)[j].(k).upper = strtrim(errhi,2)
+               ss.(i)[j].(k).lower = strtrim(errlo,2)
+            endelse
+
          endif
       endfor
    endfor

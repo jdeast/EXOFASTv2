@@ -238,24 +238,25 @@ endif
 ;; derive the model parameters from the stepping parameters (return if unphysical)
 ss.star.mstar.value = 10^ss.star.logmstar.value
 ;; use the YY tracks to guide the stellar parameters
-if keyword_set(psname) then begin
-   chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug, psname=psname+'.yy.ps')
-endif else begin
-   chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug)
-endelse
+if ~ss.noyy then begin
+   if keyword_set(psname) then begin
+      chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug, psname=psname+'.yy.ps')
+   endif else begin
+      chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug)
+   endelse
+   if ~finite(chi2) then begin
+      if ss.debug then print, 'star is bad'
+      return, !values.d_infinity
+   endif
+   derived = rstar
+   ss.star.rstar.value = rstar
+endif
 
 if ss.star.errscale.value le 0 then begin
    if ss.debug then print, 'error scale is bad'
    chi2 = !values.d_infinity
 endif
 
-if ~finite(chi2) then begin
-   if ss.debug then print, 'star is bad'
-   return, !values.d_infinity
-endif
-
-derived = rstar
-ss.star.rstar.value = rstar
 if step2pars(ss,verbose=ss.debug) eq -1 then begin
    if ss.debug then print, 'stellar system is bad'
    return, !values.d_infinity
@@ -363,7 +364,10 @@ for j=0, ss.nplanets-1 do begin
 
       ;; negative radii are allowed to assess the significance of the
       ;; transit depth. That breaks these relations, so exclude them here
-      if ss.planet[j].rpearth.value le 0d0 then return, !values.d_infinity
+      if ss.planet[j].rpearth.value le 0d0 then begin
+         if ss.debug then print, 'rpearth is bad'
+         return, !values.d_infinity
+      endif
 
       if not ss.amoeba then begin
 
@@ -391,9 +395,16 @@ if file_test(ss.star.fluxfile) then begin
                             logg=ss.star.logg.value,met=ss.star.feh.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep)
    endelse 
 
-   if ~finite(sedchi2) then return, !values.d_infinity
+   if ~finite(sedchi2) then begin
+      if ss.debug then print, 'sed is bad'
+      return, !values.d_infinity
+   endif
+
    sedchi2 = exofast_like(f-fp,0d0,ss.star.errscale.value*ep,/chi2)
-   if ~finite(sedchi2) then return, !values.d_infinity
+   if ~finite(sedchi2) then begin
+      if ss.debug then print, 'sed is bad'
+      return, !values.d_infinity
+   endif
    chi2 += sedchi2
 endif
 
@@ -432,8 +443,12 @@ for j=0, ntelescopes-1 do begin
    modelrv += ss.telescope[j].gamma.value + ss.star.slope.value*(rv.bjd-t0) + ss.star.quad.value*(rv.bjd-t0)^2
 
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
-   rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jitter.value,rv.err,/chi2)
+   
+   if keyword_set(psname) then $
+      forprint, rv.bjd, rv.rv - modelrv, format='(f0.8,x,f0.6)', textout='residuals' + '.' + strtrim(j,2) + '.txt', /nocomment
 
+   rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jitter.value,rv.err,/chi2)
+   
    if ~finite(rvchi2) then stop
    chi2 += rvchi2
 ;   chi2 += total(((rv.rv - modelrv)/rv.err)^2)
@@ -503,11 +518,15 @@ for j=0, ntransits-1 do begin
 
       endif
    endfor
+
    modelflux *=  ss.transit[j].f0.value
    
    ;; now integrate the model points (before detrending)
    if ninterp gt 1 then modelflux = total(modelflux,2)/ninterp
-   
+
+   ;; detrending
+   modelflux += total(transit.detrendadd*replicate(1d0,n_elements(transit.bjd))##transit.detrendpars.value,1)  
+
    ;; chi^2
    transitchi2 = exofast_like(transit.flux - modelflux,ss.transit[j].variance.value,transit.err,/chi2)
    (*ss.transit[j].transitptrs).residuals = transit.flux - modelflux
