@@ -15,21 +15,21 @@ ss.star.logg.value = alog10(G*ss.star.mstar.value/(ss.star.rstar.value^2)*9.3168
 ;; derive the distance from lstar
 sigmab = 5.670373d-5/3.839d33*6.9566d10^2 ;; Stefan-boltzmann Constant (L_sun/(r_sun^2*K^4))
 ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*sigmaB    ;; L_sun
-
-BC = -5.05244d0 + $                                                   ; +/- 1.89092
-     1.965909d-3*ss.star.teff.value - $                               ; +/- 8.869243d-4
-     2.677702d-7*ss.star.teff.value^2 + $                             ; +/- 1.382836d-7
-     1.256253d-11*ss.star.teff.value^3                                ; +/- 7.166632d-12
-flowercoeffs = [-0.370510203809015d5,$
-                0.385672629965804d5,$
-                -0.150651486316025d5,$
-                0.261724637119416d4,$
-                -0.170623810323864d3]
-logteff = alog10(ss.star.teff.value)
-BC = total(flowercoeffs*[1d0,logteff,logteff^2,logteff^3,logteff^4])
-ss.star.Mv.value = -2.5d0*alog10(ss.star.lstar.value)+4.732-BC  ;; Absolute V-band Magnitude
-ss.star.distance.value = 10d0^((ss.star.Ma.value-ss.star.Mv.value-ss.star.Av.value)/5d0 + 1d0)
 ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
+
+;BC = -5.05244d0 + $                                                   ; +/- 1.89092
+;     1.965909d-3*ss.star.teff.value - $                               ; +/- 8.869243d-4
+;     2.677702d-7*ss.star.teff.value^2 + $                             ; +/- 1.382836d-7
+;     1.256253d-11*ss.star.teff.value^3                                ; +/- 7.166632d-12
+;flowercoeffs = [-0.370510203809015d5,$
+;                0.385672629965804d5,$
+;                -0.150651486316025d5,$
+;                0.261724637119416d4,$
+;                -0.170623810323864d3]
+;logteff = alog10(ss.star.teff.value)
+;BC = total(flowercoeffs*[1d0,logteff,logteff^2,logteff^3,logteff^4])
+;ss.star.Mv.value = -2.5d0*alog10(ss.star.lstar.value)+4.732-BC  ;; Absolute V-band Magnitude
+;ss.star.distance.value = 10d0^((ss.star.Ma.value-ss.star.Mv.value-ss.star.Av.value)/5d0 + 1d0)
 ;print, ss.star.distance.value, ss.star.parallax.value, ss.star.av.value
 
 for i=0, ss.nplanets-1 do begin

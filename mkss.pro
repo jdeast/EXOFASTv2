@@ -256,18 +256,18 @@ Av.label = 'Av'
 Av.fit = 1
 Av.scale = 0.3d0
 
-Ma = parameter
-Ma.unit = ''
-Ma.description = 'Apparent V-band Magnitude'
-Ma.latex = 'M_a'
-Ma.label = 'Ma'
-Ma.fit=1
+;Ma = parameter
+;Ma.unit = ''
+;Ma.description = 'Apparent V-band Magnitude'
+;Ma.latex = 'M_a'
+;Ma.label = 'Ma'
+;Ma.fit=1
 
-Mv = parameter
-Mv.unit = ''
-Mv.description = 'Absolute V-band Magnitude'
-Mv.latex = 'M_v'
-Mv.label = 'Mv'
+;Mv = parameter
+;Mv.unit = ''
+;Mv.description = 'Absolute V-band Magnitude'
+;Mv.latex = 'M_v'
+;Mv.label = 'Mv'
 
 distance = parameter
 distance.unit = 'pc'
@@ -275,6 +275,9 @@ distance.description = 'Distance'
 distance.latex = 'd'
 distance.label = 'distance'
 distance.cgs = 3.08567758d18 ;; cm/pc
+distance.fit = 1
+distance.scale = 100
+distance.value = 10
 
 parallax = parameter
 parallax.unit = 'mas'
@@ -931,8 +934,8 @@ star = create_struct(mstar.label,mstar,$
                      vsini.label,vsini,$
                      macturb.label,macturb,$
                      Av.label,Av,$
-                     Ma.label,Ma,$
-                     Mv.label,Mv,$
+;                     Ma.label,Ma,$
+;                     Mv.label,Mv,$
                      errscale.label,errscale,$
                      distance.label,distance,$
                      parallax.label,parallax,$

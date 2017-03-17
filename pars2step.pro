@@ -11,6 +11,10 @@ endif
 
 ss.star.mstar.value = 10^ss.star.logmstar.value
 
+;; derive the distance from the parallax, if given
+if ss.star.distance.value eq 10.0 and ss.star.parallax.value ne 0d0 then $
+   ss.star.distance.value = 1d3/ss.star.parallax.value
+
 ;; if a starting value for the stellar radius was given, 
 ;; use it to derive a starting point for the age
 if ss.star.rstar.value ne 1d0 and ~ss.noyy then begin
