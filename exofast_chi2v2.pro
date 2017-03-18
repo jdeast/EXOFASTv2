@@ -273,7 +273,6 @@ for i=0, n_elements(priors[0,*])-1 do begin
          print, ss.(priors[0,i])[priors[1,i]].(priors[2,i]).label + '_' + strtrim(priors[1,i],2) + $
                 ' (' + strtrim(ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value,2) + ') is out of bounds (' +$
                 strtrim(ss.(priors[0,i])[priors[1,i]].(priors[2,i]).upperbound,2) + ',' + strtrim(ss.(priors[0,i])[priors[1,i]].(priors[2,i]).lowerbound,2) + ')'
-      stop
       return, !values.d_infinity
    endif
 

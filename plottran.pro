@@ -176,6 +176,7 @@ for j=0, ss.ntran-1 do begin
    oplot, time, trandata.flux + spacing*(ss.ntran-j-1), psym=8, symsize=symsize
    oplot, prettytime, prettyflux + spacing*(ss.ntran-j-1), thick=2, color=red;, linestyle=0
    xyouts, 0, 1.0075 + spacing*(ss.ntran-j-1), trandata.label,charsize=charsize,alignment=0.5
+;   stop
 ;   wset, 1
 ;   plot, time, trandata.flux-
 endfor

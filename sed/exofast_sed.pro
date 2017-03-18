@@ -18,7 +18,7 @@ rsun=6.96e10 ;; cm
 
 ;; don't do this every time
 if n_elements(fp) eq 0 then begin
-   mag2fluxconv,fluxfile,wp,widthhm,fp,ep,teff=teff
+   mag2fluxconv,fluxfile,wp,widthhm,fp,ep,teff=teff 
    n=n_elements(wp)
    m=where(ep gt 0)
    readcol,getenv('EXOFAST_PATH') + '/sed/extinction_law.ascii',klam,kkap,/silent
@@ -57,9 +57,10 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
       device, filename=psname, /color, bits=24
       device, xsize=xsize,ysize=ysize
       loadct, 39, /silent
-      colors=[0,254,68,128]
+      colors=[0,254,128,68]
       xtitle = textoidl('\lambda (\mum)')
       ytitle = textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
+      plotsym, 0, 0.5, /fill, color=colors[3]
    endif else begin
       set_plot, 'X'
       device,window_state=win_state
@@ -68,10 +69,17 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
       colors = ['ffffff'x,'0000ff'x,'00ff00'x,'ff0000'x]
       xtitle = 'lambda (um)'
       ytitle = 'log(lambda F_lambda) (erg/s/cm^2)'
+      plotsym, 0, 1.5, /fill, color=colors[3]
    endelse
-   plotsym, 0, /fill, color=colors[1]
-   plot, w1, flux,/xlog,/ylog,xtitle=xtitle,ytitle=ytitle
-   oploterr, wp, f, ep, 8
+   xmin = min(wp, max=xmax)
+   xmax = 20
+   xmin = 0.1
+   ymin = min([f,fp],max=ymax)
+;   ymin = min([f,fp,flux[where(w1 gt 0.4)]],max=ymax)
+   plot, w1, smooth(flux,10),/xlog,/ylog,xtitle=xtitle,ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs;,/ys
+   oploterr, wp, f, ep, 8  
+   oploterror, wp, fp, widthhm, ep, errcolor=colors[1], psym=3
+stop
    if keyword_set(psname) then begin
       device, /close
    endif
