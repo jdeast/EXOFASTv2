@@ -1,4 +1,4 @@
-pro	mag2fluxconv,fname,lameff,weff,flux,fluxerr,teff=teff
+pro	mag2fluxconv,fname,lameff,weff,flux,fluxerr,teff=teff,wiseab=wiseab
 
 ; fname - filename with band, mag, magerr
 ; Returns fluxes and errors in lamFlam units: erg/cm^2/s
@@ -194,25 +194,41 @@ for i=0,n_elements(band)-1 do begin
              lameff(i)=33526. / 1.e4
              weff(i)=6626. / 1.e4
              lamflamzp = 3631. * 3e-9 / lameff(i)^2 * lameff(i)
-             flux(i)=lamflamzp*10^(-0.4*(mag(i)))  
+             if keyword_set(wiseab) then begin
+                flux(i)=lamflamzp*10^(-0.4*(mag(i)))  
+             endif else begin
+                flux(i)=lamflamzp*10^(-0.4*(mag(i)+2.683d0))  
+             endelse
            end
      'WISE2': begin
              lameff(i)=46028. / 1.e4
              weff(i)=10423. / 1.e4
              lamflamzp = 3631. * 3e-9 / lameff(i)^2 * lameff(i)
-             flux(i)=lamflamzp*10^(-0.4*(mag(i)))  
+             if keyword_set(wiseab) then begin
+                flux(i)=lamflamzp*10^(-0.4*(mag(i)))  
+             endif else begin
+                flux(i)=lamflamzp*10^(-0.4*(mag(i)+3.319d0))  
+             endelse
            end
      'WISE3': begin
              lameff(i)=11.5608
              weff(i)=5.5069
              lamflamzp = 3631. * 3e-9 / lameff(i)^2 * lameff(i)
-             flux(i)=lamflamzp*10^(-0.4*(mag(i)))  
+             if keyword_set(wiseab) then begin
+                flux(i)=lamflamzp*10^(-0.4*(mag(i)))  
+             endif else begin
+                flux(i)=lamflamzp*10^(-0.4*(mag(i)+5.242d0))  
+             endelse
            end
      'WISE4': begin
              lameff(i)=22.0883
              weff(i)=4.1013
              lamflamzp = 3631. * 3e-9 / lameff(i)^2 * lameff(i)
-             flux(i)=lamflamzp*10^(-0.4*(mag(i)))  
+             if keyword_set(wiseab) then begin
+                flux(i)=lamflamzp*10^(-0.4*(mag(i)))  
+             endif else begin
+                flux(i)=lamflamzp*10^(-0.4*(mag(i)+6.604d0))  
+             endelse
            end
   endcase
 endfor

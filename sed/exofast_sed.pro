@@ -79,7 +79,6 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
    plot, w1, smooth(flux,10),/xlog,/ylog,xtitle=xtitle,ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs;,/ys
    oploterr, wp, f, ep, 8  
    oploterror, wp, fp, widthhm, ep, errcolor=colors[1], psym=3
-stop
    if keyword_set(psname) then begin
       device, /close
    endif
