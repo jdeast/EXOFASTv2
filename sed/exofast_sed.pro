@@ -1,3 +1,4 @@
+;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
 function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname
 
 common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m
@@ -47,6 +48,11 @@ for i=0,n-1 do begin
 endfor
 
 if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
+   ;; The Spectral Energy Distribution (black), with broad band
+   ;; averages (blue circles) and broad band measurements (red). The error
+   ;; bars in wavelength denote the bandwidth of the corresponding
+   ;; filter and the error bars in flux denote the measurement
+   ;; uncertainty.
    mydevice=!d.name
    if keyword_set(psname) then begin
       set_plot, 'PS'
@@ -74,11 +80,31 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
    xmin = min(wp, max=xmax)
    xmax = 20
    xmin = 0.1
-   ymin = min([f,fp],max=ymax)
-;   ymin = min([f,fp,flux[where(w1 gt 0.4)]],max=ymax)
+   ymin = min([f[m],fp[m]-ep[m]])
+   ymax = max([f[m],fp[m]+ep[m]])
    plot, w1, smooth(flux,10),/xlog,/ylog,xtitle=xtitle,ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs;,/ys
-   oploterr, wp, f, ep, 8  
-   oploterror, wp, fp, widthhm, ep, errcolor=colors[1], psym=3
+   oplot, wp[m], f[m], psym=8  
+
+   ;; oploterror has too many dependencies
+   for i=0, n_elements(m)-1 do begin
+      ;; x error bar
+      oplot, [wp[m[i]]-widthhm[m[i]],wp[m[i]]+widthhm[m[i]]], [fp[m[i]],fp[m[i]]], color=colors[1]
+      ebw = !d.y_vsize/100d0 ;; error bar width = 1% of device size
+      xy1 = convert_coord(wp[m[i]]-widthhm[m[i]],fp[m[i]],/to_device)
+      xy2 = convert_coord(wp[m[i]]+widthhm[m[i]],fp[m[i]],/to_device)
+      plots, [xy1[0],xy1[0]], [xy1[1]-ebw,xy1[1]+ebw], color=colors[1],/device
+      plots, [xy2[0],xy2[0]], [xy2[1]-ebw,xy2[1]+ebw], color=colors[1],/device
+
+      ;; y error bar
+      oplot, [wp[m[i]],wp[m[i]]], [fp[m[i]]-ep[m[i]],fp[m[i]]+ep[m[i]]], color=colors[1]
+      ebw = !d.x_vsize/100d0 ;; error bar width = 1% of device size
+      xy1 = convert_coord(wp[m[i]],fp[m[i]]-ep[m[i]],/to_device)
+      xy2 = convert_coord(wp[m[i]],fp[m[i]]+ep[m[i]],/to_device)
+      plots, [xy1[0]-ebw,xy1[0]+ebw], [xy1[1],xy1[1]], color=colors[1],/device
+      plots, [xy2[0]-ebw,xy2[0]+ebw], [xy2[1],xy2[1]], color=colors[1],/device
+
+   endfor
+
    if keyword_set(psname) then begin
       device, /close
    endif
@@ -89,7 +115,7 @@ f0 = f
 fp0 = fp
 ep0 = ep
 ;chi2 = total( (alog10(f[m]) - alog10(fp[m]))^2 / (ep[m]/fp[m]*alog(10)/2.5)^2)
-chi2 = total(((f-fp)/ep)^2)
+chi2 = total(((f[m]-fp[m])/ep[m])^2)
 
 return, chi2
 
