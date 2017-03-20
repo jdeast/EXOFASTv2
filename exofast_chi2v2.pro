@@ -469,15 +469,18 @@ for j=0, ntransits-1 do begin
 
    if (where(transit.err^2 + ss.transit[j].variance.value le 0d0))[0] ne -1 then return, !values.d_infinity
 
-   ;; quadratic limb darkening
    band = ss.band[ss.transit[j].bandndx]
-   ldcoeffs = quadld(ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, band.name)
-   u1claret = ldcoeffs[0]
-   u2claret = ldcoeffs[1]
-   u1err = 0.05d0 
-   u2err = 0.05d0
-   chi2 += ((band.u1.value-u1claret)/u1err)^2
-   chi2 += ((band.u2.value-u2claret)/u2err)^2
+
+   ;; quadratic limb darkening
+   if ~ss.noclaret then begin
+      ldcoeffs = quadld(ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, band.name)
+      u1claret = ldcoeffs[0]
+      u2claret = ldcoeffs[1]
+      u1err = 0.05d0 
+      u2err = 0.05d0
+      chi2 += ((band.u1.value-u1claret)/u1err)^2
+      chi2 += ((band.u2.value-u2claret)/u2err)^2
+   endif
 
    ;; Kepler Long candence data; create several model points and average   
    ninterp = ss.transit[j].ninterp

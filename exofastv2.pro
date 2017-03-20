@@ -375,7 +375,7 @@ pro exofastv2, priorfile=priorfile, $
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                logfile=logfile, $
                maxgr=maxgr, mintz=mintz, $
-               noyy=noyy, tides=tides, nplanets=nplanets, $
+               noyy=noyy, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth,$
                i180=i180, covar=covar
 
@@ -395,7 +395,7 @@ ss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets
           debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
           circular=circular,fitslope=fitslope, fitquad=fitquad,ttv=ttv, $
           rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
-          chen=chen, noyy=noyy)
+          chen=chen, noyy=noyy, noclaret=noclaret)
 
 npars = 0
 for i=0, n_tags(ss)-1 do begin

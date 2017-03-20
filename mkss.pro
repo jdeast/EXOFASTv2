@@ -129,10 +129,11 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, longcadence=longcadence,$
-               earth=earth, silent=silent, noyy=noyy
+               earth=earth, silent=silent, noyy=noyy, noclaret=noclaret
 
 if not keyword_set(debug) then debug=0B
 if not keyword_set(noyy) then noyy=0B
+if not keyword_set(noclaret) then noclaret=0B
 
 ;; read in the transit files
 if n_elements(tranpath) ne 0 then begin
@@ -1090,6 +1091,7 @@ ss = create_struct('star',star,$
                    'nband',nband,$
                    'nplanets',nplanets,$
                    'noyy', noyy,$
+                   'noclaret', noclaret,$
                    'nsteps',nsteps,$
 ;                   'nbad',0L,$
                    'burnndx',0L,$
@@ -1198,10 +1200,11 @@ for i=0, nband-1 do begin
    ss.band[i].name = bands[i]
    ss.band[i].label = bands[i]
 
-
    ldcoeffs = quadld(ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, bands[i])
-   ss.band[i].u1.value = ldcoeffs[0]
-   ss.band[i].u2.value = ldcoeffs[1]
+   if finite(ldcoeffs[0]) then ss.band[i].u1.value = ldcoeffs[0] $
+   else ss.band[i].u1.value = 0d0
+   if finite(ldcoeffs[1]) then ss.band[i].u2.value = ldcoeffs[1] $
+   else ss.band[i].u2.value = 0d0
    ss.band[i].u1.latex = 'u_{1,' + bands[i] + '}'
    ss.band[i].u2.latex = 'u_{2,' + bands[i] + '}'
    ss.band[i].u3.latex = 'u_{3,' + bands[i] + '}'
