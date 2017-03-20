@@ -254,7 +254,7 @@ endif
 
 if ss.star.errscale.value le 0 then begin
    if ss.debug then print, 'error scale is bad'
-   chi2 = !values.d_infinity
+   return, !values.d_infinity
 endif
 
 if step2pars(ss,verbose=ss.debug) eq -1 then begin
