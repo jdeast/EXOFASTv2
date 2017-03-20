@@ -18,15 +18,6 @@ ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*sigmaB
 
 ;; derive the absolute magnitude and distance
 nsteps = n_elements(ss.star.teff.value)
-flowercoeffs = [-0.370510203809015d5,$
-                0.385672629965804d5,$
-                -0.150651486316025d5,$
-                0.261724637119416d4,$
-                -0.170623810323864d3]#(replicate(1,nsteps))
-logteff = alog10(ss.star.teff.value)
-BC = total(flowercoeffs*transpose([[replicate(1d0,nsteps)],[logteff],[logteff^2],[logteff^3],[logteff^4]]),1)
-ss.star.Mv.value = -2.5d0*alog10(ss.star.lstar.value)+4.732-BC  ;; Absolute V-band Magnitude
-ss.star.distance.value = 10d0^((ss.star.Ma.value-ss.star.Mv.value-ss.star.Av.value)/5d0 + 1d0)
 ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
 
 for i=0, ss.nplanets-1 do begin
