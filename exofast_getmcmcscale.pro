@@ -178,6 +178,7 @@ for i=0, nfit-1 do begin
                         mcmcscale[i,j] = mcmcscale[i,j]*(bestchi2+1)/chi2
                         chi2 = bestchi2 + 1
 ;stop
+                        if tofit[i] eq 4 then stop
                     endelse
                 endif
             endif
@@ -214,7 +215,7 @@ for i=0, nfit-1 do begin
              endif
             next:
 
-;if tofit[i] eq 6 and j eq 1 and n_elements(tofit) gt 4 then begin
+;if tofit[i] eq 4 and j eq 1 and n_elements(tofit) gt 4 then begin
 ;   print, mcmcscale
 ;   stop
 ;endif

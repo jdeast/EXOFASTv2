@@ -92,7 +92,7 @@ for i=0, n_tags(ss)-1 do begin
    for j=0, n_elements(ss.(i))-1 do begin
       for k=0, n_tags(ss.(i)[j])-1 do begin
 
-         derive = 0
+         derive = 0B
          m=-1
          ;; this captures the detrending variables
          if (size(ss.(i)[j].(k)))[1] eq 10 then begin
@@ -103,7 +103,7 @@ for i=0, n_tags(ss)-1 do begin
                         if tag_exist((*(ss.(i)[j].(k))).(l)[m],'derive') then begin
                            if (*(ss.(i)[j].(k))).(l)[m].derive then begin
                               pars = (*(ss.(i)[j].(k))).(l)[m].value[burnndx:*,*]
-                              derive = 1
+                              derive = 1B
                               label = (*(ss.(i)[j].(k))).(l)[m].label
                               unit = (*(ss.(i)[j].(k))).(l)[m].unit
                               latex = (*(ss.(i)[j].(k))).(l)[m].latex
@@ -117,12 +117,14 @@ for i=0, n_tags(ss)-1 do begin
          endif else if n_tags(ss.(i)[j].(k)) ne 0 then begin
             if n_tags(ss.(i)[j].(k)) ne 0 then begin
                if tag_exist(ss.(i)[j].(k),'derive') then begin
-                  pars = ss.(i)[j].(k).value[burnndx:*,*]
-                  derive = 1
-                  label = ss.(i)[j].(k).label 
-                  unit = ss.(i)[j].(k).unit
-                  latex = ss.(i)[j].(k).latex
-                  best = ss.(i)[j].(k).best
+                  if ss.(i)[j].(k).derive then begin
+                     pars = ss.(i)[j].(k).value[burnndx:*,*]
+                     derive = 1B
+                     label = ss.(i)[j].(k).label 
+                     unit = ss.(i)[j].(k).unit
+                     latex = ss.(i)[j].(k).latex
+                     best = ss.(i)[j].(k).best
+                  endif
                endif
             endif
          endif

@@ -280,6 +280,14 @@ for i=0, n_elements(priors[0,*])-1 do begin
              ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior)/$
             ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth)^2
 
+;   print, ss.(priors[0,i])[priors[1,i]].(priors[2,i]).label,  ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value, $
+;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior, $
+;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth, $
+;          ((ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value - $
+;            ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior)/$
+;           ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth)^2
+
+
 endfor
 
 if 0 then begin
@@ -378,6 +386,10 @@ for j=0, ss.nplanets-1 do begin
          ;; constrained (by RV), it becomes an implicit constraint on
          ;; radius
          chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
+
+;         print, 'chen penalty = ' + strtrim(((rp - ss.planet[j].rpearth.value)/rperr)^2,2)
+;         print, rp, ss.planet[j].rpearth.value,rperr
+
       endif
    endif
 endfor
@@ -535,6 +547,8 @@ for j=0, ntransits-1 do begin
    (*ss.transit[j].transitptrs).model = modelflux
    if ~finite(transitchi2) then stop
    chi2 += transitchi2
+;   print, 'transit penalty: ' + strtrim(transitchi2,2)
+
 ;   chi2 += total(((transit.flux - modelflux)/transit.err)^2)
 
 ;   screen = GET_SCREEN_SIZE()

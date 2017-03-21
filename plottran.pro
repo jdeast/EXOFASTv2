@@ -173,9 +173,9 @@ for j=0, ss.ntran-1 do begin
 ;   prettytime = prettytime[sorted]
 ;   prettyflux = prettyflux[sorted]
 
-   oplot, time, trandata.flux + spacing*(ss.ntran-j-1), psym=8, symsize=symsize
    oplot, prettytime, prettyflux + spacing*(ss.ntran-j-1), thick=2, color=red;, linestyle=0
    xyouts, 0, 1.0075 + spacing*(ss.ntran-j-1), trandata.label,charsize=charsize,alignment=0.5
+   oplot, time, trandata.flux + spacing*(ss.ntran-j-1), psym=8, symsize=symsize
 ;   stop
 ;   wset, 1
 ;   plot, time, trandata.flux-
@@ -232,8 +232,8 @@ for i=0, ss.nplanets-1 do begin
       plot, [0],[0], xstyle=1,ystyle=1,$; xtickformat='(A1)',$
             ytitle='Normalized flux',yrange=[ymin,ymax],xrange=[-t14,t14],$
             xtitle='Time - Tc (Hrs)',title=ss.planet[i].label ;, position=position1
-      oplot, phasetime[sorted], modelflux[sorted], thick=2, color=red, linestyle=0
       oplot, phasetime, trandata.residuals + modelflux, psym=8, symsize=symsize
+      oplot, phasetime[sorted], modelflux[sorted], thick=2, color=red, linestyle=0
       
       ;;  pad the plot to the nearest 5 in the second sig-fig
 ;      ymin = round5(min(trandata.residuals + modelflux - trandata.err,/nan))

@@ -496,32 +496,41 @@ end
 nmax = 1d5
 print, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nmax/60d0,format='(f0.1)') + ' minutes'
 
-;; AMOEBA does not handle the high covariance of the Chen & Kipping
-;; relation; exclude the mass/radius from the amoeba fit
-ss.amoeba = 1
+;; do the AMOEBA fit
+ss.amoeba = 1B
 best = exofast_amoeba(1d-8,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
+if best[0] eq -1 then begin
+   printf, lun, 'ERROR: Could not find best combined fit; adjust your starting values and try again. You may want to set the /DEBUG keyword.'
+   if lun ne -1 then free_lun, lun
+   return
+endif
+print, 'Finished AMOEBA fit'
+
+;; AMOEBA does not handle the high (perfect) covariance of the Chen & Kipping
+;; relation; exclude the mass/radius from the amoeba fit
 for i=0, ss.nplanets-1 do begin
    if ss.planet[i].chen then begin
       if ss.planet[i].fitrv and ~ss.planet[i].fittran then begin
          ss.planet[i].p.value = massradius_chen(ss.planet[i].mpearth.value)*ss.star.rstar.value*0.0091705248 ;; r_sun
       endif 
       if ~ss.planet[i].fitrv and ss.planet[i].fittran then begin
-         ss.planet[i].mp.value = massradius_chenreverse(ss.planet[i].rpearth.value)*0.00000300245 ;; m_sun
-         k = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mp.value)^2))^(1d0/3d0)*$
+         ss.planet[i].mpearth.value = massradius_chenreverse(ss.planet[i].rpearth.value)
+         ss.planet[i].mp.value = ss.planet[i].mpearth.value*0.00000300245 ;; m_sun
+         ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mp.value)^2))^(1d0/3d0)*$
              ss.planet[i].mp.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value)*rsun/86400d0 ;; m/s
-         ss.planet[i].logk.value = alog10(k)
+         ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
       endif
    endif
 endfor
 ss.amoeba = 0
+;; update the parameter array with the chen-derived logks
+best = str2pars(ss,scale=scale,name=name) 
 
-if best[0] eq -1 then begin
-   printf, lun, 'ERROR: Could not find best combined fit'
-   if lun ne -1 then free_lun, lun
-   return
-endif
-print, 'Finished AMOEBA fit'
-
+;; try again?
+;print, 'restarting AMOEBA with chen enabled'
+;print, call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model')
+;best = exofast_amoeba(1d-8,function_name=chi2func,p0=best,scale=scale,nmax=nmax)
+;print, call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model')
 
 ;; output the best-fit model fluxes/rvs
 bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model')
