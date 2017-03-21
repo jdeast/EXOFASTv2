@@ -506,6 +506,8 @@ if best[0] eq -1 then begin
 endif
 print, 'Finished AMOEBA fit'
 
+print, ss.planet.logk.value
+
 ;; AMOEBA does not handle the high (perfect) covariance of the Chen & Kipping
 ;; relation; exclude the mass/radius from the amoeba fit
 for i=0, ss.nplanets-1 do begin
@@ -523,6 +525,7 @@ for i=0, ss.nplanets-1 do begin
    endif
 endfor
 ss.amoeba = 0
+
 ;; update the parameter array with the chen-derived logks
 best = str2pars(ss,scale=scale,name=name) 
 
@@ -566,7 +569,7 @@ if not keyword_set(bestonly) then begin
    chi2 = reform(chi2,nsteps*nchains)
    minchi2 = min(chi2,bestndx)
 
-   rstar = reform(rstar,1,nsteps*nchains)
+   if ~ss.noyy then rstar = reform(rstar,1,nsteps*nchains)
 endif else begin
    pars = reform(best[tofit],n_elements(tofit),1)
    bestndx = 0
@@ -586,9 +589,9 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=npla
               debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
               circular=circular,fitslope=fitslope, fitquad=fitquad, ttv=ttv,$
               rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
-              chen=chen,nvalues=nsteps*nchains,/silent)
+              chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,noclaret=noclaret)
 mcmcss.burnndx = burnndx
-mcmcss.star.rstar.value = rstar
+if ~ss.noyy then mcmcss.star.rstar.value = rstar
 *(mcmcss.chi2) = chi2
 
 pars2str, pars, mcmcss

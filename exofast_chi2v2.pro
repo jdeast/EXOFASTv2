@@ -290,6 +290,8 @@ for i=0, n_elements(priors[0,*])-1 do begin
 
 endfor
 
+;print, ss.planet.period.value
+
 if 0 then begin
 ;; prepare the plotting device
 if ss.debug or keyword_set(psname) then begin
@@ -389,6 +391,7 @@ for j=0, ss.nplanets-1 do begin
 
 ;         print, 'chen penalty = ' + strtrim(((rp - ss.planet[j].rpearth.value)/rperr)^2,2)
 ;         print, rp, ss.planet[j].rpearth.value,rperr
+;         print, ss.planet[j].mpearth.value
 
       endif
    endif

@@ -70,7 +70,6 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mp.value)*ss.planet[i].period.value^2/(4d0*!dpi^2))^(1d0/3d0)
    ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value ;; unitless
    ss.planet[i].a.value = ss.planet[i].arsun.value/AU ;; AU
-
    ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value
    ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup
    ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth
