@@ -506,8 +506,6 @@ if best[0] eq -1 then begin
 endif
 print, 'Finished AMOEBA fit'
 
-print, ss.planet.logk.value
-
 ;; AMOEBA does not handle the high (perfect) covariance of the Chen & Kipping
 ;; relation; exclude the mass/radius from the amoeba fit
 for i=0, ss.nplanets-1 do begin
