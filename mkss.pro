@@ -254,7 +254,8 @@ Av = parameter
 Av.description = 'V-band extinction'
 Av.latex = 'A_v'
 Av.label = 'Av'
-Av.fit = 1
+Av.fit = 0
+Av.derive = 0
 Av.scale = 0.3d0
 
 ;Ma = parameter
@@ -276,7 +277,8 @@ distance.description = 'Distance'
 distance.latex = 'd'
 distance.label = 'distance'
 distance.cgs = 3.08567758d18 ;; cm/pc
-distance.fit = 1
+distance.fit = 0
+distance.derive = 0
 distance.scale = 100
 distance.value = 10
 
@@ -324,7 +326,6 @@ rstar.description = 'Radius'
 rstar.latex = 'R_*'
 rstar.label = 'rstar'
 rstar.cgs = 6.955d10
-if keyword_set(noyy) and ~keyword_set(torres) then rstar.fit = 1
 
 age = parameter
 age.value = 7d0
@@ -335,6 +336,12 @@ age.label = 'age'
 age.cgs = 3600d0*24d0*365.242d0*1d9
 age.fit = 1
 age.scale = 1d0
+
+if keyword_set(noyy) and ~keyword_set(torres) then begin
+   rstar.fit = 1
+   age.fit = 0
+   age.derive = 0
+endif
 
 lstar = parameter
 lstar.unit = '\lsun'
@@ -917,7 +924,8 @@ errscale.latex = 'Error scaling'
 errscale.label = 'errscale'
 errscale.value = 1d0
 errscale.scale = 10d0
-errscale.fit=1
+errscale.fit=0
+errscale.derive=0
 
 ;; Create the structures -- The order here dictates the order in the
 ;;                          output table.
@@ -952,13 +960,16 @@ star = create_struct(mstar.label,mstar,$
                      'rootlabel','Stellar Parameters:',$
                      'label','')
             
-star.errscale.fit = 0
-star.errscale.derive = 0
+;; if we're fitting an SED, fit the distance, extinction, and error scale
 if n_elements(fluxfile) ne 0 then begin
    if file_test(fluxfile) then begin
       star.fluxfile = fluxfile
       star.errscale.fit = 1
       star.errscale.derive = 1
+      star.distance.fit = 1
+      star.distance.derive = 1
+      star.av.fit = 1
+      star.av.derive = 1
    endif else print, 'Could not find ' + fluxfile
 endif
 
