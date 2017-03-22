@@ -459,7 +459,9 @@ for j=0, ntelescopes-1 do begin
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
    
    if keyword_set(psname) then $
-      forprint, rv.bjd, rv.rv - modelrv, format='(f0.8,x,f0.6)', textout='residuals' + '.' + strtrim(j,2) + '.txt', /nocomment
+      forprint, rv.bjd, rv.rv - modelrv, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=psname + '.residuals.' + strtrim(j,2) + '.rv.txt', /nocomment,/silent
+   if keyword_set(psname) then $
+      forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6)', textout=psname + '.model.' + strtrim(j,2) + '.rv.txt', /nocomment,/silent
 
    rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jitter.value,rv.err,/chi2)
    
@@ -548,6 +550,12 @@ for j=0, ntransits-1 do begin
    transitchi2 = exofast_like(transit.flux - modelflux,ss.transit[j].variance.value,transit.err,/chi2)
    (*ss.transit[j].transitptrs).residuals = transit.flux - modelflux
    (*ss.transit[j].transitptrs).model = modelflux
+
+   if keyword_set(psname) then $
+      forprint, transitbjd, transit.flux - modelflux, transit.err, format='(f0.8,x,f0.6,x,f0.6)', textout=psname + '.residuals.' + strtrim(j,2) + '.flux.txt', /nocomment,/silent
+   if keyword_set(psname) then $
+      forprint, transitbjd, modelflux, format='(f0.8,x,f0.6)', textout=psname + '.model.' + strtrim(j,2) + '.flux.txt', /nocomment,/silent
+
    if ~finite(transitchi2) then stop
    chi2 += transitchi2
 ;   print, 'transit penalty: ' + strtrim(transitchi2,2)

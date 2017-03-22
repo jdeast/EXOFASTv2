@@ -176,67 +176,42 @@ if keyword_set(debug) or keyword_set(psname) then begin
       loadct, 39, /silent
       red = 254
       symsize = 0.33
-      xtitle=textoidl('log(T_{eff})')
-      ytitle=textoidl('\log(g_*)')
+      xtitle=textoidl('T_{eff}')
+      ytitle=textoidl('log(g_*)')
    endif else begin
       set_plot, 'X'
       red = '0000ff'x
       symsize = 1
       device,window_state=win_state
-;      if win_state[0] eq 1 then wset, 0 $
-;      else window, 0, retain=2
-      xtitle='log(T_eff)'
+      if win_state[29] eq 1 then wset, 29 $
+      else window, 29, retain=2
+      xtitle='T_eff'
       ytitle='log g'
    endelse
 endif
 
-
-if 0 then begin
 if keyword_set(debug) or keyword_set(psname) then begin
 
-   npoints = 100
-   mstar2 = 0.4 + 5d0*dindgen(npoints)/(npoints-1d0)
-   yylogg2 = dblarr(npoints)
-   yyteff2 = dblarr(npoints)
-   
-   yyteffall = 10d0^yytrack[0,*]
-   yyrstarall = yytrack[1,*];sqrt(10d0^yytrack[1,*]/(4d0*!dpi*yyteffall^4d0*sigmaB))
-   yyluminosity = yyrstarall^2*4d0*!dpi*yyteffall/yyrstarall
-   yyageall = yytrack[2,*]
-   
+   G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
+   rstar = yytrack[1,*]
+   loggplottrack =  alog10(G*mstar/(rstar^2)*9.31686171d0)
+   teffplottrack = yytrack[0,*]
+   loggplot =  alog10(G*mstar/(yyrstar^2)*9.31686171d0)
 
-   yyloggall = alog10(27443.4141d0*mstar/yyrstarall^2)
-   logg = alog10(27443.4141d0*mstar/yyrstar^2)
-   
-;stop
 
-if 0 then begin
-   for i=0, npoints-1 do begin
-      track = yytrack(mstar2[i],yyz,afe)
-      
-      yyteffall = 10d0^track[1,*]
-      yyrstarall = sqrt(10d0^track[2,*]/(4d0*!dpi*yyteffall^4d0*sigmaB))
-      yyageall = track[0,*]
-      yyloggall = alog10(27443.4141d0*mstar/yyrstarall^2)
-      
-      dummy = min(abs(track[0,*]-age),match)
-      yylogg2[i] = yyloggall[match]
-      yyteff2[i] = yyteffall[match]
-      
-   endfor
-endif
-   
-   xmin=min(alog10([6000,3000]),max=xmax)
-   yrange=[3,5]
-;   xrange=[3.8,3.5]
+   xmin=max(teffplottrack,min=xmax) ;; plot range backwards
+   ymin = min([loggplot,3,5],max=ymax)
+
+   plot, teffplottrack, loggplottrack,xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax]
    plotsym,0,/fill
-   plot, alog10(yyteffall), yyloggall, xrange=[xmax,xmin],yrange=yrange,xtitle=xtitle,ytitle=ytitle
-   oplot, alog10([teff]), [logg], psym=8,symsize=0.5
-   oploterror, alog10([teff]), [logg], 0.00222,0.01,/lobar
-   oploterror, alog10([teff]), [logg], 0.00316978,0.011,/hibar
-endif
-endif
+   oplot, [teff], [loggplot], psym=8,symsize=0.5
 
+;   plot, alog10(yytrack[0,*]),yytrack[2,*]
+;   plot, alog10(yyteffall), yyloggall, xrange=[xmax,xmin],yrange=yrange,xtitle=xtitle,ytitle=ytitle
+;   oploterror, alog10([teff]), [logg], 0.00222,0.01,/lobar
+;   oploterror, alog10([teff]), [logg], 0.00316978,0.011,/hibar
+
+endif
 
 if keyword_set(psname) then begin
    device, /close
