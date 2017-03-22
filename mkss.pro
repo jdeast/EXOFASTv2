@@ -1419,8 +1419,8 @@ endfor
 ;; don't do these when creating the MCMC structure
 if n_elements(ss.star.mstar.value) eq 1 then begin
    ;; derive all step parameters
-   ok = pars2step(ss)
-
+   if not pars2step(ss) then message, 'Warning: YY isochrones are not applicable here; refine priors. Are you fitting a low mass star? Be sure to disable YY isochrones using the /NOYY, disable the limb darkening using /NOCLARET, and supply priors on mstar, rstar, and u1 and u2 for each band'
+   
    ;; return an error if the starting stellar system is not allowed
    if step2pars(ss,/verbose) eq -1 then message, 'Warning: starting values for stellar system not allowed; refine priors'
 

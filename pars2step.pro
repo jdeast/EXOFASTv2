@@ -23,6 +23,7 @@ if ss.star.rstar.value ne 1d0 and ~ss.noyy then begin
    rstars = dblarr(ntries)
    for i=0, ntries-1 do begin
       junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, age[i], ss.star.teff.value,yyrstar=rstar)
+      if ~finite(junk) then return, 0
       rstars[i] = rstar
    endfor
    junk = min(abs(rstars-ss.star.rstar.value),ndx)
@@ -30,6 +31,7 @@ if ss.star.rstar.value ne 1d0 and ~ss.noyy then begin
 endif else if ~ss.noyy then begin
    ;; otherwise derive the stellar radius
    junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar)
+   if ~finite(junk) then return, 0
    ss.star.rstar.value = rstar
 endif
 
@@ -108,5 +110,7 @@ for i=0, nplanets-1 do begin
    ;; ss.planet[i].tp.value = ss.planet[i].tc.value - ss.planet[i].period.value*ss.planet[i].phase.value
 
 endfor
+
+return, 1
 
 end
