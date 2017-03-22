@@ -221,7 +221,10 @@ for i=0, ss.nplanets-1 do begin
       phasetime = ((time - ss.planet[i].tc.value) mod ss.planet[i].period.value)*24d0
       toohigh = where(phasetime gt (ss.planet[i].period.value/2d0*24d0))
       if toohigh[0] ne -1 then phasetime[toohigh] -= ss.planet[i].period.value*24d0
+      toolow = where(phasetime lt (-ss.planet[i].period.value/2d0*24d0))
+      if toolow[0] ne -1 then phasetime[toolow] += ss.planet[i].period.value*24d0
       sorted = sort(phasetime)
+      print, min(phasetime/24d0),max(phasetime/24d0),ss.planet[i].period.value/2d0
 
       sini = sin(acos(ss.planet[i].cosi.value))
       esinw = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
