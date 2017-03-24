@@ -34,7 +34,7 @@
 ;   Every step in the chain before all chains have crossed below the
 ;   median chi^2 will be considered the (the "burn-in"), and not used
 ;   for convergence tests. BURNNDX will specify the index of the first
-;   useable chain so as not to be biased by the starting criteria.
+;   useable step so as not to be biased by the starting criteria.
 ;
 ; CALLING SEQUENCE:
 ;   exofast_demc, bestpars, 'mychi2', pars [,CHI2=, TOFIT=,$
@@ -126,6 +126,14 @@
 ;                conserve memory, these should be reserved for
 ;                parameters that cannot be trivially rederived.
 ;
+; SYSTEM VARIABLES:
+;   !STOPNOW   - If set, will break the MCMC loop at the next complete
+;                step. It must finish the current step, including all
+;                NTHIN and NCHAIN evaluations. To set it, type
+;                <CONTROL> + C
+;                !STOPNOW = 1 
+;                .con
+;
 ; REVISION HISTORY:
 ;   2012/06 - Public Release - Jason Eastman (LCOGT)
 ;   2012/12 - When parameters aren't mixed, display the index
@@ -146,7 +154,8 @@ pro exofast_demc, bestpars,chi2func,pars,chi2=chi2, tofit=tofit,$
                   nthin=nthin, maxsteps=maxsteps, dontstop=dontstop,$
                   nchains=nchains, angular=angular,$
                   burnndx=burnndx, removeburn=removeburn, $
-                  gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, derived=derived
+                  gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
+                  derived=derived, resumendx=resumendx
 
 ;; default values
 if n_elements(maxsteps) eq 0 then maxsteps = 1d5
@@ -154,6 +163,7 @@ if n_elements(nthin) eq 0 then nthin = 1L
 if n_elements(tofit) eq 0 then tofit = indgen(n_elements(bestpars))
 if n_elements(mintz) eq 0 then mintz = 1000d0
 if n_elements(maxgr) eq 0 then maxgr = 1.01d0
+defsysv, '!STOPNOW', 0B
 nfit = n_elements(tofit)
 !except = 0 ;; don't display errors for NaN and infinity
 
@@ -178,11 +188,20 @@ if nang gt 0 then gelmanangular=intarr(nang)
 for i=0, nang-1 do gelmanangular[i] = (where(tofit eq angular[i]))(0)
 
 ;; initialize arrays
-pars = dblarr(nfit,maxsteps,nchains)
-chi2 = dblarr(maxsteps,nchains)
-niter = 1L
-newpars = bestpars
-oldpars = bestpars
+if n_elements(resumendx) ne 0 then begin
+   sz = size(pars)
+   nfit = sz[1]
+   maxsteps = sz[2]
+   nchains = sz[3]
+   newpars = pars[*,resumendx,0]
+   oldpars = pars[*,resumendx-1,0]
+endif else begin
+   resumendx = 1L
+   pars = dblarr(nfit,maxsteps,nchains)
+   chi2 = dblarr(maxsteps,nchains)
+   newpars = bestpars
+   oldpars = bestpars
+endelse
 olddet = dblarr(nchains)
 
 ;; get the MCMC step scale for each parameter
@@ -238,7 +257,7 @@ alreadywarned = 0L
 t0 = systime(/seconds)
 
 ;; start MCMC chain
-for i=1L,maxsteps-1L do begin
+for i=resumendx,maxsteps-1L do begin
    for j=0L, nchains-1L do begin
       
       oldpars[tofit] = pars[*,i-1,j]
@@ -277,7 +296,9 @@ for i=1L,maxsteps-1L do begin
       if n_elements(dpar) ne 0 then derived[*,i,j] = oldderived[*,j]
       
    endfor
-   
+
+   if !STOPNOW NE !NULL AND !STOPNOW EQ 1 then break
+
    ;; Test for convergence as outlined in Ford 2006
    ;; must be converged for 6 consecutive passes
    ;; tz > 1000 and Gelman-Rubin < 1.01 => converged 
@@ -385,8 +406,8 @@ endfor
 print ;; don't overwrite the final line
 print ;; now just add a space
 
-;; if didn't converge, or user didn't want to stop use all steps
-if npass ne 6 or keyword_set(dontstop) then nstop = maxsteps-1
+;; it doesn't necessarily stop at MAXSTEPS if it was interrupted or converged early
+nstop = i-1L
 
 ;; the minimum chi2 of each chain
 minchi2 = min(chi2[0:nstop,*],dimension=1)
@@ -453,78 +474,6 @@ if ngood ne nchains or npass ne 6 then begin
       for i=0L, n_elements(bad)-1 do print, tofit[bad[i]], gelmanrubin[bad[i]],tz[bad[i]]
    endelse
 endif
-
-
-if 0 then begin
-;; if hit maxsteps and never converged
-if npass ne 6 then begin
-
-   converged = exofast_gelmanrubin(pars[0:nfit-1,burnndx:nstop,goodchains],$
-                                   gelmanrubin,tz,angular=gelmanangular, $
-                                   maxgr=maxgr, mintz=mintz)
-   bad = where(tz lt mintz or gelmanrubin gt maxgr)
-
-   if bad[0] ne -1 then begin
-      message, 'WARNING: The Gelman-Rubin statistic indicates ' + $
-               'the following parameters are not well-mixed', /continue
-      print, '       Parameter  Gelman-Rubin Independent Draws'
-      forprint, tofit[bad], gelmanrubin[bad],tz[bad],textout=1
-   endif else message, 'WARNING: The chain did not pass 6 consecutive ' + $
-                       'tests and may be marginally well-mixed.',/continue
-
-   ;; Maybe it's just an errant chain or two. See if discarding them helps. 
-   minchi2 = min(chi2[0:nstop,*],dimension=1)
-
-   ;; the median chi2 of the best chain
-   medchi2 = min(median(chi2[0.1*nstop:nstop,*],dimension=1))
-   
-   ;; good chains must have some values below this median
-   goodchains = where(minchi2 lt medchi2,ngood)
-
-   if ngood ge 3 and ngood lt nchains then begin
-      ;; recompute the burn index
-      medchi2 = median(chi2[0:nstop,goodchains])
-      burnndx2 = 0L
-      for j=0L, ngood-1 do begin
-         tmpndx = (where(chi2[0:nstop,goodchains[j]] lt medchi2))(0)
-         if tmpndx gt burnndx2 then burnndx2 = tmpndx
-      endfor
-      burnndx2 = burnndx2 < (maxsteps-3) 
-
-      ;; now are they converged?
-      converged = exofast_gelmanrubin(pars[0:nfit-1,burnndx:nstop,goodchains],$
-                                      gelmanrubin2,tz2,angular=gelmanangular, $
-                                      maxgr=maxgr, mintz=mintz)
-      bad = where(tz2 lt mintz or gelmanrubin2 gt maxgr)
-      if bad[0] ne -1 then begin
-         extrabad = where(tz2[bad] lt tz[bad] or $
-                          gelmanrubin2[bad] gt gelmanrubin[bad]) 
-      endif else extrabad = -1
-
-      if extrabad[0] eq -1 and ngood ne nchains then begin
-         ;; without errant chains, it's better
-         print, 'Discarding ' + strtrim(round(nchains-ngood),2) + '/'+$
-                strtrim(round(nchains),2) + ' chains stuck in local minima.'
-         pars = pars[*,*,goodchains]
-         chi2 = chi2[*,goodchains]
-         if n_elements(derived) ne 0 then derived = derived[*,*,goodchains]
-         nchains = ngood
-         tz = tz2
-         gelmanrubin = gelmanrubin2
-         burnndx = burnndx2
-         if bad[0] eq -1 then begin
-            print,'Remaining chains are mixed, but interpret results with care.'
-         endif else begin
-            print, 'Remaining chains are still not mixed.'
-            print, '       Parameter  Gelman-Rubin Independent Draws'
-            forprint, tofit[bad], gelmanrubin[bad],tz[bad],textout=1
-         endelse     
-      endif else print, 'No obviously-errant chains. Must run longer.'
-   endif else print, 'No obviously-errant chains. Must run longer.'
-
-endif
-endif
-
 
 ;; remove the burn-in/uncalculated parameters
 ;; keep them by default so people can do their own analysis
