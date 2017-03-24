@@ -60,7 +60,7 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
       xsize=10.5
       ysize=xsize/aspect_ratio
       !p.font=0
-      device, filename=psname, /color, bits=24
+      device, filename=psname, /color, bits=24,/encapsulated
       device, xsize=xsize,ysize=ysize
       loadct, 39, /silent
       colors=[0,254,128,68]

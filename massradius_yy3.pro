@@ -171,13 +171,13 @@ if keyword_set(debug) or keyword_set(psname) then begin
       xsize=10.5/1.5
       ysize=xsize/aspect_ratio
       !p.font=0
-      device, filename=psname, /color, bits=24
+      device, filename=psname, /color, bits=24,/encapsulated
       device, xsize=xsize,ysize=ysize
       loadct, 39, /silent
       red = 254
       symsize = 0.33
       xtitle=textoidl('T_{eff}')
-      ytitle=textoidl('log(g_*)')
+      ytitle=textoidl('log g_*')
    endif else begin
       set_plot, 'X'
       red = '0000ff'x

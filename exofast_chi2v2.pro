@@ -171,6 +171,7 @@ COMMON chi2_block, ss
 if n_elements(pars) ne 0 then pars2str, pars, ss
 AU = 215.094177d0
 
+
 ;; derive all required parameters 
 ;; (this may change depending on parameterization)
 ;derivepars, ss
@@ -226,6 +227,12 @@ if ss.star.av.value lt 0 then begin
    return, !values.d_infinity
 endif
 
+;; positive distance
+if ss.star.distance.value lt 0 then begin
+   if ss.debug then print, 'distance is bad (' + strtrim(ss.star.distance.value,2) + ')'
+   return, !values.d_infinity
+endif
+
 ;; bound marginally detected planets to limit (infinite) parameter space at low logK
 ;; conservative lower limit of 0.1 Ceres in 1 year orbit around sun = 1 um/s
 ;; conservative upper limit corresponds to ~thousand solar masses
@@ -240,7 +247,7 @@ ss.star.mstar.value = 10^ss.star.logmstar.value
 ;; use the YY tracks to guide the stellar parameters
 if ~ss.noyy then begin
    if keyword_set(psname) then begin
-      chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug, psname=psname+'.yy.ps')
+      chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug, psname=psname+'.yy.eps')
    endif else begin
       chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug)
    endelse
@@ -402,7 +409,7 @@ if file_test(ss.star.fluxfile) then begin
    if keyword_set(psname) then begin
       sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
                             ss.star.av.value, ss.star.distance.value, $
-                            logg=ss.star.logg.value,met=ss.star.feh.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep, psname=psname+'.sed.ps')
+                            logg=ss.star.logg.value,met=ss.star.feh.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep, psname=psname+'.sed.eps')
    endif else begin
       sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
                             ss.star.av.value, ss.star.distance.value, $

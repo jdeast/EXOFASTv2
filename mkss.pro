@@ -129,11 +129,12 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, longcadence=longcadence,$
-               earth=earth, silent=silent, noyy=noyy, noclaret=noclaret
+               earth=earth, silent=silent, noyy=noyy, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing
 
 if not keyword_set(debug) then debug=0B
 if not keyword_set(noyy) then noyy=0B
 if not keyword_set(noclaret) then noclaret=0B
+if not keyword_set(alloworbitcrossing) then alloworbitcrossing=0B
 
 ;; read in the transit files
 if n_elements(tranpath) ne 0 then begin
@@ -288,6 +289,7 @@ parallax.description = 'Parallax'
 parallax.latex = '\pi'
 parallax.label = 'parallax'
 parallax.cgs = 3600d3*180d0/!dpi ;; rad/mas
+parallax.derive = 0
 
 gamma = parameter
 gamma.unit = 'm/s'
@@ -377,7 +379,7 @@ logp.scale = 0.01d0
 
 qesinw = parameter
 qesinw.unit = ''
-qesinw.description = 'qesinw'
+qesinw.description = ''
 qesinw.latex = 'e^{1/4} sin{\omega_*}'
 qesinw.label = 'qesinw'
 qesinw.cgs = !values.d_nan
@@ -386,7 +388,7 @@ qesinw.derive = 0
 
 qecosw = parameter
 qecosw.unit = ''
-qecosw.description = 'qecosw'
+qecosw.description = ''
 qecosw.latex = 'e^{1/4} cos{\omega_*}'
 qecosw.label = 'qecosw'
 qecosw.cgs = !values.d_nan
@@ -395,7 +397,7 @@ qecosw.derive = 0
 
 sesinw = parameter
 sesinw.unit = ''
-sesinw.description = 'sesinw'
+sesinw.description = ''
 sesinw.latex = '\sqrt{e} sin{\omega_*}'
 sesinw.label = 'sesinw'
 sesinw.cgs = !values.d_nan
@@ -404,7 +406,7 @@ sesinw.derive = 0
 
 secosw = parameter
 secosw.unit = ''
-secosw.description = 'secosw'
+secosw.description = ''
 secosw.latex = '\sqrt{e} cos{\omega_*}'
 secosw.label = 'secosw'
 secosw.cgs = !values.d_nan
@@ -423,14 +425,14 @@ endelse
 
 esinw = parameter
 esinw.unit = ''
-esinw.description = 'esinw'
+esinw.description = ''
 esinw.latex = 'esin{\omega_*}'
 esinw.label = 'esinw'
 esinw.cgs = !values.d_nan
 
 ecosw = parameter
 ecosw.unit = ''
-ecosw.description = 'ecosw'
+ecosw.description = ''
 ecosw.latex = 'ecos{\omega_*}'
 ecosw.label = 'ecosw'
 ecosw.cgs = !values.d_nan
@@ -968,6 +970,7 @@ if n_elements(fluxfile) ne 0 then begin
       star.errscale.derive = 1
       star.distance.fit = 1
       star.distance.derive = 1
+      star.parallax.derive = 1
       star.av.fit = 1
       star.av.derive = 1
    endif else print, 'Could not find ' + fluxfile
@@ -1103,6 +1106,7 @@ ss = create_struct('star',star,$
                    'nplanets',nplanets,$
                    'noyy', noyy,$
                    'noclaret', noclaret,$
+                   'alloworbitcrossing', alloworbitcrossing,$
                    'nsteps',nsteps,$
 ;                   'nbad',0L,$
                    'burnndx',0L,$

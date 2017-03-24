@@ -377,7 +377,7 @@ pro exofastv2, priorfile=priorfile, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth,$
-               i180=i180, covar=covar
+               i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing
 
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -395,7 +395,7 @@ ss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets
           debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
           circular=circular,fitslope=fitslope, fitquad=fitquad,ttv=ttv, $
           rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
-          chen=chen, noyy=noyy, noclaret=noclaret)
+          chen=chen, noyy=noyy, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing)
 
 npars = 0
 for i=0, n_tags(ss)-1 do begin
@@ -587,7 +587,8 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=npla
               debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
               circular=circular,fitslope=fitslope, fitquad=fitquad, ttv=ttv,$
               rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
-              chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,noclaret=noclaret)
+              chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,noclaret=noclaret,$
+              alloworbitcrossing=alloworbitcrossing)
 mcmcss.burnndx = burnndx
 if ~ss.noyy then mcmcss.star.rstar.value = rstar
 *(mcmcss.chi2) = chi2

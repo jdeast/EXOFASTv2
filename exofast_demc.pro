@@ -194,19 +194,25 @@ if scale[0] eq -1 then begin
    return
 endif
 
+print, 'Beginning chain initialization'
 ;; initialize each chain
 for j=0, nchains-1 do begin
    ;; repeat until a finite chi^2 
    ;; i.e., don't start outside a boundary; you'll never get back
+   niter = 0d0
    repeat begin
-      ;; start 3 steps from best value
+      ;; start 5 steps from best value. If that's not allowed
+      ;; (infinite chi^2), slowly approach 0 steps away from the best value
+      ;; niter should never be larger than ~5000
       pars[0:nfit-1,0,j] = bestpars[tofit] + $
-                           5d0*scale*call_function(randomfunc,seed,nfit,/normal)
+                           5d0/exp(niter/1000d)*scale*call_function(randomfunc,seed,nfit,/normal)
       newpars[tofit] = pars[0:nfit-1,0,j]
       ;; find the chi^2
       chi2[0,j] = call_function(chi2func, newpars, determinant=det, derived=dpar)
       pars[*,0,j]=newpars[tofit] ;; in case chi2 function changes pars
       olddet[j] = det
+      niter += 1
+
    endrep until finite(chi2[0,j])
    if n_elements(dpar) ne 0 then begin
       if j eq 0 then begin
@@ -215,7 +221,11 @@ for j=0, nchains-1 do begin
       endif
       derived[*,0,j] = dpar
    endif
+
 endfor
+print, 'Done initializing chains'
+print
+
 if n_elements(dpar) ne 0 then oldderived = reform(derived[*,0,*],nderived,nchains)
 
 nextrecalc = 100L

@@ -84,18 +84,20 @@ for i=0, ss.nplanets-1 do begin
    ;; for multi-planet systems, make sure they don't enter each other's hill spheres
    ;; if mp unknown, mp=0 => hill radius=0 => planets can't cross orbits
    ;; **** ignores mutual inclination; a priori excludes systems like Neptune and Pluto!! ****
-   hillradius = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value*(ss.planet[i].mpsun.value/(3d0*ss.star.mstar.value))^(1d0/3d0)
-   mindist[i] = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value - hillradius
-   maxdist[i] = (1d0+ss.planet[i].e.value)*ss.planet[i].a.value + hillradius
-   for j=i-1,0,-1 do begin
-      if ((mindist[i] ge mindist[j]) and (mindist[i] le maxdist[j])) or $
-         ((maxdist[i] ge mindist[j]) and (maxdist[i] le maxdist[j])) or $
-         ((mindist[j] ge mindist[i]) and (mindist[j] le maxdist[i])) or $
-         ((maxdist[j] ge mindist[i]) and (maxdist[j] le maxdist[i])) then begin
-         if keyword_set(verbose) then print, 'Planets ' + strtrim(j,2) + ' (' + strtrim(mindist[j],2) + ',' + strtrim(maxdist[j],2) + ') and ' + strtrim(i,2) + ' (' + strtrim(mindist[i],2) + ',' + strtrim(maxdist[i],2) + ') cross paths'
-         return, -1
-      endif
-   endfor
+   if ~ss.alloworbitcrossing then begin
+      hillradius = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value*(ss.planet[i].mpsun.value/(3d0*ss.star.mstar.value))^(1d0/3d0)
+      mindist[i] = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value - hillradius
+      maxdist[i] = (1d0+ss.planet[i].e.value)*ss.planet[i].a.value + hillradius
+      for j=i-1,0,-1 do begin
+         if ((mindist[i] ge mindist[j]) and (mindist[i] le maxdist[j])) or $
+            ((maxdist[i] ge mindist[j]) and (maxdist[i] le maxdist[j])) or $
+            ((mindist[j] ge mindist[i]) and (mindist[j] le maxdist[i])) or $
+            ((maxdist[j] ge mindist[i]) and (maxdist[j] le maxdist[i])) then begin
+            if keyword_set(verbose) then print, 'Planets ' + strtrim(j,2) + ' (' + strtrim(mindist[j],2) + ',' + strtrim(maxdist[j],2) + ') and ' + strtrim(i,2) + ' (' + strtrim(mindist[i],2) + ',' + strtrim(maxdist[i],2) + ') cross paths'
+            return, -1
+         endif
+      endfor
+   endif
 
    ;; tighter (empirical) constraint on eccentricity (see Eastman 2013)
    if ss.tides and ss.planet[i].e.value gt (1d0-3d0/ss.planet[i].ar.value) then begin
