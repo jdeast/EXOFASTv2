@@ -16,7 +16,7 @@ if keyword_set(psname) then begin
    green = 144
    symsize=0.1
 endif else begin
-   set_plot, 'X'
+;   set_plot, 'X'
    red = '0000ff'x
    black = 'ffffff'x
    blue = 'ff0000'x
@@ -127,6 +127,7 @@ endif else begin
 endelse
 set_plot, mydevice
 
+if 0 then begin
 roundto = 10L^(strlen(strtrim(floor(allmaxdate-allmindate),2))+1L) 
 bjd0 = floor(allmindate/roundto)*roundto
 
@@ -143,6 +144,7 @@ for j=0, ss.ntel-1 do begin
    plotsym, symbols[j], symsize, fill=fills[j], color=colors[j]
    oploterr, rv.bjd-bjd0, rv.rv-ss.telescope[j].gamma.value, rv.err, 8
 endfor
+endif
 
 ;stop
 

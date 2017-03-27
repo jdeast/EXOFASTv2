@@ -179,7 +179,7 @@ if keyword_set(debug) or keyword_set(psname) then begin
       xtitle=textoidl('T_{eff}')
       ytitle=textoidl('log g_*')
    endif else begin
-      set_plot, 'X'
+;      set_plot, 'X'
       red = '0000ff'x
       symsize = 1
       device,window_state=win_state
@@ -215,8 +215,8 @@ endif
 
 if keyword_set(psname) then begin
    device, /close
-   set_plot, mydevice
 endif
+set_plot, mydevice
 
 return, chi2
 

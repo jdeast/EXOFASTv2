@@ -11,7 +11,7 @@ if keyword_set(psname) then begin
    ysize = xsize/aspect_ratio + (ss.ntran-1)*0.6
 ;   ysize=(xsize/aspect_ratio + (ss.ntran)*0.2) < screen[1]
    !p.font=0
-   device, filename=psname, /color, bits=24
+   device, filename=psname, /color, bits=24, encapsulated=0
    device, xsize=xsize,ysize=ysize
    loadct, 39, /silent
    red = 254
@@ -19,7 +19,7 @@ if keyword_set(psname) then begin
    black = 0
 endif else begin
    !p.multi=0
-   set_plot, 'X'
+;   set_plot, 'X'
    screen = GET_SCREEN_SIZE()
    device,window_state=win_state
    xsize = 600

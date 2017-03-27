@@ -68,7 +68,7 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
       ytitle = textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
       plotsym, 0, 0.5, /fill, color=colors[3]
    endif else begin
-      set_plot, 'X'
+;      set_plot, 'X'
       device,window_state=win_state
       if win_state[5] eq 1 then wset, 5 $
       else window, 5
@@ -105,9 +105,7 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
 
    endfor
 
-   if keyword_set(psname) then begin
-      device, /close
-   endif
+   if keyword_set(psname) then device, /close
    set_plot, mydevice
 endif
 
