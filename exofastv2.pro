@@ -297,12 +297,12 @@
 ;               periastron as e^(1/4)*sin(omega) and
 ;               e^(1/4)*cos(omega) to more closely match the observed
 ;               eccentricity distribution
-;   TTV       - If set, non-periodic transit times are allowed. The
+;   TTVS      - If set, non-periodic transit times are allowed. The
 ;               period is constrained by a linear fit to all transit
 ;               times at each step. Otherwise, a linear ephemeris is
 ;               assumed.
 ;               ***NOT YET IMPLEMENTED***
-;   TDV       - If set, a new transit depth is fit for each transit
+;   TDVS      - If set, a new transit depth is fit for each transit
 ;               ***NOT YET IMPLEMENTED***              
 ;   BESTONLY  - If set, only the best fit (using AMOEBA) will be
 ;               performed.
@@ -376,7 +376,7 @@ pro exofastv2, priorfile=priorfile, $
                logfile=logfile, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-               fitrv=fitrv, fittran=fittran,ttv=ttv, earth=earth,$
+               fitrv=fitrv, fittran=fittran,ttvs=ttvs, earth=earth,$
                i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing
 
 ;; this is the stellar system structure
@@ -393,7 +393,7 @@ if double(!version.release) ge 6.4d0 then $
 ;; create the master structure
 ss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets, $
           debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
-          circular=circular,fitslope=fitslope, fitquad=fitquad,ttv=ttv, $
+          circular=circular,fitslope=fitslope, fitquad=fitquad,ttvs=ttvs, $
           rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
           chen=chen, noyy=noyy, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing)
 
@@ -585,7 +585,7 @@ bestchi2 = call_function(chi2func,best,psname=modelfile, $
 ;mcmcss = mcmc2str(pars, ss)
 mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets, $
               debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
-              circular=circular,fitslope=fitslope, fitquad=fitquad, ttv=ttv,$
+              circular=circular,fitslope=fitslope, fitquad=fitquad, ttvs=ttvs,$
               rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
               chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing)

@@ -134,6 +134,7 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
 if not keyword_set(debug) then debug=0B
 if not keyword_set(noyy) then noyy=0B
 if not keyword_set(noclaret) then noclaret=0B
+if not keyword_set(ttvs) then ttvs=0B 
 if not keyword_set(alloworbitcrossing) then alloworbitcrossing=0B
 
 ;; read in the transit files
@@ -1106,6 +1107,7 @@ ss = create_struct('star',star,$
                    'nplanets',nplanets,$
                    'noyy', noyy,$
                    'noclaret', noclaret,$
+                   'ttvs', ttvs,$
                    'alloworbitcrossing', alloworbitcrossing,$
                    'nsteps',nsteps,$
 ;                   'nbad',0L,$

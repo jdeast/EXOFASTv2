@@ -540,9 +540,9 @@ for j=0, ntransits-1 do begin
                                     dilute=band.dilute.value,$
                                     tc=ss.planet[i].tc.value,$
                                     rstar=ss.star.rstar.value/AU) - 1d0)
-;         print, ss.planet[0].p.value
 
       endif
+
    endfor
 
    modelflux *=  ss.transit[j].f0.value
@@ -587,6 +587,90 @@ if ((where(ss.planet.fittran))[0] ne -1) then begin
       plottran, ss
    endif
 endif
+
+;; if TTVs are allowed, add a chi2 penalty to the period and t0 from
+;; the fit to a linear ephemeris
+;; this imposes the constraint of the linear ephemeris while allowing TTVs
+if ss.ttvs then begin
+   ;; an nplanets x ntransits array of model transit times
+   time = replicate(1,ss.nplanets)#ss.transit.ttv.value + $
+          ss.planet.tc.value#replicate(1,ss.ntran) + $
+          ss.planet.period.value#replicate(1,ss.ntran)*$
+          replicate(1,ss.nplanets)#ss.transit.epoch
+
+   ;; add a chi2 penalty for the deviation of the ephemeris to the
+   ;; linear fit of the transit times for each planet
+   for i=0L, ss.nplanets-1L do begin
+      coeffs = poly_fit(ss.transit.epoch,time[i,*],1, sigma=sigma, yfit=yfit)
+      chi2 += ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2
+      chi2 += ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
+      
+      if ss.debug or keyword_set(psname) then begin
+         if keyword_set(psname) then begin
+            ;; astrobetter.com tip on making pretty IDL plots
+            mydevice=!d.name
+            set_plot, 'PS'
+            aspect_ratio=1.5
+            xsize=10.5
+            ysize=xsize/aspect_ratio
+            !p.font=0
+            device, filename=psname + '.ttv.' + strtrim(i,2) + '.eps', /color, bits=24,/encapsulated
+            device, xsize=xsize, ysize=ysize
+            LOADCT, 39,/silent
+            colors = [0,254,159,95,223,31,207,111,191,47]
+            charsizelegend = 0.09
+            xlegend = 0.1
+            ylegend = 0.90
+            charsize = 0.5
+         endif else begin
+            device,window_state=win_state
+            if win_state[10+i] eq 1 then wset, 10+i $
+            else window, 10+i, retain=2
+            colors= ['ffffff'x,'0000ff'x,'00ff00'x,'ff0000'x,'0080ff'x,$
+                     '800080'x,'00ffff'x,'ffff00'x,'80d000'x,'660000'x]
+            charsizelegend = 0.03
+            xlegend = 0.90
+            ylegend = 0.95
+            charsize = 1
+         endelse
+         ncolors = n_elements(colors)
+         syms = [0,3,8,5,0,3,8,5]
+         fill = [1,1,1,1,0,0,0,0]
+         nsyms = n_elements(syms)
+         
+         telescopes = strarr(ss.ntran)
+         for j=0L, ss.ntran-1L do telescopes[j] = (strsplit(ss.transit[j].label,' UT ',/regex,/extract))[0]
+         sorted = sort(telescopes)
+         tnames = telescopes[sorted[uniq(telescopes[sorted])]]
+
+         xmin = min(ss.transit.epoch,max=xmax)
+         ymin = min((time[i,*]-yfit)*86400d0,max=ymax)
+         plot, [0],[0],psym=3, xtitle='!3Epoch', ytitle='!3O-C (seconds)',xrange=[xmin,xmax],yrange=[ymin,ymax]
+         for j=0, n_elements(tnames)-1 do begin
+            observed = where(telescopes eq tnames[j])
+            if observed[0] ne -1 then begin
+               plotsym, syms[j mod nsyms], color=colors[j mod ncolors],fill=fill[j mod nsyms]
+               oplot, (ss.transit.epoch)[observed],(time[i,observed]-yfit[observed])*86400d0,psym=8
+               xsize = (!x.crange[1] - !x.crange[0])
+               ysize = (!y.crange[1] - !y.crange[0])
+               xyouts, !x.crange[0] + xlegend*xsize,!y.crange[0]+(ylegend - j*charsizelegend)*ysize, $
+                       tnames[j],color=colors[j mod ncolors],charsize=charsize
+               oplot, [!x.crange[0]+xlegend*xsize-xsize/20],$
+                      [!y.crange[0]+(ylegend - (j-0.25)*charsizelegend)*ysize],psym=8
+            endif
+         endfor
+         oplot, [-9d9,9d9],[0d0,0d0],linestyle=2
+
+         if keyword_set(psname) then begin
+            device, /close
+            set_plot, mydevice
+         endif
+
+         print, ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2, ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
+      endif
+   endfor
+endif
+
 
 ;   plot, transitbjd, transit.flux, psym=1,/ynoz
 ;   oplot, transitbjd, modelflux, color=red

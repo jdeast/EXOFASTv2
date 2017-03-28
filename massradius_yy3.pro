@@ -162,8 +162,8 @@ if yyrstar le 0 then return, !values.d_infinity
 chi2 = ((yyteff-teff)/(yyteff*0.01))^2
 
 ;; prepare the plotting device
+mydevice=!d.name
 if keyword_set(debug) or keyword_set(psname) then begin
-   mydevice=!d.name
    if keyword_set(psname) then begin
       ;; astrobetter.com tip on making pretty IDL plots
       set_plot, 'PS'
