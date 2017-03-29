@@ -894,10 +894,30 @@ ttv = parameter
 ttv.description = 'Transit Timing Variation'
 ttv.latex = 'TTV'
 ttv.label = 'ttv'
-ttv.scale = 0.1
+ttv.unit = 'days'
+ttv.scale = 0.02 ;; ~30 minutes
 if keyword_set(ttvs) then begin
    ttv.fit = 1
 endif else ttv.derive=0
+
+tdv = parameter
+tdv.description = 'Transit Duration Variation'
+tdv.latex = 'TDV'
+tdv.label = 'tdv'
+tdv.unit = ' radians'
+tdv.scale = 0.01*!dpi/180d0
+if keyword_set(tdvs) then begin
+   tdv.fit = 1
+endif else tdv.derive=0
+
+tdeltav = parameter
+tdeltav.description = 'Transit Depth Variation'
+tdeltav.latex = 'T\delta V'
+tdeltav.label = 'tdeltav'
+tdeltav.scale = 0.01
+if keyword_set(tdeltavs) then begin
+   tdeltav.fit = 1
+endif else tdeltav.derive=0
 
 rednoise = parameter
 rednoise.description = 'Red Noise'
@@ -1073,9 +1093,9 @@ endif
 
 ;; for each transit
 transit = create_struct(variance.label,variance,$ ;; Red noise
-                        ttv.label,ttv,$ ;; Transit Timing Variation
-;                        tbv.label,0d0,$ ;; Transit b variation
-;                        tdv.label,0d0,$ ;; Transit depth variation
+                        ttv.label,ttv,$           ;; Transit Timing Variation
+                        tdv.label,tdv,$ ;; Transit duration variation (inclination)
+                        tdeltav.label,tdeltav,$ ;; Transit depth variation
                         f0.label,f0,$ ;; normalization
                         'transitptrs',ptr_new(),$ ;; Data
                         'detrend',ptr_new(/allocate_heap),$ ;; array of detrending parameters
@@ -1083,7 +1103,7 @@ transit = create_struct(variance.label,variance,$ ;; Red noise
                         'exptime',0d0,$
                         'ninterp',1d0,$
                         'name','',$
-                        'epoch',0.0,$
+                        'epoch',dblarr(nplanets)+!values.d_nan,$
                         'pndx',0L,$ ;; index to which planet this corresponds to (-1=>all)
                         'chi2',0L,$
                         'rootlabel','Transit Parameters',$
@@ -1430,7 +1450,12 @@ tofit = tofit[*,1:*]
 
 ;; determine the epoch for each observation
 for i=0, ntran-1 do begin
-   ss.transit[i].epoch = min(round((mean((*(ss.transit[i].transitptrs)).bjd) - ss.planet[ss.transit[i].pndx].tc.value)/ss.planet[ss.transit[i].pndx].period.value))
+   for j=0, nplanets-1 do begin
+;      ss.transit[i].epoch = min(round((mean((*(ss.transit[i].transitptrs)).bjd) - ss.planet[ss.transit[i].pndx].tc.value)/ss.planet[ss.transit[i].pndx].period.value))
+      epoch = (mean((*(ss.transit[i].transitptrs)).bjd) - ss.planet[j].tc.value)/ss.planet[j].period.value
+      normepoch = ((epoch mod 1) + 1) mod 1
+      if normepoch lt 0.05 or normepoch gt 0.95 then ss.transit[i].epoch[j] = round(epoch)
+   endfor
 endfor
 
 ;; don't do these when creating the MCMC structure

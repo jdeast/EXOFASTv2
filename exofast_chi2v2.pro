@@ -596,12 +596,16 @@ if ss.ttvs then begin
    time = replicate(1,ss.nplanets)#ss.transit.ttv.value + $
           ss.planet.tc.value#replicate(1,ss.ntran) + $
           ss.planet.period.value#replicate(1,ss.ntran)*$
-          replicate(1,ss.nplanets)#ss.transit.epoch
-
+          ss.transit.epoch
    ;; add a chi2 penalty for the deviation of the ephemeris to the
    ;; linear fit of the transit times for each planet
    for i=0L, ss.nplanets-1L do begin
-      coeffs = poly_fit(ss.transit.epoch,time[i,*],1, sigma=sigma, yfit=yfit)
+      good = where(finite(time[i,*]),ngood)
+      if ngood lt 2 then continue
+
+      coeffs = poly_fit((ss.transit.epoch)[i,good],time[i,good],1, sigma=sigma, yfit=yfit)
+      sigma = (sigma > 1d-18)
+
       chi2 += ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2
       chi2 += ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
       
@@ -643,20 +647,24 @@ if ss.ttvs then begin
          sorted = sort(telescopes)
          tnames = telescopes[sorted[uniq(telescopes[sorted])]]
 
-         xmin = min(ss.transit.epoch,max=xmax)
-         ymin = min((time[i,*]-yfit)*86400d0,max=ymax)
+         xmin = min((ss.transit.epoch)[i,good],max=xmax)
+         ymin = min((time[i,good]-yfit)*86400d0,max=ymax)
          plot, [0],[0],psym=3, xtitle='!3Epoch', ytitle='!3O-C (seconds)',xrange=[xmin,xmax],yrange=[ymin,ymax]
          for j=0, n_elements(tnames)-1 do begin
             observed = where(telescopes eq tnames[j])
             if observed[0] ne -1 then begin
                plotsym, syms[j mod nsyms], color=colors[j mod ncolors],fill=fill[j mod nsyms]
-               oplot, (ss.transit.epoch)[observed],(time[i,observed]-yfit[observed])*86400d0,psym=8
+               oplot, ((ss.transit.epoch)[i,good])[observed],(time[i,good[observed]]-yfit[observed])*86400d0,psym=8
                xsize = (!x.crange[1] - !x.crange[0])
                ysize = (!y.crange[1] - !y.crange[0])
-               xyouts, !x.crange[0] + xlegend*xsize,!y.crange[0]+(ylegend - j*charsizelegend)*ysize, $
-                       tnames[j],color=colors[j mod ncolors],charsize=charsize
-               oplot, [!x.crange[0]+xlegend*xsize-xsize/20],$
-                      [!y.crange[0]+(ylegend - (j-0.25)*charsizelegend)*ysize],psym=8
+
+               ;; only need a legend if we have more than one telescope
+               if n_elements(tnames) gt 1 then begin
+                  xyouts, !x.crange[0] + xlegend*xsize,!y.crange[0]+(ylegend - j*charsizelegend)*ysize, $
+                          tnames[j],color=colors[j mod ncolors],charsize=charsize
+                  oplot, [!x.crange[0]+xlegend*xsize-xsize/20],$
+                         [!y.crange[0]+(ylegend - (j-0.25)*charsizelegend)*ysize],psym=8
+               endif
             endif
          endfor
          oplot, [-9d9,9d9],[0d0,0d0],linestyle=2
@@ -666,7 +674,7 @@ if ss.ttvs then begin
             set_plot, mydevice
          endif
 
-         print, ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2, ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
+;         print, ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2, ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
       endif
    endfor
 endif

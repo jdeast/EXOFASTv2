@@ -33,7 +33,6 @@ endif else begin
 endelse
 plotsym, 0, /fill, color=black
 
-
 ;; breaks for grazing transits...
 depth = max(ss.planet.p.value^2)
 ;depth = 0.0004
@@ -155,8 +154,8 @@ for j=0, ss.ntran-1 do begin
 
 ;   dummy = min(abs(trandata.bjd - ss.planet[*].tc.value),match)
    if maxbjd - minbjd lt 1 then begin
-      time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
-      prettytime = (prettytime - ss.planet[ss.transit[j].pndx].tc.value  - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+      time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].epoch[ss.transit[j].pndx]*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+      prettytime = (prettytime - ss.planet[ss.transit[j].pndx].tc.value  - ss.transit[j].epoch[ss.transit[j].pndx]*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
    endif else begin
       time = trandata.bjd - t0
       prettytime -= t0
@@ -176,6 +175,7 @@ for j=0, ss.ntran-1 do begin
    oplot, time, trandata.flux + spacing*(ss.ntran-j-1), psym=8, symsize=symsize
    oplot, prettytime, prettyflux + spacing*(ss.ntran-j-1), thick=2, color=red;, linestyle=0
    xyouts, 0, 1.0075 + spacing*(ss.ntran-j-1), trandata.label,charsize=charsize,alignment=0.5
+
 ;   stop
 ;   wset, 1
 ;   plot, time, trandata.flux-
@@ -186,19 +186,28 @@ ntranfit = n_elements(where(ss.planet.fittran))
 nx = ceil(sqrt(ntranfit))
 ny = ceil(ntranfit/double(nx))
 !p.multi = [0,nx,ny]
-if not keyword_set(psname) then begin
+ysize = xsize/aspect_ratio
+if keyword_set(psname) then begin
+   device, xsize=xsize,ysize=ysize
+endif else begin
    if win_state[31] then wset, 31 $
    else window, 31, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0
-endif
-
+endelse
 trandata = (*(ss.transit[0].transitptrs)) 
 
-for i=0, ss.nplanets-1 do begin
+for i=0L, ss.nplanets-1 do begin
    
    if ss.planet[i].fittran then begin
-      ymax = 1d0 + 3*noise + spacing*((ss.ntran-1d0)>0)
+      ymax = 1d0 + 3*noise ;+ spacing*((ss.ntran-1d0)>0)
 
-      time = trandata.bjd ; (trandata.bjd-ss.planet[i].tc.value) mod ss.planet[i].period.value     
+      time = []
+      residuals = []
+      for j=0L, ss.ntran-1 do begin
+         time = [time, (*(ss.transit[j].transitptrs)).bjd - ss.transit[j].ttv.value] 
+         residuals = [residuals, (*(ss.transit[j].transitptrs)).residuals] 
+      endfor
+
+      ;time = trandata.bjd ; (trandata.bjd-ss.planet[i].tc.value) mod ss.planet[i].period.value     
       modelflux = (exofast_tran(time, $
                                 ss.planet[i].i.value, $
                                 ss.planet[i].ar.value, $
@@ -231,10 +240,10 @@ for i=0, ss.nplanets-1 do begin
       t14 = (ss.planet[i].period.value/!dpi*asin(sqrt((1d0+ss.planet[i].p.value)^2 - bp^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+esinw))*24d0
 
       ;; plot the shell, model, and data
-      plot, [0],[0], xstyle=1,ystyle=1,$; xtickformat='(A1)',$
+      plot, [0],[0], xstyle=1,ystyle=1,$
             ytitle='Normalized flux',yrange=[ymin,ymax],xrange=[-t14,t14],$
-            xtitle='Time - Tc (Hrs)',title=ss.planet[i].label ;, position=position1
-      oplot, phasetime, trandata.residuals + modelflux, psym=8, symsize=symsize
+            xtitle='Time - Tc (Hrs)',title=ss.planet[i].label
+      oplot, phasetime, residuals + modelflux, psym=8, symsize=symsize
       oplot, phasetime[sorted], modelflux[sorted], thick=2, color=red, linestyle=0
       
       ;;  pad the plot to the nearest 5 in the second sig-fig

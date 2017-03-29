@@ -98,9 +98,6 @@ for i=0, ss.nplanets-1 do begin
    xtitle1='Phase + (T_P - T_C)/P + 0.25'
    plot, [0], [0], xrange=[0,1], yrange=[allminrv,allmaxrv], $
          xtitle=xtitle1,ytitle='RV (m/s)', charsize=charsize, title=ss.planet[i].label
-   oplot, prettyphase[sorted], prettymodel[sorted], color=red
-
-
    for j=0, ss.ntel-1 do begin 
       rv = *(ss.telescope[j].rvptrs)
       modelrv = exofast_rv(rv.bjd,ss.planet[i].tp.value,$
@@ -113,6 +110,8 @@ for i=0, ss.nplanets-1 do begin
       oploterr, time, rv.residuals+modelrv, rv.err, 8
 
    endfor
+   oplot, prettyphase[sorted], prettymodel[sorted], color=red
+
 
 endfor
 
