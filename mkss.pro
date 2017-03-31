@@ -1452,7 +1452,16 @@ tofit = tofit[*,1:*]
 for i=0, ntran-1 do begin
    for j=0, nplanets-1 do begin
 ;      ss.transit[i].epoch = min(round((mean((*(ss.transit[i].transitptrs)).bjd) - ss.planet[ss.transit[i].pndx].tc.value)/ss.planet[ss.transit[i].pndx].period.value))
-      epoch = (mean((*(ss.transit[i].transitptrs)).bjd) - ss.planet[j].tc.value)/ss.planet[j].period.value
+
+      if n_elements(nvalues) ne 0 then begin
+         tc = median(ss.planet[j].tc.value)
+         period = median(ss.planet[j].period.value)
+      endif else begin
+         tc = ss.planet[j].tc.value
+         period = ss.planet[j].period.value
+      endelse
+
+      epoch = (mean((*(ss.transit[i].transitptrs)).bjd) - tc)/period
       normepoch = ((epoch mod 1) + 1) mod 1
       if normepoch lt 0.05 or normepoch gt 0.95 then ss.transit[i].epoch[j] = round(epoch)
    endfor
