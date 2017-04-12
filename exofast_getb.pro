@@ -29,6 +29,10 @@
 ;                 -- omega_* = omega_planet + !dpi
 ;   lonascnode  - The Longitude of the ascending node
 ;                 (radians). Assumed to be !dpi if not specified.
+;   Q           - The mass ratio of the primary to secondary
+;                 (M1/M2). If not specified, the mass ratio is assumed
+;                 to be infinite. The returned coordinates are the
+;                 motion of the companion with respect to the primary.
 ;
 ; OUTPUTS:
 ;    result     - the impact parameter as a function of BJD, in units
@@ -43,11 +47,14 @@
 ;
 ; MODIFICATION HISTORY 
 ;  2009/05/01 -- Jason Eastman (Ohio State University)
+;  2017/04/12 -- Add optional mass ratio keyword
 ;-
 
 function exofast_getb, bjd, i=i, a=a, tperiastron=tperiastron, Period=P, $
                        e=e, omega=omega, x=x, y=y, z=z, $
-                       lonascnode=lonascnode
+                       lonascnode=lonascnode, q=q
+
+if n_elements(q) eq 0 then q = !values.d_infinity
 
 ;; calculate the mean anomaly corresponding to each observed time
 meananom = (2.d0*!dpi*(1.d0 + (bjd - Tperiastron)/P)) mod (2.d0*!dpi) 
@@ -63,8 +70,10 @@ endif else begin
     e=0.d0
 endelse
 
+atot = a + a/q
+
 ;; calculate the corresponding (x,y) coordinates of planet
-r = a*(1d0-e^2)/(1d0+e*cos(trueanom))
+r = atot*(1d0-e^2)/(1d0+e*cos(trueanom))
 
 ;; as seen from observer
 x = -r*cos(trueanom + omega)
