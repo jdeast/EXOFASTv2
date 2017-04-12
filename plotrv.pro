@@ -24,7 +24,7 @@ endif else begin
    symsize = 1d0
    charsize = 2
    device,window_state=win_state
-   symsize=0.25
+   symsize=1
 ;   if win_state[20] eq 1 then wset, 20 $
 ;   else window, 20, retain=2
 endelse
