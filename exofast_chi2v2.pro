@@ -166,11 +166,10 @@ function exofast_chi2v2, pars, determinant=determinant, $
                          derived=derived
   
 COMMON chi2_block, ss
-
 ;; populate the structure with the new parameters
 if n_elements(pars) ne 0 then pars2str, pars, ss
-AU = 215.094177d0
 
+AU = 215.094177d0
 
 ;; derive all required parameters 
 ;; (this may change depending on parameterization)
@@ -187,7 +186,7 @@ if (where(ss.planet.fittran))[0] ne -1 then begin
                ss.band.u2.value lt -1 or ss.band.u2.value gt 1d0, nbad)
    
    if nbad gt 0 then begin
-      if ss.debug then print, strtrim(nbad,2) + ' limb darkening parameters are bad'
+      if ss.debug then print, strtrim(nbad,2) + ' limb darkening parameters are bad (' + strtrim(ss.band[bad[0]].u1.value,2) + ', ' + strtrim(ss.band[bad[0]].u2.value,2) + ')'
       return, !values.d_infinity
    endif
 endif
@@ -264,9 +263,33 @@ if ss.star.errscale.value le 0 then begin
    return, !values.d_infinity
 endif
 
-if step2pars(ss,verbose=ss.debug) eq -1 then begin
-   if ss.debug then print, 'stellar system is bad'
-   return, !values.d_infinity
+if ss.amoeba then begin
+   ;; need some derived parameters 
+   ;; (but others will change after we change logk or p, so
+   ;; we'll have to re-derive them)
+   if step2pars(ss,verbose=ss.debug) eq -1 then begin
+      if ss.debug then print, 'stellar system is bad'
+      return, !values.d_infinity
+   endif
+
+   G = 1.3271244d20 ;; m^3/(M_sun*second^2) Standish 1995
+   for j=0, ss.nplanets-1 do begin
+      if ss.planet[j].chen then begin
+         if ss.planet[j].rpearth.value le 0d0 then begin
+            if ss.debug then print, 'rpearth is bad'
+            return, !values.d_infinity
+         endif         
+         if ~ss.planet[j].fitrv and ss.planet[j].fittran then begin
+            mp = massradius_chenreverse(ss.planet[j].rpearth.value)*0.00000300245d0 ;; m_sun
+            k = ((2d0*!dpi*G)/(ss.planet[j].period.value*86400d0*(ss.star[0].mstar.value + mp)^2))^(1d0/3d0)*$
+                mp*sin(acos(ss.planet[j].cosi.value))/sqrt(1d0 - ss.planet[j].e.value^2) ;; m/s
+            ss.planet[j].logk.value = alog10(k)
+         endif else if ss.planet[j].fitrv and ~ss.planet[j].fittran then begin
+            rp = massradius_chen(ss.planet[j].mpearth.value)*0.0091705248d0 ;; r_sun
+            ss.planet[j].p.value = rp/ss.star.rstar.value
+         endif
+      endif
+   endfor
 endif
 
 ;; add prior penalties
@@ -385,7 +408,7 @@ for j=0, ss.nplanets-1 do begin
          return, !values.d_infinity
       endif
 
-      if not ss.amoeba then begin
+;      if not ss.amoeba then begin
 
          rp = massradius_chen(ss.planet[j].mpearth.value,rperr=rperr)
 
@@ -399,8 +422,8 @@ for j=0, ss.nplanets-1 do begin
 ;         print, 'chen penalty = ' + strtrim(((rp - ss.planet[j].rpearth.value)/rperr)^2,2)
 ;         print, rp, ss.planet[j].rpearth.value,rperr
 ;         print, ss.planet[j].mpearth.value
-
-      endif
+;         print, ss.planet[j].k.value
+;      endif
    endif
 endfor
 
@@ -535,6 +558,7 @@ for j=0, ntransits-1 do begin
                                     band.u1.value, $
                                     band.u2.value, $
                                     1d0, $
+                                    q=ss.star.mstar.value/ss.planet[i].mpsun.value, $
                                     thermal=band.thermal.value, $
                                     reflect=band.reflect.value, $
                                     dilute=band.dilute.value,$
