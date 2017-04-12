@@ -84,7 +84,7 @@ if ss.ntran eq 1 then ymax = 1+3*noise $
 else ymax = 1d0 + 3*noise + spacing*(ss.ntran-1)
 yrange = [ymin,ymax]
 ;yrange = [0.994,1.001]
-xtitle='Time - T!DC!N (hrs)'
+xtitle='!3Time - T!DC!N (hrs)'
 
 i=0
 sini = sin(acos(ss.planet[i].cosi.value))
@@ -96,7 +96,7 @@ trandata = (*(ss.transit[0].transitptrs))
 minbjd = min(trandata.bjd,max=maxbjd)
 minbjd -= 0.25 & maxbjd += 0.25d0
 t0 = floor(minbjd)
-xtitle='BJD_TDB - ' + strtrim(t0,2)
+xtitle='!3BJD_TDB - ' + strtrim(t0,2)
 
 if maxbjd - minbjd lt 1 then xrange=[-t14,t14] $
 else xrange = [minbjd,maxbjd]-t0
@@ -105,7 +105,7 @@ else xrange = [minbjd,maxbjd]-t0
 ;stop
 ;; position keyword required for proper bounding box
 plot, [0],[0],yrange=yrange, xrange=xrange,/xstyle,/ystyle,$;position=[0.15, 0.05, 0.93, 0.93],$
-      ytitle='Normalized flux + Constant',xtitle=xtitle
+      ytitle='!3Normalized flux + Constant',xtitle=xtitle
 
 ;xrange = [xmin,xmax]
 
@@ -147,6 +147,7 @@ for j=0, ss.ntran-1 do begin
          epochs = -minepoch + dindgen(maxepoch-minepoch+1)
          tcs = ss.planet[i].tc.value + epochs*ss.planet[i].period.value
          xyouts, tcs-t0, epochs*0d0+(ymax+1d0)/2d0, ss.planet[i].label, align=0.5d0
+
       endif
    endfor
    prettyflux *= ss.transit[j].f0.value
@@ -241,8 +242,8 @@ for i=0L, ss.nplanets-1 do begin
 
       ;; plot the shell, model, and data
       plot, [0],[0], xstyle=1,ystyle=1,$
-            ytitle='Normalized flux',yrange=[ymin,ymax],xrange=[-t14,t14],$
-            xtitle='Time - Tc (Hrs)',title=ss.planet[i].label
+            ytitle='!3Normalized flux',yrange=[ymin,ymax],xrange=[-t14,t14],$
+            xtitle='!3Time - Tc (Hrs)',title=ss.planet[i].label
       oplot, phasetime, residuals + modelflux, psym=8, symsize=symsize
       oplot, phasetime[sorted], modelflux[sorted], thick=2, color=red, linestyle=0
       
