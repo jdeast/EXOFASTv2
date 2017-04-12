@@ -206,7 +206,7 @@ olddet = dblarr(nchains)
 
 ;; get the MCMC step scale for each parameter
 if n_elements(scale) eq 0 then $
-   scale = exofast_getmcmcscale(bestpars,chi2func,tofit=tofit,angular=angular)
+   scale = exofast_getmcmcscale(bestpars,chi2func,tofit=tofit,angular=angular,/skipiter)
 if scale[0] eq -1 then begin
    message, 'No scale found',/continue
    pars = -1
