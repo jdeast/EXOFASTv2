@@ -4,8 +4,8 @@ G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 AU = 215.094177d0 ;; R_sun
 mjup = 0.000954638698d0 ;; m_sun
 rjup = 0.102792236d0    ;; r_sun
-mearth = 0.00000300245 ;; m_sun
-rearth = 0.0091705248 ;; r_sun
+mearth = 0.00000300245d0 ;; m_sun
+rearth = 0.0091705248d0 ;; r_sun
 mindist = dblarr(ss.nplanets)
 maxdist = dblarr(ss.nplanets)
 
@@ -41,31 +41,42 @@ for i=0, ss.nplanets-1 do begin
    if ss.planet[i].k.value le 0d0 then ss.planet[i].mpsun.value = 0d0 $
    else ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
                                          ss.planet[i].i.value, ss.planet[i].period.value, $
-                                         ss.star.mstar.value)
+                                         ss.star.mstar.value) ;; m_sun
 
 ;   if ss.planet[i].mpsun.value gt 0.08d0 then begin
 ;      if keyword_set(verbose) then print, 'Planet ' + strtrim(i,2) + ' mass (' + strtrim(ss.planet[i].mpsun.value/mjup,2) + ' M_J) above hydrogen burning limit'
 ;      return, -1 ;; planet above the hydrogen burning limit
 ;   endif
 
-   ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup
-   ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth
+   ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup ;; m_jupiter
+   ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth ;; m_earth
+   ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
+                       (4d0*!dpi^2))^(1d0/3d0)         ;; semi-major axis in r_sun
+   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value ;; a/rstar (unitless)
+   ss.planet[i].a.value = ss.planet[i].arsun.value/AU ;; semi major axis in AU
 
-   ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mp.value)*ss.planet[i].period.value^2/$
-                       (4d0*!dpi^2))^(1d0/3d0)         ;; rsun
-   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value ;; unitless
-   ss.planet[i].a.value = ss.planet[i].arsun.value/AU ;; AU
 
-   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value
-   ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup
-   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth
+   ;; tighter (empirical) constraint on eccentricity (see Eastman 2013)
+   if ss.tides and ss.planet[i].e.value gt (1d0-3d0/ss.planet[i].ar.value) then begin
+      ss.planet[i].e.value = 0d0
+      ss.planet[i].qesinw.value = 0d0
+      ss.planet[i].qecosw.value = 0d0
+   endif
+   
+   if ss.planet[i].e.value eq 0d0 then ss.planet[i].omega.value = !dpi/2d0
+
+   if ~finite(ss.planet[i].ar.value ) then stop
+
+   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value ;; r_sun
+   ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup ;; r_jupiter
+   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth ;; r_earth
 
    ss.planet[i].esinw.value = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
    ss.planet[i].b.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value) ;; eq 7, Winn 2010
 
    ;; no transit and we're fitting a transit! This causes major problems; exclude this model
    if ss.planet[i].fittran and (ss.planet[i].b.value gt (1d0+ss.planet[i].p.value)) then begin
-      if keyword_set(verbose) then print, 'Planet does not transit!'
+       if keyword_set(verbose) then print, 'Planet does not transit!'
       return, -1
    endif
 
@@ -98,15 +109,6 @@ for i=0, ss.nplanets-1 do begin
          endif
       endfor
    endif
-
-   ;; tighter (empirical) constraint on eccentricity (see Eastman 2013)
-   if ss.tides and ss.planet[i].e.value gt (1d0-3d0/ss.planet[i].ar.value) then begin
-      ss.planet[i].e.value = 0d0
-      ss.planet[i].qesinw.value = 0d0
-      ss.planet[i].qecosw.value = 0d0
-   endif
-
-   if ss.planet[i].e.value eq 0d0 then ss.planet[i].omega.value = !dpi/2d0
 
    ;; time of periastron
    ss.planet[i].phase.value=exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value,/pri)
