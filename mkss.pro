@@ -140,6 +140,10 @@ if not keyword_set(alloworbitcrossing) then alloworbitcrossing=0B
 ;; read in the transit files
 if n_elements(tranpath) ne 0 then begin
    tranfiles=file_search(tranpath,count=ntran)
+   if ntran eq 0 then begin
+      message, "No transit files files found matching " + strtrim(tranpath,2) + "; please check TRANPATH"
+   endif
+
    ;; find the unique bands
    bands = tranfiles
    for i=0, ntran-1 do begin
@@ -1463,14 +1467,20 @@ for i=0, ntran-1 do begin
 
       epoch = (mean((*(ss.transit[i].transitptrs)).bjd) - tc)/period
       normepoch = ((epoch mod 1) + 1) mod 1
-      if normepoch lt 0.05 or normepoch gt 0.95 then ss.transit[i].epoch[j] = round(epoch)
+
+      ;; this causes the transit to be ignored if it's slightly
+      ;; off... what was the purpose of this if statement code anyway??
+;      if normepoch lt 0.05 or normepoch gt 0.95 then ss.transit[i].epoch[j] = round(epoch)
+
+      ss.transit[i].epoch[j] = round(epoch)
+
    endfor
 endfor
 
 ;; don't do these when creating the MCMC structure
 if n_elements(ss.star.mstar.value) eq 1 then begin
    ;; derive all step parameters
-   if not pars2step(ss) then message, 'Warning: YY isochrones are not applicable here; refine priors. Are you fitting a low mass star? Be sure to disable YY isochrones using the /NOYY, disable the limb darkening using /NOCLARET, and supply priors on mstar, rstar, and u1 and u2 for each band'
+   if not pars2step(ss) then message, 'Warning: YY isochrones are not applicable here; refine priors. Are you fitting a low mass star? Be sure to disable YY isochrones using the /NOYY, disable the limb darkening prior using /NOCLARET, and supply priors on mstar, rstar, and u1 and u2 for each band'
    
    ;; return an error if the starting stellar system is not allowed
    if step2pars(ss,/verbose) eq -1 then message, 'Warning: starting values for stellar system not allowed; refine priors'
