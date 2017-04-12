@@ -1,18 +1,18 @@
 function exofast_tran, time, inc, ar, tp, period, e, omega, p, u1, u2, f0, $
                        rstar=rstar, thermal=thermal, reflect=reflect, $
-                       dilute=dilute, tc=tc
+                       dilute=dilute, tc=tc, q=q
 AU = 215.094177d0
 
 ;; if we have the stellar radius, we can convert time to the
 ;; target's barycentric frame
 if arg_present(rstar) then begin
    transitbjd = bjd2target(time, inclination=inc, a=ar*rstar, tp=tp, $
-                           period=period, e=e, omega=omega)
+                           period=period, e=e, omega=omega,q=q)
 endif else transitbjd = time
 
 ;; the impact parameter for each BJD
 z = exofast_getb(transitbjd, i=inc, a=ar, tperiastron=tp, period=period,$
-                 e=e,omega=omega,z=depth,x=x,y=y)
+                 e=e,omega=omega,z=depth,x=x,y=y,q=q)
 
 ;; Primary transit
 modelflux = dblarr(n_elements(time))+1d0
