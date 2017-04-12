@@ -23,7 +23,7 @@ for i=0, ss.nplanets-1 do begin
    ;; we can do better than this (Yee & Gaudi, 2008; Cummings 2006)
    if (allmaxepoch-allminepoch+1) gt 1 then begin
       ;; with multiple transits, the period is well known
-      uper = sqrt(2d0)*0.01/sqrt(maxepoch-minepoch)
+      uper = sqrt(2d0)*0.01/sqrt(allmaxepoch-allminepoch)
       ulogp = uper/(alog(10d0)*ss.planet[i].period.value)
       ss.planet[i].logp.scale = 3d0*ulogp
 
