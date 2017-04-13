@@ -292,6 +292,11 @@ if ss.amoeba then begin
    endfor
 endif
 
+if step2pars(ss,verbose=ss.debug) eq -1 then begin
+   if ss.debug then print, 'stellar system is bad'
+   return, !values.d_infinity
+endif
+
 ;; add prior penalties
 priors = *(ss.priors)
 for i=0, n_elements(priors[0,*])-1 do begin
