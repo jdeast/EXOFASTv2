@@ -119,7 +119,16 @@ for j=0, ss.ntran-1 do begin
    minbjd -= 0.25 & maxbjd += 0.25d0
    npretty = ceil((maxbjd-minbjd)*1440d0) ;; 1 per minute
    prettytime = minbjd + (maxbjd-minbjd)*dindgen(npretty)/(npretty-1d0)
-   prettyflux = dblarr(npretty) + 1
+   prettyflux = dblarr(npretty) + 1d0
+
+
+   ;; get the motion of the star due to the planet
+   junk = exofast_getb2(prettytime,inc=ss.planet.i.value,a=ss.planet.ar.value,$
+                        tperiastron=ss.planet.tp.value,$
+                        period=ss.planet.period.value,$
+                        e=ss.planet.e.value,omega=ss.planet.omega.value,$
+                        q=ss.star.mstar.value/ss.planet.mpsun.value,$
+                        x1=x1,y1=y1,z1=z1)
 
    for i=0, ss.nplanets-1 do begin
 
@@ -136,11 +145,13 @@ for j=0, ss.ntran-1 do begin
                                      band.u1.value, $
                                      band.u2.value, $
                                      1d0, $
+                                     q=ss.star.mstar.value/ss.planet[i].mpsun.value, $
                                      thermal=band.thermal.value, $
                                      reflect=band.reflect.value, $
                                      dilute=band.dilute.value,$
                                      tc=ss.planet[i].tc.value,$
-                                     rstar=ss.star.rstar.value/AU)-1d0)
+                                     rstar=ss.star.rstar.value/AU,$
+                                     x1=x1,y1=y1,z1=z1) - 1d0) 
          
          minepoch = floor((minbjd-ss.planet[i].tc.value)/ss.planet[i].period.value)
          maxepoch = ceil((maxbjd-ss.planet[i].tc.value)/ss.planet[i].period.value)
@@ -177,7 +188,6 @@ for j=0, ss.ntran-1 do begin
    oplot, prettytime, prettyflux + spacing*(ss.ntran-j-1), thick=2, color=red;, linestyle=0
    xyouts, 0, 1.0075 + spacing*(ss.ntran-j-1), trandata.label,charsize=charsize,alignment=0.5
 
-;   stop
 ;   wset, 1
 ;   plot, time, trandata.flux-
 endfor
@@ -208,6 +218,15 @@ for i=0L, ss.nplanets-1 do begin
          residuals = [residuals, (*(ss.transit[j].transitptrs)).residuals] 
       endfor
 
+      ;; get the motion of the star due to the planet
+      junk = exofast_getb2(time,inc=ss.planet.i.value,a=ss.planet.ar.value,$
+                           tperiastron=ss.planet.tp.value,$
+                           period=ss.planet.period.value,$
+                           e=ss.planet.e.value,omega=ss.planet.omega.value,$
+                           q=ss.star.mstar.value/ss.planet.mpsun.value,$
+                           x1=x1,y1=y1,z1=z1)
+
+
       ;time = trandata.bjd ; (trandata.bjd-ss.planet[i].tc.value) mod ss.planet[i].period.value     
       modelflux = (exofast_tran(time, $
                                 ss.planet[i].i.value, $
@@ -220,12 +239,14 @@ for i=0L, ss.nplanets-1 do begin
                                 band.u1.value, $
                                 band.u2.value, $
                                 1d0, $
+                                q=ss.star.mstar.value/ss.planet[i].mpsun.value, $
                                 thermal=band.thermal.value, $
                                 reflect=band.reflect.value, $
                                 dilute=band.dilute.value,$
                                 tc=ss.planet[i].tc.value,$
-                                rstar=ss.star.rstar.value/AU))
-      
+                                rstar=ss.star.rstar.value/AU,$
+                                x1=x1,y1=y1,z1=z1) - 1d0) + 1d0
+       
       ymin = min(modelflux) - 3d0*noise
 
       phasetime = ((time - ss.planet[i].tc.value) mod ss.planet[i].period.value)*24d0
