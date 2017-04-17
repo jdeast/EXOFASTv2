@@ -1,6 +1,6 @@
 function exofast_tran, time, inc, ar, tp, period, e, omega, p, u1, u2, f0, $
                        rstar=rstar, thermal=thermal, reflect=reflect, $
-                       dilute=dilute, tc=tc, q=q
+                       dilute=dilute, tc=tc, q=q,x1=x1,y1=y1,z1=z1
 AU = 215.094177d0
 
 ;; if we have the stellar radius, we can convert time to the
@@ -11,8 +11,17 @@ if arg_present(rstar) then begin
 endif else transitbjd = time
 
 ;; the impact parameter for each BJD
-z = exofast_getb(transitbjd, i=inc, a=ar, tperiastron=tp, period=period,$
-                 e=e,omega=omega,z=depth,x=x,y=y,q=q)
+z = exofast_getb2(transitbjd, i=inc, a=ar, tperiastron=tp, period=period,$
+                  e=e,omega=omega,z2=depth,x2=x,y2=y,q=q);,x0=x0,y0=y0,z0=z0)
+
+;z = exofast_getb(transitbjd, i=inc, a=ar, tperiastron=tp, period=period,$
+;                  e=e,omega=omega,z=depth,x=x,y=y)
+
+;stop
+
+if arg_present(z1) then depth += z1
+if arg_present(x1) then x += x1
+if arg_present(y1) then y += y1
 
 ;; Primary transit
 modelflux = dblarr(n_elements(time))+1d0
