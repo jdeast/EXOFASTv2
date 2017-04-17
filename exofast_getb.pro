@@ -16,7 +16,12 @@
 ;                 parameters (ideally in the target's
 ;                 barycentric frame; see BJD2TARGET)
 ;   i           - inclination of orbit (radians)
-;   a           - semi-major axis (in units of R_*)
+;   a           - semi-major axis, a = a1+a2 (in units of R_*). That
+;                 is, the semi-major axis should be calculated
+;                 from Kepler's equation: a/rstar = G(M+m)P^2/(4pi^2rstar).
+;                 Using G = 2942.71377d0 R_sun^3/(m_sun*day^2), masses
+;                 in solar masses, period in days, and rstar in solar
+;                 radii will give the appropriate input.
 ;   tperiastron - periastron passage time (BJD)
 ;   Period      - Period of orbit (days)
 ;
@@ -29,10 +34,6 @@
 ;                 -- omega_* = omega_planet + !dpi
 ;   lonascnode  - The Longitude of the ascending node
 ;                 (radians). Assumed to be !dpi if not specified.
-;   Q           - The mass ratio of the primary to secondary
-;                 (M1/M2). If not specified, the mass ratio is assumed
-;                 to be infinite. The returned coordinates are the
-;                 motion of the companion with respect to the primary.
 ;
 ; OUTPUTS:
 ;    result     - the impact parameter as a function of BJD, in units
@@ -70,7 +71,7 @@ endif else begin
     e=0.d0
 endelse
 
-atot = a + a/q
+atot = a ;; a1 + a2
 
 ;; calculate the corresponding (x,y) coordinates of planet
 r = atot*(1d0-e^2)/(1d0+e*cos(trueanom))
