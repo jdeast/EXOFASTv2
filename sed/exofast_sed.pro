@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname
+function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname
 
 common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m
 
@@ -28,9 +28,8 @@ endif
 
 ;; round to 0.5 dex in each (!??!)
 logg1 = double(round(logg*2d0))/2d0
-met1 = double(round(met*2d0))/2d0
 
-exofast_interp_model,teff,logg1,met1,w1,lamflam1temp,/next
+exofast_interp_model,teff,logg1,met,w1,lamflam1temp,alpha=alpha,/next
 if ~finite(lamflam1temp[0]) then return, !values.d_infinity
 lamflam1=lamflam1temp*rstar*rstar*rsun*rsun/d/d/pc/pc
 kapp1 = interpol(kkap,klam,w1)
@@ -78,7 +77,7 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
       plotsym, 0, 1.5, /fill, color=colors[3]
    endelse
    xmin = min(wp, max=xmax)
-   xmax = 20
+   xmax = 30
    xmin = 0.1
    ymin = min([f[m],fp[m]-ep[m]])
    ymax = max([f[m],fp[m]+ep[m]])
