@@ -53,9 +53,7 @@
 
 function exofast_getb, bjd, i=i, a=a, tperiastron=tperiastron, Period=P, $
                        e=e, omega=omega, x=x, y=y, z=z, $
-                       lonascnode=lonascnode, q=q
-
-if n_elements(q) eq 0 then q = !values.d_infinity
+                       lonascnode=lonascnode
 
 ;; calculate the mean anomaly corresponding to each observed time
 meananom = (2.d0*!dpi*(1.d0 + (bjd - Tperiastron)/P)) mod (2.d0*!dpi) 
@@ -71,10 +69,8 @@ endif else begin
     e=0.d0
 endelse
 
-atot = a ;; a1 + a2
-
 ;; calculate the corresponding (x,y) coordinates of planet
-r = atot*(1d0-e^2)/(1d0+e*cos(trueanom))
+r = a*(1d0-e^2)/(1d0+e*cos(trueanom))
 
 ;; as seen from observer
 x = -r*cos(trueanom + omega)

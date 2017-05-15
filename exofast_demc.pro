@@ -155,7 +155,7 @@ pro exofast_demc, bestpars,chi2func,pars,chi2=chi2, tofit=tofit,$
                   nchains=nchains, angular=angular,$
                   burnndx=burnndx, removeburn=removeburn, $
                   gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
-                  derived=derived, resumendx=resumendx
+                  derived=derived, resumendx=resumendx,stretch=stretch
 
 ;; default values
 if n_elements(maxsteps) eq 0 then maxsteps = 1d5
@@ -223,8 +223,9 @@ for j=0, nchains-1 do begin
       ;; start 5 steps from best value. If that's not allowed
       ;; (infinite chi^2), slowly approach 0 steps away from the best value
       ;; niter should never be larger than ~5000
+      if j eq 0 then factor = 0d0 else factor = 1d0 ;; first chain starts at best fit
       pars[0:nfit-1,0,j] = bestpars[tofit] + $
-                           5d0/exp(niter/1000d)*scale*call_function(randomfunc,seed,nfit,/normal)
+                           5d0/exp(niter/1000d)*scale*call_function(randomfunc,seed,nfit,/normal)*factor
       newpars[tofit] = pars[0:nfit-1,0,j]
       ;; find the chi^2
       chi2[0,j] = call_function(chi2func, newpars, determinant=det, derived=dpar)
@@ -247,6 +248,8 @@ print
 
 if n_elements(dpar) ne 0 then oldderived = reform(derived[*,0,*],nderived,nchains)
 
+a = 2d0 ;; a > 1
+
 nextrecalc = 100L
 npass = 1L 
 nstop = 0L
@@ -255,6 +258,9 @@ tz0 = 0d0
 tzsteps = 0L
 alreadywarned = 0L
 t0 = systime(/seconds)
+minburnndx = 0L
+
+idealacceptancerate = 0.23d0 ;; automatically scale "a" to get ideal acceptance rate
 
 ;; start MCMC chain
 for i=resumendx,maxsteps-1L do begin
@@ -266,18 +272,38 @@ for i=resumendx,maxsteps-1L do begin
       ;; automatically thin the chain (saves memory)
       for k=0L, nthin-1L do begin
          
-         ;; differential evolution mcmc step -- see Ter Braak 2006
-         repeat r1=floor(call_function(randomfunc,seed)*(nchains)) $
-           until r1 ne j ;; a random chain
-         repeat r2=floor(call_function(randomfunc,seed)*(nchains)) $
-           until r2 ne j and r2 ne r1 ;; another random chain
-         newpars[tofit] = oldpars[tofit] + $ 
-                          gamma*(pars[*,i-1,r1]-pars[*,i-1,r2]) + $
-                          (call_function(randomfunc,seed,nfit)-0.5d0)*scale/10d0
-         
+         if keyword_set(stretch) then begin
+            ;; affine invariant "stretch move" step 
+            ;; see Goodman & Weare, 2010 (G10), eq 7 
+            ;; http://msp.org/camcos/2010/5-1/camcos-v5-n1-p04-p.pdf
+            repeat r1=floor(call_function(randomfunc,seed)*(nchains)) $
+            until r1 ne j ;; a random chain
+
+            ;; a random number between 1/a and a, weighted toward lower
+            ;; values to satisfy the symmetry condition (G10, eq 8)
+            z = ((a-1d0)*call_function(randomfunc,seed) + 1d0)^2d0/2d0 
+            
+            ;; use the most recent step (Goodman, pg 69)
+            if r1 lt j then ndx = i else ndx = i-1 
+            ;; define the new step (eq 7 in G10)
+            newpars[tofit] = pars[*,ndx,r1] + z*(oldpars[tofit]-pars[*,ndx,r1])
+            fac = z^(nfit-1) ;; GW10, last equation, pg 70
+         endif else begin
+            ;; differential evolution mcmc step (Ter Braak, 2006)
+            repeat r1=floor(call_function(randomfunc,seed)*(nchains)) $
+            until r1 ne j ;; a random chain
+            repeat r2=floor(call_function(randomfunc,seed)*(nchains)) $
+            until r2 ne j and r2 ne r1 ;; another random chain
+            newpars[tofit] = oldpars[tofit] + $ 
+                             gamma*(pars[*,i-1,r1]-pars[*,i-1,r2]) + $
+                             (call_function(randomfunc,seed,nfit)-0.5d0)*scale/10d0
+            fac = 1d0
+         endelse
+ 
+
          ;; calculate the chi^2 of the new step
          newchi2 = call_function(chi2func,newpars,determinant=det,derived=dpar)
-         C = olddet[j]/det*exp((oldchi2 - newchi2)/2d0)
+         C = fac*olddet[j]/det*exp((oldchi2 - newchi2)/2d0)
 
          ;; accept the step; update values
          if call_function(randomfunc,seed) lt C then begin
@@ -378,6 +404,26 @@ for i=resumendx,maxsteps-1L do begin
    ;; print the progress, cumulative acceptance rate, and time remaining
    acceptancerate = strtrim(string(naccept/double(i*nchains*nthin)*100,$
                                    format='(f6.2)'),2)
+
+   ;; Limited testing suggests this is unnecessary (counter-productive, even)
+;   ;; tune the stretch scale (a) to achieve the optimal acceptance rate (~23%)
+;   ;; if we've taken fewer than 5% of the total steps
+;   if double(i)/maxsteps lt 0.05 and keyword_set(stretch) then begin 
+;      if naccept/(double(i*nchains*nthin)) lt idealacceptancerate*0.75 or $
+;         naccept/(double(i*nchains*nthin)) gt idealacceptancerate*1.25 then begin
+;
+;         print
+;         print, 'Acceptance rate (' + acceptancerate + ') not ideal -- scaling stretch scale from ' + strtrim(a,2) + ' to ' + strtrim(a*naccept/(double(i*nchains*nthin))/idealacceptancerate,2)
+;         a = a*naccept/(double(i*nchains*nthin))/idealacceptancerate
+;
+;         ;; more continous scaling
+;         if accepted then a += (1d0-idealacceptancerate)/i $
+;         else a -= idealacceptancerate/i
+;
+;         minburnndx = i
+;      endif
+;   endif
+
    timeleft = (systime(/seconds)-t0)*(maxsteps/(i+1d)-1d)
    units = ' seconds '
    if timeleft gt 60 then begin
@@ -418,7 +464,7 @@ medchi2 = min(median(chi2[0.1*nstop:nstop,*],dimension=1))
 ;; good chains must have some values below this median
 goodchains = where(minchi2 lt medchi2,ngood)
 
-burnndx = 0L
+burnndx = minburnndx
 for j=0L, ngood-1 do begin
    tmpndx = (where(chi2[0:nstop,goodchains[j]] lt medchi2))(0)
    if tmpndx gt burnndx then burnndx = tmpndx

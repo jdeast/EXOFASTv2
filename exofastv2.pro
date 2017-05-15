@@ -377,7 +377,7 @@ pro exofastv2, priorfile=priorfile, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                fitrv=fitrv, fittran=fittran,ttvs=ttvs, earth=earth,$
-               i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing
+               i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
 
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -410,8 +410,7 @@ for i=0, n_tags(ss)-1 do begin
    endfor
 endfor
 
-nchains = n_elements((*ss.tofit)[0,*])*2
-memrequired = nchains*maxsteps*npars*8d0/(1024d0^3)
+memrequired = ss.nchains*maxsteps*npars*8d0/(1024d0^3)
 print, 'Fit will require ' + strtrim(memrequired,2) + ' GB of RAM for the final structure'
 if memrequired gt 2d0 then begin
    print, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue'
@@ -515,9 +514,9 @@ for i=0, ss.nplanets-1 do begin
       endif 
       if ~ss.planet[i].fitrv and ss.planet[i].fittran then begin
          ss.planet[i].mpearth.value = massradius_chenreverse(ss.planet[i].rpearth.value)
-         ss.planet[i].mp.value = ss.planet[i].mpearth.value*0.00000300245 ;; m_sun
-         ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mp.value)^2))^(1d0/3d0)*$
-             ss.planet[i].mp.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value)*rsun/86400d0 ;; m/s
+         ss.planet[i].mpsun.value = ss.planet[i].mpearth.value*0.00000300245 ;; m_sun
+         ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mpsun.value)^2))^(1d0/3d0)*$
+             ss.planet[i].mpsun.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value)*rsun/86400d0 ;; m/s
          ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
       endif
    endif
@@ -542,7 +541,7 @@ if not keyword_set(bestonly) then begin
                  nthin=nthin,maxsteps=maxsteps,$
                  burnndx=burnndx, seed=seed, randomfunc=randomfunc, $
                  gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
-                 derived=rstar
+                 derived=rstar,stretch=stretch
    if pars[0] eq -1 then begin
       printf, lun, 'MCMC Failed to find a stepping scale. This usually means one or more parameters are unconstrained by the data or priors.'
       if lun ne -1 then free_lun, lun
@@ -589,6 +588,7 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=npla
               rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
               chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing)
+mcmcss.nchains = nchains
 mcmcss.burnndx = burnndx
 if ~ss.noyy then mcmcss.star.rstar.value = rstar
 *(mcmcss.chi2) = chi2
@@ -607,6 +607,7 @@ label = "tab:" + basename
 caption = "Median values and 68\% confidence interval for " + basename
 parfile = prefix + 'pdf.ps'
 covarfile = prefix + 'covar.ps'
+chainfile = prefix + 'chain.ps'
 texfile = prefix + 'median.tex'
 
 if keyword_set(covar) then nocovar = 0 $
@@ -614,6 +615,7 @@ else nocovar = 1
 
 exofast_plotdist2, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
+exofast_plotchains, mcmcss, chainfile=chainfile
 
 ;; display all the plots, if desired
 if keyword_set(display) then begin

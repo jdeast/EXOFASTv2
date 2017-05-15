@@ -87,8 +87,8 @@ trueanom = 2d0*atan(sqrt((1d0 + e)/(1d0 - e))*tan(0.5d0*eccanom))
 
 ;; displacement from barycenter
 if n_elements(q) ne 0 then begin
-   if keyword_set(primary) then factor = 1d0/(1d0+q) $
-   else factor = (1d0 - 1d0/(1d0+q))
+   if keyword_set(primary) then factor = 1d0/(1d0+q) $ ;; a*factor = a1
+   else factor = q/(1d0+q)                             ;; a*factor = a2
 endif else factor = 1d0 ;; infinite mass ratio
 
 ;; distance from barycenter to target

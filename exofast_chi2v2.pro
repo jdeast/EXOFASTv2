@@ -246,10 +246,12 @@ ss.star.mstar.value = 10^ss.star.logmstar.value
 ;; use the YY tracks to guide the stellar parameters
 if ~ss.noyy then begin
    if keyword_set(psname) then begin
-      chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug, psname=psname+'.yy.eps')
+      yychi2 = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug, psname=psname+'.yy.eps') 
    endif else begin
-      chi2 += massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug)
+      yychi2 = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug)
    endelse
+   chi2 += yychi2
+   ;print, 'YY penalty = ' + strtrim(yychi2,2)
    if ~finite(chi2) then begin
       if ss.debug then print, 'star is bad'
       return, !values.d_infinity
@@ -260,6 +262,11 @@ endif
 
 if ss.star.errscale.value le 0 then begin
    if ss.debug then print, 'error scale is bad'
+   return, !values.d_infinity
+endif
+
+if ss.star.alpha.value lt -0.3d0 or ss.star.alpha.value gt 0.7d0 then begin
+   if ss.debug then print, 'alpha is bad (' + strtrim(ss.star.alpha.value,2) + ')'
    return, !values.d_infinity
 endif
 
@@ -437,11 +444,11 @@ if file_test(ss.star.fluxfile) then begin
    if keyword_set(psname) then begin
       sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
                             ss.star.av.value, ss.star.distance.value, $
-                            logg=ss.star.logg.value,met=ss.star.feh.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep, psname=psname+'.sed.eps')
+                            logg=ss.star.logg.value,met=ss.star.feh.value,alpha=ss.star.alpha.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep, psname=psname+'.sed.eps')
    endif else begin
       sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
                             ss.star.av.value, ss.star.distance.value, $
-                            logg=ss.star.logg.value,met=ss.star.feh.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep)
+                            logg=ss.star.logg.value,met=ss.star.feh.value,alpha=ss.star.alpha.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep)
    endelse 
 
    if ~finite(sedchi2) then begin
@@ -455,6 +462,7 @@ if file_test(ss.star.fluxfile) then begin
       return, !values.d_infinity
    endif
    chi2 += sedchi2
+;   print, 'SED penalty = ' + strtrim(sedchi2,2)
 endif
 
 ;; RV model (non-interacting planets)
@@ -502,6 +510,7 @@ for j=0, ntelescopes-1 do begin
    
    if ~finite(rvchi2) then stop
    chi2 += rvchi2
+;   print, 'RV penalty = ' + strtrim(rvchi2,2)
 ;   chi2 += total(((rv.rv - modelrv)/rv.err)^2)
 endfor
 
@@ -532,6 +541,8 @@ for j=0, ntransits-1 do begin
       u2err = 0.05d0
       chi2 += ((band.u1.value-u1claret)/u1err)^2
       chi2 += ((band.u2.value-u2claret)/u2err)^2
+;      print, 'u1 penalty = ' + strtrim(((band.u1.value-u1claret)/u1err)^2,2)
+;      print, 'u2 penalty = ' + strtrim(((band.u2.value-u2claret)/u2err)^2,2)
    endif
 
    ;; Kepler Long candence data; create several model points and average   
@@ -546,6 +557,14 @@ for j=0, ntransits-1 do begin
       transitbjd = transit.bjd
       modelflux = dblarr(npoints) + 1d0
    endelse
+
+   ;; get the motion of the star due to the planet
+   junk = exofast_getb2(transitbjd,inc=ss.planet.i.value,a=ss.planet.ar.value,$
+                        tperiastron=ss.planet.tp.value,$
+                        period=ss.planet.period.value,$
+                        e=ss.planet.e.value,omega=ss.planet.omega.value,$
+                        q=ss.star.mstar.value/ss.planet.mpsun.value,$
+                        x1=x1,y1=y1,z1=z1)
 
    for i=0, nplanets-1 do begin
       if ss.planet[i].fittran then begin
@@ -568,8 +587,8 @@ for j=0, ntransits-1 do begin
                                     reflect=band.reflect.value, $
                                     dilute=band.dilute.value,$
                                     tc=ss.planet[i].tc.value,$
-                                    rstar=ss.star.rstar.value/AU) - 1d0)
-
+                                    rstar=ss.star.rstar.value/AU,$
+                                    x1=x1,y1=y1,z1=z1) - 1d0)
       endif
 
    endfor
@@ -584,6 +603,7 @@ for j=0, ntransits-1 do begin
 
    ;; chi^2
    transitchi2 = exofast_like(transit.flux - modelflux,ss.transit[j].variance.value,transit.err,/chi2)
+
    (*ss.transit[j].transitptrs).residuals = transit.flux - modelflux
    (*ss.transit[j].transitptrs).model = modelflux
 
@@ -593,11 +613,14 @@ for j=0, ntransits-1 do begin
       forprint, transitbjd, modelflux, format='(f0.8,x,f0.6)', textout=psname + '.model.' + strtrim(j,2) + '.flux.txt', /nocomment,/silent
 
    if ~finite(transitchi2) then stop
+
+;transitchi2 = strtrim(total(((transit.flux - modelflux)/transit.err)^2),2)
+
    chi2 += transitchi2
-;   print, 'transit penalty: ' + strtrim(transitchi2,2)
+;   print, 'transit penalty: ' + strtrim(transitchi2,2) + ' ' + strtrim(ss.transit[j].variance.value,2)
 
-;   chi2 += total(((transit.flux - modelflux)/transit.err)^2)
-
+;print, 'transit chi2 = ' + strtrim(total(((transit.flux - modelflux)/transit.err)^2),2)
+;stop
 ;   screen = GET_SCREEN_SIZE()
 ;   if win_state(5) then wset, 5 $
 ;   else window, 5, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0
@@ -638,6 +661,9 @@ if ss.ttvs then begin
       chi2 += ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2
       chi2 += ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
       
+;      print, ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2
+;      print, ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2
+
       if ss.debug or keyword_set(psname) then begin
          if keyword_set(psname) then begin
             ;; astrobetter.com tip on making pretty IDL plots
@@ -726,7 +752,6 @@ if ss.debug then print, ss.star.rstar.value, pars, chi2, format='(' + strtrim(n_
 
 ;; if this stop is triggered, you've found a bug!!
 if ~finite(chi2) then stop
-
 
 return, chi2
 

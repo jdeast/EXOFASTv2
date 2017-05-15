@@ -144,7 +144,7 @@ for i=0, nfit-1 do begin
                       ' (' + strtrim(chi2,2) + ')'
                 endif
 
-                if (origbestchi2 - bestchi2) gt 0.1 then betterfound = 1B
+                if (origbestchi2 - bestchi2) gt 1d0 then betterfound = 1B
                 
                 ;; chi2 is actually lower! (Didn't find the best fit)
                 ;; attempt to fix
@@ -153,8 +153,9 @@ for i=0, nfit-1 do begin
                 ;; could be way off, double the step for faster convergence
                 mcmcscale[i,j] *= 2d0 
                 bestchi2 = chi2
-                chi2changed = 1
                 niter = 0
+                chi2changed = 1
+
             endelse
 
             deltachi2 = chi2-bestchi2          
@@ -171,14 +172,17 @@ for i=0, nfit-1 do begin
                 if not chi2changed then begin
                     if abs(bestdeltachi2 - 1.d0) lt 0.75 then begin
                         mcmcscale[i,j] = bestscale
-                        chi2 = bestchi2 + 1
+                        chi2 = bestchi2 + 1d0
                     endif else begin
-                        message, 'Convergence Error: cannot find the value' + $
-                          ' for which deltachi^2 = 1 for parameter ' + strtrim(tofit[i],2),/continue
+                        message, 'Cannot find the value for which deltachi^2 = 1 for parameter ' +$
+                                 strtrim(tofit[i],2) + '; assuming rough chi^2 surface. Using delta chi^2 = ' +$
+                                 strtrim(bestdeltachi2,2) + ' and scaling step (' + strtrim(mcmcscale[i,j],2) +$
+                                 ') to ' + strtrim(mcmcscale[i,j]*(bestchi2+1)/chi2,2),/continue
+
+                        ;; extrapolate scale to delta chi^2 = 1 
+                        ;; (may cause issues near boundaries)
                         mcmcscale[i,j] = mcmcscale[i,j]*(bestchi2+1)/chi2
-                        chi2 = bestchi2 + 1
-;stop
-                        if tofit[i] eq 4 then stop
+                        chi2 = bestchi2 + 1d0
                     endelse
                 endif
             endif
@@ -199,10 +203,10 @@ for i=0, nfit-1 do begin
 
             ;; near a boundary
             ;; exclude this direction from the scale calculation
-            if ~finite(chi2) then begin
-                chi2 = bestchi2 + 1.d0
-                mcmcscale[i,j] = minstep
-            endif
+;            if ~finite(chi2) then begin
+;                chi2 = bestchi2 + 1.d0
+;                mcmcscale[i,j] = minstep
+;            endif
             niter++
 
             ;; print the steps and chi^2 it's getting
@@ -215,10 +219,6 @@ for i=0, nfit-1 do begin
              endif
             next:
 
-;if tofit[i] eq 4 and j eq 1 and n_elements(tofit) gt 4 then begin
-;   print, mcmcscale
-;   stop
-;endif
          endrep until abs(chi2 - bestchi2 - 1.d0) lt 1d-8
     endfor    
 endfor
@@ -235,11 +235,11 @@ if betterfound and ~keyword_set(skipiter) then begin
 endif
 
 ;; replace undefined errors with the other
-bad = where(~finite(mcmcscale[*,0]))
+bad = where(~finite(mcmcscale[*,0]) or mcmcscale[*,0] eq 0d0)
 if bad[0] ne -1 then mcmcscale[bad,0] = mcmcscale[bad,1]
-bad = where(~finite(mcmcscale[*,1]))
+bad = where(~finite(mcmcscale[*,1]) or mcmcscale[*,1] eq 0d0)
 if bad[0] ne -1 then mcmcscale[bad,1] = mcmcscale[bad,0]
-bad = where(~finite(mcmcscale),nbad)
+bad = where(~finite(mcmcscale) or mcmcscale eq 0d0,nbad)
 if bad[0] ne -1 then return, -1
 
 ;; return the average of high and low

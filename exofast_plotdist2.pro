@@ -65,11 +65,11 @@ if n_elements(covarname) eq 0 then covarname = 'covar.ps'
 if n_elements(probs) eq 0 then probs = erf([1d,2d]/sqrt(2d0))
 
 burnndx = ss.burnndx
-nsteps = ss.nsteps - burnndx
-medndx = nsteps/2
+nsteps = ss.nsteps/ss.nchains
+medndx = ((nsteps-ss.burnndx)/2d0) * ss.nchains
 halfsigma = erf(1d/sqrt(2d0))/2d
-lowsigndx = round(nsteps/2.d0 - nsteps*halfsigma)
-hisigndx = round(nsteps/2.d0 + nsteps*halfsigma)
+lowsigndx = round(((nsteps-ss.burnndx)/2.d0 - (nsteps-ss.burnndx)*halfsigma)*ss.nchains)
+hisigndx = round(((nsteps-ss.burnndx)/2.d0 + (nsteps-ss.burnndx)*halfsigma)*ss.nchains)
 
 ;; prepare the postscript device
 mydevice=!d.name
@@ -80,8 +80,10 @@ ysize=xsize/aspect_ratio
 !p.font=0
 device, filename=pdfname
 device, set_font='Times',/tt_font
-device, xsize=xsize,ysize=ysize
+device, xsize=xsize,ysize=ysize,/color,bits=24
 charsize=1.5
+loadct,39,/silent
+red = 254
 
 allpars = []
 parnames = []
@@ -102,7 +104,8 @@ for i=0, n_tags(ss)-1 do begin
                      for m=0L, n_elements((*(ss.(i)[j].(k))).(l))-1 do begin
                         if tag_exist((*(ss.(i)[j].(k))).(l)[m],'derive') then begin
                            if (*(ss.(i)[j].(k))).(l)[m].derive then begin
-                              pars = (*(ss.(i)[j].(k))).(l)[m].value[burnndx:*,*]
+                              pars = (reform((*(ss.(i)[j].(k))).(l)[m].value,nsteps,ss.nchains))[burnndx:*,*]
+;                              pars = (*(ss.(i)[j].(k))).(l)[m].value[burnndx:*,*]
                               derive = 1B
                               label = (*(ss.(i)[j].(k))).(l)[m].label
                               unit = (*(ss.(i)[j].(k))).(l)[m].unit
@@ -118,7 +121,7 @@ for i=0, n_tags(ss)-1 do begin
             if n_tags(ss.(i)[j].(k)) ne 0 then begin
                if tag_exist(ss.(i)[j].(k),'derive') then begin
                   if ss.(i)[j].(k).derive then begin
-                     pars = ss.(i)[j].(k).value[burnndx:*,*]
+                     pars = (reform(ss.(i)[j].(k).value,nsteps,ss.nchains))[burnndx:*,*]
                      derive = 1B
                      label = ss.(i)[j].(k).label 
                      unit = ss.(i)[j].(k).unit
@@ -176,10 +179,22 @@ for i=0, n_tags(ss)-1 do begin
                ;; plot labels
                xtitle='!3' + textoidl(latex + '_{' + ss.(i)[j].label + '}')
                ytitle='!3Probability'
-               
+              
+
+
                hist = histogram(pars,nbins=100,locations=x,min=xmin,max=xmax)
-               plot, x, hist/double(nsteps), psym=10, xtitle=xtitle, ytitle=ytitle,$
+               plot, x, hist/double(total(hist)), psym=10, xtitle=xtitle, ytitle=ytitle,$
                      charsize=charsize,xstyle=1, xrange=[xmin,xmax], font=1
+
+               for l=0L, ss.nchains-1L do  begin
+                  hist = histogram(pars[*,l],nbins=100,locations=x,min=xmin,max=xmax)
+                  if total(hist) gt 0 then $
+                     oplot, x, hist/double(total(hist)), psym=10,color=l*255d0/ss.nchains;, transparency=100d0-100d0/ss.nchains
+
+               endfor
+
+               hist = histogram(pars,nbins=100,locations=x,min=xmin,max=xmax)
+               oplot, x, hist/double(total(hist)), psym=10, thick=3
                
                ;; if the best parameters are given, overplot them on the PDFs
                if finite(best) then $

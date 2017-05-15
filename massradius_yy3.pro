@@ -159,11 +159,12 @@ yyrstar = interpol(yytrack[1,*], yytrack[2,*],age, quad=quad, lsquad=lsquad)
 
 if yyrstar le 0 then return, !values.d_infinity
 ;chi2 = ((yyteff-teff)/uteff)^2
-chi2 = ((yyteff-teff)/(yyteff*0.01))^2
+chi2 = ((yyteff-teff)/(yyteff*0.01))^2 ;; this assumes a 1% error in the YY tracks
 
-;; prepare the plotting device
-mydevice=!d.name
 if keyword_set(debug) or keyword_set(psname) then begin
+   mydevice=!d.name
+
+   ;; prepare the plotting device
    if keyword_set(psname) then begin
       ;; astrobetter.com tip on making pretty IDL plots
       set_plot, 'PS'
@@ -179,7 +180,6 @@ if keyword_set(debug) or keyword_set(psname) then begin
       xtitle=textoidl('T_{eff}')
       ytitle=textoidl('log g_*')
    endif else begin
-;      set_plot, 'X'
       red = '0000ff'x
       symsize = 1
       device,window_state=win_state
@@ -188,35 +188,25 @@ if keyword_set(debug) or keyword_set(psname) then begin
       xtitle='T_eff'
       ytitle='log g'
    endelse
-endif
 
-if keyword_set(debug) or keyword_set(psname) then begin
-
+   ;; make a publication-ready plot of the YY track -- Teff vs logg
    G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
    rstar = yytrack[1,*]
    loggplottrack =  alog10(G*mstar/(rstar^2)*9.31686171d0)
    teffplottrack = yytrack[0,*]
    loggplot =  alog10(G*mstar/(yyrstar^2)*9.31686171d0)
 
-
    xmin=max(teffplottrack,min=xmax) ;; plot range backwards
    ymin = min([loggplot,3,5],max=ymax)
 
    plot, teffplottrack, loggplottrack,xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax]
    plotsym,0,/fill
-   oplot, [teff], [loggplot], psym=8,symsize=0.5
+   oplot, [teff], [loggplot], psym=8,symsize=0.5 ;; the model point
 
-;   plot, alog10(yytrack[0,*]),yytrack[2,*]
-;   plot, alog10(yyteffall), yyloggall, xrange=[xmax,xmin],yrange=yrange,xtitle=xtitle,ytitle=ytitle
-;   oploterror, alog10([teff]), [logg], 0.00222,0.01,/lobar
-;   oploterror, alog10([teff]), [logg], 0.00316978,0.011,/hibar
+   if keyword_set(psname) then device, /close
+   set_plot, mydevice
 
 endif
-
-if keyword_set(psname) then begin
-   device, /close
-endif
-set_plot, mydevice
 
 return, chi2
 

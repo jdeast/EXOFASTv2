@@ -61,18 +61,18 @@ for i=0, ss.nplanets-1 do begin
                                                   ss.planet[i].period.value[positive],$
                                                   ss.star.mstar.value[positive])
 
-   ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup
-   ss.planet[i].msini.value = ss.planet[i].mp.value*sini
-   ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth
-   ss.planet[i].msiniearth.value = ss.planet[i].mpearth.value*sini
-   ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star.mstar.value
+   ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup               ;; m_jupiter
+   ss.planet[i].msini.value = ss.planet[i].mp.value*sini               ;; m_jupiter
+   ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth        ;; m_earth
+   ss.planet[i].msiniearth.value = ss.planet[i].mpearth.value*sini     ;; m_earth
+   ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star.mstar.value ;; unitless
    
-   ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mp.value)*ss.planet[i].period.value^2/(4d0*!dpi^2))^(1d0/3d0)
-   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value ;; unitless
-   ss.planet[i].a.value = ss.planet[i].arsun.value/AU ;; AU
-   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value
-   ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup
-   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth
+   ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/(4d0*!dpi^2))^(1d0/3d0) ;; (a1 + a2)/rsun
+   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value                                                        ;; (a1 + a2)/rstar
+   ss.planet[i].a.value = ss.planet[i].arsun.value/AU                                                                          ;; AU
+   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value                                                         ;; r_sun
+   ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup                                                                       ;; r_jupiter
+   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth                                                                ;; r_earth
 
    ;; time of periastron
    ss.planet[i].phase.value=exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value,/pri)  
@@ -151,12 +151,12 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].ps.value = (ss.star.rstar.value-ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2)  ;; eq 9, Winn 2010
 
    ss.planet[i].rhop.value = ss.planet[i].mpsun.value/(ss.planet[i].rpsun.value^3)*1.41135837d0
-   ss.planet[i].loggp.value = alog10(G*ss.planet[i].mp.value/ss.planet[i].rp.value^2*9.31686171d0) ;; cgs
+   ss.planet[i].loggp.value = alog10(G*ss.planet[i].mpsun.value/ss.planet[i].rpsun.value^2*9.31686171d0) ;; cgs
    ss.planet[i].safronov.value = ss.planet[i].ar.value*ss.planet[i].q.value/ss.planet[i].p.value
 
    ;; depth != delta if grazing (ignore limb darkening)
    ss.planet[i].delta.value = ss.planet[i].p.value^2
-   for j=0, ss.nsteps-1 do begin
+   for j=0L, ss.nsteps-1L do begin
       exofast_occultquad, ss.planet[i].b.value[j], 0d0, 0d0, ss.planet[i].p.value[j],mu1
       ss.planet[i].depth.value[j] = 1d0-mu1[0]
    endfor

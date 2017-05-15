@@ -61,8 +61,20 @@ for i=0, ss.nplanets-1 do begin
       ss.planet[i].e.value = 0d0
       ss.planet[i].qesinw.value = 0d0
       ss.planet[i].qecosw.value = 0d0
+   endif ;else if ss.planet[i].e.value gt (1d0-1d0/ss.planet[i].ar.value)
+
+   ;; limit eccentricity to avoid collision with star during periastron
+   ;; the ignored tidal effects would become important long before this,
+   ;; but this prevents numerical problems compared to the e < 1 constraint
+   ;; the not/lt (instead of ge) robustly handles NaNs too
+   ;; abs(p) because p is allowed to be negative to eliminate bias
+   if not (ss.planet[i].e.value lt (1d0-1d0/ss.planet[i].ar.value-abs(ss.planet[i].p.value)/$
+                              ss.planet[i].ar.value)) then begin
+      if keyword_set(verbose) then print, 'Planet ' + strtrim(i,2) + ' will collide with the star! e=' + strtrim(ss.planet[i].e.value,2) + '; a/Rstar=' + strtrim(ss.planet[i].ar.value,2) + '; Rp/Rstar=' + strtrim(ss.planet[i].p.value,2) + '; Rstar=' + strtrim(ss.star.rstar.value,2)
+      if keyword_set(verbose) then print, 'Rstar is derived from YY isochrones; adjust starting values for Age, Teff, [Fe/H], or Mstar to change it'
+      return, -1
    endif
-   
+
    if ss.planet[i].e.value eq 0d0 then ss.planet[i].omega.value = !dpi/2d0
 
    if ~finite(ss.planet[i].ar.value ) then stop
@@ -77,18 +89,6 @@ for i=0, ss.nplanets-1 do begin
    ;; no transit and we're fitting a transit! This causes major problems; exclude this model
    if ss.planet[i].fittran and (ss.planet[i].b.value gt (1d0+ss.planet[i].p.value)) then begin
        if keyword_set(verbose) then print, 'Planet does not transit!'
-      return, -1
-   endif
-
-   ;; limit eccentricity to avoid collision with star during periastron
-   ;; the ignored tidal effects would become important long before this,
-   ;; but this prevents numerical problems compared to the e < 1 constraint
-   ;; the not/lt (instead of ge) robustly handles NaNs too
-   ;; abs(p) because p is allowed to be negative to eliminate bias
-   if not (ss.planet[i].e.value lt (1d0-1d0/ss.planet[i].ar.value-abs(ss.planet[i].p.value)/$
-                              ss.planet[i].ar.value)) then begin
-      if keyword_set(verbose) then print, 'Planet ' + strtrim(i,2) + ' will collide with the star! e=' + strtrim(ss.planet[i].e.value,2) + '; a/Rstar=' + strtrim(ss.planet[i].ar.value,2) + '; Rp/Rstar=' + strtrim(ss.planet[i].p.value,2) + '; Rstar=' + strtrim(ss.star.rstar.value,2)
-      if keyword_set(verbose) then print, 'Rstar is derived from YY isochrones; adjust starting values for Age, Teff, [Fe/H], or Mstar to change it'
       return, -1
    endif
 

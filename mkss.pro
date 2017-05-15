@@ -264,6 +264,14 @@ Av.fit = 0
 Av.derive = 0
 Av.scale = 0.3d0
 
+alpha = parameter
+alpha.description = 'Alpha abundance'
+alpha.latex = '\alpha'
+alpha.label = 'alpha'
+alpha.fit = 0
+alpha.derive = 0
+alpha.scale = 0.3d0
+
 ;Ma = parameter
 ;Ma.unit = ''
 ;Ma.description = 'Apparent V-band Magnitude'
@@ -970,6 +978,7 @@ star = create_struct(mstar.label,mstar,$
                      vsini.label,vsini,$
                      macturb.label,macturb,$
                      Av.label,Av,$
+                     alpha.label,alpha,$
 ;                     Ma.label,Ma,$
 ;                     Mv.label,Mv,$
                      errscale.label,errscale,$
@@ -1134,6 +1143,7 @@ ss = create_struct('star',star,$
                    'ttvs', ttvs,$
                    'alloworbitcrossing', alloworbitcrossing,$
                    'nsteps',nsteps,$
+                   'nchains',1L,$
 ;                   'nbad',0L,$
                    'burnndx',0L,$
                    'amoeba',0L,$
@@ -1322,9 +1332,11 @@ if ~keyword_set(silent) then print, 'Those with "no prior constraint" only affec
 if ~keyword_set(silent) then print
 openr, lun, priorfile, /get_lun
 line = ''
-i=0
+lineno=0
 while not eof(lun) do begin
+   lineno+=1
    readf, lun, line
+
    ;; skip commented lines
    if strpos(line,'#') eq 0 then continue
 
@@ -1334,7 +1346,7 @@ while not eof(lun) do begin
    nentries = n_elements(entries)
    ;; each line must have at least a name and value
    if nentries lt 2 or nentries gt 5 then begin
-      message, 'WARNING: line ' + strtrim(i,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE [UNCERTAINTY] [LOWERBOUND] [UPPERBOUND]); ignoring: ' + line, /continue
+      if line ne '' then message, 'WARNING: line ' + strtrim(lineno,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE [UNCERTAINTY] [LOWERBOUND] [UPPERBOUND]); ignoring: ' + line, /continue
       continue
    endif 
 
@@ -1380,15 +1392,21 @@ while not eof(lun) do begin
                   ;; priorwidth = 0 => fix it at the prior value
                   ss.(i)[priornum].(ndx).fit = 0d0                  
                   if ~keyword_set(silent) then print, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)'
-               endif else if finite(priorwidth) and priorwidth gt 0d0 then begin
+               endif else if finite(priorwidth) and priorwidth gt 0d0 or finite(lowerbound) or finite(upperbound) then begin
                   ;; apply a Gaussian prior with width = priorwidth
-                  ss.(i)[priornum].(ndx).priorwidth = priorwidth
                   priors=[[priors],[i,priornum,ndx]]
-                  ss.(i)[priornum].(ndx).scale = priorwidth*3d0
-                  
+
+                  if priorwidth gt 0 and finite(priorwidth) then begin
+                     ss.(i)[priornum].(ndx).scale = priorwidth*3d0
+                     ss.(i)[priornum].(ndx).priorwidth = priorwidth
+                  endif                  
+
                   if ~keyword_set(silent) then print, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
                   
                endif else begin
+
+
+
                   ;; else no prior, just change the default starting value
                   if ~keyword_set(silent) then print, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
                endelse
@@ -1451,6 +1469,7 @@ for i=0L, n_tags(ss)-1 do begin
 endfor
 tofit = tofit[*,1:*]
 *(ss.tofit) = tofit
+ss.nchains = n_elements((*ss.tofit)[0,*])*2L
 
 ;; determine the epoch for each observation
 for i=0, ntran-1 do begin
