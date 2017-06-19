@@ -111,8 +111,6 @@ for i=0, ss.nplanets-1 do begin
 
    endfor
    oplot, prettyphase[sorted], prettymodel[sorted], color=red
-
-
 endfor
 
 !p.multi=0

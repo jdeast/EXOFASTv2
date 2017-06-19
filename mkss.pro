@@ -170,6 +170,8 @@ endelse
 if n_elements(rvpath) ne 0 then rvfiles = file_search(rvpath,count=ntel) $
 else ntel = 0
 
+if ntel eq 0 and arg_present(rvpath) then message, "RV path (" + rvpath + ") not found! Make sure the file exists or remove the argument to proceed without it." 
+
 if n_elements(nplanets) eq 0 then nplanets = 1
 if n_elements(circular) ne nplanets then circular = bytarr(nplanets)
 
