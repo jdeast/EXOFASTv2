@@ -1,24 +1,18 @@
 pro derivepars, ss
 
-;; constants
-G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
-AU = 215.094177d0 ;; R_sun
-mjup = 0.000954638698d0 ;; m_sun
-rjup = 0.102792236d0    ;; r_sun
-mearth = 0.00000300245 ;; m_sun
-rearth = 0.0091705248 ;; r_sun
-
-sigmab = 5.670373d-5/3.839d33*6.9566d10^2 ;; Stefan-boltzmann Constant (L_sun/(r_sun^2*K^4))
-sigmasb = 5.670373d-5
-
 ss.star.mstar.value = 10^ss.star.logmstar.value
-ss.star.rhostar.value = ss.star.mstar.value/(ss.star.rstar.value^3)*1.41135837d0
-ss.star.logg.value = alog10(G*ss.star.mstar.value/(ss.star.rstar.value^2)*9.31686171d0)
-ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*sigmaB 
+ss.star.rhostar.value = ss.star.mstar.value/(ss.star.rstar.value^3)*ss.constants.rhosun ;; rho_sun
+ss.star.logg.value = alog10(ss.star.mstar.value/(ss.star.rstar.value^2)*ss.constants.gravitysun) ;; cgs
+ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
 
 ;; derive the absolute magnitude and distance
 nsteps = n_elements(ss.star.teff.value)
 ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
+
+for j=0, ss.ntel-1 do begin
+   positive = where(ss.telescope[j].jittervar.value gt 0d0)
+   ss.telescope[j].jitter.value[positive] = sqrt(ss.telescope[j].jittervar.value[positive])
+endfor
 
 for i=0, ss.nplanets-1 do begin
 
@@ -33,6 +27,7 @@ for i=0, ss.nplanets-1 do begin
    zero = where(ss.planet[i].e.value eq 0d0,complement=nonzero)
    if zero[0] ne -1 then ss.planet[i].omega.value[zero] = !dpi/2d0 
 
+   ss.planet[i].lambdadeg.value = ss.planet[i].lambda.value*180d0/!dpi
    ss.planet[i].omegadeg.value = ss.planet[i].omega.value*180d0/!dpi
    ss.planet[i].esinw.value = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
    ss.planet[i].ecosw.value = ss.planet[i].e.value*cos(ss.planet[i].omega.value)
@@ -59,20 +54,20 @@ for i=0, ss.nplanets-1 do begin
                                                   ss.planet[i].e.value[positive],$
                                                   ss.planet[i].i.value[positive],$
                                                   ss.planet[i].period.value[positive],$
-                                                  ss.star.mstar.value[positive])
+                                                  ss.star.mstar.value[positive], G=ss.constants.G/1d6) ;; convert G to SI
 
-   ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup               ;; m_jupiter
-   ss.planet[i].msini.value = ss.planet[i].mp.value*sini               ;; m_jupiter
-   ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth        ;; m_earth
-   ss.planet[i].msiniearth.value = ss.planet[i].mpearth.value*sini     ;; m_earth
-   ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star.mstar.value ;; unitless
+   ss.planet[i].mp.value = ss.planet[i].mpsun.value/ss.constants.GMJupiter*ss.constants.GMSun    ;; m_jupiter
+   ss.planet[i].msini.value = ss.planet[i].mp.value*sini                                         ;; m_jupiter
+   ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/ss.constants.GMearth*ss.constants.GMSun ;; m_earth
+   ss.planet[i].msiniearth.value = ss.planet[i].mpearth.value*sini                               ;; m_earth
+   ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star.mstar.value                           ;; unitless
    
    ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/(4d0*!dpi^2))^(1d0/3d0) ;; (a1 + a2)/rsun
    ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value                                                        ;; (a1 + a2)/rstar
-   ss.planet[i].a.value = ss.planet[i].arsun.value/AU                                                                          ;; AU
+   ss.planet[i].a.value = ss.planet[i].arsun.value/ss.constants.au*ss.constants.Rsun                                           ;; AU
    ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value                                                         ;; r_sun
-   ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup                                                                       ;; r_jupiter
-   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth                                                                ;; r_earth
+   ss.planet[i].rp.value = ss.planet[i].rpsun.value/ss.constants.RJupiter                                                      ;; r_jupiter
+   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/ss.constants.REarth                                                   ;; r_earth
 
    ;; time of periastron
    ss.planet[i].phase.value=exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value,/pri)  
@@ -150,9 +145,9 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].psg.value = (ss.star.rstar.value+ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2) ;; eq 9, Winn 2010
    ss.planet[i].ps.value = (ss.star.rstar.value-ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2)  ;; eq 9, Winn 2010
 
-   ss.planet[i].rhop.value = ss.planet[i].mpsun.value/(ss.planet[i].rpsun.value^3)*1.41135837d0
-   ss.planet[i].loggp.value = alog10(G*ss.planet[i].mpsun.value/ss.planet[i].rpsun.value^2*9.31686171d0) ;; cgs
-   ss.planet[i].safronov.value = ss.planet[i].ar.value*ss.planet[i].q.value/ss.planet[i].p.value
+   ss.planet[i].rhop.value = ss.planet[i].mpsun.value/(ss.planet[i].rpsun.value^3)*ss.constants.rhosun ;; cgs
+   ss.planet[i].loggp.value = alog10(ss.planet[i].mpsun.value/ss.planet[i].rpsun.value^2*ss.constants.gravitysun) ;; cgs
+   ss.planet[i].safronov.value = ss.planet[i].ar.value*ss.planet[i].q.value/ss.planet[i].p.value ;; unitless
 
    ;; depth != delta if grazing (ignore limb darkening)
    ss.planet[i].delta.value = ss.planet[i].p.value^2

@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname
+function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun
 
 common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m
 
@@ -13,9 +13,9 @@ if not keyword_set(met) then met=0.0
 if not keyword_set(xmin) then xmin=0.1
 if not keyword_set(xmax) then xmax=35.
 
-c=2.9979e14 ;; um/s
-pc=3.0857e18 ;; cm
-rsun=6.96e10 ;; cm
+;c=2.9979e14 ;; um/s
+if n_elements(pc) eq 0 then pc=3.0857e18 ;; cm
+if n_elements(rsun) eq 0 then rsun=6.96e10 ;; cm
 
 ;; don't do this every time
 if n_elements(fp) eq 0 then begin

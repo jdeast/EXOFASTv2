@@ -1,4 +1,12 @@
-function massradius_yy3, mstar, feh, age, teff, yyrstar=yyrstar, uteff,afe=afe,debug=debug,yyteff=yyteff, quad=quad, lsquad=lsquad,yytrack=yytrack, psname=psname
+function massradius_yy3, mstar, feh, age, teff, yyrstar=yyrstar,uteff,afe=afe,$
+                         debug=debug,yyteff=yyteff, quad=quad, lsquad=lsquad,$
+                         yytrack=yytrack, psname=psname, $
+                         sigmab=sigmab, gravitysun=gravitysun
+
+if n_elements(sigmab) eq 0 then $   
+   sigmab = 5.670367d-5/3.828d33*6.957d10^2 ;; Stefan-boltzmann Constant (L_sun/(r_sun^2*K^4))
+if n_elements(solargravity) eq 0 then $
+   gravitysun = 27420.011d0 ;; cm/s^2
 
 ;; this is the approximate error in the YY isochrone modeling
 uteff = 50d0 
@@ -34,8 +42,6 @@ endif else begin
    track2 = dblarr(na,nz,nx,150,3) + !values.d_nan
    tracks = dblarr(na,nz,nx,174,3) + !values.d_nan
 
-   ;; Stefan-boltzmann Constant (L_sun/(r_sun^2*K^4))
-   sigmab = 5.670373d-5/3.839d33*6.9566d10^2 
 
    for i=0,na-1 do begin
       for j=0,nz-1 do begin
@@ -190,11 +196,10 @@ if keyword_set(debug) or keyword_set(psname) then begin
    endelse
 
    ;; make a publication-ready plot of the YY track -- Teff vs logg
-   G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
    rstar = yytrack[1,*]
-   loggplottrack =  alog10(G*mstar/(rstar^2)*9.31686171d0)
+   loggplottrack =  alog10(mstar/(rstar^2)*gravitysun)
    teffplottrack = yytrack[0,*]
-   loggplot =  alog10(G*mstar/(yyrstar^2)*9.31686171d0)
+   loggplot =  alog10(mstar/(yyrstar^2)*gravitysun)
 
    xmin=max(teffplottrack,min=xmax) ;; plot range backwards
    ymin = min([loggplot,3,5],max=ymax)

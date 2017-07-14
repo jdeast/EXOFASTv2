@@ -18,7 +18,7 @@
 ; CALLING SEQUENCE:
 ;   ss = mkss(nplanets=nplanets, circular=circular, $
 ;             fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
-;             rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
+;             rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
 ;             nvalues=nvalues, debug=debug, priorfile=priorfile, $
 ;             rvpath=rvpath, tranpath=tranpath, longcadence=longcadence, earth=earth)
 ;
@@ -62,7 +62,27 @@
 ;             rossiter model to the RV data. Fit lambda and
 ;             V_rot*sin(I_*) from RV data during transit using the
 ;             Ohta approximations (has known issues)
-;  DOPTOM   - Fit Doppler tomography (***unsupported***)
+;  FITDT    - An NPLANETS boolean array specifying which planets to
+;             fit a Doppler tomography model to the RV data
+;             (*** Currently unsupported***)
+;  THERMAL  - A string array specifying which bands to fit thermal
+;             emission for. This is what you want to set to fit an
+;             isolated secondary eclipse. All observations in this
+;             band will be modeled with a baseline of 1 between t2 and
+;             t3 of the secondary eclipse and 1 + thermal emission (in
+;             PPM) out of eclipse.
+;  REFLECT  - A string array specifying which bands to fit reflected
+;             light for. Set this along with thermal if you're
+;             fitting a full phase curve. It will be modeled as a
+;             sinusoid with the orbital period, a minimum at the
+;             primary transit, and a fitted amplitude (in PPM).
+;  DILUTE   - A string array specifying which bands to fit a dilution
+;             term for. Set this if the star is blended with a
+;             neighbor and you expect color-dependent depth
+;             variations.
+;             Note: May be degenerate with F0 (transit normalization) 
+;             TODO: automatically model dilution based on multiple
+;             SEDs
 ;  NVALUES  - ?? (I probably should have documented that when I made it...)
 ;  PRIORFILE - The name of the file that specifies all the priors. The
 ;              prior file is an ASCII file with each line containing
@@ -126,16 +146,21 @@
 ;-
 function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
-               rossiter=rossiter, doptom=doptom, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
+               rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
+               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
-               rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, longcadence=longcadence,$
-               earth=earth, silent=silent, noyy=noyy, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing
+               rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, $
+               longcadence=longcadence, earth=earth, silent=silent, noyy=noyy, $
+               noclaret=noclaret,alloworbitcrossing=alloworbitcrossing
 
 if not keyword_set(debug) then debug=0B
 if not keyword_set(noyy) then noyy=0B
 if not keyword_set(noclaret) then noclaret=0B
 if not keyword_set(ttvs) then ttvs=0B 
 if not keyword_set(alloworbitcrossing) then alloworbitcrossing=0B
+if n_elements(fitthermal) eq 0 then fitthermal = []
+if n_elements(fitreflect) eq 0 then fitreflect = []
+if n_elements(fitdilute) eq 0 then fitdilute = []
 
 ;; read in the transit files
 if n_elements(tranpath) ne 0 then begin
@@ -170,13 +195,13 @@ endelse
 if n_elements(rvpath) ne 0 then rvfiles = file_search(rvpath,count=ntel) $
 else ntel = 0
 
-if ntel eq 0 and arg_present(rvpath) then message, "RV path (" + rvpath + ") not found! Make sure the file exists or remove the argument to proceed without it." 
+if ntel eq 0 and n_elements(rvpath) gt 0 then message, "RV path (" + rvpath + ") not found! Make sure the file exists or remove the argument to proceed without it." 
 
 if n_elements(nplanets) eq 0 then nplanets = 1
 if n_elements(circular) ne nplanets then circular = bytarr(nplanets)
 
 if n_elements(rossiter) ne nplanets then rossiter = bytarr(nplanets)
-if n_elements(doptom) ne nplanets then doptom = bytarr(nplanets)
+if n_elements(fitdt) ne nplanets then fitdt = bytarr(nplanets)
 
 if n_elements(nvalues) ne 0 then value = dblarr(nvalues) $
 else value = 0d0
@@ -590,14 +615,6 @@ taus.latex = '\tau_S'
 taus.label = 'taus'
 taus.cgs = 86400d0
 
-lambda = parameter
-lambda.unit = 'Radians'
-lambda.description = 'Projected Spin-orbit alignment'
-lambda.latex = '\lambda'
-lambda.label = 'lambda'
-lambda.derive = 0
-lambda.scale = !dpi
-
 delta = parameter
 delta.description = 'Transit depth'
 delta.latex = '\delta'
@@ -613,12 +630,21 @@ dr.description = 'Separation at mid transit'
 dr.latex = 'd/R_*'
 dr.label = 'dr'
 
+lambda = parameter
+lambda.unit = 'Radians'
+lambda.description = 'Projected Spin-orbit alignment'
+lambda.latex = '\lambda'
+lambda.label = 'lambda'
+lambda.scale = !dpi
+lambda.derive = 0
+
 lambdadeg = parameter
 lambdadeg.unit = 'Degrees'
 lambdadeg.description = 'Projected Spin-orbit alignment'
 lambdadeg.latex = '\lambda'
 lambdadeg.label = 'lambdadeg'
 lambdadeg.cgs = !dpi/180d0
+lambdadeg.derive = 0
 
 vsini = parameter
 vsini.unit = 'm/s'
@@ -626,8 +652,8 @@ vsini.description = 'Projected rotational velocity'
 vsini.latex = 'vsinI_*'
 vsini.label = 'vsini'
 vsini.cgs = 100d0
-vsini.fit = 0
 vsini.derive = 0
+vsini.scale = 5d3
 
 macturb = parameter
 macturb.unit = 'm/s'
@@ -635,8 +661,17 @@ macturb.description = 'Macroturbulence'
 macturb.latex = 'macturb'
 macturb.label = 'macturb'
 macturb.cgs = 1000d0
-macturb.fit = 0
 macturb.derive = 0
+macturb.value = 4d3
+macturb.scale = 2d3
+
+dtscale = parameter
+dtscale.description = 'Doppler Tomography Error scaling'
+dtscale.latex = '\sigma_{DT}'
+dtscale.label = 'dtscale'
+dtscale.derive = 0
+dtscale.scale = 1d2
+dtscale.value = 1d0
 
 logk = parameter
 logk.description = 'Log of RV semi-amplitude'
@@ -659,14 +694,12 @@ period.unit = 'days'
 period.description = 'Period'
 period.latex = 'P'
 period.label = 'Period'
-period.cgs = 86400d0
 
 a = parameter
 a.unit = 'AU'
 a.description = 'Semi-major axis'
 a.latex = 'a'
 a.label = 'a'
-a.cgs = 1.49597871d13
 
 arsun = parameter
 arsun.unit = '\rsun'
@@ -806,13 +839,15 @@ rpearth.label = 'rpearth'
 rpearth.cgs = 6.3781d8
 
 if keyword_set(earth) then begin
-   rpearth.derive = 0
-   mpearth.derive = 0
-   msiniearth.derive = 0
-endif else begin
+   ;; don't display jupiter unit parameters
    rp.derive = 0
    mp.derive = 0
    msini.derive = 0
+endif else begin
+   ;; don't display earth unit parameters
+   rpearth.derive = 0
+   mpearth.derive = 0
+   msiniearth.derive = 0
 endelse
 
 rhop = parameter
@@ -876,7 +911,8 @@ thermal = parameter
 thermal.description = 'Thermal emission from the planet'
 thermal.latex = 'A_T'
 thermal.label = 'thermal'
-thermal.scale = 1d-2
+thermal.scale = 1d4
+thermal.unit = 'ppm'
 thermal.fit = 0
 thermal.derive = 0
 
@@ -884,7 +920,8 @@ reflect = parameter
 reflect.description = 'Reflection from the planet'
 reflect.latex = 'A_R'
 reflect.label = 'reflect'
-reflect.scale = 1d-2
+reflect.scale = 1d4
+reflect.unit = 'ppm'
 reflect.fit = 0
 reflect.derive = 0
 
@@ -945,7 +982,15 @@ jitter.latex = '\sigma_J'
 jitter.label = 'jitter'
 jitter.value = 0d0
 jitter.scale = 1d0
-jitter.fit=1
+jitter.fit=0
+
+jittervar = parameter
+jittervar.description = 'RV Jitter Variance'
+jittervar.latex = '\sigma_J^2'
+jittervar.label = 'jittervar'
+jittervar.value = 0d0
+jittervar.scale = 1d0
+jittervar.fit=1
 
 variance = parameter
 variance.description = 'Added Variance'
@@ -997,7 +1042,14 @@ star = create_struct(mstar.label,mstar,$
                      'fluxfile','',$
                      'rootlabel','Stellar Parameters:',$
                      'label','')
-            
+       
+;; Unit constants (converted to cgs)
+;; As defined by IAU resolutions B2, B3
+;; https://www.iau.org/static/resolutions/IAU2012_English.pdf
+;; https://arxiv.org/abs/1510.07674, 
+;; https://arxiv.org/abs/1507.07956, Table 1
+constants = mkconstants()
+
 ;; if we're fitting an SED, fit the distance, extinction, and error scale
 if n_elements(fluxfile) ne 0 then begin
    if file_test(fluxfile) then begin
@@ -1077,6 +1129,7 @@ planet = create_struct($
          'chen',0B,$
          'i180',0B,$
          'rossiter',0B,$
+         'fitdt',0B,$
          'rootlabel','Planetary Parameters:',$
          'label','')
 
@@ -1096,13 +1149,16 @@ band = create_struct(u1.label,u1,$ ;; linear limb darkening
 ;; for each telescope
 telescope = create_struct(gamma.label,gamma,$
                           jitter.label,jitter,$
+                          jittervar.label,jittervar,$
                           'rvptrs', ptr_new(),$
                           'name','',$
                           'chi2',0L,$
                           'rootlabel','Telescope parameters',$
                           'label','')
+
 if ntel le 0 then begin
-   telescope.jitter.fit = 0
+   telescope.jittervar.fit = 0
+   telescope.jittervar.derive = 0
    telescope.jitter.derive = 0
 endif
 
@@ -1123,7 +1179,19 @@ transit = create_struct(variance.label,variance,$ ;; Red noise
                         'chi2',0L,$
                         'rootlabel','Transit Parameters',$
                         'label','') 
-                        
+
+if n_elements(dtpath) ne 0 then begin
+   dtfiles = file_search(dtpath)
+endif else dtfiles = []
+ndt = n_elements(dtfiles)
+doptom = create_struct('dtptrs',ptr_new(),$
+                       'rootlabel','Doppler Tomography Parameters:',$
+                       dtscale.label,dtscale) ;,$
+;                       'lambdarange',0,$
+;                       'label','',$
+;                       'tel','',$
+;                       'night','',$
+;                       'planetndx')
 
 ;; a stellar system has a star, planets, observed bands, observed
 ;; transits, priors, and global options
@@ -1132,6 +1200,8 @@ ss = create_struct('star',star,$
                    'band',replicate(band,nband > 1),$
                    'telescope',replicate(telescope,ntel > 1),$
                    'transit',replicate(transit,ntran > 1),$
+                   'doptom',replicate(doptom,ndt>1),$
+                   'constants',constants,$
                    'tofit',ptr_new(1),$
                    'priors',ptr_new(1),$
                    'debug',keyword_set(debug),$
@@ -1139,6 +1209,7 @@ ss = create_struct('star',star,$
                    'ntel',ntel,$
                    'ntran',ntran,$
                    'nband',nband,$
+                   'ndt',ndt,$
                    'nplanets',nplanets,$
                    'noyy', noyy,$
                    'noclaret', noclaret,$
@@ -1150,6 +1221,13 @@ ss = create_struct('star',star,$
                    'burnndx',0L,$
                    'amoeba',0L,$
                    'chi2',ptr_new(1))
+
+if ndt gt 0 then begin
+   ss.doptom[*].dtptrs = ptrarr(ndt,/allocate_heap)
+   for i=0, n_elements(dtfiles)-1 do begin
+      *(ss.doptom[i].dtptrs) = exofast_readdt(dtfiles[i])
+   endfor
+endif
 
 ;; populate the planet fitting parameters
 ;; planetary labels, a bit optimistic...
@@ -1178,17 +1256,24 @@ for i=0, nplanets-1 do begin
       ss.planet[i].psg.derive = 0
 
    endif
-
-   if rossiter[i] or doptom[i] then begin
-      ss.planet[i].rossiter = 1B
-      ss.planet[i].lambda.fit = 1
+   
+   ;; if rossiter is done, fit lambda (for each planet) and vsini (for the star)
+   ;; if DT is done, fit lambda (for each planet) and vsini and macturb (for the star)
+   if rossiter[i] or fitdt[i] then begin
       ss.star.vsini.fit = 1
-      if doptom[i] then ss.star.macturb.fit = 1
-   endif else begin
-      ss.planet[i].lambdadeg.derive = 0
-      vsini.derive = 0
-      vsini.fit = 0
-   endelse
+      ss.star.vsini.derive = 1
+      ss.planet[i].lambda.fit = 1
+      ss.planet[i].lambdadeg.derive = 1
+      if fitdt[i] then begin
+         ss.planet[i].fitdt = 1B
+         ss.star.macturb.fit = 1
+         ss.star.macturb.derive = 1
+         ss.doptom[i].dtscale.fit = 1
+         ss.doptom[i].dtscale.derive = 1
+      endif
+      if rossiter[i] then ss.planet[i].rossiter = 1B
+
+   endif
 
    ss.planet[i].fittran = fittran[i]
    ss.planet[i].fitrv = fitrv[i]
@@ -1234,14 +1319,15 @@ for i=0, nplanets-1 do begin
       endif
 
       ;; now constrained by the mass radius-relation
-      if not fitrv[i] then begin
-         ss.planet[i].logk.fit = 0
-         ss.planet[i].mp.derive = 0
-         ss.planet[i].mpearth.derive = 0
-         ss.planet[i].rhop.derive = 0
-         ss.planet[i].loggp.derive = 0
-         ss.planet[i].safronov.derive = 0
-      endif
+;      if not fitrv[i] then begin
+;         ss.planet[i].logk.fit = 0
+;         ss.planet[i].k.derive = 0
+;         ss.planet[i].mp.derive = 0
+;         ss.planet[i].mpearth.derive = 0
+;         ss.planet[i].rhop.derive = 0
+;         ss.planet[i].loggp.derive = 0
+;         ss.planet[i].safronov.derive = 0
+;      endif
    endif
 
    if i180[i] then ss.planet[i].i180 = 1
@@ -1262,6 +1348,28 @@ for i=0, nband-1 do begin
    ss.band[i].u2.latex = 'u_{2,' + bands[i] + '}'
    ss.band[i].u3.latex = 'u_{3,' + bands[i] + '}'
    ss.band[i].u4.latex = 'u_{4,' + bands[i] + '}'
+
+   match = where(fitthermal eq ss.band[i].name)
+   if match[0] ne -1 then begin
+      ss.band[i].thermal.fit = 1B
+      ss.band[i].thermal.derive = 1B
+      print, "Fitting thermal emission for " + ss.band[i].name + " band"
+   endif
+
+   match = where(fitreflect eq ss.band[i].name)
+   if match[0] ne -1 then begin
+      ss.band[i].reflect.fit = 1B
+      ss.band[i].reflect.derive = 1B
+      print, "Fitting reflected light for " + ss.band[i].name + " band"
+      print, ss.band[i].name
+   endif
+
+   match = where(fitdilute eq ss.band[i].name)
+   if match[0] ne -1 then begin
+      ss.band[i].dilute.fit = 1B
+      ss.band[i].dilute.derive = 1B
+      print, "Fitting dilution for " + ss.band[i].name + " band"
+   endif
 
 endfor
 
@@ -1403,8 +1511,12 @@ while not eof(lun) do begin
                      ss.(i)[priornum].(ndx).priorwidth = priorwidth
                   endif                  
 
-                  if ~keyword_set(silent) then print, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
                   
+                  if ~keyword_set(silent) then begin
+                     if priorwidth lt 0 then print, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2) $
+                     else print, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
+                  endif
+
                endif else begin
 
 
@@ -1431,7 +1543,7 @@ if ~keyword_set(silent) then print
 
 ;; do we have enough information to derive the distance?
 ;if (where(priorname eq 'distance'))[0] ne -1 
-;sstop
+;stop
 
 priors = priors[*,1:*]
 *(ss.priors) = priors

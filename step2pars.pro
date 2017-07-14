@@ -1,21 +1,27 @@
 function step2pars, ss, verbose=verbose
 
-G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
-AU = 215.094177d0 ;; R_sun
-mjup = 0.000954638698d0 ;; m_sun
-rjup = 0.102792236d0    ;; r_sun
-mearth = 0.00000300245d0 ;; m_sun
-rearth = 0.0091705248d0 ;; r_sun
+G = ss.constants.GMSun/ss.constants.RSun^3*ss.constants.day^2 ;; R_sun^3/(m_sun*day^2)
+AU = ss.constants.au/ss.constants.rsun ;; R_sun
+mjup = ss.constants.gmjupiter/ss.constants.gmsun ;; m_sun
+rjup = ss.constants.rjupiter/ss.constants.rsun  ;; r_sun
+mearth = ss.constants.gmearth/ss.constants.gmsun ;; m_sun
+rearth = ss.constants.rearth/ss.constants.rsun  ;; r_sun
+sigmaB = ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; Stefan-Boltzmann constant
+
 mindist = dblarr(ss.nplanets)
 maxdist = dblarr(ss.nplanets)
 
 ;; derive stellar parameters
 ss.star.mstar.value = 10^ss.star.logmstar.value
-ss.star.logg.value = alog10(G*ss.star.mstar.value/(ss.star.rstar.value^2)*9.31686171d0)
+ss.star.logg.value = alog10(ss.constants.gravitysun*ss.star.mstar.value/(ss.star.rstar.value^2)) ;; cgs
 ;; derive the distance from lstar
-sigmab = 5.670373d-5/3.839d33*6.9566d10^2 ;; Stefan-boltzmann Constant (L_sun/(r_sun^2*K^4))
 ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*sigmaB    ;; L_sun
 ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
+
+for j=0, ss.ntel-1 do begin
+   if ss.telescope[j].jittervar.value gt 0 then $
+      ss.telescope[j].jitter.value = sqrt(ss.telescope[j].jittervar.value)
+endfor
 
 for i=0, ss.nplanets-1 do begin
 

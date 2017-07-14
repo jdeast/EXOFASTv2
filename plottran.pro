@@ -1,5 +1,6 @@
 pro plottran, ss, psname=psname
-AU = 215.094177d0
+
+au = ss.constants.au/ss.constants.rsun ;; AU in rsun (~215)
 
 aspect_ratio=1.5
 mydevice=!d.name

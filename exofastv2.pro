@@ -131,6 +131,72 @@
 ;                 http://adsabs.harvard.edu/abs/2010PASP..122..935E
 ;                 for an explanation of times
 ;                 NOTE 4: If omitted, just the RV data will bit fit
+;   DTPATH      - The (optional) path to the Doppler Tomography fits
+;                 file(s). If supplied, the code will fit a vsini and
+;                 macro turbulence of the star, as well as a
+;                 spin-orbit alignment for each planet. This must be
+;                 used in conjunction with the FITDT, an NPLANETS
+;                 array specifying which planets should have their DT
+;                 signal modeled.
+;
+;                 Each fits file is a 2D array describing all DT
+;                 observations during a single transit with extensions
+;                 describing the axes of the array. The pixel values
+;                 of the 2D array contain the fractional flux
+;                 decrement at a given BJD_TDB (spectrum) and velocity
+;                 (pixel value of the CCF). The first extension should
+;                 specify the BJD_TDB corresponding to each Y pixel
+;                 and the second extension should specify the velocity
+;                 corresponding to each X pixel.
+;
+;                 Such a file can be generated given the 2D array of
+;                 fractional flux decrements (DT), a time array
+;                 (BJD_TDB) and a velocity array (VEL) like this:
+; 
+;                 writefits,'nYYYYMMDD.instrument.resolution.fits',DT
+;                 writefits,'nYYYYMMDD.instrument.resolution.fits',BJD_TDB, /append
+;                 writefits,'nYYYYMMDD.instrument.resolution.fits',VEL, /append
+;
+;                 The names of these files *must* adhere to a certain format:
+;                 nYYYYMMDD.instrument.resolution.whateveryouwant.fits 
+;
+;                 nYYYYMMDD -- The UTC date of mid transit. This is
+;                 used to label the transits in the output plot.
+; 
+;                 instrument -- the name of the instrument used for
+;                 the observations. Anything is allowed, but all
+;                 observations observed with the same telescope should
+;                 have the same name. This is used in the labels.
+;
+;                 resolution -- The R value of the instrument. This is
+;                 required to accurately model the DT signal and must
+;                 be correct.
+;
+;                 whateveryouwant - any string you want to include (or
+;                 nothing) for it to make sense to you (e.g, target
+;                 name). This is not used by the code.
+;
+;                 So a transit taken on UTC 2017-01-27 with the TRES
+;                 spectrograph (R=44000) would be called
+;                 "n20170127.TRES.44000.fits"
+;
+;                 NOTE 1: NAXIS1 must equal the number of velocities and
+;                 NAXIS2 must equal the number of times.
+;
+;                 NOTE 2: Not using BJD_TDB time stamps will likely
+;                 not break the code, but can introduce errors in the
+;                 reported times of more than a minute or cause
+;                 internal inconsistencies if different data sets use
+;                 different timestamps. The output table will display
+;                 BJD_TDB but makes no attempt to convert or reconcile
+;                 input times between data sets.
+;
+;                 See
+;                 http://adsabs.harvard.edu/abs/2010PASP..122..935E 
+;                 for an explanation of times
+;
+;                 NOTE 3: If DTPATH is omitted, Doppler Tomography is
+;                 not included in the global fit
 ;
 ;   FLUXFILE   - An ASCII file with each line containing three white
 ;                space delimited columns: FILTER, MAG,
@@ -246,7 +312,7 @@
 ;                 parameter to it.
 ;                 Default is bytarr(nplanets)
 ;                 ***NOT YET IMPLEMENTED***
-;   DOPTOM      - An NPLANETS boolean array that specifies which planets
+;   FITDT       - An NPLANETS boolean array that specifies which planets
 ;                 should fit using a Doppler Tomography model.
 ;                 Default is bytarr(nplanets)
 ;                 ***NOT YET IMPLEMENTED***
@@ -365,10 +431,11 @@
 ;             offsets). Now easily extensible.
 ;-
 pro exofastv2, priorfile=priorfile, $
-               rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile,$
+               rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile,$
                prefix=prefix,$
                circular=circular,fitslope=fitslope, secondary=secondary, $
                rossiter=rossiter,chen=chen,$
+               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                nthin=nthin, maxsteps=maxsteps, $
                debug=debug, randomfunc=randomfunc, seed=seed,$
                bestonly=bestonly, plotonly=plotonly,$
@@ -376,7 +443,7 @@ pro exofastv2, priorfile=priorfile, $
                logfile=logfile, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-               fitrv=fitrv, fittran=fittran,ttvs=ttvs, earth=earth,$
+               fitrv=fitrv, fittran=fittran,fitdt=fitdt,ttvs=ttvs, earth=earth,$
                i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
 
 ;; this is the stellar system structure
@@ -391,10 +458,11 @@ if double(!version.release) ge 6.4d0 then $
    resolve_all, resolve_function=[chi2func,'exofast_random'],/cont,/quiet
 
 ;; create the master structure
-ss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets, $
-          debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
+ss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
+          debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,ttvs=ttvs, $
           rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
+          fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
           chen=chen, noyy=noyy, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing)
 
 npars = 0
@@ -433,23 +501,6 @@ if n_elements(randomfunc) eq 0 then randomfunc = 'exofast_random'
 ;; default prefix for all output files (filename without extension)
 if n_elements(prefix) eq 0 then prefix = 'planet.'
 basename = file_basename(prefix)
-
-;; Constants
-
-;; 2014 CODATA 
-;; http://arxiv.org/abs/1507.07956
-GSI = 6.67408d-11      ;; m^3/(kg*s^2) 
-
-
-;; IAU Resolution B3, 2015 
-;; http://arxiv.org/abs/1510.07674
-rsun = 6.957d8         ;; meters
-GMsun = 1.3271244d20   ;; m^3/s^2
-day = 86400d0          ;; seconds
-G = GMsun/rsun^3*day^2 ;; R_sun^3/(m_sun*day^2)
-msun = GMsun/GSI       ;; kg
-
-G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 
 pars = str2pars(ss,scale=scale,name=name)
 
@@ -510,13 +561,13 @@ print, 'Finished AMOEBA fit'
 for i=0, ss.nplanets-1 do begin
    if ss.planet[i].chen then begin
       if ss.planet[i].fitrv and ~ss.planet[i].fittran then begin
-         ss.planet[i].p.value = massradius_chen(ss.planet[i].mpearth.value)*ss.star.rstar.value*0.0091705248 ;; r_sun
+         ss.planet[i].p.value = massradius_chen(ss.planet[i].mpearth.value)*ss.star.rstar.value*ss.constants.rearth/ss.constants.rsun ;; r_sun
       endif 
       if ~ss.planet[i].fitrv and ss.planet[i].fittran then begin
          ss.planet[i].mpearth.value = massradius_chenreverse(ss.planet[i].rpearth.value)
-         ss.planet[i].mpsun.value = ss.planet[i].mpearth.value*0.00000300245 ;; m_sun
-         ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mpsun.value)^2))^(1d0/3d0)*$
-             ss.planet[i].mpsun.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value)*rsun/86400d0 ;; m/s
+         ss.planet[i].mpsun.value = ss.planet[i].mpearth.value*constants.GMearth/constants.GMsun ;; m_sun
+         ss.planet[i].k.value = (2d0*!dpi*ss.constants.GMsun/(ss.planet[i].period.value*ss.constants.day*(ss.star.mstar.value + ss.planet[i].mpsun.value)^2))^(1d0/3d0)*$
+             ss.planet[i].mpsun.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value^2)/ss.constants.meter ;; m/s
          ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
       endif
    endif
@@ -582,10 +633,11 @@ bestchi2 = call_function(chi2func,best,psname=modelfile, $
 ;; make a new stellar system structure with only fitted and derived
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
-mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, fluxfile=fluxfile, nplanets=nplanets, $
-              debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, $
+mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
+              debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
               circular=circular,fitslope=fitslope, fitquad=fitquad, ttvs=ttvs,$
               rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
+              fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
               chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing)
 mcmcss.nchains = nchains

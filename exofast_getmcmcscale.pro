@@ -240,7 +240,9 @@ if bad[0] ne -1 then mcmcscale[bad,0] = mcmcscale[bad,1]
 bad = where(~finite(mcmcscale[*,1]) or mcmcscale[*,1] eq 0d0)
 if bad[0] ne -1 then mcmcscale[bad,1] = mcmcscale[bad,0]
 bad = where(~finite(mcmcscale) or mcmcscale eq 0d0,nbad)
-if bad[0] ne -1 then return, -1
+
+
+if bad[0] ne -1 then stop;return, -1
 
 ;; return the average of high and low
 return, total(mcmcscale,2)/2.d0

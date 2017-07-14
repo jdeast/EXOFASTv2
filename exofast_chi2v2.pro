@@ -169,7 +169,7 @@ COMMON chi2_block, ss
 ;; populate the structure with the new parameters
 if n_elements(pars) ne 0 then pars2str, pars, ss
 
-AU = 215.094177d0
+au = ss.constants.au/ss.constants.rsun
 
 ;; derive all required parameters 
 ;; (this may change depending on parameterization)
@@ -245,11 +245,12 @@ endif
 ss.star.mstar.value = 10^ss.star.logmstar.value
 ;; use the YY tracks to guide the stellar parameters
 if ~ss.noyy then begin
-   if keyword_set(psname) then begin
-      yychi2 = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug, psname=psname+'.yy.eps') 
-   endif else begin
-      yychi2 = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, debug=ss.debug)
-   endelse
+   if keyword_set(psname) then epsname = psname+'.yy.eps'
+   yychi2 = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, $
+                           ss.star.age.value, ss.star.teff.value,$
+                           yyrstar=rstar, debug=ss.debug, psname=epsname, $
+                           sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
+                           gravitysun=ss.constants.gravitysun) 
    chi2 += yychi2
    ;print, 'YY penalty = ' + strtrim(yychi2,2)
    if ~finite(chi2) then begin
@@ -262,6 +263,12 @@ endif
 
 if ss.star.errscale.value le 0 then begin
    if ss.debug then print, 'error scale is bad'
+   return, !values.d_infinity
+endif
+
+bad = where(ss.doptom.dtscale.value le 0, nbad)
+if nbad gt 0 then begin
+   if ss.debug then print, 'dtscale is bad (' + strtrim(bad,2) + ')'
    return, !values.d_infinity
 endif
 
@@ -279,7 +286,6 @@ if ss.amoeba then begin
       return, !values.d_infinity
    endif
 
-   G = 1.3271244d20 ;; m^3/(M_sun*second^2) Standish 1995
    for j=0, ss.nplanets-1 do begin
       if ss.planet[j].chen then begin
          if ss.planet[j].rpearth.value le 0d0 then begin
@@ -287,12 +293,12 @@ if ss.amoeba then begin
             return, !values.d_infinity
          endif         
          if ~ss.planet[j].fitrv and ss.planet[j].fittran then begin
-            mp = massradius_chenreverse(ss.planet[j].rpearth.value)*0.00000300245d0 ;; m_sun
-            k = ((2d0*!dpi*G)/(ss.planet[j].period.value*86400d0*(ss.star[0].mstar.value + mp)^2))^(1d0/3d0)*$
-                mp*sin(acos(ss.planet[j].cosi.value))/sqrt(1d0 - ss.planet[j].e.value^2) ;; m/s
+            mp = massradius_chenreverse(ss.planet[j].rpearth.value)*ss.constants.gmsun/ss.constants.gmearth ;; m_sun
+            k = ((2d0*!dpi*ss.constants.GMsun)/(ss.planet[j].period.value*ss.constants.day*(ss.star[0].mstar.value + mp)^2))^(1d0/3d0)*$
+                mp*sin(acos(ss.planet[j].cosi.value))/sqrt(1d0 - ss.planet[j].e.value^2)/ss.constants.meter ;; m/s
             ss.planet[j].logk.value = alog10(k)
          endif else if ss.planet[j].fitrv and ~ss.planet[j].fittran then begin
-            rp = massradius_chen(ss.planet[j].mpearth.value)*0.0091705248d0 ;; r_sun
+            rp = massradius_chen(ss.planet[j].mpearth.value)*ss.constants.rearth/ss.constants.rsun ;; r_sun
             ss.planet[j].p.value = rp/ss.star.rstar.value
          endif
       endif
@@ -318,6 +324,7 @@ for i=0, n_elements(priors[0,*])-1 do begin
       return, !values.d_infinity
    endif
 
+
    chi2 += ((ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value - $
              ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior)/$
             ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth)^2
@@ -327,8 +334,9 @@ for i=0, n_elements(priors[0,*])-1 do begin
 ;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth, $
 ;          ((ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value - $
 ;            ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior)/$
-;           ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth)^2
-
+;           ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth)^2,$
+;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).lowerbound,$ 
+;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).upperbound
 
 endfor
 
@@ -441,15 +449,14 @@ endfor
 
 ;; fit the SED
 if file_test(ss.star.fluxfile) then begin
-   if keyword_set(psname) then begin
-      sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
-                            ss.star.av.value, ss.star.distance.value, $
-                            logg=ss.star.logg.value,met=ss.star.feh.value,alpha=ss.star.alpha.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep, psname=psname+'.sed.eps')
-   endif else begin
-      sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, ss.star.rstar.value,$
-                            ss.star.av.value, ss.star.distance.value, $
-                            logg=ss.star.logg.value,met=ss.star.feh.value,alpha=ss.star.alpha.value,verbose=ss.debug, f0=f, fp0=fp, ep0=ep)
-   endelse 
+   if keyword_set(psname) then epsname = psname+'.sed.eps'
+   sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, $
+                         ss.star.rstar.value,$
+                         ss.star.av.value, ss.star.distance.value, $
+                         logg=ss.star.logg.value,met=ss.star.feh.value,$
+                         alpha=ss.star.alpha.value,verbose=ss.debug, $
+                         f0=f, fp0=fp, ep0=ep, psname=epsname, $
+                         pc=ss.constants.pc, rsun=ss.constants.rsun)
 
    if ~finite(sedchi2) then begin
       if ss.debug then print, 'sed is bad'
@@ -470,7 +477,7 @@ for j=0, ntelescopes-1 do begin
 
    rv = *(ss.telescope[j].rvptrs)
 
-   if (where(rv.err^2 + ss.telescope[j].jitter.value le 0d0))[0] ne -1 then return, !values.d_infinity
+   if (where(rv.err^2 + ss.telescope[j].jittervar.value le 0d0))[0] ne -1 then return, !values.d_infinity
 
    modelrv = dblarr(n_elements(rv.rv))
    for i=0, nplanets-1 do begin
@@ -495,6 +502,7 @@ for j=0, ntelescopes-1 do begin
                                u1=0d0,t0=t0,deltarv=deltarv)
 
       endif
+
    endfor
    ;; add instrumental offset, slope, and quadratic term
    modelrv += ss.telescope[j].gamma.value + ss.star.slope.value*(rv.bjd-t0) + ss.star.quad.value*(rv.bjd-t0)^2
@@ -506,7 +514,8 @@ for j=0, ntelescopes-1 do begin
    if keyword_set(psname) then $
       forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6)', textout=psname + '.model.' + strtrim(j,2) + '.rv.txt', /nocomment,/silent
 
-   rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jitter.value,rv.err,/chi2)
+;   print, ss.telescope[j].jittervar.value,ss.telescope[j].jitter.value, sqrt(ss.telescope[j].jittervar.value)
+   rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jittervar.value,rv.err,/chi2)
    
    if ~finite(rvchi2) then stop
    chi2 += rvchi2
@@ -522,6 +531,26 @@ if (where(ss.planet.fitrv))[0] ne -1 then begin
       plotrv, ss
    endif
 endif
+
+;; Doppler Tomography Model
+for i=0, ss.ndt-1 do begin
+   if keyword_set(psname) then epsname = psname + 'dt.eps'
+   dtchi2 = dopptom_chi2(*(ss.doptom[i].dtptrs),$
+                         ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].tc.value, $
+                         ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].period.value, $
+                         ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].e.value,$
+                         ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].omega.value, $
+                         ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].cosi.value, $
+                         ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].p.value,$
+                         ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].ar.value,$
+                         ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].lambda.value, $
+                         ss.star.logg.value, ss.star.teff.value, ss.star.feh.value,$
+                         ss.star.vsini.value/1d3,ss.star.macturb.value/1d3,$
+                         ss.doptom[i].dtscale.value, debug=ss.debug,/like,psname=epsname)
+
+   if ~finite(dtchi2) then return, !values.d_infinity
+   chi2 += dtchi2
+endfor
 
 ;; Transit model
 for j=0, ntransits-1 do begin
@@ -588,7 +617,7 @@ for j=0, ntransits-1 do begin
                                     dilute=band.dilute.value,$
                                     tc=ss.planet[i].tc.value,$
                                     rstar=ss.star.rstar.value/AU,$
-                                    x1=x1,y1=y1,z1=z1) - 1d0)
+                                    x1=x1,y1=y1,z1=z1,au=au) - 1d0)
       endif
 
    endfor
@@ -598,11 +627,17 @@ for j=0, ntransits-1 do begin
    ;; now integrate the model points (before detrending)
    if ninterp gt 1 then modelflux = total(modelflux,2)/ninterp
 
+;   if band.thermal.fit then begin
+;      plot, transitbjd, transit.flux, /ynoz
+;      oplot, transitbjd, modelflux,color='0000ff'x
+;   endif
+
    ;; detrending
    modelflux += total(transit.detrendadd*replicate(1d0,n_elements(transit.bjd))##transit.detrendpars.value,1)  
 
    ;; chi^2
    transitchi2 = exofast_like(transit.flux - modelflux,ss.transit[j].variance.value,transit.err,/chi2)
+
 
    (*ss.transit[j].transitptrs).residuals = transit.flux - modelflux
    (*ss.transit[j].transitptrs).model = modelflux

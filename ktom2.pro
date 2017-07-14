@@ -29,21 +29,28 @@
 ;                 i=!dpi/2d0.
 ;   Period      - Period of orbit (days)
 ;   M1          - The mass of the Primary (m_sun)
+; OPTIONAL INPUTS:
+;
+;   GMSun       - The solar gravitational parameter (G*MSun) in SI
+;                 units (m^3/s^2). If not set, the value from Standish
+;                 1995 is used (1.3271244d20), which has been adopted
+;                 by the IAU resolution.
 ;
 ; OUTPUTS:
 ;   M2          - The mass of the secondary (m_sun)
 ;
 ; MODIFICATION HISTORY 
 ;  2011/08 -- Jason Eastman (Ohio State University)
+;  2017/07 -- Jason Eastman, add optional GMSun input
 ;-
 
-function ktom2, k, e, i, P, m1
+function ktom2, k, e, i, P, m1, GMSun=GMSun
 
-G = 1.3271244d20 ;; m^3/(M_sun*second^2) Standish 1995
+if n_elements(GMSun) eq 0 then GMSun = 1.3271244d20 ;; m^3/(second^2) Standish 1995
 cubert2 = 1.25992104989487319d0
 period = P*86400d0 ;; seconds
 
-x = period/(2d0*!dpi*G)*(K*sqrt(1d0-e^2)/sin(i))^3d0
+x = period/(2d0*!dpi*GMSun)*(K*sqrt(1d0-e^2)/sin(i))^3d0
 x2 = x*x
 x3 = x2*x
 m12 = m1*m1
