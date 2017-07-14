@@ -62,6 +62,7 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].msiniearth.value = ss.planet[i].mpearth.value*sini                               ;; m_earth
    ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star.mstar.value                           ;; unitless
    
+   G = ss.constants.GMsun/ss.constants.rsun^3*ss.constants.day^2
    ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/(4d0*!dpi^2))^(1d0/3d0) ;; (a1 + a2)/rsun
    ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value                                                        ;; (a1 + a2)/rstar
    ss.planet[i].a.value = ss.planet[i].arsun.value/ss.constants.au*ss.constants.Rsun                                           ;; AU
