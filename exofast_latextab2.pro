@@ -93,10 +93,12 @@ for i=0, n_tags(ss)-1 do begin
    nvalues = n_elements(ss.(i)[*])
 
    ;; the Side labels
-   if n_tags(ss.(i)[0]) ne 0 then $
-      printf, lun, ss.(i)[0].rootlabel, format='("\sidehead{",a,"}")'
+   if n_tags(ss.(i)[0]) ne 0 then begin
+      if tag_exist(ss.(i)[0], 'rootlabel') then $
+         printf, lun, ss.(i)[0].rootlabel, format='("\sidehead{",a,"}")'
 ;      printf, lun, ss.(i)[0].rootlabel, ss.(i)[*].label, format='("\sidehead{",a,"&",' + strtrim(nvalues,2) + '("&",a),"}")'
 ;; how to do this (latex problem).. separate tables?
+   endif
 
    ;; for each tag
    for k=0, n_tags(ss.(i)[0])-1 do begin
