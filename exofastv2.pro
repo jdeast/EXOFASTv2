@@ -565,7 +565,7 @@ for i=0, ss.nplanets-1 do begin
       endif 
       if ~ss.planet[i].fitrv and ss.planet[i].fittran then begin
          ss.planet[i].mpearth.value = massradius_chenreverse(ss.planet[i].rpearth.value)
-         ss.planet[i].mpsun.value = ss.planet[i].mpearth.value*constants.GMearth/constants.GMsun ;; m_sun
+         ss.planet[i].mpsun.value = ss.planet[i].mpearth.value*constants.GMearth/ss.constants.GMsun ;; m_sun
          ss.planet[i].k.value = (2d0*!dpi*ss.constants.GMsun/(ss.planet[i].period.value*ss.constants.day*(ss.star.mstar.value + ss.planet[i].mpsun.value)^2))^(1d0/3d0)*$
              ss.planet[i].mpsun.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value^2)/ss.constants.meter ;; m/s
          ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
