@@ -293,7 +293,7 @@ if ss.amoeba then begin
             return, !values.d_infinity
          endif         
          if ~ss.planet[j].fitrv and ss.planet[j].fittran then begin
-            mp = massradius_chenreverse(ss.planet[j].rpearth.value)*ss.constants.gmsun/ss.constants.gmearth ;; m_sun
+            mp = massradius_chenreverse(ss.planet[j].rpearth.value)*ss.constants.gmearth/ss.constants.gmsun ;; m_sun
             k = ((2d0*!dpi*ss.constants.GMsun)/(ss.planet[j].period.value*ss.constants.day*(ss.star[0].mstar.value + mp)^2))^(1d0/3d0)*$
                 mp*sin(acos(ss.planet[j].cosi.value))/sqrt(1d0 - ss.planet[j].e.value^2)/ss.constants.meter ;; m/s
             ss.planet[j].logk.value = alog10(k)
