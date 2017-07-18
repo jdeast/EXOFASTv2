@@ -47,7 +47,7 @@ for i=0, ss.nplanets-1 do begin
    if ss.planet[i].k.value le 0d0 then ss.planet[i].mpsun.value = 0d0 $
    else ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
                                          ss.planet[i].i.value, ss.planet[i].period.value, $
-                                         ss.star.mstar.value) ;; m_sun
+                                         ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
 
 ;   if ss.planet[i].mpsun.value gt 0.08d0 then begin
 ;      if keyword_set(verbose) then print, 'Planet ' + strtrim(i,2) + ' mass (' + strtrim(ss.planet[i].mpsun.value/mjup,2) + ' M_J) above hydrogen burning limit'

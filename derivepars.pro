@@ -54,7 +54,7 @@ for i=0, ss.nplanets-1 do begin
                                                   ss.planet[i].e.value[positive],$
                                                   ss.planet[i].i.value[positive],$
                                                   ss.planet[i].period.value[positive],$
-                                                  ss.star.mstar.value[positive], G=ss.constants.G/1d6) ;; convert G to SI
+                                                  ss.star.mstar.value[positive], GMsun=ss.constants.GMsun/1d6) ;; convert G to SI
 
    ss.planet[i].mp.value = ss.planet[i].mpsun.value/ss.constants.GMJupiter*ss.constants.GMSun    ;; m_jupiter
    ss.planet[i].msini.value = ss.planet[i].mp.value*sini                                         ;; m_jupiter
@@ -65,10 +65,10 @@ for i=0, ss.nplanets-1 do begin
    G = ss.constants.GMsun/ss.constants.rsun^3*ss.constants.day^2
    ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/(4d0*!dpi^2))^(1d0/3d0) ;; (a1 + a2)/rsun
    ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value                                                        ;; (a1 + a2)/rstar
-   ss.planet[i].a.value = ss.planet[i].arsun.value/ss.constants.au*ss.constants.Rsun                                           ;; AU
+   ss.planet[i].a.value = ss.planet[i].arsun.value*ss.constants.rsun/ss.constants.au                                           ;; AU
    ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value                                                         ;; r_sun
-   ss.planet[i].rp.value = ss.planet[i].rpsun.value/ss.constants.RJupiter                                                      ;; r_jupiter
-   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/ss.constants.REarth                                                   ;; r_earth
+   ss.planet[i].rp.value = ss.planet[i].rpsun.value*ss.constants.Rsun/ss.constants.RJupiter                                    ;; r_jupiter
+   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value*ss.constants.Rsun/ss.constants.REarth                                 ;; r_earth
 
    ;; time of periastron
    ss.planet[i].phase.value=exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value,/pri)  

@@ -24,7 +24,9 @@ if ss.star.rstar.value ne 1d0 and ~ss.noyy then begin
    age = dindgen(ntries)/(ntries-1)*13.82
    rstars = dblarr(ntries)
    for i=0, ntries-1 do begin
-      junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, age[i], ss.star.teff.value,yyrstar=rstar)
+      junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, age[i], ss.star.teff.value,yyrstar=rstar, $
+                            sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
+                            gravitysun=ss.constants.gravitysun)
       if ~finite(junk) then return, 0
       rstars[i] = rstar
    endfor
@@ -32,7 +34,9 @@ if ss.star.rstar.value ne 1d0 and ~ss.noyy then begin
    ss.star.age.value = age[ndx]
 endif else if ~ss.noyy then begin
    ;; otherwise derive the stellar radius
-   junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar)
+   junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, $
+                         sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
+                         gravitysun=ss.constants.gravitysun)
    if ~finite(junk) then return, 0
    ss.star.rstar.value = rstar
 endif
@@ -79,7 +83,7 @@ for i=0, nplanets-1 do begin
       if ss.planet[i].K.value eq 0d0 then ss.planet[i].mpsun.value = 0d0 $
       else ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
                                             ss.planet[i].i.value, ss.planet[i].period.value, $
-                                            ss.star.mstar.value)
+                                            ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6)
    endif
 
    if ss.planet[i].arsun.value eq 0d0 then ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
