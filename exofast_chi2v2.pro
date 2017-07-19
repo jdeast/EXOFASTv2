@@ -1,4 +1,4 @@
-yy;+
+;+
 ; NAME:
 ;   EXOFAST_CHI2
 ;
