@@ -263,9 +263,6 @@
 ;                 NOTE: Only kept links in the chain count toward
 ;                 MAXSTEPS, so if the MCMC chains run to MAXSTEPS,
 ;                 doubling this value will double the runtime.
-;   LOGFILE     - A string specifying the name of a file to redirect
-;                 the output to. Useful when running many fits or for
-;                 a more permanent record of any errors or warnings.
 ;   RANDOMFUNC  - A string specifying the name of the random number
 ;                 generator to use. This generator must be able to
 ;                 return 1,2 or 3 dimensional uniform or normal random
@@ -385,6 +382,7 @@
 ;               wrong. Usually a parameter starts too far from its
 ;               correct value to find or some parameter is not
 ;               constrained.
+
 ; OUTPUTS:
 ;
 ;   Each of the output files will be preceeded by PREFIX (defined
@@ -440,7 +438,6 @@ pro exofastv2, priorfile=priorfile, $
                debug=debug, randomfunc=randomfunc, seed=seed,$
                bestonly=bestonly, plotonly=plotonly,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
-               logfile=logfile, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                fitrv=fitrv, fittran=fittran,fitdt=fitdt,ttvs=ttvs, earth=earth,$
@@ -457,13 +454,21 @@ chi2func = 'exofast_chi2v2'
 if double(!version.release) ge 6.4d0 then $
    resolve_all, resolve_function=[chi2func,'exofast_random'],/cont,/quiet
 
+;; default prefix for all output files (filename without extension)
+if n_elements(prefix) eq 0 then prefix = 'planet.'
+basename = file_basename(prefix)
+
+;; output to log file too
+logname = prefix + 'log'
+file_delete, logname, /allow_nonexistent
+
 ;; create the master structure
 ss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
           debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,ttvs=ttvs, $
           rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
           fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-          chen=chen, noyy=noyy, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing)
+          chen=chen, noyy=noyy, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing, logname=logname)
 
 npars = 0
 for i=0, n_tags(ss)-1 do begin
@@ -478,17 +483,6 @@ for i=0, n_tags(ss)-1 do begin
    endfor
 endfor
 
-memrequired = ss.nchains*maxsteps*npars*8d0/(1024d0^3)
-print, 'Fit will require ' + strtrim(memrequired,2) + ' GB of RAM for the final structure'
-if memrequired gt 2d0 then begin
-   print, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue'
-   stop
-endif
-print
-
-;; output to file instead of screen
-if n_elements(logfile) ne 0 then openw, lun, logfile, /get_lun $
-else lun = -1
 if n_elements(mintz) eq 0 then mintz = 1000d0
 if n_elements(maxgr) eq 0 then maxgr = 1.01d0
 if n_elements(maxsteps) eq 0 then maxsteps = 100000L
@@ -498,9 +492,14 @@ if n_elements(nmin) eq 0 then nmin=5
 ;; use robust (slower) random number generator by default
 if n_elements(randomfunc) eq 0 then randomfunc = 'exofast_random'
 
-;; default prefix for all output files (filename without extension)
-if n_elements(prefix) eq 0 then prefix = 'planet.'
-basename = file_basename(prefix)
+memrequired = ss.nchains*maxsteps*npars*8d0/(1024d0^3)
+printandlog, 'Fit will require ' + strtrim(memrequired,2) + ' GB of RAM for the final structure', logname
+if memrequired gt 2d0 then begin
+   printandlog, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue', logname
+   stop
+endif
+printandlog, '', logname
+
 
 pars = str2pars(ss,scale=scale,name=name)
 
@@ -518,43 +517,41 @@ bestchi2 = call_function(chi2func, pars)
 modeltime = systime(/seconds)-t0
 
 ;; these are the starting values for all step parameters
-print, 'These are the starting values for all the step parameters'
-print, 'and the amoeba stepping scale, which is roughly the range'
-print, 'of parameter space it will explore around the starting value'
-print, 'and is equal to 3x any input priors. When priors are not '
-print, 'specified in ' + priorfile + ', a default guess is used.'
-print, 'The parameter number is useful for tracking down unconstrained parameters'
-print 
-print, '**************************************************************'
-print, '*** ESPECIALLY DURING BETA TESTING, YOU SHOULD MAKE SURE   ***' 
-print, '*** THESE MAKE SENSE AND AGREE WITH YOUR EXPECTATION FROM  ***' 
-print, '*** PRIORFILE. IF NOT, YOUR STARTING PRIORS ARE LIKELY NOT ***'
-print, '*** BEING TRANSLATED INTO THE STEPPING PARAMETERIZATION    ***'
-print, '*** CORRECTLY BY pars2step.pro.                            ***'
-print, '**************************************************************'
-print
-print, 'Par #      Par Name    Par Value       Amoeba Scale'
-for i=0, n_elements(name)-1 do print, i, name[i], pars[i], scale[i], format='(i3,x,a15,x,f14.6,x,f14.6)'
-;forprint, indgen(n_elements(name)), name, pars, scale,/t,format='(i3,x,a15,x,f14.6,x,f14.6)'
-print 
+printandlog, 'These are the starting values for all the step parameters', logname
+printandlog, 'and the amoeba stepping scale, which is roughly the range', logname
+printandlog, 'of parameter space it will explore around the starting value', logname
+printandlog, 'and is equal to 3x any input priors. When priors are not ', logname
+printandlog, 'specified in ' + priorfile + ', a default guess is used.', logname
+printandlog, 'The parameter number is useful for tracking down unconstrained parameters', logname
+printandlog,'',logname 
+printandlog, '**************************************************************', logname
+printandlog, '*** ESPECIALLY DURING BETA TESTING, YOU SHOULD MAKE SURE   ***', logname
+printandlog, '*** THESE MAKE SENSE AND AGREE WITH YOUR EXPECTATION FROM  ***', logname
+printandlog, '*** PRIORFILE. IF NOT, YOUR STARTING PRIORS ARE LIKELY NOT ***', logname
+printandlog, '*** BEING TRANSLATED INTO THE STEPPING PARAMETERIZATION    ***', logname
+printandlog, '*** CORRECTLY BY pars2step.pro.                            ***', logname
+printandlog, '**************************************************************', logname
+printandlog, '', logname
+printandlog, 'Par #      Par Name    Par Value       Amoeba Scale', logname
+for i=0, n_elements(name)-1 do printandlog, string(i, name[i], pars[i], scale[i], format='(i3,x,a15,x,f14.6,x,f14.6)'), logname
+printandlog, '', logname
 
 if ss.debug then begin
-   print, 'program halted to give you time to inspect the priors. Type ".con" to continue'
+   printandlog, 'program halted to give you time to inspect the priors. Type ".con" to continue', logname
    stop
 end
 
 nmax = 1d5
-print, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nmax/60d0,format='(f0.1)') + ' minutes'
+printandlog, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nmax/60d0,format='(f0.1)') + ' minutes', logname
 
 ;; do the AMOEBA fit
 ss.amoeba = 1B
 best = exofast_amoeba(1d-8,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
 if best[0] eq -1 then begin
-   printf, lun, 'ERROR: Could not find best combined fit; adjust your starting values and try again. You may want to set the /DEBUG keyword.'
-   if lun ne -1 then free_lun, lun
+   printandlog, 'ERROR: Could not find best combined fit; adjust your starting values and try again. You may want to set the /DEBUG keyword.', logname
    return
 endif
-print, 'Finished AMOEBA fit'
+printandlog, 'Finished AMOEBA fit', logname
 
 ;; AMOEBA does not handle the high (perfect) covariance of the Chen & Kipping
 ;; relation; exclude the mass/radius from the amoeba fit
@@ -578,10 +575,10 @@ ss.amoeba = 0
 best = str2pars(ss,scale=scale,name=name) 
 
 ;; try again?
-;print, 'restarting AMOEBA with chen enabled'
-;print, call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model')
+;printandlog, 'restarting AMOEBA with chen enabled', logname
+;printandlog, call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model'), logname
 ;best = exofast_amoeba(1d-8,function_name=chi2func,p0=best,scale=scale,nmax=nmax)
-;print, call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model')
+;printandlog, call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model'), logname
 
 ;; output the best-fit model fluxes/rvs
 bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model')
@@ -592,21 +589,19 @@ if not keyword_set(bestonly) then begin
                  nthin=nthin,maxsteps=maxsteps,$
                  burnndx=burnndx, seed=seed, randomfunc=randomfunc, $
                  gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
-                 derived=rstar,stretch=stretch
+                 derived=rstar,stretch=stretch, logname=logname
    if pars[0] eq -1 then begin
-      printf, lun, 'MCMC Failed to find a stepping scale. This usually means one or more parameters are unconstrained by the data or priors.'
-      if lun ne -1 then free_lun, lun
-      return
+      printandlog, 'MCMC Failed to find a stepping scale. This usually means one or more parameters are unconstrained by the data or priors.', logname
    endif 
 
    bad = where(tz lt mintz or gelmanrubin gt maxgr,nbad)
    if bad[0] ne -1 then begin
-      printf, lun, 'WARNING: The Gelman-Rubin statistic indicates ' + $
-              'the following parameters are not well-mixed'
-      printf, lun, '    Parameter   Rz     Tz'
-      for i=0, nbad-1 do printf, lun, name[bad[i]], gelmanrubin[bad[i]],tz[bad[i]], format='(a13,x,2(f0.4,x))'
+      printandlog, 'WARNING: The Gelman-Rubin statistic indicates ' + $
+                   'the following parameters are not well-mixed', logname
+      printandlog, '    Parameter   Rz     Tz', logname
+      for i=0, nbad-1 do printandlog, name[bad[i]], gelmanrubin[bad[i]],tz[bad[i]], logname, format='(a13,x,2(f0.4,x))'
    endif
-   print, 'Synthesizing results; for long chains and/or many fitted parameters, this may take up to 15 minutes'
+   printandlog, 'Synthesizing results; for long chains and/or many fitted parameters, this may take up to 15 minutes', logname
 
    ;; combine all chains
    sz = size(pars)
@@ -639,7 +634,7 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile
               rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
               chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,noclaret=noclaret,$
-              alloworbitcrossing=alloworbitcrossing)
+              alloworbitcrossing=alloworbitcrossing, logname=logname)
 mcmcss.nchains = nchains
 mcmcss.burnndx = burnndx
 if ~ss.noyy then mcmcss.star.rstar.value = rstar
@@ -665,7 +660,7 @@ texfile = prefix + 'median.tex'
 if keyword_set(covar) then nocovar = 0 $
 else nocovar = 1
 
-exofast_plotdist2, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar
+exofast_plotdist2, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 exofast_plotchains, mcmcss, chainfile=chainfile
 
@@ -675,7 +670,5 @@ if keyword_set(display) then begin
    spawn, 'gv ' + covarfile + ' &'
    spawn, 'gv ' + modelfile + ' &'
 endif
-
-if lun ne -1 then free_lun, lun
 
 end

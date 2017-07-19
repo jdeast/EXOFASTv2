@@ -1,4 +1,4 @@
-function step2pars, ss, verbose=verbose
+function step2pars, ss, verbose=verbose, logname=logname
 
 G = ss.constants.GMSun/ss.constants.RSun^3*ss.constants.day^2 ;; R_sun^3/(m_sun*day^2)
 AU = ss.constants.au/ss.constants.rsun ;; R_sun
@@ -50,7 +50,7 @@ for i=0, ss.nplanets-1 do begin
                                          ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
 
 ;   if ss.planet[i].mpsun.value gt 0.08d0 then begin
-;      if keyword_set(verbose) then print, 'Planet ' + strtrim(i,2) + ' mass (' + strtrim(ss.planet[i].mpsun.value/mjup,2) + ' M_J) above hydrogen burning limit'
+;      if keyword_set(verbose) then printandlog, 'Planet ' + strtrim(i,2) + ' mass (' + strtrim(ss.planet[i].mpsun.value/mjup,2) + ' M_J) above hydrogen burning limit',logname
 ;      return, -1 ;; planet above the hydrogen burning limit
 ;   endif
 
@@ -76,8 +76,8 @@ for i=0, ss.nplanets-1 do begin
    ;; abs(p) because p is allowed to be negative to eliminate bias
    if not (ss.planet[i].e.value lt (1d0-1d0/ss.planet[i].ar.value-abs(ss.planet[i].p.value)/$
                               ss.planet[i].ar.value)) then begin
-      if keyword_set(verbose) then print, 'Planet ' + strtrim(i,2) + ' will collide with the star! e=' + strtrim(ss.planet[i].e.value,2) + '; a/Rstar=' + strtrim(ss.planet[i].ar.value,2) + '; Rp/Rstar=' + strtrim(ss.planet[i].p.value,2) + '; Rstar=' + strtrim(ss.star.rstar.value,2)
-      if keyword_set(verbose) then print, 'Rstar is derived from YY isochrones; adjust starting values for Age, Teff, [Fe/H], or Mstar to change it'
+      if keyword_set(verbose) then printandlog, 'Planet ' + strtrim(i,2) + ' will collide with the star! e=' + strtrim(ss.planet[i].e.value,2) + '; a/Rstar=' + strtrim(ss.planet[i].ar.value,2) + '; Rp/Rstar=' + strtrim(ss.planet[i].p.value,2) + '; Rstar=' + strtrim(ss.star.rstar.value,2), logname
+      if keyword_set(verbose) then printandlog, 'Rstar is derived from YY isochrones; adjust starting values for Age, Teff, [Fe/H], or Mstar to change it', logname
       return, -1
    endif
 
@@ -94,7 +94,7 @@ for i=0, ss.nplanets-1 do begin
 
    ;; no transit and we're fitting a transit! This causes major problems; exclude this model
    if ss.planet[i].fittran and (ss.planet[i].b.value gt (1d0+ss.planet[i].p.value)) then begin
-       if keyword_set(verbose) then print, 'Planet does not transit!'
+       if keyword_set(verbose) then printandlog, 'Planet does not transit!', logname
       return, -1
    endif
 
@@ -110,7 +110,7 @@ for i=0, ss.nplanets-1 do begin
             ((maxdist[i] ge mindist[j]) and (maxdist[i] le maxdist[j])) or $
             ((mindist[j] ge mindist[i]) and (mindist[j] le maxdist[i])) or $
             ((maxdist[j] ge mindist[i]) and (maxdist[j] le maxdist[i])) then begin
-            if keyword_set(verbose) then print, 'Planets ' + strtrim(j,2) + ' (' + strtrim(mindist[j],2) + ',' + strtrim(maxdist[j],2) + ') and ' + strtrim(i,2) + ' (' + strtrim(mindist[i],2) + ',' + strtrim(maxdist[i],2) + ') cross paths'
+            if keyword_set(verbose) then printandlog, 'Planets ' + strtrim(j,2) + ' (' + strtrim(mindist[j],2) + ',' + strtrim(maxdist[j],2) + ') and ' + strtrim(i,2) + ' (' + strtrim(mindist[i],2) + ',' + strtrim(maxdist[i],2) + ') cross paths', logname
             return, -1
          endif
       endfor

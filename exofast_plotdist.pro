@@ -57,7 +57,7 @@
 pro exofast_plotdist, pars, medianpars, angular=angular, $
                       parnames=parnames, units=units, nocovar=nocovar, $
                       pdfname=pdfname, covarname=covarname, $
-                      bestpars=bestpars, probs=probs, degrees=degrees
+                      bestpars=bestpars, probs=probs, degrees=degrees, logname=logname
 
 if n_elements(pdfname) eq 0 then pdfname = 'pdf.ps'
 if n_elements(covarname) eq 0 then covarname = 'covar.ps'
@@ -76,14 +76,14 @@ nsteps = double(sz[2])
 
 if nparnames ne npars then begin
    parnames = strarr(npars)
-   if nparnames ne 0 then message, /continue, $
-      'WARNING: PARNAMES does not match parameter array; ignoring labels'
+   if nparnames ne 0 then printandlog, $
+      'WARNING: PARNAMES does not match parameter array; ignoring labels',logname
 endif
 
 if nunits ne npars then begin
    units = strarr(npars)
-   if nunits ne 0 then message, /continue, $
-      'WARNING: UNITS does not match parameter array; ignoring labels'
+   if nunits ne 0 then printandlog, $
+      'WARNING: UNITS does not match parameter array; ignoring labels',logname
 endif
 
 medndx = nsteps/2
@@ -136,8 +136,8 @@ for i=0, npars-1 do begin
     if units[i] ne '' then xtitle += ' (' + units[i] + ')'
      
     bad = where(~finite(pars[i,*]),complement=good)
-    if bad[0] ne -1 then message, $
-       "ERROR: NaNs in " +  parnames[i] + " distribution"    
+    if bad[0] ne -1 then printandlog, $
+       "ERROR: NaNs in " +  parnames[i] + " distribution",logname
 
     ;; get the median and +/- 1 sigma values
     sorted = sort(pars[i,*])
@@ -149,8 +149,8 @@ for i=0, npars-1 do begin
     xmin = (medianpars[0,i] - 4*medianpars[2,i]) > min(pars[i,*],/nan)
     
     if xmin eq xmax then begin
-       print, 'WARNING: Parameter ' + strtrim(i,2) + ' (' + parnames[i] + $
-          ') is singularly valued; this is often a symptom of a bigger problem. Skipping covariances, which would fail.'
+       printandlog, 'WARNING: Parameter ' + strtrim(i,2) + ' (' + parnames[i] + $
+          ') is singularly valued; this is often a symptom of a bigger problem. Skipping covariances, which would fail.',logname
        ;nocovar = 1
     endif
 

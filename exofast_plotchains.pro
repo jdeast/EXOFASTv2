@@ -37,7 +37,6 @@ plot, [0],[0], psym=10, xtitle=xtitle, ytitle=ytitle,$
 for l=0L, ss.nchains-1L do $
    oplot, chi2[*,l] - ymin, color=l*255d0/ss.nchains ;, transparency=100d0-100d0/ss.nchains
 oplot, [ss.burnndx,ss.burnndx],[-9d99,9d99]
-print, ymin
 
 for i=0, n_tags(ss)-1 do begin
    for j=0, n_elements(ss.(i))-1 do begin

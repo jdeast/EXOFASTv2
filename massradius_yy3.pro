@@ -118,8 +118,6 @@ yyteff = !values.d_infinity
 mindiff = !values.d_infinity
 ;age = !values.d_infinity
 
-;if keyword_set(debug) then print, mstar, rstar
-
 ;; out of range
 if z_one gt (nz-1) or a_one gt (na-1) or m_one gt (nx-1) or $
    z_one lt 0 or a_one lt 0 or m_one lt 0 then return, !values.d_infinity

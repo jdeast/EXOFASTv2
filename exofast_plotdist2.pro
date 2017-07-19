@@ -56,7 +56,7 @@
 ;-
 pro exofast_plotdist2, ss, nocovar=nocovar, $
                        pdfname=pdfname, covarname=covarname, $
-                       probs=probs
+                       probs=probs,logname=logname
 
 if n_elements(pdfname) eq 0 then pdfname = 'pdf.ps'
 if n_elements(covarname) eq 0 then covarname = 'covar.ps'
@@ -139,8 +139,8 @@ for i=0, n_tags(ss)-1 do begin
 
             ;; check for bad values
             bad = where(~finite(pars),complement=good)
-            if bad[0] ne -1 then message, $
-               "ERROR: NaNs in " + label + " distribution"
+            if bad[0] ne -1 then printandlog, $
+               "ERROR: NaNs in " + label + " distribution",logname
             
             ;; if angular, center distribution about the mode
             if unit eq 'DEGREES' then halfrange = 180d0 $
@@ -173,7 +173,7 @@ for i=0, n_tags(ss)-1 do begin
             parnames = [parnames,latex]
             
             if xmin eq xmax then begin
-               message, 'WARNING: ' + label + ' is singularly valued.',/continue
+               printandlog, 'WARNING: ' + label + ' is singularly valued.',logname
             endif else begin
                
                ;; plot labels
@@ -283,7 +283,7 @@ for i=0, npars-1 do begin
          ;; get the paths of the contours
          exofast_errell, allpars[i,*],allpars[j,*],xpath=xpath,ypath=ypath,$
                          prob=probs,nxbin=100, nybin=100,$
-                         xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax
+                         xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,logname=logname
          
          if n_elements(xpath) gt 0 and n_elements(ypath) eq n_elements(xpath) then begin
             ;; plot the contours

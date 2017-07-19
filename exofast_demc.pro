@@ -155,7 +155,7 @@ pro exofast_demc, bestpars,chi2func,pars,chi2=chi2, tofit=tofit,$
                   nchains=nchains, angular=angular,$
                   burnndx=burnndx, removeburn=removeburn, $
                   gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
-                  derived=derived, resumendx=resumendx,stretch=stretch
+                  derived=derived, resumendx=resumendx,stretch=stretch, logname=logname
 
 ;; default values
 if n_elements(maxsteps) eq 0 then maxsteps = 1d5
@@ -163,6 +163,8 @@ if n_elements(nthin) eq 0 then nthin = 1L
 if n_elements(tofit) eq 0 then tofit = indgen(n_elements(bestpars))
 if n_elements(mintz) eq 0 then mintz = 1000d0
 if n_elements(maxgr) eq 0 then maxgr = 1.01d0
+if n_elements(loglun) eq 0 then loglun = -1
+
 defsysv, '!STOPNOW', 0B
 nfit = n_elements(tofit)
 !except = 0 ;; don't display errors for NaN and infinity
@@ -206,14 +208,14 @@ olddet = dblarr(nchains)
 
 ;; get the MCMC step scale for each parameter
 if n_elements(scale) eq 0 then $
-   scale = exofast_getmcmcscale(bestpars,chi2func,tofit=tofit,angular=angular,/skipiter)
+   scale = exofast_getmcmcscale(bestpars,chi2func,tofit=tofit,angular=angular,/skipiter,logname=logname)
 if scale[0] eq -1 then begin
-   message, 'No scale found',/continue
+   printandlog, 'No scale found',logname
    pars = -1
    return
 endif
 
-print, 'Beginning chain initialization'
+printandlog, 'Beginning chain initialization', logname
 ;; initialize each chain
 for j=0, nchains-1 do begin
    ;; repeat until a finite chi^2 
@@ -243,8 +245,8 @@ for j=0, nchains-1 do begin
    endif
 
 endfor
-print, 'Done initializing chains'
-print
+printandlog, 'Done initializing chains', logname
+printandlog, '', logname
 
 if n_elements(dpar) ne 0 then oldderived = reform(derived[*,0,*],nderived,nchains)
 
@@ -374,13 +376,13 @@ for i=resumendx,maxsteps-1L do begin
             ;; if it won't be converged, warn the user
             if stepstoconvergence gt maxsteps then begin
                bestnthin = round(stepstoconvergence*nthin/maxsteps)
-               print,'WARNING: The chain is not expected to be well-mixed; '+$
-                     'set NTHIN to >~ ' + strtrim(bestnthin,2) + ' to fix'
+               printandlog,'WARNING: The chain is not expected to be well-mixed; '+$
+                       'set NTHIN to >~ ' + strtrim(bestnthin,2) + ' to fix', logname
             endif else if stepstoconvergence le 0 then begin
-               print,'WARNING: The chains are not mixing. This may be a while.'
-            endif else print, string(stepstoconvergence*50d0/maxsteps,$
-                     format='("EXOFAST_DEMC: The chain is expected to be ' + $
-                              'well-mixed after ",i2,"% completed     ")')
+               printandlog, 'WARNING: The chains are not mixing. This may be a while.', logname
+            endif else printandlog, string(stepstoconvergence*50d0/maxsteps,$
+                                              format='("EXOFAST_DEMC: The chain is expected to be ' + $
+                                              'well-mixed after ",i2,"% completed     ")'), logname
             alreadywarned = 1 ;; only display message once
          endif
       endif
@@ -412,8 +414,8 @@ for i=resumendx,maxsteps-1L do begin
 ;      if naccept/(double(i*nchains*nthin)) lt idealacceptancerate*0.75 or $
 ;         naccept/(double(i*nchains*nthin)) gt idealacceptancerate*1.25 then begin
 ;
-;         print
-;         print, 'Acceptance rate (' + acceptancerate + ') not ideal -- scaling stretch scale from ' + strtrim(a,2) + ' to ' + strtrim(a*naccept/(double(i*nchains*nthin))/idealacceptancerate,2)
+;         printandlog, '', logname
+;         printandlog, 'Acceptance rate (' + acceptancerate + ') not ideal -- scaling stretch scale from ' + strtrim(a,2) + ' to ' + strtrim(a*naccept/(double(i*nchains*nthin))/idealacceptancerate,2),logname
 ;         a = a*naccept/(double(i*nchains*nthin))/idealacceptancerate
 ;
 ;         ;; more continous scaling
@@ -445,12 +447,13 @@ for i=resumendx,maxsteps-1L do begin
       timeleft = strtrim(string(timeleft,format='(f255.2)'),2)
       format='("EXOFAST_DEMC:",f6.2,"% done; acceptance rate = ",a,"%; ' + $ 
              'time left: ",a,a,$,%"\r")'
-      print, format=format,100.d0*(i+1)/maxsteps,acceptancerate,timeleft,units
+      print, 100.d0*(i+1)/maxsteps,acceptancerate,timeleft,units, format=format
+      if i eq resumendx then printandlog, string(100.d0*(i+1)/maxsteps,acceptancerate,timeleft,units, format=format), logname
    endif
 
 endfor
-print ;; don't overwrite the final line
-print ;; now just add a space
+printandlog, '', logname ;; don't overwrite the final line
+printandlog, '', logname ;; now just add a space
 
 ;; it doesn't necessarily stop at MAXSTEPS if it was interrupted or converged early
 nstop = i-1L
@@ -495,13 +498,13 @@ if ngood ne nchains or npass ne 6 then begin
    endelse
 
    if bad[0] eq -1 then begin
-      if npass ne 6 then print, 'Chains are marginally well-mixed' $
-      else print,'All chains are mixed, but some chains never got below '+$
-            'the median chi^2. Is this even possible?'
+      if npass ne 6 then printandlog, 'Chains are marginally well-mixed',logname $
+      else printandlog,'All chains are mixed, but some chains never got below '+$
+            'the median chi^2. Is this even possible?',logname
    endif else if extrabad[0] eq -1 and ngood ne nchains and ngood gt 2 then begin
       ;; without errant chains, it's better
-      print, 'Discarding ' + strtrim(round(nchains-ngood),2) + '/'+$
-             strtrim(round(nchains),2) + ' chains stuck in local minima.'
+      printandlog, 'Discarding ' + strtrim(round(nchains-ngood),2) + '/'+$
+              strtrim(round(nchains),2) + ' chains stuck in local minima.', logname
       pars = pars[*,*,goodchains]
       chi2 = chi2[*,goodchains]
       if n_elements(derived) ne 0 then derived = derived[*,*,goodchains]
@@ -510,14 +513,14 @@ if ngood ne nchains or npass ne 6 then begin
       gelmanrubin = gelmanrubin2
       bad = where(tz lt mintz or gelmanrubin gt maxgr)
       if not converged2 then begin
-         print, 'Remaining chains are still not mixed. Must run longer.'
-         print, '       Parameter  Gelman-Rubin Independent Draws'
-         for i=0L, n_elements(bad)-1 do print, tofit[bad[i]], gelmanrubin[bad[i]],tz[bad[i]]
+         printandlog, 'Remaining chains are still not mixed. Must run longer.', logname
+         printandlog, '       Parameter  Gelman-Rubin Independent Draws',logname
+         for i=0L, n_elements(bad)-1 do printandlog, tofit[bad[i]], gelmanrubin[bad[i]],tz[bad[i]],logname
       endif
    endif else begin
-      print, 'No obviously-errant chains. Must run longer.'
-      print, '       Parameter  Gelman-Rubin Independent Draws'
-      for i=0L, n_elements(bad)-1 do print, tofit[bad[i]], gelmanrubin[bad[i]],tz[bad[i]]
+      printandlog, 'No obviously-errant chains. Must run longer.', logname
+      printandlog, '       Parameter  Gelman-Rubin Independent Draws',logname
+      for i=0L, n_elements(bad)-1 do printandlog, tofit[bad[i]], gelmanrubin[bad[i]],tz[bad[i]], logname
    endelse
 endif
 
@@ -552,7 +555,7 @@ endif
 runtime = strtrim(string(runtime,format='(f100.2)'),2)
 
 format = '("EXOFAST_DEMC: done in ",a,a,"; took ",a,"% of trial steps")'
-print, format=format, runtime, units, acceptancerate
+printandlog, string(runtime, units, acceptancerate, format=format), logname
 
 end
 

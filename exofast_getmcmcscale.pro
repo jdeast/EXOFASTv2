@@ -57,7 +57,7 @@
 
 function exofast_getmcmcscale, bestpars, chi2func, tofit=tofit, $
                                seedscale=seedscale, bestchi2=bestchi2,$
-                               angular=angular0, debug=debug, skipiter=skipiter
+                               angular=angular0, debug=debug, skipiter=skipiter,logname=logname
 
 npars = n_elements(bestpars)
 if n_elements(tofit) eq 0 then tofit = indgen(npars)
@@ -74,9 +74,9 @@ if n_elements(angular0) eq 0 then angular = [-1] $
 else angular = angular0
 
 if keyword_set(debug) then begin
-    print, "   Par           Minimum Step                " + $
+    printandlog, "   Par           Minimum Step                " + $
       "Maximum Step                Value                       " + $
-      "Chi^2                    Best Chi^2"
+      "Chi^2                    Best Chi^2",logname
 endif
 
 mcmcscale = [[seedscale],[seedscale]]
@@ -136,12 +136,12 @@ for i=0, nfit-1 do begin
                 endif else mcmcscale[i,j] = (maxstep + minstep)/2.d0
             endif else begin
                 if keyword_set(debug) then begin
-                    print,'WARNING: better chi2 found by varying parameter '+$
+                    printandlog,'WARNING: better chi2 found by varying parameter '+$
                       strtrim(tofit[i],2) + ' from ' + $ 
                       strtrim(string(bestpars[tofit[i]],format='(f40.10)'),2)+$
                       ' to ' + $
                       strtrim(string(testpars[tofit[i]],format='(f40.10)'),2)+$
-                      ' (' + strtrim(chi2,2) + ')'
+                      ' (' + strtrim(chi2,2) + ')',logname
                 endif
 
                 if (origbestchi2 - bestchi2) gt 1d0 then betterfound = 1B
@@ -213,9 +213,9 @@ for i=0, nfit-1 do begin
             if keyword_set(debug) then begin
                 if j eq 0 then str = '(hi)' $
                 else str = '(lo)'                
-                print, tofit[i], str, minstep, maxstep, $
+                printandlog, string(tofit[i], str, minstep, maxstep, $
                   testpars[tofit[i]],chi2,bestchi2, $
-                  format='(i3,x,a4,x,f27.18,f27.18,f27.18,f27.18,f27.18)'
+                  format='(i3,x,a4,x,f27.18,f27.18,f27.18,f27.18,f27.18)'),logname
              endif
             next:
 
@@ -225,10 +225,10 @@ endfor
 
 ;; let's iterate to see if we can do better
 if betterfound and ~keyword_set(skipiter) then begin
-   print, 'Better Chi^2 found (' + strtrim(bestchi2,2) + ' vs ' + strtrim(origbestchi2,2) + '. Restarting EXOFAST_GETMCMCSCALE at new best fit'
-   print, 'This means the best fit was not properly identified and MCMC results may be slow or suspect!'
-   print, 'If the chi^2 difference is large, you may want to revise your starting parameters and/or check your priors, then restart'
-   print, 'Proceed with caution and skepticism'
+   printandlog, 'Better Chi^2 found (' + strtrim(bestchi2,2) + ' vs ' + strtrim(origbestchi2,2) + '. Restarting EXOFAST_GETMCMCSCALE at new best fit',logname
+   printandlog, 'This means the best fit was not properly identified and MCMC results may be slow or suspect!',logname
+   printandlog, 'If the chi^2 difference is large, you may want to revise your starting parameters and/or check your priors, then restart',logname
+   printandlog, 'Proceed with caution and skepticism',logname
    return, exofast_getmcmcscale(bestpars, chi2func, tofit=tofit, $
                                 seedscale=seedscale, bestchi2=bestchi2,$
                                 angular=angular0, debug=debug, skipiter=skipiter)

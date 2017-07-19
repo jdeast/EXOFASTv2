@@ -85,7 +85,7 @@
 pro exofast_errell, xpar, ypar, probs=probs, xpath=xpath, ypath=ypath, $
                     plot=plot, oplot=oplot, outsidendx=outsidendx, $
                     nxbin=nxbin, xmin=xmin, xmax=xmax, $
-                    nybin=nybin, ymin=ymin, ymax=ymax
+                    nybin=nybin, ymin=ymin, ymax=ymax,logname=logname
 
 ;; 1 and 2 sigma contours (as defined in 1D)
 if n_elements(probs) eq 0 then probs = erf([1.d0,2.d0]/sqrt(2.d0))
@@ -95,7 +95,7 @@ if n_elements(xmin) eq 0 then xmin = min(xpar,/nan)
 if n_elements(xmax) eq 0 then xmax = max(xpar,/nan)
 if n_elements(nxbin) eq 0 then nxbin = 100
 if xmin eq xmax then begin
-   message, 'Histogram has zero width (parameter has no dispersion?)',/continue
+   printandlog, 'Histogram has zero width (parameter has no dispersion?)',logname
    return
 endif
 xbinsz = double(xmax-xmin)/(nxbin-1)
@@ -105,7 +105,7 @@ if n_elements(ymin) eq 0 then ymin = min(ypar,/nan)
 if n_elements(ymax) eq 0 then ymax = max(ypar,/nan)
 if n_elements(nybin) eq 0 then nybin = nxbin
 if ymin eq ymax then begin
-   message, 'Histogram has zero width (parameter has no dispersion?)',/continue
+   printandlog, 'Histogram has zero width (parameter has no dispersion?)',logname
    return
 endif
 ybinsz = double(ymax-ymin)/(nybin-1)
@@ -135,7 +135,7 @@ levels = reverse(levels)
 
 ;; make sure LEVELS is a sensible input to CONTOUR
 if n_elements(uniq(levels)) ne n_elements(probs) then begin
-    print, 'Resolution too fine -- lower NXBIN or use more elements!'
+    printandlog, 'Resolution too fine -- lower NXBIN or use more elements!',logname
     return
 endif
 

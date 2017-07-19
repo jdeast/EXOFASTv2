@@ -151,7 +151,8 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, $
                longcadence=longcadence, earth=earth, silent=silent, noyy=noyy, $
-               noclaret=noclaret,alloworbitcrossing=alloworbitcrossing
+               noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
+               logname=logname
 
 if not keyword_set(debug) then debug=0B
 if not keyword_set(noyy) then noyy=0B
@@ -1061,7 +1062,7 @@ if n_elements(fluxfile) ne 0 then begin
       star.parallax.derive = 1
       star.av.fit = 1
       star.av.derive = 1
-   endif else print, 'Could not find ' + fluxfile
+   endif else printandlog, 'Could not find ' + fluxfile, logname
 endif
 
 ;; for each planet 
@@ -1220,7 +1221,10 @@ ss = create_struct('star',star,$
 ;                   'nbad',0L,$
                    'burnndx',0L,$
                    'amoeba',0L,$
+                   'logname','',$
                    'chi2',ptr_new(1))
+
+if n_elements(logname) eq 1 then ss.logname=logname
 
 if ndt gt 0 then begin
    ss.doptom[*].dtptrs = ptrarr(ndt,/allocate_heap)
@@ -1353,22 +1357,21 @@ for i=0, nband-1 do begin
    if match[0] ne -1 then begin
       ss.band[i].thermal.fit = 1B
       ss.band[i].thermal.derive = 1B
-      print, "Fitting thermal emission for " + ss.band[i].name + " band"
+      printandlog, "Fitting thermal emission for " + ss.band[i].name + " band",logname
    endif
 
    match = where(fitreflect eq ss.band[i].name)
    if match[0] ne -1 then begin
       ss.band[i].reflect.fit = 1B
       ss.band[i].reflect.derive = 1B
-      print, "Fitting reflected light for " + ss.band[i].name + " band"
-      print, ss.band[i].name
+      printandlog, "Fitting reflected light for " + ss.band[i].name + " band", logname
    endif
 
    match = where(fitdilute eq ss.band[i].name)
    if match[0] ne -1 then begin
       ss.band[i].dilute.fit = 1B
       ss.band[i].dilute.derive = 1B
-      print, "Fitting dilution for " + ss.band[i].name + " band"
+      printandlog, "Fitting dilution for " + ss.band[i].name + " band", logname
    endif
 
 endfor
@@ -1436,10 +1439,10 @@ endelse
 priors = [-1,-1,-1]
 
 ;; for each input prior
-if ~keyword_set(silent) then print
-if ~keyword_set(silent) then print, 'These are the priors that will be applied to the fit.'
-if ~keyword_set(silent) then print, 'Those with "no prior constraint" only affect the starting values of the fit:'
-if ~keyword_set(silent) then print
+if ~keyword_set(silent) then printandlog, '', logname
+if ~keyword_set(silent) then printandlog, 'These are the priors that will be applied to the fit.', logname
+if ~keyword_set(silent) then printandlog, 'Those with "no prior constraint" only affect the starting values of the fit:'
+if ~keyword_set(silent) then printandlog, '', logname
 openr, lun, priorfile, /get_lun
 line = ''
 lineno=0
@@ -1501,7 +1504,7 @@ while not eof(lun) do begin
                if priorwidth eq 0d0 then begin
                   ;; priorwidth = 0 => fix it at the prior value
                   ss.(i)[priornum].(ndx).fit = 0d0                  
-                  if ~keyword_set(silent) then print, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)'
+                  if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)', logname
                endif else if finite(priorwidth) and priorwidth gt 0d0 or finite(lowerbound) or finite(upperbound) then begin
                   ;; apply a Gaussian prior with width = priorwidth
                   priors=[[priors],[i,priornum,ndx]]
@@ -1513,8 +1516,8 @@ while not eof(lun) do begin
 
                   
                   if ~keyword_set(silent) then begin
-                     if priorwidth lt 0 then print, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2) $
-                     else print, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
+                     if priorwidth lt 0 then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname $
+                     else printandlog, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
                   endif
 
                endif else begin
@@ -1522,7 +1525,7 @@ while not eof(lun) do begin
 
 
                   ;; else no prior, just change the default starting value
-                  if ~keyword_set(silent) then print, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2)
+                  if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
                endelse
                
                found=1
@@ -1534,12 +1537,12 @@ while not eof(lun) do begin
    endfor
 
    ;; didn't find it, warn user
-   if not found then message, "WARNING: No parameter matches '" + $
-                              priorname + "' from " + priorfile + "; not applying prior",/continue
+   if not found then printandlog, "WARNING: No parameter matches '" + $
+                             priorname + "' from " + priorfile + "; not applying prior", logname
                 
 endwhile
 free_lun, lun
-if ~keyword_set(silent) then print
+if ~keyword_set(silent) then printandlog, '', logname
 
 ;; do we have enough information to derive the distance?
 ;if (where(priorname eq 'distance'))[0] ne -1 
@@ -1664,8 +1667,6 @@ function mkprior, str, priorfile
      endfor
 
   endfor ;; each input prior
-
-  print, priors
 
   priors = priors[*,1:*]
   *(str.priors) = priors
