@@ -553,6 +553,7 @@ if best[0] eq -1 then begin
 endif
 printandlog, 'Finished AMOEBA fit', logname
 
+if 0 then begin
 ;; AMOEBA does not handle the high (perfect) covariance of the Chen & Kipping
 ;; relation; exclude the mass/radius from the amoeba fit
 for i=0, ss.nplanets-1 do begin
@@ -570,6 +571,7 @@ for i=0, ss.nplanets-1 do begin
    endif
 endfor
 ss.amoeba = 0
+endif
 
 ;; update the parameter array with the chen-derived logks
 best = str2pars(ss,scale=scale,name=name) 
@@ -599,7 +601,7 @@ if not keyword_set(bestonly) then begin
       printandlog, 'WARNING: The Gelman-Rubin statistic indicates ' + $
                    'the following parameters are not well-mixed', logname
       printandlog, '    Parameter   Rz     Tz', logname
-      for i=0, nbad-1 do printandlog, name[bad[i]], gelmanrubin[bad[i]],tz[bad[i]], logname, format='(a13,x,2(f0.4,x))'
+      for i=0, nbad-1 do printandlog, string(name[bad[i]], gelmanrubin[bad[i]],tz[bad[i]], format='(a13,x,2(f0.4,x))'), logname
    endif
    printandlog, 'Synthesizing results; for long chains and/or many fitted parameters, this may take up to 15 minutes', logname
 

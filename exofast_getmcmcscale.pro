@@ -53,6 +53,7 @@
 ;   2013/03/08 - If it hits a boundary, take the minimum step as the
 ;                stepping scale. We just need a good ballpark, DEMC
 ;                will do the rest.
+;   2017/07/19 - Use printandlog for print statements
 ;-
 
 function exofast_getmcmcscale, bestpars, chi2func, tofit=tofit, $
@@ -101,8 +102,8 @@ for i=0, nfit-1 do begin
             ;; an infinite step size means it's not constrained
             if ~finite(bestpars[tofit[i]] + mcmcscale[i,j]) or $
                ~finite(bestpars[tofit[i]] - mcmcscale[i,j]) then begin
-               message, "EXOFAST_GETMCMCSCALE: Parameter "+strtrim(tofit[i],2) + $
-                      " is unconstrained. Check your starting conditions",/continue
+               printandlog, "EXOFAST_GETMCMCSCALE: Parameter "+strtrim(tofit[i],2) + $
+                      " is unconstrained. Check your starting conditions", logname
                chi2 = bestchi2 + 1 
                mcmcscale[i,j] = !values.d_nan
                goto, next
@@ -174,10 +175,10 @@ for i=0, nfit-1 do begin
                         mcmcscale[i,j] = bestscale
                         chi2 = bestchi2 + 1d0
                     endif else begin
-                        message, 'Cannot find the value for which deltachi^2 = 1 for parameter ' +$
+                        printandlog, 'Cannot find the value for which deltachi^2 = 1 for parameter ' +$
                                  strtrim(tofit[i],2) + '; assuming rough chi^2 surface. Using delta chi^2 = ' +$
                                  strtrim(bestdeltachi2,2) + ' and scaling step (' + strtrim(mcmcscale[i,j],2) +$
-                                 ') to ' + strtrim(mcmcscale[i,j]*(bestchi2+1)/chi2,2),/continue
+                                 ') to ' + strtrim(mcmcscale[i,j]*(bestchi2+1)/chi2,2),logname
 
                         ;; extrapolate scale to delta chi^2 = 1 
                         ;; (may cause issues near boundaries)
@@ -189,14 +190,14 @@ for i=0, nfit-1 do begin
             
             ;; if the parameter has no influence on the chi2
             if abs(chi2 - bestchi2 - 1.d0) eq 1.d0 and niter gt maxiter then $
-              message, 'ERROR: changing parameter ' + strtrim(tofit[i],2) + $
-              ' does not change the chi^2. Exclude from fit.' 
+              printandlog, 'ERROR: changing parameter ' + strtrim(tofit[i],2) + $
+              ' does not change the chi^2. Exclude from fit.', logname 
 
             ;; if angle is so poorly constrained 
             ;; no value has delta chi^2 = 1
             if (where(angular eq tofit[i]))(0) ne -1 and $
               minstep gt (2.d0*!dpi) then begin 
-                message, 'WARNING: no constraint on angle',/continue 
+               printandlog, 'WARNING: no constraint on angle',logname
                 mcmcscale[i,j] =  !dpi
                 chi2 = bestchi2 + 1.d0
             endif

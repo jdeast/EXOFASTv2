@@ -515,12 +515,12 @@ if ngood ne nchains or npass ne 6 then begin
       if not converged2 then begin
          printandlog, 'Remaining chains are still not mixed. Must run longer.', logname
          printandlog, '       Parameter  Gelman-Rubin Independent Draws',logname
-         for i=0L, n_elements(bad)-1 do printandlog, tofit[bad[i]], gelmanrubin[bad[i]],tz[bad[i]],logname
+         for i=0L, n_elements(bad)-1 do printandlog, string(tofit[bad[i]], gelmanrubin[bad[i]],tz[bad[i]]),logname
       endif
    endif else begin
       printandlog, 'No obviously-errant chains. Must run longer.', logname
       printandlog, '       Parameter  Gelman-Rubin Independent Draws',logname
-      for i=0L, n_elements(bad)-1 do printandlog, tofit[bad[i]], gelmanrubin[bad[i]],tz[bad[i]], logname
+      for i=0L, n_elements(bad)-1 do printandlog, string(tofit[bad[i]], gelmanrubin[bad[i]],tz[bad[i]]), logname
    endelse
 endif
 

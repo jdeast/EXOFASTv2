@@ -167,7 +167,8 @@ if n_elements(fitdilute) eq 0 then fitdilute = []
 if n_elements(tranpath) ne 0 then begin
    tranfiles=file_search(tranpath,count=ntran)
    if ntran eq 0 then begin
-      message, "No transit files files found matching " + strtrim(tranpath,2) + "; please check TRANPATH"
+      printandlog, "No transit files files found matching " + strtrim(tranpath,2) + "; please check TRANPATH", logname
+      stop
    endif
 
    ;; find the unique bands
@@ -196,7 +197,8 @@ endelse
 if n_elements(rvpath) ne 0 then rvfiles = file_search(rvpath,count=ntel) $
 else ntel = 0
 
-if ntel eq 0 and n_elements(rvpath) gt 0 then message, "RV path (" + rvpath + ") not found! Make sure the file exists or remove the argument to proceed without it." 
+if ntel eq 0 and n_elements(rvpath) gt 0 then $
+   printandlog, "RV path (" + rvpath + ") not found! Make sure the file exists or remove the argument to proceed without it." , logname
 
 if n_elements(nplanets) eq 0 then nplanets = 1
 if n_elements(circular) ne nplanets then circular = bytarr(nplanets)
@@ -214,10 +216,10 @@ if n_elements(chen) ne nplanets then chen = fittran xor fitrv
 if n_elements(i180) ne nplanets then i180 = bytarr(nplanets)
 
 
-if (where((~fitrv) and (~fittran)))[0] ne -1 then $
-   message, 'Either a transit or RV must be fit for each planet'
-
-
+if (where((~fitrv) and (~fittran)))[0] ne -1 then begin
+   printandlog, 'Either a transit or RV must be fit for each planet', logname
+   stop
+end
 
 ;; each parameter is a structure, as defined here
 parameter = create_struct('value',value,$     ;; its numerical value
@@ -1393,7 +1395,8 @@ if ntran gt 0 then begin
       exptime = dblarr(ntran) + 29.425d0
       ninterp = dblarr(ntran) + 10
    endif else if n_elements(longcadence) ne ntran then begin
-      message, 'LONGCADENCE must be byte or an NTRANSITS (' + strtrim(ntran,2) + ') byte array'
+      printandlog, 'LONGCADENCE must be byte or an NTRANSITS (' + strtrim(ntran,2) + ') byte array', logname
+      stop
    endif else begin
       exptime = dblarr(ntran) + 29.425d0
       ninterp = dblarr(ntran) + 1
@@ -1441,7 +1444,7 @@ priors = [-1,-1,-1]
 ;; for each input prior
 if ~keyword_set(silent) then printandlog, '', logname
 if ~keyword_set(silent) then printandlog, 'These are the priors that will be applied to the fit.', logname
-if ~keyword_set(silent) then printandlog, 'Those with "no prior constraint" only affect the starting values of the fit:'
+if ~keyword_set(silent) then printandlog, 'Those with "no prior constraint" only affect the starting values of the fit:', logname
 if ~keyword_set(silent) then printandlog, '', logname
 openr, lun, priorfile, /get_lun
 line = ''
@@ -1459,7 +1462,7 @@ while not eof(lun) do begin
    nentries = n_elements(entries)
    ;; each line must have at least a name and value
    if nentries lt 2 or nentries gt 5 then begin
-      if line ne '' then message, 'WARNING: line ' + strtrim(lineno,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE [UNCERTAINTY] [LOWERBOUND] [UPPERBOUND]); ignoring: ' + line, /continue
+      if line ne '' then printandlog, 'WARNING: line ' + strtrim(lineno,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE [UNCERTAINTY] [LOWERBOUND] [UPPERBOUND]); ignoring: ' + line, logname
       continue
    endif 
 
@@ -1616,10 +1619,16 @@ endfor
 ;; don't do these when creating the MCMC structure
 if n_elements(ss.star.mstar.value) eq 1 then begin
    ;; derive all step parameters
-   if not pars2step(ss) then message, 'Warning: YY isochrones are not applicable here; refine priors. Are you fitting a low mass star? Be sure to disable YY isochrones using the /NOYY, disable the limb darkening prior using /NOCLARET, and supply priors on mstar, rstar, and u1 and u2 for each band'
+   if not pars2step(ss) then begin
+      printandlog, 'Warning: YY isochrones are not applicable here; refine priors. Are you fitting a low mass star? Be sure to disable YY isochrones using the /NOYY, disable the limb darkening prior using /NOCLARET, and supply priors on mstar, rstar, and u1 and u2 for each band', logname
+      stop
+   endif
    
    ;; return an error if the starting stellar system is not allowed
-   if step2pars(ss,/verbose) eq -1 then message, 'Warning: starting values for stellar system not allowed; refine priors'
+   if step2pars(ss,/verbose) eq -1 then begin
+      printandlog, 'Warning: starting values for stellar system not allowed; refine priors', logname
+      stop
+   endif
 
    ;; calculate the right period stepping scale for AMOEBA based on the
    ;; input data
@@ -1627,50 +1636,5 @@ if n_elements(ss.star.mstar.value) eq 1 then begin
 endif
 
 return, ss
-
-end
-
-;; this function populates the priors in the parameter structures
-;; and fills out the index (str.priors) for future reference
-function mkprior, str, priorfile
-
-  readcol, priorfile, name, priorval, priorwidth, format='a,d,d',/silent
-
-  priors = [-1,-1,-1]
-
-  ;; for each input prior
-  for j=0, n_elements(priorname)-1 do begin
-     
-     ;; determine the subscript
-     tmp = strsplit(priorname[i],'_',/extract)
-     if n_elements(tmp) eq 2 then priornum = long(tmp[1]) $
-     else priornum = 0
-     priorlabel = tmp[0]
-     
-     ;; look for it in the structure
-     for i=0, n_tags(str)-1 do begin
-        found = 0
-        if (n_elements(str.(i))-1) ge priornum then begin
-           for k=0, n_tags(str.(i)[priornum])-1 do begin
-              if tag_exist(str.(i)[priornum],priorlabel,index=ndx) then begin
-                 ;; found it!
-                 str.(i)[priornum].(ndx).prior = priorval[j]
-                 str.(i)[priornum].(ndx).priorwidth = priorwidth[j]
-                 priors=[[priors],[i,priornum,ndx]]
-                 break
-              endif
-           endfor
-        endif
-        ;; didn't find it, warn user
-        if not found then message, 'WARNING: No parameter name ' + $
-                                   priorname[j] + '; not applying prior'
-     endfor
-
-  endfor ;; each input prior
-
-  priors = priors[*,1:*]
-  *(str.priors) = priors
-  
-  return, priors
 
 end

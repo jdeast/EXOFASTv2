@@ -277,6 +277,8 @@ if ss.star.alpha.value lt -0.3d0 or ss.star.alpha.value gt 0.7d0 then begin
    return, !values.d_infinity
 endif
 
+;; was the necessity of this a bug in the semi-major axis calculation that has been fixed now?
+if 0 then begin 
 if ss.amoeba then begin
    ;; need some derived parameters 
    ;; (but others will change after we change logk or p, so
@@ -303,6 +305,7 @@ if ss.amoeba then begin
          endif
       endif
    endfor
+endif
 endif
 
 if step2pars(ss,verbose=ss.debug,logname=ss.logname) eq -1 then begin
@@ -344,6 +347,7 @@ endfor
 ;; Chen & Kipping, 2017 (http://adsabs.harvard.edu/abs/2017ApJ...834...17C)
 ;; this introduces a near perfect correlation between K and p, which
 ;; AMOEBA finds challenging to work with (but is handled naturally by DEMC)
+;; does it? Or was that a bug that has been fixed?
 for j=0, ss.nplanets-1 do begin
    if ss.planet[j].chen then begin
 
