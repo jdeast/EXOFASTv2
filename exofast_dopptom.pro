@@ -90,7 +90,7 @@ for d = 0, n_elements(dopptomptrs) - 1 do begin
        normG = 1d0 / total(G*stepsize)
        if normG ne !values.d_infinity then begin ; so we don't waste time on zeros
           rotprofile = G * normG
-          unnormalized = multifast_gaus_convol(velsini[good], rotprofile, GaussRel)
+          unnormalized = gaus_convol(velsini[good], rotprofile, GaussRel)
           normalization = 1 / total(unnormalized*stepsize)
           DTmodel[good,i] += (beta[i] * normalization * unnormalized)
        endif
@@ -114,7 +114,7 @@ for d = 0, n_elements(dopptomptrs) - 1 do begin
     				normG = 1 / total(G*stepsize)
     				if normG ne !values.d_infinity then begin ; so we don't waste time on zeros
     					rotprofile = G * normG
-    					unnormalized = multifast_gaus_convol(velsini[relevantVels], rotprofile, GaussRel)
+    					unnormalized = gaus_convol(velsini[relevantVels], rotprofile, GaussRel)
     					normalization = 1 / total(unnormalized*stepsize)
     					DTmodel[relevantVels,i] += (beta[i] * normalization * unnormalized)
     				endif
