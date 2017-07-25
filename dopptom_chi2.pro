@@ -71,7 +71,7 @@ for i = 0, nphase-1 do begin
             if validlocs[0] ne -1 then begin
                rotprofile = dblarr(nrelvel)
                rotprofile[validlocs] = c1*sqrt(1d0-c2[validlocs])
-               unnormalized = multifast_gaus_convol(velsini[relevantVels], rotprofile, GaussRel)
+               unnormalized = gaus_convol(velsini[relevantVels], rotprofile, GaussRel)
                normalization = 1d0 / total(unnormalized*stepsize)
                doptom.model[relevantVels,i] += (beta[i] * normalization * unnormalized)
             endif
@@ -96,7 +96,7 @@ if GaussRel lt convolve_limit then begin
    if validlocs[0] ne -1 then G[validlocs] = c1*sqrt(1d0-c2[validlocs])
 
    unnormalized = dblarr(nrelvel,ngood)
-   for i=0, ngood-1 do unnormalized[*,good[i]] = multifast_gaus_convol(velsini[relevantVels],G[*,good[i]],GaussRel)
+   for i=0, ngood-1 do unnormalized[*,good[i]] = gaus_convol(velsini[relevantVels],G[*,good[i]],GaussRel)
    normalization = 1d0/total(unnormalized*(stepsize#replicate(1d0,ntimes)),1)
    doptom.model[relevantvels,good] = ((beta*normalization)##replicate(1d0,nrelvel))*unnormalized
 
