@@ -277,37 +277,6 @@ if ss.star.alpha.value lt -0.3d0 or ss.star.alpha.value gt 0.7d0 then begin
    return, !values.d_infinity
 endif
 
-;; was the necessity of this a bug in the semi-major axis calculation that has been fixed now?
-if 0 then begin 
-if ss.amoeba then begin
-   ;; need some derived parameters 
-   ;; (but others will change after we change logk or p, so
-   ;; we'll have to re-derive them)
-   if step2pars(ss,verbose=ss.debug,logname=ss.logname) eq -1 then begin
-      if ss.debug then printandlog, 'stellar system is bad', ss.logname
-      return, !values.d_infinity
-   endif
-
-   for j=0, ss.nplanets-1 do begin
-      if ss.planet[j].chen then begin
-         if ss.planet[j].rpearth.value le 0d0 then begin
-            if ss.debug then printandlog, 'rpearth is bad', ss.logname
-            return, !values.d_infinity
-         endif         
-         if ~ss.planet[j].fitrv and ss.planet[j].fittran then begin
-            mp = massradius_chenreverse(ss.planet[j].rpearth.value)*ss.constants.gmearth/ss.constants.gmsun ;; m_sun
-            k = ((2d0*!dpi*ss.constants.GMsun)/(ss.planet[j].period.value*ss.constants.day*(ss.star[0].mstar.value + mp)^2))^(1d0/3d0)*$
-                mp*sin(acos(ss.planet[j].cosi.value))/sqrt(1d0 - ss.planet[j].e.value^2)/ss.constants.meter ;; m/s
-            ss.planet[j].logk.value = alog10(k)
-         endif else if ss.planet[j].fitrv and ~ss.planet[j].fittran then begin
-            rp = massradius_chen(ss.planet[j].mpearth.value)*ss.constants.rearth/ss.constants.rsun ;; r_sun
-            ss.planet[j].p.value = rp/ss.star.rstar.value
-         endif
-      endif
-   endfor
-endif
-endif
-
 if step2pars(ss,verbose=ss.debug,logname=ss.logname) eq -1 then begin
    if ss.debug then printandlog, 'stellar system is bad', ss.logname
    return, !values.d_infinity
@@ -327,11 +296,11 @@ for i=0, n_elements(priors[0,*])-1 do begin
       return, !values.d_infinity
    endif
 
-
+   
    chi2 += ((ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value - $
              ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior)/$
             ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth)^2
-
+   
 ;   printandlog, ss.(priors[0,i])[priors[1,i]].(priors[2,i]).label,  ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value, $
 ;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior, $
 ;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth, $
@@ -358,22 +327,20 @@ for j=0, ss.nplanets-1 do begin
          return, !values.d_infinity
       endif
 
-;      if not ss.amoeba then begin
+      rp = massradius_chen(ss.planet[j].mpearth.value,rperr=rperr)
 
-         rp = massradius_chen(ss.planet[j].mpearth.value,rperr=rperr)
+      ;; add a chi2 penalty for deviation from the mass-radius relation
+      ;; if the radius is well-constrained (by transit depth), it
+      ;; becomes an implicit constraint on mass. If the mass is well
+      ;; constrained (by RV), it becomes an implicit constraint on
+      ;; radius
+      chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
+      
+;      printandlog, 'chen penalty = ' + strtrim(((rp - ss.planet[j].rpearth.value)/rperr)^2,2),logname
+;      printandlog, rp, ss.planet[j].rpearth.value,rperr,logname
+;      printandlog, ss.planet[j].mpearth.value,logname
+;      printandlog, ss.planet[j].k.value,logname
 
-         ;; add a chi2 penalty for deviation from the mass-radius relation
-         ;; if the radius is well-constrained (by transit depth), it
-         ;; becomes an implicit constraint on mass. If the mass is well
-         ;; constrained (by RV), it becomes an implicit constraint on
-         ;; radius
-         chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
-
-;         printandlog, 'chen penalty = ' + strtrim(((rp - ss.planet[j].rpearth.value)/rperr)^2,2),logname
-;         printandlog, rp, ss.planet[j].rpearth.value,rperr,logname
-;         printandlog, ss.planet[j].mpearth.value,logname
-;         printandlog, ss.planet[j].k.value,logname
-;      endif
    endif
 endfor
 
