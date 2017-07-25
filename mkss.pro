@@ -189,6 +189,9 @@ if n_elements(tranpath) ne 0 then begin
    endfor
    bands = bands[uniq(bands, sort(bands))]
    nband = n_elements(bands)
+   printandlog, 'The index for each fitted band is', logname
+   for i=0L, nband-1 do printandlog, string(i,bands[i],format='(i2,x,a)'),logname
+   printandlog, '', logname
 endif else begin
    ntran = 0
    nband = 0
@@ -1404,10 +1407,12 @@ if ntran gt 0 then begin
       if match[0] ne -1 then ninterp[match] = 10
    endelse
 
+   printandlog, 'The index for each transit is',logname
    ss.transit[*].transitptrs = ptrarr(ntran,/allocate_heap)
    for i=0, ntran-1 do begin
+      printandlog, string(i,tranfiles[i],format='(i2,x,a)'),logname
       *(ss.transit[i].transitptrs) = readtran(tranfiles[i], detrendpar=detrend)
-      
+
       ;; create an array of detrending variables 
       ;; (one for each extra column in the transit file)
       ndetrend = (*(ss.transit[i].transitptrs)).ndetrend
@@ -1420,6 +1425,7 @@ if ntran gt 0 then begin
       ss.transit[i].bandndx = where(ss.band[*].name eq band)
       ss.transit[i].label = (*(ss.transit[i].transitptrs)).label
    endfor
+   printandlog, '',logname
 endif else begin
    ss.transit[0].f0.fit = 0
    ss.transit[0].f0.derive = 0
@@ -1430,10 +1436,13 @@ endelse
 ;; read in the RV files
 if ntel gt 0 then begin
    ss.telescope[*].rvptrs = ptrarr(ntel,/allocate_heap)
+   printandlog, "The index for each RV data set is",logname
    for i=0, ntel-1 do begin
+      printandlog, string(i,rvfiles[i],format='(i2,x,a)'),logname
       *(ss.telescope[i].rvptrs) = readrv(rvfiles[i])
       ss.telescope[i].label = (*(ss.telescope[i].rvptrs)).label
    endfor
+   printandlog, '', logname
 endif else begin
    ss.telescope[*].rvptrs = ptr_new(/allocate_heap)
 endelse
@@ -1442,7 +1451,6 @@ endelse
 priors = [-1,-1,-1]
 
 ;; for each input prior
-if ~keyword_set(silent) then printandlog, '', logname
 if ~keyword_set(silent) then printandlog, 'These are the priors that will be applied to the fit.', logname
 if ~keyword_set(silent) then printandlog, 'Those with "no prior constraint" only affect the starting values of the fit:', logname
 if ~keyword_set(silent) then printandlog, '', logname
