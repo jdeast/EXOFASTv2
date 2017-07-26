@@ -232,17 +232,17 @@ parameter = create_struct('value',value,$     ;; its numerical value
                           'upperbound',!values.d_infinity,$ ;; values higher than this have zero likelihood
                           'label','',$        ;; what do I call it?
                           'cgs',1d0,$         ;; multiply value by this to convert to cgs units
-                          'link',ptr_new(),$  ;; a pointer to a linked variable (not implemented)
+                          'link',ptr_new(),$  ;; a pointer to a linked parameter (not implemented)
                           'scale',0d0,$       ;; scale for amoeba
                           'best',!values.d_nan,$ ;; best-fit parameter
                           'latex','',$        ;; latex label for the latex table
                           'description','',$  ;; a verbose description
-                          'unit','',$         ;; units ("Degrees" and "Radians" trigger special periodic behavior)
+                          'unit','',$         ;; units ("Radians" triggers special angular behavior)
                           'medvalue','',$     ;; median value
                           'upper','',$        ;; upper error bar (68% confidence)
                           'lower','',$        ;; lower error bar (68% confidence)
                           'fit', 0B,$         ;; If true, step in this parameter during the MCMC
-                          'derive',1B)        ;; If true, derive this parameter and quote it in the final table
+                          'derive',1B)        ;; If true, quote this parameter in the final table
                           
 ;; define each parameter (derived, fitted, and ignored)
 logmstar = parameter
@@ -636,6 +636,20 @@ dr.description = 'Separation at mid transit'
 dr.latex = 'd/R_*'
 dr.label = 'dr'
 
+;sqrtcosicoslambda = parameter
+;sqrtcosicoslambda.description = 'sqrtcosicoslambda'
+;sqrtcosicoslambda.latex = '\sqrt{cosi_*}\cos{\lambda}'
+;sqrtcosicoslambda.label = 'sqrtcosicoslambda'
+;sqrtcosicoslambda.scale = 1d2
+;sqrtcosicoslambda.derive = 0
+;
+;sqrtsinisinlambda = parameter
+;sqrtsinisinlambda.description = 'sqrtsinisinlambda'
+;sqrtsinisinlambda.latex = '\sqrt{sini}\sin{\lambda}'
+;sqrtsinisinlambda.label = 'sqrtsinisinlambda'
+;sqrtsinisinlambda.scale = 1d2
+;sqrtsinisinlambda.derive = 0
+
 lambda = parameter
 lambda.unit = 'Radians'
 lambda.description = 'Projected Spin-orbit alignment'
@@ -961,7 +975,7 @@ tdv = parameter
 tdv.description = 'Transit Duration Variation'
 tdv.latex = 'TDV'
 tdv.label = 'tdv'
-tdv.unit = ' radians'
+tdv.unit = 'Radians'
 tdv.scale = 0.01*!dpi/180d0
 if keyword_set(tdvs) then begin
    tdv.fit = 1
@@ -988,7 +1002,7 @@ jitter.latex = '\sigma_J'
 jitter.label = 'jitter'
 jitter.value = 0d0
 jitter.scale = 1d0
-jitter.fit=0
+jitter.fit = 0
 
 jittervar = parameter
 jittervar.description = 'RV Jitter Variance'
@@ -1012,8 +1026,8 @@ errscale.latex = 'Error scaling'
 errscale.label = 'errscale'
 errscale.value = 1d0
 errscale.scale = 10d0
-errscale.fit=0
-errscale.derive=0
+errscale.fit = 0
+errscale.derive = 0
 
 ;; Create the structures -- The order here dictates the order in the
 ;;                          output table.
@@ -1502,7 +1516,7 @@ while not eof(lun) do begin
 
    found=0
    ;; look for the name in the structure
-   for i=0, n_tags(ss)-1 do begin
+   for i=0L, n_tags(ss)-1 do begin
       if (n_elements(ss.(i))-1) ge priornum then begin
          for k=0, n_tags(ss.(i)[priornum])-1 do begin
             if tag_exist(ss.(i)[priornum],priorlabel,index=ndx) then begin
@@ -1524,7 +1538,6 @@ while not eof(lun) do begin
                      ss.(i)[priornum].(ndx).scale = priorwidth*3d0
                      ss.(i)[priornum].(ndx).priorwidth = priorwidth
                   endif                  
-
                   
                   if ~keyword_set(silent) then begin
                      if priorwidth lt 0 then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname $
@@ -1540,7 +1553,7 @@ while not eof(lun) do begin
                endelse
                
                found=1
-               i = n_tags(ss)-1
+               i = n_tags(ss)-1L
                break
             endif else found=0
          endfor
