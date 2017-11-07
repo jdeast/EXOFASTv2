@@ -53,6 +53,8 @@ flux = transpose(array[1,*])
 err = transpose(array[2,*])
 if ncol gt 3 then begin
    da = array[3:ncol-1,*]
+   ;; zero average the detrending parameters
+   da -=  transpose(total(da,2)/n_elements(da[0,*])##replicate(1d0,n_elements(da[0,*])))
    ndetrend = ncol-3
 endif else begin
    da = 0d0
@@ -60,7 +62,7 @@ endif else begin
 endelse
 
 detrendpars = replicate(detrend,ndetrend > 1)
-detrendpars.label = 'C_' + strtrim(indgen(ndetrend > 1),2)
+detrendpars.label = 'C' + strtrim(indgen(ndetrend > 1),2)
 if ndetrend eq 0 then detrendpars.fit = 0
 
 residuals = flux*0d0
