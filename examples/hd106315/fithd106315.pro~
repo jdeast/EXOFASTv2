@@ -1,0 +1,38 @@
+pro fitep201437844,debug=debug
+
+;exofastv2, nplanets=2, rvpath='test.*.rv', tranpath='n2013????.*.test*.dat', $
+;           priorfile='simpriors.dat',/debug, prefix='KELT-6.',maxsteps=100,$
+;           nthin=1,fittran=[1,0],fitrv=[1,1],circular=[1,0],/ttv
+
+
+;exofastv2, nplanets=2, tranpath='EP201437844.Kepler.dat',$
+;           priorfile='priors.dat',debug=debug, prefix='ep201437844.ee.gaia.short.',maxsteps=1d3,$
+;           nthin=nthin,fittran=[1,1],fitrv=[0,0],circular=[0,0],/longcadence
+
+
+maxsteps=1d4
+nthin=1d2
+;maxsteps=1d5/3
+;nthin=10
+
+
+;; with fewer RV data points
+;exofastv2, nplanets=2, rvpath='_KELT-9b_.TRESv2.rv', tranpath='n201?????.*.dat', $
+;           priorfile='priors.dat',debug=debug, prefix='KELT-9b.two.c.',maxsteps=maxsteps,$
+;           nthin=nthin,fittran=[1,0],fitrv=[1,1],circular=[1,1]
+
+exofastv2, nplanets=2, tranpath='EP201437844.Kepler.dat',$
+           priorfile='priors.dat',debug=debug, prefix='ep201437844.ee.gaia2.',maxsteps=maxsteps,$
+           nthin=nthin,fittran=[1,1],fitrv=[0,0],circular=[0,0],/longcadence
+
+;exofastv2, nplanets=2, rvpath='KELT-6b.*.rv', tranpath='n2013????.r.MORC24.dat', $
+;           priorfile='priors.dat',/debug, prefix='KELT-6.',maxsteps=10000,$
+;           nthin=10,fittran=[1,0],fitrv=[1,1],circular=[0,0]
+
+;exofastv2, nplanets=1, rvpath='KELT-6b.HIRES.rv', tranpath='n2013????.*.*.dat', $
+;           priorfile='priors.dat',/debug, prefix='KELT-6.',maxsteps=100,$
+;           nthin=10,fittran=[1],fitrv=[1],circular=[1],/fitslope
+
+;stop
+
+end
