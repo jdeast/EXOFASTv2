@@ -1,4 +1,4 @@
-All examples run a minimal fit with only 100 steps/chain for
+All examples run a minimal fit with only 100 steps per chain for
 expediency. They will not mix, but should give roughly correct values
 with uncertainties good to a factor of a few on most parameters. These
 examples are intended to serve as a template for your own fits and to
@@ -31,7 +31,7 @@ parallax prior from Gaia to constrain the SED.
 gj9827 - http://adsabs.harvard.edu/abs/2017arXiv170901957R
 Fits a 3-planet system with K2 data + SED
 
-Disables YY stellar evolutionary tracks (NOYY) because it is
+Disables YY stellar evolutionary tracks (/NOYY) because it is
 marginally applicable for low-mass stars, and instead directly imposes
 stellar mass and radius priors obtained elsewhere.
 
@@ -43,4 +43,4 @@ Changes default starting values on period, Tc, rp/rstar, cosi, and K
 for all three planets.
 
 Imposes upper limit on extinction from Schlegel et al and Gaussian
-parallax prior from Gaia to constrain the SED.
+parallax prior from Hipparcos to constrain the SED.
