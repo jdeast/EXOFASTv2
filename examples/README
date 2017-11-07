@@ -1,0 +1,46 @@
+All examples run a minimal fit with only 100 steps/chain for
+expediency. They will not mix, but should give roughly correct values
+with uncertainties good to a factor of a few on most parameters. These
+examples are intended to serve as a template for your own fits and to
+test your installation, and will be updated periodically with
+additional published fits. If they run to completion, EXOFASTv2 is
+likely installed correctly.
+
+*************************************************************************
+*************************************************************************
+* To get publication-quality results, you must increase                 *
+* MAXSTEPS and NTHIN until you no longer see the warning about the      *
+* Gelman-Rubin Statistic indicating some parameters are not well-mixed. *
+*************************************************************************
+*************************************************************************
+
+*************************************************************************
+hd106315 - http://adsabs.harvard.edu/abs/2017AJ....153..256R
+
+Fits a two-planet system with K2 data + SED.
+
+Applies priors on Teff and [Fe/H] to constrain the stellar parameters.
+
+Changes default starting values on period, Tc, rp/rstar for both
+planets.
+
+Imposes upper limit on extinction from Schlegel et al and Gaussian
+parallax prior from Gaia to constrain the SED.
+
+*************************************************************************
+gj9827 - http://adsabs.harvard.edu/abs/2017arXiv170901957R
+Fits a 3-planet system with K2 data + SED
+
+Disables YY stellar evolutionary tracks (NOYY) because it is
+marginally applicable for low-mass stars, and instead directly imposes
+stellar mass and radius priors obtained elsewhere.
+
+Imposes loose uniform priors on limb darkening based on Claret &
+Bloeman, 2011. Disables integrated limb darkening (/NOCLARET) because
+they are not applicable for low-mass stars.
+
+Changes default starting values on period, Tc, rp/rstar, cosi, and K
+for all three planets.
+
+Imposes upper limit on extinction from Schlegel et al and Gaussian
+parallax prior from Gaia to constrain the SED.

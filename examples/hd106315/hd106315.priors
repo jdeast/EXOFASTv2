@@ -1,14 +1,21 @@
+# Stellar parameter priors from spectra
 teff 6251.77 50
 feh -0.271 0.08
-logg 4.094 0.1
+# logg 4.094 0.1 # with a transit, a logg prior is not recommended
+# vsini 14700 200 # not necessary unless fitting DT or RM data
+### planet b ###
 period_0 9.5518908 -1
 tc_0 2457615.206248 -1
 p 0.02 -1
+#### planet c ###
 period_1 21.0585304 -1
 tc_1 2457611.131577 -1
 p_1 0.03 -1
-vsini 14700 200
-av 0.005 0.027
-ma 9.004 0.018
+# These priors allow the SED to constrain the Stellar luminosity (Radius)
+# upper limit on Extinction from Schelgel, Finkbeiner & Davis 
+# http://irsa.ipac.caltech.edu/applications/DUST/
+av 0.005 -1 0 0.0174
+# prior on parallax from Gaia DR1
+# https://gea.esac.esa.int/archive/
 parallax 9.321065784688436 0.3417318136481927
-#distance 107.3 3.9
+
