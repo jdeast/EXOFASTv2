@@ -3,8 +3,15 @@ expediency. They will not mix, but should give roughly correct values
 with uncertainties good to a factor of a few on most parameters. These
 examples are intended to serve as a template for your own fits and to
 test your installation, and will be updated periodically with
-additional published fits. If they run to completion, EXOFASTv2 is
-likely installed correctly.
+additional fits. If they run to completion, EXOFASTv2 is likely
+installed correctly.
+
+Each fit must have a fit*.pro file, which is the high-level code that
+calls exofastv2, a *.prior file to define the starting values and
+priors for the fit, and at least one data file. It is strongly
+recommended you read and understand the *.prior file and fit*.pro file
+before attempting to modify it. More details are in the example files
+and in the exofastv2.pro header.
 
 *************************************************************************
 *************************************************************************
@@ -17,7 +24,9 @@ likely installed correctly.
 *************************************************************************
 hd106315 - http://adsabs.harvard.edu/abs/2017AJ....153..256R
 
-Fits a two-planet system with K2 data + SED.
+Fits a two-planet system with long cadence (/LONGCADENCE) K2 data
+(gj9827.Kepler.dat) + SED (gj9827.flux). Note the name of the transit
+data must encode the observed band (e.g., Kepler).
 
 Applies priors on Teff and [Fe/H] to constrain the stellar parameters.
 
@@ -29,15 +38,19 @@ parallax prior from Gaia to constrain the SED.
 
 *************************************************************************
 gj9827 - http://adsabs.harvard.edu/abs/2017arXiv170901957R
-Fits a 3-planet system with K2 data + SED
+
+Fits a 3-planet system with long cadence (/LONGCADENCE) K2 data
+(hd106315.Kepler.dat) + SED (hd106315.flux). Note the name of the
+transit data must encode the observed band (e.g., Kepler).
 
 Disables YY stellar evolutionary tracks (/NOYY) because it is
 marginally applicable for low-mass stars, and instead directly imposes
 stellar mass and radius priors obtained elsewhere.
 
 Imposes loose uniform priors on limb darkening based on Claret &
-Bloeman, 2011. Disables integrated limb darkening (/NOCLARET) because
-they are not applicable for low-mass stars.
+Bloeman, 2011. Disables integrated limb darkening interpolation
+(/NOCLARET) because they are not applicable for low-mass stars and may
+bias the logg, Teff, and [Fe/H].
 
 Changes default starting values on period, Tc, rp/rstar, cosi, and K
 for all three planets.
