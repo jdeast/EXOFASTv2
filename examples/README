@@ -57,3 +57,18 @@ for all three planets.
 
 Imposes upper limit on extinction from Schlegel et al and Gaussian
 parallax prior from Hipparcos to constrain the SED.
+
+*************************************************************************
+hat3 -- recreates HAT-P-3b example from original EXOFAST paper
+http://adsabs.harvard.edu/abs/2013PASP..125...83E
+
+Fits a HAT-P-3b with transit (n20070428.Sloani.KepCam.dat) and RV
+(hat3.rv) data.
+
+Fixes variance and jittervariance.
+
+Disables YY (/NOYY) and imposes Torres relations (/TORRES). 
+
+Forces a circular orbit (circular=[1])
+
+
