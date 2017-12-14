@@ -164,6 +164,8 @@ if n_elements(tofit) eq 0 then tofit = indgen(n_elements(bestpars))
 if n_elements(mintz) eq 0 then mintz = 1000d0
 if n_elements(maxgr) eq 0 then maxgr = 1.01d0
 if n_elements(loglun) eq 0 then loglun = -1
+lasttz = 0
+lastgr = 10
 
 defsysv, '!STOPNOW', 0B
 nfit = n_elements(tofit)
@@ -189,6 +191,8 @@ nang = n_elements(angular)
 if nang gt 0 then gelmanangular=intarr(nang)
 for i=0, nang-1 do gelmanangular[i] = (where(tofit eq angular[i]))(0)
 
+olddet = dblarr(nchains)
+
 ;; initialize arrays
 if n_elements(resumendx) ne 0 then begin
    sz = size(pars)
@@ -197,72 +201,77 @@ if n_elements(resumendx) ne 0 then begin
    nchains = sz[3]
    newpars = pars[*,resumendx,0]
    oldpars = pars[*,resumendx-1,0]
+
+   for j=0, nchains-1 do begin
+      junk = call_function(chi2func, pars[*,resumendx-1,j], determinant=det, derived=dpar)
+      olddet[j] = det
+   endfor
+
 endif else begin
    resumendx = 1L
    pars = dblarr(nfit,maxsteps,nchains)
    chi2 = dblarr(maxsteps,nchains)
    newpars = bestpars
    oldpars = bestpars
-endelse
-olddet = dblarr(nchains)
 
-;; get the MCMC step scale for each parameter
-if n_elements(scale) eq 0 then $
-   scale = exofast_getmcmcscale(bestpars,chi2func,tofit=tofit,angular=angular,/skipiter,logname=logname)
-if scale[0] eq -1 then begin
-   printandlog, 'No scale found',logname
-   pars = -1
-   return
-endif
-
-printandlog, 'Beginning chain initialization', logname
-;; initialize each chain
-for j=0, nchains-1 do begin
-   ;; repeat until a finite chi^2 
-   ;; i.e., don't start outside a boundary; you'll never get back
-   niter = 0d0
-   repeat begin
-      ;; start 5 steps from best value. If that's not allowed
-      ;; (infinite chi^2), slowly approach 0 steps away from the best value
-      ;; niter should never be larger than ~5000
-      if j eq 0 then factor = 0d0 else factor = 1d0 ;; first chain starts at best fit
-      pars[0:nfit-1,0,j] = bestpars[tofit] + $
-                           5d0/exp(niter/1000d)*scale*call_function(randomfunc,seed,nfit,/normal)*factor
-      newpars[tofit] = pars[0:nfit-1,0,j]
-      ;; find the chi^2
-      chi2[0,j] = call_function(chi2func, newpars, determinant=det, derived=dpar)
-      pars[*,0,j]=newpars[tofit] ;; in case chi2 function changes pars
-      olddet[j] = det
-      niter += 1
-
-   endrep until finite(chi2[0,j])
-   if n_elements(dpar) ne 0 then begin
-      if j eq 0 then begin
-         nderived = n_elements(dpar)
-         derived = dblarr(nderived,maxsteps,nchains)
-      endif
-      derived[*,0,j] = dpar
+   ;; get the MCMC step scale for each parameter
+   if n_elements(scale) eq 0 then $
+      scale = exofast_getmcmcscale(bestpars,chi2func,tofit=tofit,angular=angular,/skipiter,logname=logname)
+   if scale[0] eq -1 then begin
+      printandlog, 'No scale found',logname
+      pars = -1
+      return
    endif
+   
+   printandlog, 'Beginning chain initialization', logname
+   ;; initialize each chain
+   for j=0, nchains-1 do begin
+      ;; repeat until a finite chi^2 
+      ;; i.e., don't start outside a boundary; you'll never get back
+      niter = 0d0
+      repeat begin
+         ;; start 5 steps from best value. If that's not allowed
+         ;; (infinite chi^2), slowly approach 0 steps away from the best value
+         ;; niter should never be larger than ~5000
+         if j eq 0 then factor = 0d0 else factor = 1d0 ;; first chain starts at best fit
+         pars[0:nfit-1,0,j] = bestpars[tofit] + $
+                              5d0/exp(niter/1000d)*scale*call_function(randomfunc,seed,nfit,/normal)*factor
+         newpars[tofit] = pars[0:nfit-1,0,j]
+         ;; find the chi^2
+         chi2[0,j] = call_function(chi2func, newpars, determinant=det, derived=dpar)
+         pars[*,0,j]=newpars[tofit] ;; in case chi2 function changes pars
+         olddet[j] = det
+         niter += 1
+         
+      endrep until finite(chi2[0,j])
+      if n_elements(dpar) ne 0 then begin
+         if j eq 0 then begin
+            nderived = n_elements(dpar)
+            derived = dblarr(nderived,maxsteps,nchains)
+         endif
+         derived[*,0,j] = dpar
+      endif
+      
+   endfor
 
-endfor
-printandlog, 'Done initializing chains', logname
-printandlog, '', logname
+   printandlog, 'Done initializing chains', logname
+   printandlog, '', logname
 
-if n_elements(dpar) ne 0 then oldderived = reform(derived[*,0,*],nderived,nchains)
+   if n_elements(dpar) ne 0 then oldderived = reform(derived[*,0,*],nderived,nchains)
 
-a = 2d0 ;; a > 1
+endelse
 
-nextrecalc = 100L
-npass = 1L 
-nstop = 0L
-naccept = 1d0
-tz0 = 0d0
+
+a = 2d0 ;; for affine invariant step
+nextrecalc = 100L > (resumendx/0.9d0) ;; when to recalculate the convergence stats
+npass = 1L ;; the number of consecutive times it has passed the convergence criteria
+nstop = 0L ;; the step it was stopped at (either converged or interrupted)
+naccept = 1d0 ;; the number of accepted steps
+tz0 = 0d0 ;; 
 tzsteps = 0L
 alreadywarned = 0L
 t0 = systime(/seconds)
 minburnndx = 0L
-
-idealacceptancerate = 0.23d0 ;; automatically scale "a" to get ideal acceptance rate
 
 ;; start MCMC chain
 for i=resumendx,maxsteps-1L do begin
@@ -301,7 +310,6 @@ for i=resumendx,maxsteps-1L do begin
                              (call_function(randomfunc,seed,nfit)-0.5d0)*scale/10d0
             fac = 1d0
          endelse
- 
 
          ;; calculate the chi^2 of the new step
          newchi2 = call_function(chi2func,newpars,determinant=det,derived=dpar)
@@ -359,7 +367,9 @@ for i=resumendx,maxsteps-1L do begin
       converged = exofast_gelmanrubin(pars[0:nfit-1,burnndx:i,goodchains],$
                                       gelmanrubin,tz,angular=gelmanangular,$
                                       mintz=mintz,maxgr=maxgr)
-      
+      lasttz = min(tz)
+      lastgr = max(gelmanrubin)
+
       ;; estimate the number of steps it will take until it is converged
       tz0 = [tz0,min(tz)]
       tzsteps = [tzsteps,i]
@@ -405,26 +415,7 @@ for i=resumendx,maxsteps-1L do begin
    
    ;; print the progress, cumulative acceptance rate, and time remaining
    acceptancerate = strtrim(string(naccept/double(i*nchains*nthin)*100,$
-                                   format='(f6.2)'),2)
-
-   ;; Limited testing suggests this is unnecessary (counter-productive, even)
-;   ;; tune the stretch scale (a) to achieve the optimal acceptance rate (~23%)
-;   ;; if we've taken fewer than 5% of the total steps
-;   if double(i)/maxsteps lt 0.05 and keyword_set(stretch) then begin 
-;      if naccept/(double(i*nchains*nthin)) lt idealacceptancerate*0.75 or $
-;         naccept/(double(i*nchains*nthin)) gt idealacceptancerate*1.25 then begin
-;
-;         printandlog, '', logname
-;         printandlog, 'Acceptance rate (' + acceptancerate + ') not ideal -- scaling stretch scale from ' + strtrim(a,2) + ' to ' + strtrim(a*naccept/(double(i*nchains*nthin))/idealacceptancerate,2),logname
-;         a = a*naccept/(double(i*nchains*nthin))/idealacceptancerate
-;
-;         ;; more continous scaling
-;         if accepted then a += (1d0-idealacceptancerate)/i $
-;         else a -= idealacceptancerate/i
-;
-;         minburnndx = i
-;      endif
-;   endif
+                                   format='(f0.2)'),2)
 
    timeleft = (systime(/seconds)-t0)*(maxsteps/(i+1d)-1d)
    units = ' seconds '
@@ -444,11 +435,19 @@ for i=resumendx,maxsteps-1L do begin
    ;; Windows formatting is messy, only output every 1%
    if !version.os_family ne 'Windows' or $
       i mod round(maxsteps/1000d0) eq 0 then begin
-      timeleft = strtrim(string(timeleft,format='(f255.2)'),2)
-      format='("EXOFAST_DEMC:",f6.2,"% done; acceptance rate = ",a,"%; ' + $ 
-             'time left: ",a,a,$,%"\r")'
-      print, 100.d0*(i+1)/maxsteps,acceptancerate,timeleft,units, format=format
-      if i eq resumendx then printandlog, string(100.d0*(i+1)/maxsteps,acceptancerate,timeleft,units, format=format), logname
+
+      format='("EXOFAST_DEMC: ",f0.2,"% done; acceptance rate = ",a,"%; ' + $ 
+             'tz = ",f0.2," (>", a,"); GelmanRubin = ",f0.4," (<",f0.2,"); time left: ",f0.2,a,$,%"\r")'
+      print, 100.d0*(i+1)/maxsteps,acceptancerate,lasttz,strtrim(fix(mintz),2),lastgr,maxgr,timeleft,units, format=format
+
+      ;; print this message to the log every 5% of the way
+      if i eq resumendx or i mod round(maxsteps/20) eq 0 then $
+         printandlog, string(100.d0*(i+1)/maxsteps,acceptancerate,lasttz,strtrim(fix(mintz),2),lastgr,maxgr,timeleft,units,format=format), logname
+
+;      format='("EXOFAST_DEMC:",f6.2,"% done; acceptance rate = ",a,"%; ' + $ 
+;             'time left: ",f0.2,a,$,%"\r")'
+;      print, 100.d0*(i+1)/maxsteps,acceptancerate,timeleft,units, format=format
+;      if i eq resumendx then printandlog, string(100.d0*(i+1)/maxsteps,acceptancerate,timeleft,units, format=format), logname
    endif
 
 endfor
