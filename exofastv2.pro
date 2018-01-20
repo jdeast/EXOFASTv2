@@ -439,7 +439,7 @@ pro exofastv2, priorfile=priorfile, $
                bestonly=bestonly, plotonly=plotonly,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                maxgr=maxgr, mintz=mintz, $
-               noyy=noyy, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+               noyy=noyy, torres=torres, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                fitrv=fitrv, fittran=fittran,fitdt=fitdt,ttvs=ttvs, earth=earth,$
                i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
 
@@ -468,7 +468,7 @@ ss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, np
           circular=circular,fitslope=fitslope, fitquad=fitquad,ttvs=ttvs, $
           rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
           fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-          chen=chen, noyy=noyy, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing, logname=logname)
+          chen=chen, noyy=noyy,torres=torres, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing, logname=logname)
 
 npars = 0
 for i=0, n_tags(ss)-1 do begin
@@ -615,7 +615,7 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile
               circular=circular,fitslope=fitslope, fitquad=fitquad, ttvs=ttvs,$
               rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-              chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,noclaret=noclaret,$
+              chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,torres=torres,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing, logname=logname)
 mcmcss.nchains = nchains
 mcmcss.burnndx = burnndx

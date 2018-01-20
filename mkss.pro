@@ -150,7 +150,7 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, $
-               longcadence=longcadence, earth=earth, silent=silent, noyy=noyy, $
+               longcadence=longcadence, earth=earth, silent=silent, noyy=noyy, torres=torres, $
                noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
                logname=logname
 
