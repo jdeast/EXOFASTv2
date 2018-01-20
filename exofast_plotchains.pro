@@ -141,4 +141,10 @@ for i=0, n_tags(ss)-1 do begin
    endfor
 endfor
 
+;; clean up the postscript device
+device, /close
+!p.font=-1
+!p.multi=0
+set_plot, mydevice
+
 end
