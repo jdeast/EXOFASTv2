@@ -84,10 +84,10 @@ for i=0, ss.nplanets-1 do begin
    ;; it's possible tp,ts,ta,td could be split down the middle 
    ;; then the median would be meaningless -- correct that
    medper = median(ss.planet[i].period.value)
-   ss.planet[i].tp.value = recenter(ss.planet[i].tp.value, medper)
-   ss.planet[i].ts.value = recenter(ss.planet[i].ts.value, medper)
-   ss.planet[i].ta.value = recenter(ss.planet[i].ta.value, medper)
-   ss.planet[i].td.value = recenter(ss.planet[i].td.value, medper)
+   ss.planet[i].tp.value = exofast_recenter(ss.planet[i].tp.value, medper)
+   ss.planet[i].ts.value = exofast_recenter(ss.planet[i].ts.value, medper)
+   ss.planet[i].ta.value = exofast_recenter(ss.planet[i].ta.value, medper)
+   ss.planet[i].td.value = exofast_recenter(ss.planet[i].td.value, medper)
 
    ss.planet[i].teq.value = ss.star.teff.value*sqrt(1d0/(2d0*ss.planet[i].ar.value)) ;(f*(1d0-Ab))^(0.25d0)
    ss.planet[i].dr.value = ss.planet[i].ar.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value) ;; d/rstar = star-planet separation at transit

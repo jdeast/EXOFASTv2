@@ -1,6 +1,6 @@
 ;+
 ; NAME:
-;   RECENTER
+;   EXOFAST_RECENTER
 ;
 ; PURPOSE: 
 ;   Recenters a distribution of periodic parameters to the domain
@@ -19,7 +19,7 @@
 ;  2012/06 -- Jason Eastman (LCOGT)
 ;-
 
-function recenter, par, period
+function exofast_recenter, par, period
 
 hist = histogram(par,nbins=100,locations=x)
 max = max(hist,modendx)
