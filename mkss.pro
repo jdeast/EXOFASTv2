@@ -213,10 +213,26 @@ if n_elements(nvalues) ne 0 then value = dblarr(nvalues) $
 else value = 0d0
 nsteps = n_elements(value)
 
-if n_elements(fittran) ne nplanets then fittran = bytarr(nplanets)+1B
-if n_elements(fitrv) ne nplanets then fitrv = bytarr(nplanets)+1B
+if n_elements(fittran) eq 0 then begin
+   if ntran eq 0 then fittran = bytarr(nplanets) $
+   else fittran = bytarr(nplanets)+1B
+endif
+if n_elements(fitrv) eq 0 then begin
+   if ntel eq 0 then fitrv = bytarr(nplanets) $
+   else fitrv = bytarr(nplanets)+1B
+endif
 if n_elements(chen) ne nplanets then chen = fittran xor fitrv
 if n_elements(i180) ne nplanets then i180 = bytarr(nplanets)
+
+if n_elements(fittran) ne nplanets then begin
+   printandlog, "FITTRAN must have NPLANETS elements", logname
+   stop
+endif
+
+if n_elements(fitrv) ne nplanets then begin
+   printandlog, "FITRV must have NPLANETS elements", logname
+   stop
+endif
 
 
 if (where((~fitrv) and (~fittran)))[0] ne -1 then begin
@@ -1432,8 +1448,8 @@ if ntran gt 0 then begin
       ndetrend = (*(ss.transit[i].transitptrs)).ndetrend
       if ndetrend ge 1 then *(ss.transit[i].detrend) = replicate(detrend,ndetrend)
 
-      ss.transit.exptime = exptime[i]
-      ss.transit.ninterp = ninterp[i]
+      ss.transit[i].exptime = exptime[i]
+      ss.transit[i].ninterp = ninterp[i]
       
       band = (*(ss.transit[i].transitptrs)).band
       ss.transit[i].bandndx = where(ss.band[*].name eq band)
