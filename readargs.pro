@@ -12,7 +12,8 @@ pro readargs, argfile, priorfile=priorfile, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               maxgr=maxgr, mintz=mintz, $
               noyy=noyy, torres=torres, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-              fitrv=fitrv, fittran=fittran,fitdt=fitdt,ttvs=ttvs, earth=earth,$
+              fitrv=fitrv, fittran=fittran,fitdt=fitdt,$
+              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, earth=earth,$
               i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
 
 line = ''
@@ -22,7 +23,11 @@ while not eof(lun) do begin
    line = (strsplit(line,'#',/extract,/preserve_null))[0]
    if line ne '' then begin
       entries = strsplit(line,'=',/extract)
-      if n_elements(entries) gt 0 then begin
+      if n_elements(entries) eq 2 then begin
+         
+         ;; replace '$EXOFAST_PATH' with its value
+         entries[1] = strjoin(strsplit(entries[1],'$EXOFAST_PATH',/regex,/extract,/preserve_null),getenv('EXOFAST_PATH'))
+
          if strupcase(strtrim(entries[0],2)) eq 'PRIORFILE' then begin
             priorfile = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'RVPATH' then begin
@@ -93,6 +98,10 @@ while not eof(lun) do begin
             fitdt = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'TTVS' then begin
             ttvs = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'TIVS' then begin
+            tivs = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'TDELTAVS' then begin
+            tdeltavs = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'EARTH' then begin
             earth = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'I180' then begin

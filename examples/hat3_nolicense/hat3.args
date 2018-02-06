@@ -1,7 +1,7 @@
-priorfile=/h/onion0/scratch/EXOFASTv2/examples/hat3_nolicense/hat3.priors
-prefix=/h/onion0/scratch/EXOFASTv2/examples/hat3_nolicense/HAT-P-3b.
-tranpath=/h/onion0/scratch/EXOFASTv2/examples/hat3_nolicense/n20070428.Sloani.KepCam.dat
-rvpath=/h/onion0/scratch/EXOFASTv2/examples/hat3_nolicense/hat3.rv
+priorfile=$EXOFAST_PATH/examples/hat3_nolicense/hat3.priors
+prefix=$EXOFAST_PATH/examples/hat3_nolicense/HAT-P-3b.
+tranpath=$EXOFAST_PATH/examples/hat3_nolicense/n20070428.Sloani.KepCam.dat
+rvpath=$EXOFAST_PATH/examples/hat3_nolicense/hat3.rv
 nplanets=1
 fittran=[1]
 fitrv=[1]
