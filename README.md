@@ -38,8 +38,13 @@ git pull
 
 #### TIPS, WARNINGS and CAVEATS #####
 
+# other examples are available for various use cases, which are
+# intended to be templates for your own fits, including running
+# EXOFASTv2 without an IDL license. 
+# See $EXOFAST_PATH/examples/README for more information.
+
 # This is a BETA version. EXPECT BUGS!!! And please report any
-#  unexpected behavior.
+# unexpected behavior.
 
 # It is not fully documented. Please don't hesitate to email me with
 # questions. See the $EXOFAST_PATH/examples directory for templates to
