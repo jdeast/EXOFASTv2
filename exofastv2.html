@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Mon Jan 29 11:50:29 2018.<P>
+<STRONG>Last modified: </STRONG>Tue Feb  6 10:20:28 2018.<P>
  
 <HR>
  
@@ -728,8 +728,14 @@ with a diff
                times at each step. Otherwise, a linear ephemeris is
                assumed.
                ***NOT YET IMPLEMENTED***
-   TDVS      - If set, a new transit depth is fit for each transit
+   TDELTAVS  - If set, a new transit depth is fit for each
+               transit. Otherwise, all transits of the same planet
+               are modeled with the same same depth.
                ***NOT YET IMPLEMENTED***              
+   TIVS      - If set, a new inclination is fit for each
+               transit. Otherwise, all transits of the same planet
+               are modeled with the same same depth.
+               ***NOT YET IMPLEMENTED***    
    BESTONLY  - If set, only the best fit (using AMOEBA) will be
                performed.
                ***NOT YET IMPLEMENTED***
