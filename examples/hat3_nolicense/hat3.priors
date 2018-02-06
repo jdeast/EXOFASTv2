@@ -1,0 +1,15 @@
+period_0 2.899703 0.000054
+tc 2454218.76016
+f0 1.00633
+teff 5185 80
+feh 0.27 0.08
+logg 4.61 0.05
+k_0 89.0
+cosi 0.0565
+p 0.1117
+mstar 0.904
+rstar 0.818
+#distance 201
+gamma_0 -14.8
+jittervar 28 0
+variance 0.00000537 0
