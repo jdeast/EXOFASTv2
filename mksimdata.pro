@@ -48,12 +48,12 @@ trantimes = tc0 + ((dindgen(ntransit)/(ntransit-1)) - 0.5d0)*0.45
 
 modelflux = exofast_tran(trantimes, inc, ar, tp0, period0, e0, omega0, p, u1, u2, f0, rstar=rstar/au, tc=tc) 
 
-forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test.dat'
-forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test2.dat'
-forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test3.dat'
-forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test4.dat'
-forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test5.dat'
-forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test6.dat'
+exofast_forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test.dat'
+exofast_forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test2.dat'
+exofast_forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test3.dat'
+exofast_forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test4.dat'
+exofast_forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test5.dat'
+exofast_forprint, trantimes, modelflux+randomn(seed,ntransit)*tranerr, tranerr, format='(3(f0.6,x))',/nocomment,textout='n20130101.z.test6.dat'
 
 plot, trantimes-tc0, modelflux, psym=1,/ys,/xs
 
@@ -65,8 +65,8 @@ rvtimes = tc1 + 2*period1*((dindgen(nrv)/(nrv-1)) - 0.5d0)
 modelrv = dblarr(nrv)
 modelrv += exofast_rv(rvtimes,tp0,period0,0d0,K0,e0,omega0)
 modelrv += exofast_rv(rvtimes,tp1,period1,0d0,K1,e1,omega1)
-forprint, rvtimes, modelrv+randomn(seed,nrv)*rverr+gamma0, rverr, format='(3(f0.6,x))',/nocomment,textout='test.SIM.rv'
-forprint, rvtimes, modelrv+randomn(seed,nrv)*rverr+gamma1, rverr, format='(3(f0.6,x))',/nocomment,textout='test.SIM2.rv'
+exofast_forprint, rvtimes, modelrv+randomn(seed,nrv)*rverr+gamma0, rverr, format='(3(f0.6,x))',/nocomment,textout='test.SIM.rv'
+exofast_forprint, rvtimes, modelrv+randomn(seed,nrv)*rverr+gamma1, rverr, format='(3(f0.6,x))',/nocomment,textout='test.SIM2.rv'
 
 plot, rvtimes,modelrv, psym=1
 
