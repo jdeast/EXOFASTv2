@@ -365,8 +365,14 @@
 ;               times at each step. Otherwise, a linear ephemeris is
 ;               assumed.
 ;               ***NOT YET IMPLEMENTED***
-;   TDVS      - If set, a new transit depth is fit for each transit
+;   TDELTAVS  - If set, a new transit depth is fit for each
+;               transit. Otherwise, all transits of the same planet
+;               are modeled with the same same depth.
 ;               ***NOT YET IMPLEMENTED***              
+;   TIVS      - If set, a new inclination is fit for each
+;               transit. Otherwise, all transits of the same planet
+;               are modeled with the same same depth.
+;               ***NOT YET IMPLEMENTED***    
 ;   BESTONLY  - If set, only the best fit (using AMOEBA) will be
 ;               performed.
 ;               ***NOT YET IMPLEMENTED***
@@ -440,8 +446,34 @@ pro exofastv2, priorfile=priorfile, $
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, torres=torres, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-               fitrv=fitrv, fittran=fittran,fitdt=fitdt,ttvs=ttvs, earth=earth,$
+               fitrv=fitrv, fittran=fittran,fitdt=fitdt,$
+               ttvs=ttvs,tivs=tivs,tdeltavs=tdeltavs,$
+               earth=earth,$
                i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
+
+;; this is required for virtual machines
+par = command_line_args(count=numargs)
+if numargs eq 1 then begin
+   argfile = par[0]
+   if file_exist(argfile) then begin
+      readargs, argfile, priorfile=priorfile, $
+                rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile,$
+                prefix=prefix,$
+                circular=circular,fitslope=fitslope, secondary=secondary, $
+                rossiter=rossiter,chen=chen,$
+                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
+                nthin=nthin, maxsteps=maxsteps, $
+                debug=debug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
+                bestonly=bestonly, plotonly=plotonly,$
+                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
+                maxgr=maxgr, mintz=mintz, $
+                noyy=noyy, torres=torres, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+                fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
+                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
+                earth=earth, i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
+   endif
+endif
+
 
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -451,7 +483,7 @@ chi2func = 'exofast_chi2v2'
 
 ;; compile all routines now to keep output legible 
 ;; resolve_all doesn't interpret execute; it's also broken prior to IDL v6.4(?)
-if double(!version.release) ge 6.4d0 then $
+if double(!version.release) ge 6.4d0 and ~lmgr(/vm) then $
    resolve_all, resolve_function=[chi2func,'exofast_random'],/cont,/quiet
 
 ;; default prefix for all output files (filename without extension)
@@ -465,7 +497,8 @@ file_delete, logname, /allow_nonexistent
 ;; create the master structure
 ss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
           debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
-          circular=circular,fitslope=fitslope, fitquad=fitquad,ttvs=ttvs, $
+          circular=circular,fitslope=fitslope, fitquad=fitquad,$
+          ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
           rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
           fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
           chen=chen, noyy=noyy,torres=torres, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing, logname=logname)
@@ -496,10 +529,9 @@ memrequired = ss.nchains*maxsteps*npars*8d0/(1024d0^3)
 printandlog, 'Fit will require ' + strtrim(memrequired,2) + ' GB of RAM for the final structure', logname
 if memrequired gt 2d0 then begin
    printandlog, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue', logname
-   stop
+   if ~lmgr(/vm) then stop
 endif
 printandlog, '', logname
-
 
 pars = str2pars(ss,scale=scale,name=name)
 
@@ -536,7 +568,7 @@ printandlog, 'Par #      Par Name    Par Value       Amoeba Scale', logname
 for i=0, n_elements(name)-1 do printandlog, string(i, name[i], pars[i], scale[i], format='(i3,x,a15,x,f14.6,x,f14.6)'), logname
 printandlog, '', logname
 
-if ss.debug then begin
+if ss.debug and ~lmgr(/vm) then begin
    printandlog, 'program halted to give you time to inspect the priors. Type ".con" to continue', logname
    stop
 end
@@ -612,7 +644,8 @@ bestchi2 = call_function(chi2func,best,psname=modelfile, $
 ;mcmcss = mcmc2str(pars, ss)
 mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
               debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
-              circular=circular,fitslope=fitslope, fitquad=fitquad, ttvs=ttvs,$
+              circular=circular,fitslope=fitslope, fitquad=fitquad, $
+              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
               rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
               chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,torres=torres,noclaret=noclaret,$
