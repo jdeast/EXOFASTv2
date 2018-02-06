@@ -223,7 +223,13 @@ multifast_dt_plotimage, dtscale, XRANGE=dtrange, YRANGE = [-1,1], $
                         YTICKS=1, YTickformat='(A1)', xticklen=0.2, xtitle='Fractional Variation', $
                         charsize=charsize, /noerase, position = [x1, 0.08, x2, 0.10]
    
-if keyword_set(psname) then device, /close
+if keyword_set(psname) then begin
+   !p.font=-1
+   !p.multi=0
+   device, /close
+   device, encapsulated=0
+endif
+
 set_plot, mydevice
 
 return, chi2
