@@ -206,7 +206,13 @@ if keyword_set(debug) or keyword_set(psname) then begin
    plotsym,0,/fill
    oplot, [teff], [loggplot], psym=8,symsize=0.5 ;; the model point
 
-   if keyword_set(psname) then device, /close
+   if keyword_set(psname) then begin
+      !p.font=-1
+      !p.multi=0
+      device, /close
+      device, encapsulated=0
+   endif
+
    set_plot, mydevice
 
 endif
