@@ -145,7 +145,8 @@
 ; parameter.prior -- the parameter's prior
 ;-
 function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
-               fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
+               fitslope=fitslope, fitquad=fitquad, $
+               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
                rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
@@ -987,15 +988,15 @@ if keyword_set(ttvs) then begin
    ttv.fit = 1
 endif else ttv.derive=0
 
-tdv = parameter
-tdv.description = 'Transit Duration Variation'
-tdv.latex = 'TDV'
-tdv.label = 'tdv'
-tdv.unit = 'Radians'
-tdv.scale = 0.01*!dpi/180d0
-if keyword_set(tdvs) then begin
-   tdv.fit = 1
-endif else tdv.derive=0
+tiv = parameter
+tiv.description = 'Transit Inclination Variation'
+tiv.latex = 'TIV'
+tiv.label = 'tiv'
+tiv.unit = 'Radians'
+tiv.scale = 0.01*!dpi/180d0
+if keyword_set(tivs) then begin
+   tiv.fit = 1
+endif else tiv.derive=0
 
 tdeltav = parameter
 tdeltav.description = 'Transit Depth Variation'
@@ -1201,7 +1202,7 @@ endif
 ;; for each transit
 transit = create_struct(variance.label,variance,$ ;; Red noise
                         ttv.label,ttv,$           ;; Transit Timing Variation
-                        tdv.label,tdv,$ ;; Transit duration variation (inclination)
+                        tiv.label,tiv,$ ;; Transit inclination variation (inclination)
                         tdeltav.label,tdeltav,$ ;; Transit depth variation
                         f0.label,f0,$ ;; normalization
                         'transitptrs',ptr_new(),$ ;; Data
@@ -1630,6 +1631,19 @@ ss.nchains = n_elements((*ss.tofit)[0,*])*2L
 
 ;; determine the epoch for each observation
 for i=0, ntran-1 do begin
+   if i eq 0 then begin
+
+      ;; variations are defined relative to the first transit
+      if keyword_set(tivs) then begin
+         ss.transit[i].tiv.fit = 0
+         ss.transit[i].tiv.derive = 0
+      endif
+      if keyword_set(tdeltavs) then begin
+         ss.transit[i].tdeltav.fit = 0
+         ss.transit[i].tdeltav.derive = 0
+      endif
+   endif
+
    for j=0, nplanets-1 do begin
 ;      ss.transit[i].epoch = min(round((mean((*(ss.transit[i].transitptrs)).bjd) - ss.planet[ss.transit[i].pndx].tc.value)/ss.planet[ss.transit[i].pndx].period.value))
 
