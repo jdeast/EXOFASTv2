@@ -14,7 +14,7 @@ if keyword_set(psname) then begin
    black = 0
    blue = 63
    green = 144
-   symsize=0.1
+   symsize=0.5
 endif else begin
 ;   set_plot, 'X'
    red = '0000ff'x
