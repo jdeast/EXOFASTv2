@@ -1,1 +1,7 @@
 *~
+*.log
+*.ps
+*.eps
+*.tex
+examples/*/*.idl
+examples/*/*.txt
