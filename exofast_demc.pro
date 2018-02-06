@@ -235,7 +235,7 @@ endif else begin
          ;; niter should never be larger than ~5000
          if j eq 0 then factor = 0d0 else factor = 1d0 ;; first chain starts at best fit
          pars[0:nfit-1,0,j] = bestpars[tofit] + $
-                              5d0/exp(niter/1000d)*scale*call_function(randomfunc,seed,nfit,/normal)*factor
+                              factor/exp(niter/1000d)*scale*call_function(randomfunc,seed,nfit,/normal)*sqrt(500d0/nfit)
          newpars[tofit] = pars[0:nfit-1,0,j]
          ;; find the chi^2
          chi2[0,j] = call_function(chi2func, newpars, determinant=det, derived=dpar)
@@ -282,13 +282,15 @@ for i=resumendx,maxsteps-1L do begin
             
       ;; automatically thin the chain (saves memory)
       for k=0L, nthin-1L do begin
-         
+
+         ;; a random chain
+         r1=floor(call_function(randomfunc,seed)*(nchains-1))
+
          if keyword_set(stretch) then begin
             ;; affine invariant "stretch move" step 
             ;; see Goodman & Weare, 2010 (G10), eq 7 
             ;; http://msp.org/camcos/2010/5-1/camcos-v5-n1-p04-p.pdf
-            repeat r1=floor(call_function(randomfunc,seed)*(nchains)) $
-            until r1 ne j ;; a random chain
+            if r1 eq j then r1 = nchains-1 ;; can't use self, reassign to last
 
             ;; a random number between 1/a and a, weighted toward lower
             ;; values to satisfy the symmetry condition (G10, eq 8)
@@ -301,13 +303,16 @@ for i=resumendx,maxsteps-1L do begin
             fac = z^(nfit-1) ;; GW10, last equation, pg 70
          endif else begin
             ;; differential evolution mcmc step (Ter Braak, 2006)
-            repeat r1=floor(call_function(randomfunc,seed)*(nchains)) $
-            until r1 ne j ;; a random chain
-            repeat r2=floor(call_function(randomfunc,seed)*(nchains)) $
-            until r2 ne j and r2 ne r1 ;; another random chain
+
+            ;; pick a second random chain (that isn't self or the first)
+            r2=floor(call_function(randomfunc,seed)*(nchains-2))
+            if r2 eq r1 then r2 = nchains-1L
+            if r2 eq j then r2 = nchains-2L ;; not elif -- j could be nchains-1
+            if r1 eq j then r1 = nchains-1L
+
             newpars[tofit] = oldpars[tofit] + $ 
-                             gamma*(pars[*,i-1,r1]-pars[*,i-1,r2]) + $
-                             (call_function(randomfunc,seed,nfit)-0.5d0)*scale/10d0
+                             gamma*(pars[*,i-1,r1]-pars[*,i-1,r2] + $
+                             (call_function(randomfunc,seed,nfit)-0.5d0)*scale/10d0)
             fac = 1d0
          endelse
 
@@ -333,6 +338,7 @@ for i=resumendx,maxsteps-1L do begin
       
    endfor
 
+   ;; this allows the user to break at any point
    if !STOPNOW NE !NULL AND !STOPNOW EQ 1 then break
 
    ;; Test for convergence as outlined in Ford 2006
@@ -441,7 +447,7 @@ for i=resumendx,maxsteps-1L do begin
       print, 100.d0*(i+1)/maxsteps,acceptancerate,lasttz,strtrim(fix(mintz),2),lastgr,maxgr,timeleft,units, format=format
 
       ;; print this message to the log every 5% of the way
-      if i eq resumendx or i mod round(maxsteps/20) eq 0 then $
+      if i eq resumendx or (i+1) mod round(maxsteps/20) eq 0 then $
          printandlog, string(100.d0*(i+1)/maxsteps,acceptancerate,lasttz,strtrim(fix(mintz),2),lastgr,maxgr,timeleft,units,format=format), logname
 
 ;      format='("EXOFAST_DEMC:",f6.2,"% done; acceptance rate = ",a,"%; ' + $ 
@@ -553,7 +559,7 @@ endif
 
 runtime = strtrim(string(runtime,format='(f100.2)'),2)
 
-format = '("EXOFAST_DEMC: done in ",a,a,"; took ",a,"% of trial steps")'
+format = '("EXOFAST_DEMC: done in ",a,a,"; accepted ",a,"% of trial steps")'
 printandlog, string(runtime, units, acceptancerate, format=format), logname
 
 end
