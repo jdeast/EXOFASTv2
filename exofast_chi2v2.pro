@@ -407,9 +407,9 @@ for j=0, ss.ntel-1 do begin
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
    
    if keyword_set(psname) then $
-      forprint, rv.bjd, rv.rv - modelrv, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=psname + '.residuals.' + strtrim(j,2) + '.rv.txt', /nocomment,/silent
+      exofast_forprint, rv.bjd, rv.rv - modelrv, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=psname + '.residuals.' + strtrim(j,2) + '.rv.txt', /nocomment,/silent
    if keyword_set(psname) then $
-      forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6)', textout=psname + '.model.' + strtrim(j,2) + '.rv.txt', /nocomment,/silent
+      exofast_forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6)', textout=psname + '.model.' + strtrim(j,2) + '.rv.txt', /nocomment,/silent
 
 ;   printandlog, ss.telescope[j].jittervar.value,ss.telescope[j].jitter.value, sqrt(ss.telescope[j].jittervar.value),ss.logname
    rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jittervar.value,rv.err,/chi2)
@@ -498,13 +498,13 @@ for j=0, ss.ntran-1 do begin
 ;         printandlog, ss.planet[0].p.value, ss.logname
 
          modelflux += (exofast_tran(transitbjd, $
-                                    ss.planet[i].i.value, $
+                                    ss.planet[i].i.value + ss.transit[j].tiv.value, $
                                     ss.planet[i].ar.value, $
                                     ss.planet[i].tp.value + ss.transit[j].ttv.value, $
                                     ss.planet[i].period.value, $
                                     ss.planet[i].e.value,$
                                     ss.planet[i].omega.value,$
-                                    ss.planet[i].p.value,$
+                                    ss.planet[i].p.value + ss.transit[j].tdeltav.value,$
                                     band.u1.value, $
                                     band.u2.value, $
                                     1d0, $
@@ -540,9 +540,9 @@ for j=0, ss.ntran-1 do begin
    (*ss.transit[j].transitptrs).model = modelflux
 
    if keyword_set(psname) then $
-      forprint, transitbjd, transit.flux - modelflux, transit.err, format='(f0.8,x,f0.6,x,f0.6)', textout=psname + '.residuals.' + strtrim(j,2) + '.flux.txt', /nocomment,/silent
+      exofast_forprint, transit.bjd, transit.flux - modelflux, transit.err, format='(f0.8,x,f0.6,x,f0.6)', textout=psname + '.residuals.' + strtrim(j,2) + '.flux.txt', /nocomment,/silent
    if keyword_set(psname) then $
-      forprint, transitbjd, modelflux, format='(f0.8,x,f0.6)', textout=psname + '.model.' + strtrim(j,2) + '.flux.txt', /nocomment,/silent
+      exofast_forprint, transit.bjd, modelflux, format='(f0.8,x,f0.6)', textout=psname + '.model.' + strtrim(j,2) + '.flux.txt', /nocomment,/silent
 
    if ~finite(transitchi2) then stop
 
@@ -657,7 +657,10 @@ if ss.ttvs then begin
          oplot, [-9d9,9d9],[0d0,0d0],linestyle=2
 
          if keyword_set(psname) then begin
+            !p.font=-1
+            !p.multi=0
             device, /close
+            device, encapsulated=0
             set_plot, mydevice
          endif
 
