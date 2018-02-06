@@ -170,15 +170,15 @@ print, ''
 
 ;; print the epochs, times, errors, etc.
 print, 'Epoch      T_C      ERR    O-C (O-C)/err'
-forprint, epoch, time, err*60, omc*60d0, omc/err,/t, $
+exofast_forprint, epoch, time, err*60, omc*60d0, omc/err,/t, $
   format='(i4,x,f14.6,x,i4,x,f7.2,x,f5.2)'
 
 ;; close the postscript device
 if keyword_set(ps) or n_elements(epsname) ne 0 then begin
-    device, /close
-    set_plot, mydevice
-    !p.font=1
-;   spawn, 'gv ' + epsname + ' &'
+   !p.font=-1
+   !p.multi=0
+   device, /close
+   device, encapsulated=0
 endif
 
 end
