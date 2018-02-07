@@ -1,0 +1,22 @@
+#!/bin/bash
+
+function do_one {
+
+dir=feh\_$1\_afe_p0.0_vvcrit0.0
+echo $dir
+cd $dir
+mkdir tracks
+mv *.track tracks/
+mkdir eeps
+mkdir isochrones
+cd /n/conroyfs1/dotter/MIST_v1.0_tracks
+
+}
+
+
+for feh in m4.00 m3.50 m3.00 m2.50 m2.00 m1.75 m1.50 m1.25 m1.00 m0.75 m0.50 m0.25 p0.00 p0.25 p0.50
+do 
+        do_one $feh     
+done
+
+
