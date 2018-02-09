@@ -3,7 +3,10 @@
 # If you use this in a publication, please cite:
 # http://adsabs.harvard.edu/abs/2017ascl.soft10003E
 
-### INSTALLATION INSTRUCTIONS ###
+### INSTALLATION INSTRUCTIONS ### 
+
+# Note the IDL Astronomy library is required. If you don't already
+# have it, install it from here: https://github.com/wlandsman/IDLAstro
 
 # This package is best installed with git
 cd $HOME/idl
@@ -37,6 +40,13 @@ cd $EXOFAST_PATH
 git pull
 
 #### TIPS, WARNINGS and CAVEATS #####
+
+# EXOFASTv2 has been built and tested on linux with IDL 8.5, though I
+# am not aware of any incompatibility for other versions or
+# platforms. The original EXOFAST has been used successfully with v6.4
+# and with Mac and Windows. It is my hope to support as many versions
+# as reasonable, so if you have version related bugs, please let me
+# know.
 
 # other examples are available for various use cases, which are
 # intended to be templates for your own fits, including running
