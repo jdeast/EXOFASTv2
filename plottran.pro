@@ -79,7 +79,7 @@ xrange=[xmin,xmax]
 
 
 noise = 0.0001d0
-noise = stdev(trandata.residuals)
+noise = stddev(trandata.residuals)
 ymin = 1d0 - depth - 3*noise
 if ss.ntran eq 1 then ymax = 1+3*noise $
 else ymax = 1d0 + 3*noise + spacing*(ss.ntran-1)

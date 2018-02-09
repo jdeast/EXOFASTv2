@@ -91,7 +91,7 @@ endif
 
 ;; Equation 21: W(z) in Ford 2006
 variances = dblarr(npars,nchains)
-for i=0,npars-1 do for k=0, nchains-1 do variances[i,k]=stdev(pars[i,*,k])^2
+for i=0,npars-1 do for k=0, nchains-1 do variances[i,k]=stddev(pars[i,*,k])^2
 meanofvariances = total(variances,2)/nchains
 
 ;; Equation 23: B(z) in Ford 2006
