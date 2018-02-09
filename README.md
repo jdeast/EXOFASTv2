@@ -46,7 +46,8 @@ git pull
 # platforms. The original EXOFAST has been used successfully with v6.4
 # and with Mac and Windows. It is my hope to support as many versions
 # as reasonable, so if you have version related bugs, please let me
-# know.
+# know. This code relies heavily on pointers and structures, so
+# versions older than IDL 5.0 will never be supported.
 
 # other examples are available for various use cases, which are
 # intended to be templates for your own fits, including running
