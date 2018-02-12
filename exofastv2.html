@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Tue Feb  6 17:11:26 2018.<P>
+<STRONG>Last modified: </STRONG>Mon Feb 12 15:45:46 2018.<P>
  
 <HR>
  
@@ -47,7 +47,11 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_ROSSITER">EXOFAST_ROSSITER</A>
 <LI><A HREF="#EXOFAST_RV">EXOFAST_RV</A>
 <LI><A HREF="#EXOFAST_TWILIGHT">EXOFAST_TWILIGHT</A>
+<LI><A HREF="#JSON_PARSE">JSON_PARSE</A>
 <LI><A HREF="#KTOM2">KTOM2</A>
+<LI><A HREF="#LEGEND">LEGEND</A>
+<LI><A HREF="#MASSRADIUS_MIST">MASSRADIUS_MIST</A>
+<LI><A HREF="#MASSRADIUS_TORRES">MASSRADIUS_TORRES</A>
 <LI><A HREF="#OMC">OMC</A>
 <LI><A HREF="#PARS2STR">PARS2STR</A>
 <LI><A HREF="#PLOTIMAGE">PLOTIMAGE</A>
@@ -2287,7 +2291,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_TWILIGHT">
 <H2>EXOFAST_TWILIGHT</H2></A>
 <A HREF="#EXOFAST_RV">[Previous Routine]</A>
-<A HREF="#KTOM2">[Next Routine]</A>
+<A HREF="#JSON_PARSE">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2339,10 +2343,59 @@ Function value:       1.33000
 <STRONG>(See exofast_twilight.pro)</STRONG><P>
 <HR>
  
+<A NAME="JSON_PARSE">
+<H2>JSON_PARSE</H2></A>
+<A HREF="#EXOFAST_TWILIGHT">[Previous Routine]</A>
+<A HREF="#KTOM2">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ :Description:
+    The JSON_PARSE function takes a JSON string and converts it into
+    an IDL variable.
+
+ :Returns:
+    If *String* begins with a curly brace "{", then the result is
+    a HASH, containing the unordered name-value pairs from the JSON string.
+    If *String* begins with a square bracket "[", then the result is
+    a LIST, containing the ordered collection of values.
+    If *String* is a scalar string that does not begin with "{" or "[",
+    then it is assumed to be a file name. If the file exists, then the
+    contents of the file are read and parsed.
+
+    *Note*: When converting JSON strings into IDL variables,
+    the following rules are used:
+      "null" becomes !NULL.
+      "false" becomes byte 0, "true" becomes byte 1.
+      Integer values become IDL variables of type LONG64.
+      Floating-point numbers become IDL variables of type DOUBLE.
+      Strings will be converted to IDL strings, and all \ escaped characters
+      will be converted back to normal characters.
+      JSON arrays will become IDL LIST variables.
+      JSON objects will become IDL HASH variables.
+   
+    *Note*: Since the HASH stores its name-value pairs in an arbitrary
+    order, the HASH::Keys() method may return the name-value pairs
+    in a different order compared to the original JSON string.
+   
+ :Params:
+    String:
+      *String* must be a valid JSON string containing either a
+      JSON *object* of name-value pairs, or a JSON *array* of values.
+
+ :Keywords:
+    None
+
+
+ :Author:
+   CT, VIS, Jan 2012. Based on the IDLffJSON, written by Dawn Lenz.
+</PRE><P>
+<STRONG>(See json_parse.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="KTOM2">
 <H2>KTOM2</H2></A>
-<A HREF="#EXOFAST_TWILIGHT">[Previous Routine]</A>
-<A HREF="#OMC">[Next Routine]</A>
+<A HREF="#JSON_PARSE">[Previous Routine]</A>
+<A HREF="#LEGEND">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2392,9 +2445,331 @@ Function value:       1.33000
 <STRONG>(See ktom2.pro)</STRONG><P>
 <HR>
  
+<A NAME="LEGEND">
+<H2>LEGEND</H2></A>
+<A HREF="#KTOM2">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_MIST">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+       LEGEND
+ PURPOSE:
+       Create an annotation legend for a plot.
+ EXPLANATION:
+       This procedure makes a legend for a plot.  The legend can contain
+       a mixture of symbols, linestyles, Hershey characters (vectorfont),
+       and filled polygons (usersym).  A test procedure, legendtest.pro,
+       shows legend's capabilities.  Placement of the legend is controlled
+       with keywords like /right, /top, and /center or by using a position
+       keyword for exact placement (position=[x,y]) or via mouse (/position).
+ CALLING SEQUENCE:
+       LEGEND [,items][,keyword options]
+ EXAMPLES:
+       The call:
+               legend,['Plus sign','Asterisk','Period'],psym=[1,2,3]
+         produces:
+               -----------------
+               |               |
+               |  + Plus sign  |
+               |  * Asterisk   |
+               |  . Period     |
+               |               |
+               -----------------
+         Each symbol is drawn with a plots command, so they look OK.
+         Other examples are given in optional output keywords.
+
+       lines = indgen(6)                       ; for line styles
+       items = 'linestyle '+strtrim(lines,2)   ; annotations
+       legend,items,linestyle=lines            ; vertical legend---upper left
+       items = ['Plus sign','Asterisk','Period']
+       sym = [1,2,3]
+       legend,items,psym=sym                   ; ditto except using symbols
+       legend,items,psym=sym,/horizontal       ; horizontal format
+       legend,items,psym=sym,box=0             ; sans border
+       legend,items,psym=sym,delimiter='='     ; embed '=' betw psym & text
+       legend,items,psym=sym,margin=2          ; 2-character margin
+       legend,items,psym=sym,position=[x,y]    ; upper left in data coords
+       legend,items,psym=sym,pos=[x,y],/norm   ; upper left in normal coords
+       legend,items,psym=sym,pos=[x,y],/device ; upper left in device coords
+       legend,items,psym=sym,/position         ; interactive position
+       legend,items,psym=sym,/right            ; at upper right
+       legend,items,psym=sym,/bottom           ; at lower left
+       legend,items,psym=sym,/center           ; approximately near center
+       legend,items,psym=sym,number=2          ; plot two symbols, not one
+       legend,items,/fill,psym=[8,8,8],colors=[10,20,30]; 3 filled squares
+ INPUTS:
+       items = text for the items in the legend, a string array.
+               For example, items = ['diamond','asterisk','square'].
+               You can omit items if you don't want any text labels.
+ OPTIONAL INPUT KEYWORDS:
+
+       linestyle = array of linestyle numbers  If linestyle[i] < 0, then omit
+               ith symbol or line to allow a multi-line entry.     If 
+               linestyle = -99 then text will be left-justified.  
+       psym = array of plot symbol numbers.  If psym[i] is negative, then a
+               line connects pts for ith item.  If psym[i] = 8, then the
+               procedure usersym is called with vertices define in the
+               keyword usersym.   If psym[i] = 88, then use the previously
+               defined user symbol
+       vectorfont = vector-drawn characters for the sym/line column, e.g.,
+               ['!9B!3','!9C!3','!9D!3'] produces an open square, a checkmark,
+               and a partial derivative, which might have accompanying items
+               ['BOX','CHECK','PARTIAL DERIVATIVE'].
+               There is no check that !p.font is set properly, e.g., -1 for
+               X and 0 for PostScript.  This can produce an error, e.g., use
+               !20 with PostScript and !p.font=0, but allows use of Hershey
+               *AND* PostScript fonts together.
+       N. B.: Choose any of linestyle, psym, and/or vectorfont.  If none is
+               present, only the text is output.  If more than one
+               is present, all need the same number of elements, and normal
+               plot behaviour occurs.
+               By default, if psym is positive, you get one point so there is
+               no connecting line.  If vectorfont[i] = '',
+               then plots is called to make a symbol or a line, but if
+               vectorfont[i] is a non-null string, then xyouts is called.
+       /help = flag to print header
+       /horizontal = flag to make the legend horizontal
+       /vertical = flag to make the legend vertical (D=vertical)
+       box = flag to include/omit box around the legend (D=include)
+		  outline_color = color of box outline (D = !P.color)
+       clear = flag to clear the box area before drawing the legend
+       delimiter = embedded character(s) between symbol and text (D=none)
+       colors = array of colors for plot symbols/lines (D=!P.color)
+       font = scalar font graphics keyword (-1,0 or 1) for text
+       textcolors = array of colors for text (D=!P.color)
+       margin = margin around text measured in characters and lines
+       spacing = line spacing (D=bit more than character height)
+       pspacing = psym spacing (D=3 characters) (when number of symbols is
+             greater than 1)
+       charsize = just like !p.charsize for plot labels
+       charthick = just like !p.charthick for plot labels
+       thick = array of line thickness numbers (D = !P.thick), if used, then 
+               linestyle must also be specified
+       position = data coordinates of the /top (D) /left (D) of the legend
+       normal = use normal coordinates for position, not data
+       device = use device coordinates for position, not data
+       number = number of plot symbols to plot or length of line (D=1)
+       usersym = 2-D array of vertices, cf. usersym in IDL manual. 
+             (/USERSYM =square, default is to use existing USERSYM definition)
+       /fill = flag to fill the usersym
+       /left_legend = flag to place legend snug against left side of plot
+                 window (D)
+       /right_legend = flag to place legend snug against right side of plot
+               window.    If /right,pos=[x,y], then x is position of RHS and
+               text runs right-to-left.
+       /top_legend = flag to place legend snug against top of plot window (D)
+       /bottom = flag to place legend snug against bottom of plot window
+               /top,pos=[x,y] and /bottom,pos=[x,y] produce same positions.
+
+       If LINESTYLE, PSYM, VECTORFONT, THICK, COLORS, or TEXTCOLORS are
+       supplied as scalars, then the scalar value is set for every line or
+       symbol in the legend.
+ Outputs:
+       legend to current plot device
+ OPTIONAL OUTPUT KEYWORDS:
+       corners = 4-element array, like !p.position, of the normalized
+         coords for the box (even if box=0): [llx,lly,urx,ury].
+         Useful for multi-column or multi-line legends, for example,
+         to make a 2-column legend, you might do the following:
+           c1_items = ['diamond','asterisk','square']
+           c1_psym = [4,2,6]
+           c2_items = ['solid','dashed','dotted']
+           c2_line = [0,2,1]
+           legend,c1_items,psym=c1_psym,corners=c1,box=0
+           legend,c2_items,line=c2_line,corners=c2,box=0,pos=[c1[2],c1[3]]
+           c = [c1[0]<c2[0],c1[1]<c2[1],c1[2]>c2[2],c1[3]>c2[3]]
+           plots,[c[0],c[0],c[2],c[2],c[0]],[c[1],c[3],c[3],c[1],c[1]],/norm
+         Useful also to place the legend.  Here's an automatic way to place
+         the legend in the lower right corner.  The difficulty is that the
+         legend's width is unknown until it is plotted.  In this example,
+         the legend is plotted twice: the first time in the upper left, the
+         second time in the lower right.
+           legend,['1','22','333','4444'],linestyle=indgen(4),corners=corners
+                       ; BOGUS LEGEND---FIRST TIME TO REPORT CORNERS
+           xydims = [corners[2]-corners[0],corners[3]-corners[1]]
+                       ; SAVE WIDTH AND HEIGHT
+           chdim=[!d.x_ch_size/float(!d.x_size),!d.y_ch_size/float(!d.y_size)]
+                       ; DIMENSIONS OF ONE CHARACTER IN NORMALIZED COORDS
+           pos = [!x.window[1]-chdim[0]-xydims[0] $
+                       ,!y.window[0]+chdim[1]+xydims[1]]
+                       ; CALCULATE POSITION FOR LOWER RIGHT
+           plot,findgen(10)    ; SIMPLE PLOT; YOU DO WHATEVER YOU WANT HERE.
+           legend,['1','22','333','4444'],linestyle=indgen(4),pos=pos
+                       ; REDO THE LEGEND IN LOWER RIGHT CORNER
+         You can modify the pos calculation to place the legend where you
+         want.  For example to place it in the upper right:
+           pos = [!x.window[1]-chdim[0]-xydims[0],!y.window[1]-xydims[1]]
+ Common blocks:
+       none
+ Procedure:
+       If keyword help is set, call doc_library to print header.
+       See notes in the code.  Much of the code deals with placement of the
+       legend.  The main problem with placement is not being
+       able to sense the length of a string before it is output.  Some crude
+       approximations are used for centering.
+ Restrictions:
+       Here are some things that aren't implemented.
+       - An orientation keyword would allow lines at angles in the legend.
+       - An array of usersyms would be nice---simple change.
+       - An order option to interchange symbols and text might be nice.
+       - Somebody might like double boxes, e.g., with box = 2.
+       - Another feature might be a continuous bar with ticks and text.
+       - There are no guards to avoid writing outside the plot area.
+       - There is no provision for multi-line text, e.g., '1st line!c2nd line'
+         Sensing !c would be easy, but !c isn't implemented for PostScript.
+         A better way might be to simply output the 2nd line as another item
+         but without any accompanying symbol or linestyle.  A flag to omit
+         the symbol and linestyle is linestyle[i] = -1.
+       - There is no ability to make a title line containing any of titles
+         for the legend, for the symbols, or for the text.
+ Side Effects:
+ Modification history:
+       write, 24-25 Aug 92, F K Knight (knight@ll.mit.edu)
+       allow omission of items or omission of both psym and linestyle, add
+         corners keyword to facilitate multi-column legends, improve place-
+         ment of symbols and text, add guards for unequal size, 26 Aug 92, FKK
+       add linestyle(i)=-1 to suppress a single symbol/line, 27 Aug 92, FKK
+       add keyword vectorfont to allow characters in the sym/line column,
+         28 Aug 92, FKK
+       add /top, /bottom, /left, /right keywords for automatic placement at
+         the four corners of the plot window.  The /right keyword forces
+         right-to-left printing of menu. 18 Jun 93, FKK
+       change default position to data coords and add normal, data, and
+         device keywords, 17 Jan 94, FKK
+       add /center keyword for positioning, but it is not precise because
+         text string lengths cannot be known in advance, 17 Jan 94, FKK
+       add interactive positioning with /position keyword, 17 Jan 94, FKK
+       allow a legend with just text, no plotting symbols.  This helps in
+         simply describing a plot or writing assumptions done, 4 Feb 94, FKK
+       added thick, symsize, and clear keyword Feb 96, W. Landsman HSTX
+               David Seed, HR Wallingford, d.seed@hrwallingford.co.uk
+       allow scalar specification of keywords, Mar 96, W. Landsman HSTX
+       added charthick keyword, June 96, W. Landsman HSTX
+       Made keyword names  left,right,top,bottom,center longer,
+                                 Aug 16, 2000, Kim Tolbert
+       Added ability to have regular text lines in addition to plot legend 
+       lines in legend.  If linestyle is -99 that item is left-justified.
+       Previously, only option for no sym/line was linestyle=-1, but then text
+       was lined up after sym/line column.    10 Oct 2000, Kim Tolbert
+       Make default value of thick = !P.thick  W. Landsman  Jan. 2001
+       Don't overwrite existing USERSYM definition  W. Landsman Mar. 2002
+	     Added outline_color BT 24 MAY 2004
+       Pass font keyword to xyouts commands.  M. Fitzgerald, Sep. 2005
+       Default spacing, pspacing should be relative to charsize. M. Perrin, July 2007
+       Don't modify position keyword  A. Kimball/ W. Landsman Jul 2007
+       Small update to Jul 2007 for /NORMAL coords.  W. Landsman Aug 2007
+</PRE><P>
+<STRONG>(See exofast_legend.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="MASSRADIUS_MIST">
+<H2>MASSRADIUS_MIST</H2></A>
+<A HREF="#LEGEND">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_TORRES">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   massradius_mist
+
+ PURPOSE: 
+   Interpolate the MIST stellar evolutionary models to derive Teff
+   and Rstar from mass, metalicity, and age. Intended to be a drop in
+   replacement for the Yonsie Yale model interpolation
+   (massradius_yy3.pro).
+
+ CALLING SEQUENCE:
+   chi2 = massradius_mist(mstar, feh, age, teff, rstar, $
+                          VVCRIT=vvcrit, ALPHA=alpha, SPAN=span,$
+                          MISTRSTAR=mistrstar, MISTTEFF=mistteff)
+ INPUTS:
+
+    MSTAR  - The mass of the star, in m_sun
+    FEH    - The metalicity of the star [Fe/H]
+    AGE    - The age of the star, in Gyr
+    RSTAR  - The radius you expect; used to calculate a chi^2
+    TEFF   - The Teff you expect; used to calculate a chi^2
+    
+ OPTIONAL INPUTS:
+   VVCRIT    - The rotational velocity normalized by the critical
+               rotation speed. Must be 0.0d0 or 0.4d0 (default 0.0d0).
+   ALPHA     - The alpha abundance. Must be 0.0 (default 0.0). A
+               placeholder for future improvements to MIST models.
+   SPAN      - The interpolation is done at the closest value +/-
+               SPAN grid points in the evolutionary tracks in mass,
+               age, metalicity. The larger this number, the longer it
+               takes. Default=1. Change with care.
+   EPSNAME   - A string specifying the name of postscript file to plot
+               the evolutionary track. If not specified, no plot is
+               generated.
+
+ OPTIONAL KEYWORDS:
+   DEBUG     - If set, will plot the teff and rstar over the MIST
+               Isochrone.
+
+ OPTIONAL OUTPUTS:
+   MISTRSTAR - The rstar interpolated from the MIST models.
+   MISTTEFF  - The Teff interpolated from the MIST models.
+
+ RESULT:
+   The chi^2 penalty due to the departure from the MIST models,
+   assuming 3% errors in the MIST model values.
+
+ COMMON BLOCKS:
+   MIST_BLOCK:
+     Loading EEPs (model tracks) is very slow. This common block
+     allows us to store the tracks in memory between calls. The first
+     call will take ~3 seconds. Subsequent calls that use the same
+     EEP files take 1 ms.
+
+ EXAMPLE: 
+   ;; penalize a model for straying from the MIST models 
+   chi2 += massradius_mist(mstar, feh, age, rstar=rstar, teff=teff)
+
+ MODIFICATION HISTORY
+ 
+  2018/01 -- Written, JDE
+</PRE><P>
+<STRONG>(See massradius_mist.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="MASSRADIUS_TORRES">
+<H2>MASSRADIUS_TORRES</H2></A>
+<A HREF="#MASSRADIUS_MIST">[Previous Routine]</A>
+<A HREF="#OMC">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   MASSRADIUS_TORRES
+
+ PURPOSE: 
+   Uses the Torres relation
+   (http://adsabs.harvard.edu/abs/2010A%26ARv..18...67T) to determine
+   the stellar mass and radius given the logg, Teff, and [Fe/H].
+
+   NOTE the errors in the empirical model of ulogm = 0.027d0, ulogr = 0.014d0
+
+ CALLING SEQUENCE:
+    massradius_torres, logg, teff, feh, mstar, rstar
+
+ INPUTS:
+    LOGG - The log of the stellar surface gravity
+    TEFF - The stellar effective temperature
+    FEH  - The stellar metalicity
+
+ OUTPUTS:
+    MSTAR - The stellar mass, in solar masses
+    RSTAR - The stellar radius, in solar radii
+
+ MODIFICATION HISTORY
+ 
+  2012/06 -- Public release -- Jason Eastman (LCOGT)
+</PRE><P>
+<STRONG>(See massradius_torres.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="OMC">
 <H2>OMC</H2></A>
-<A HREF="#KTOM2">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_TORRES">[Previous Routine]</A>
 <A HREF="#PARS2STR">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
