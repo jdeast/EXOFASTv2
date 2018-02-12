@@ -201,10 +201,17 @@ x_eep = (eep-eepbox[0])/(eepbox[1]-eepbox[0])
 y_mass = (mstar-mstarbox[0])/(mstarbox[1]-mstarbox[0])
 z_feh = (initfeh-initfehbox[0])/(initfehbox[1]-initfehbox[0])
 
-mistage   = interpolate(allages  ,x_eep, y_mass, z_feh,/double)
-mistrstar = interpolate(allrstars,x_eep, y_mass, z_feh,/double)
-mistteff  = interpolate(allteffs ,x_eep, y_mass, z_feh,/double)
-mistfeh   = interpolate(allfehs  ,x_eep, y_mass, z_feh,/double)
+if float(!version.release) lt 8.2 then begin
+   mistage   = interpolate(allages  ,x_eep, y_mass, z_feh)
+   mistrstar = interpolate(allrstars,x_eep, y_mass, z_feh)
+   mistteff  = interpolate(allteffs ,x_eep, y_mass, z_feh)
+   mistfeh   = interpolate(allfehs  ,x_eep, y_mass, z_feh)
+endif else begin
+   mistage   = interpolate(allages  ,x_eep, y_mass, z_feh,/double)
+   mistrstar = interpolate(allrstars,x_eep, y_mass, z_feh,/double)
+   mistteff  = interpolate(allteffs ,x_eep, y_mass, z_feh,/double)
+   mistfeh   = interpolate(allfehs  ,x_eep, y_mass, z_feh,/double)
+endelse
 
 ;; assume 3% model errors
 chi2 = ((mistrstar - rstar)/(0.03d0*mistrstar))^2
