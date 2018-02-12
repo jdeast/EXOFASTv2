@@ -6,12 +6,12 @@ pro readargs, argfile, priorfile=priorfile, $
               circular=circular,fitslope=fitslope, secondary=secondary, $
               rossiter=rossiter,chen=chen,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-              nthin=nthin, maxsteps=maxsteps, $
+              nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
               debug=debug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
               bestonly=bestonly, plotonly=plotonly,$
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               maxgr=maxgr, mintz=mintz, $
-              noyy=noyy, torres=torres, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+              noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
               fitrv=fitrv, fittran=fittran,fitdt=fitdt,$
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, earth=earth,$
               i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
@@ -60,6 +60,8 @@ while not eof(lun) do begin
             nthin = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MAXSTEPS' then begin
             maxsteps = long(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'DONTSTOP' then begin
+            dontstop = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'DEBUG' then begin
             debug = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'VERBOSE' then begin
@@ -84,6 +86,8 @@ while not eof(lun) do begin
             noyy = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'TORRES' then begin
             torres = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'MIST' then begin
+            mist = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOCLARET' then begin
             noclaret = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'TIDES' then begin
