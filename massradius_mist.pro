@@ -201,7 +201,7 @@ x_eep = (eep-eepbox[0])/(eepbox[1]-eepbox[0])
 y_mass = (mstar-mstarbox[0])/(mstarbox[1]-mstarbox[0])
 z_feh = (initfeh-initfehbox[0])/(initfehbox[1]-initfehbox[0])
 
-if float(!version.release) lt 8.2 then begin
+if float(!version.release) le 8.2 then begin
    mistage   = interpolate(allages  ,x_eep, y_mass, z_feh)
    mistrstar = interpolate(allrstars,x_eep, y_mass, z_feh)
    mistteff  = interpolate(allteffs ,x_eep, y_mass, z_feh)
