@@ -230,12 +230,12 @@ endif else begin
       ;; i.e., don't start outside a boundary; you'll never get back
       niter = 0d0
       repeat begin
-         ;; start 5 steps from best value. If that's not allowed
+         ;; start 3 steps from best value. If that's not allowed
          ;; (infinite chi^2), slowly approach 0 steps away from the best value
          ;; niter should never be larger than ~5000
-         if j eq 0 then factor = 0d0 else factor = 1d0 ;; first chain starts at best fit
+         if j eq 0 then factor = 0d0 else factor = (sqrt(500d0/nfit) > 3d0) ;; first chain starts at best fit
          pars[0:nfit-1,0,j] = bestpars[tofit] + $
-                              factor/exp(niter/1000d)*scale*call_function(randomfunc,seed,nfit,/normal)*sqrt(500d0/nfit)
+                              factor/exp(niter/1000d)*scale*call_function(randomfunc,seed,nfit,/normal)
          newpars[tofit] = pars[0:nfit-1,0,j]
          ;; find the chi^2
          chi2[0,j] = call_function(chi2func, newpars, determinant=det, derived=dpar)
@@ -361,7 +361,7 @@ for i=resumendx,maxsteps-1L do begin
          ngood = nchains
       endif
 
-      burnndx = 0L
+      burnndx = 0.1d0*i ;; discard at least the first 10% of the chains
       for j=0L, ngood-1 do begin
          tmpndx = (where(chi2[0:i,goodchains[j]] lt medchi2))(0)
          if tmpndx gt burnndx then burnndx = tmpndx
@@ -472,7 +472,7 @@ medchi2 = min(median(chi2[0.1*nstop:nstop,*],dimension=1))
 ;; good chains must have some values below this median
 goodchains = where(minchi2 lt medchi2,ngood)
 
-burnndx = minburnndx
+burnndx = 0.1d0*nstop
 for j=0L, ngood-1 do begin
    tmpndx = (where(chi2[0:nstop,goodchains[j]] lt medchi2))(0)
    if tmpndx gt burnndx then burnndx = tmpndx
