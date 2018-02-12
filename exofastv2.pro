@@ -440,12 +440,12 @@ pro exofastv2, priorfile=priorfile, $
                circular=circular,fitslope=fitslope, secondary=secondary, $
                rossiter=rossiter,chen=chen,$
                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-               nthin=nthin, maxsteps=maxsteps, $
-               debug=debug, randomfunc=randomfunc, seed=seed,$
+               nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
+               debug=debug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
                bestonly=bestonly, plotonly=plotonly,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                maxgr=maxgr, mintz=mintz, $
-               noyy=noyy, torres=torres, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+               noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                fitrv=fitrv, fittran=fittran,fitdt=fitdt,$
                ttvs=ttvs,tivs=tivs,tdeltavs=tdeltavs,$
                earth=earth,$
@@ -462,12 +462,12 @@ if numargs eq 1 then begin
                 circular=circular,fitslope=fitslope, secondary=secondary, $
                 rossiter=rossiter,chen=chen,$
                 fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-                nthin=nthin, maxsteps=maxsteps, $
+                nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
                 debug=debug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
                 bestonly=bestonly, plotonly=plotonly,$
                 longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                 maxgr=maxgr, mintz=mintz, $
-                noyy=noyy, torres=torres, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+                noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                 fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
                 ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
                 earth=earth, i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
@@ -496,12 +496,12 @@ file_delete, logname, /allow_nonexistent
 
 ;; create the master structure
 ss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
-          debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
+          debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,$
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
           rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
           fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-          chen=chen, noyy=noyy,torres=torres, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing, logname=logname)
+          chen=chen, noyy=noyy,torres=torres,mist=mist, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing, logname=logname)
 
 npars = 0
 for i=0, n_tags(ss)-1 do begin
@@ -578,7 +578,7 @@ printandlog, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nma
 
 ;; do the AMOEBA fit
 ss.amoeba = 1B
-best = exofast_amoeba(1d-8,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
+best = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
 if best[0] eq -1 then begin
    printandlog, 'ERROR: Could not find best combined fit; adjust your starting values and try again. You may want to set the /DEBUG keyword.', logname
    return
@@ -603,7 +603,7 @@ if not keyword_set(bestonly) then begin
                  nthin=nthin,maxsteps=maxsteps,$
                  burnndx=burnndx, seed=seed, randomfunc=randomfunc, $
                  gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
-                 derived=rstar,stretch=stretch, logname=logname
+                 stretch=stretch, logname=logname,dontstop=dontstop
    if pars[0] eq -1 then begin
       printandlog, 'MCMC Failed to find a stepping scale. This usually means one or more parameters are unconstrained by the data or priors.', logname
    endif 
@@ -625,8 +625,6 @@ if not keyword_set(bestonly) then begin
    pars = reform(pars,npars,nsteps*nchains)
    chi2 = reform(chi2,nsteps*nchains)
    minchi2 = min(chi2,bestndx)
-
-   if ~ss.noyy then rstar = reform(rstar,1,nsteps*nchains)
 endif else begin
    pars = reform(best[tofit],n_elements(tofit),1)
    bestndx = 0
@@ -643,16 +641,15 @@ bestchi2 = call_function(chi2func,best,psname=modelfile, $
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
 mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
-              debug=debug, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
+              debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
               circular=circular,fitslope=fitslope, fitquad=fitquad, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
               rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-              chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,torres=torres,noclaret=noclaret,$
+              chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,torres=torres,mist=mist,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing, logname=logname)
 mcmcss.nchains = nchains
 mcmcss.burnndx = burnndx
-if ~ss.noyy then mcmcss.star.rstar.value = rstar
 *(mcmcss.chi2) = chi2
 
 pars2str, pars, mcmcss
