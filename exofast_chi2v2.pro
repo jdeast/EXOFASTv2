@@ -243,22 +243,57 @@ endif
 
 ;; derive the model parameters from the stepping parameters (return if unphysical)
 ss.star.mstar.value = 10^ss.star.logmstar.value
+
 ;; use the YY tracks to guide the stellar parameters
 if ~ss.noyy then begin
    if keyword_set(psname) then epsname = psname+'.yy.eps'
    yychi2 = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, $
                            ss.star.age.value, ss.star.teff.value,$
-                           yyrstar=rstar, debug=ss.debug, psname=epsname, $
+                           yyrstar=yyrstar, debug=ss.debug, psname=epsname, $
                            sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
                            gravitysun=ss.constants.gravitysun) 
-   chi2 += yychi2
-   ;printandlog, 'YY penalty = ' + strtrim(yychi2,2), ss.logname
-   if ~finite(chi2) then begin
+   if ~finite(yychi2) then begin
       if ss.debug then printandlog, 'star is bad', ss.logname
       return, !values.d_infinity
    endif
-   derived = rstar
-   ss.star.rstar.value = rstar
+
+   yychi2 += ((ss.star.rstar.value - yyrstar)/(0.03*yyrstar))^2
+   chi2 += yychi2
+   if ss.verbose then printandlog, 'YY penalty = ' + strtrim(yychi2,2), ss.logname
+endif
+
+;; use the MIST tracks to guide the stellar parameters
+if ss.mist then begin
+   if keyword_set(psname) then epsname = psname+'.mist.eps'
+   mistchi2 = massradius_mist(ss.star.eep.value, ss.star.mstar.value, ss.star.initfeh.value, $
+                              ss.star.age.value, ss.star.teff.value,$
+                              ss.star.rstar.value, ss.star.feh.value, debug=ss.debug, $
+                              epsname=epsname, gravitysun=ss.constants.gravitysun)
+   chi2 += mistchi2
+   if ss.verbose then printandlog, 'MIST penalty = ' + strtrim(mistchi2,2), ss.logname
+   if ~finite(chi2) then begin
+      if ss.debug then printandlog, 'star not on MIST tracks', ss.logname
+      return, !values.d_infinity
+   endif
+endif
+
+;; use the Torres relation to guide the stellar parameters
+if ss.torres then begin
+   massradius_torres, ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, mstar_prior, rstar_prior
+   umstar = 0.027d0;*100d0 ;; why the factor of 100?!
+   urstar = 0.014d0;*100d0
+   if mstar_prior lt 0.6d0 then printandlog, $
+      'WARNING: Torres not applicable (mstar = ' + $
+      strtrim(mstar_prior,2) + '); ignore at beginning. Otherwise, ' + $
+      'use MIST, YY, or impose a prior on mstar/rstar',ss.logname
+   ;; add "prior" penalty
+   chi2 += (alog10(ss.star.mstar.value/mstar_prior)/umstar)^2
+   chi2 += (alog10(ss.star.rstar.value/rstar_prior)/urstar)^2
+
+   if ss.verbose then $
+      printandlog, 'Torres penalty: ' + string((alog10(ss.star.mstar.value/mstar_prior)/umstar)^2,$
+                                               (alog10(ss.star.rstar.value/rstar_prior)/urstar)^2), ss.logname
+
 endif
 
 if ss.star.errscale.value le 0 then begin
@@ -674,7 +709,7 @@ endif
 ;   oplot, transitbjd, modelflux, color=red
 
 ;; print all the parameters and the chi^2
-if ss.debug then printandlog, string(ss.star.rstar.value, pars, chi2, format='(' + strtrim(n_elements(pars)+2,2) + '(f0.8,x))'),ss.logname
+if ss.debug then printandlog, string(pars, chi2, format='(' + strtrim(n_elements(pars)+1,2) + '(f0.8,x))'),ss.logname
 
 ;printandlog, ss.planet[0].p.value, ss.logname
 ;wait, 0.1
