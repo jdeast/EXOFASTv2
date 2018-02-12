@@ -151,9 +151,9 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                nvalues=nvalues, debug=debug, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, $
-               longcadence=longcadence, earth=earth, silent=silent, noyy=noyy, torres=torres, $
+               longcadence=longcadence, earth=earth, silent=silent, noyy=noyy, torres=torres, mist=mist, $
                noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
-               logname=logname
+               logname=logname, verbose=verbose
 
 if not keyword_set(debug) then debug=0B
 if not keyword_set(noyy) then noyy=0B
@@ -306,6 +306,20 @@ feh.label = 'feh'
 feh.fit=1
 feh.scale = 0.5d0
 
+initfeh = parameter
+initfeh.value = 0d0
+initfeh.description = 'Initial Metalicity'
+initfeh.latex = '[Fe/H]_{0}'
+initfeh.label = 'initfeh'
+initfeh.scale = 0.5d0
+if keyword_set(mist) then begin
+   initfeh.fit=1
+   initfeh.derive=1
+endif else begin
+   initfeh.fit=0
+   initfeh.derive=0
+endelse
+
 Av = parameter
 Av.description = 'V-band extinction'
 Av.latex = 'A_v'
@@ -391,6 +405,8 @@ rstar.description = 'Radius'
 rstar.latex = 'R_*'
 rstar.label = 'rstar'
 rstar.cgs = 6.955d10
+rstar.fit = 1
+rstar.scale = 0.5d0
 
 age = parameter
 age.value = 7d0
@@ -400,13 +416,22 @@ age.latex = 'Age'
 age.label = 'age'
 age.cgs = 3600d0*24d0*365.242d0*1d9
 age.fit = 1
-age.scale = 1d0
+age.scale = 3d0
 
-if keyword_set(noyy) and ~keyword_set(torres) then begin
-   rstar.fit = 1
-   age.fit = 0
-   age.derive = 0
-endif
+eep = parameter
+eep.value = 355.65d0 ;; solar EEP
+eep.unit = ''
+eep.description = 'Equal Evolutionary Point'
+eep.latex = 'EEP'
+eep.label = 'eep'
+eep.scale = 300d0 
+if keyword_set(mist) then begin
+   eep.fit = 1
+   eep.derive = 1
+endif else begin
+   eep.derive=0
+   eep.fit=0
+endelse
 
 lstar = parameter
 lstar.unit = '\lsun'
@@ -1056,8 +1081,10 @@ star = create_struct(mstar.label,mstar,$
                      logg.label,logg,$
                      teff.label,teff,$
                      feh.label,feh,$
+                     initfeh.label,initfeh,$
                      lstar.label,lstar,$
                      age.label,age,$
+                     eep.label,eep,$
                      logmstar.label,logmstar,$
                      vsini.label,vsini,$
                      macturb.label,macturb,$
@@ -1242,6 +1269,7 @@ ss = create_struct('star',star,$
                    'tofit',ptr_new(1),$
                    'priors',ptr_new(1),$
                    'debug',keyword_set(debug),$
+                   'verbose',keyword_set(verbose),$
                    'tides',keyword_set(tides),$
                    'ntel',ntel,$
                    'ntran',ntran,$
@@ -1249,6 +1277,8 @@ ss = create_struct('star',star,$
                    'ndt',ndt,$
                    'nplanets',nplanets,$
                    'noyy', noyy,$
+                   'mist', keyword_set(mist),$
+                   'torres', keyword_set(torres),$
                    'noclaret', noclaret,$
                    'ttvs', ttvs,$
                    'alloworbitcrossing', alloworbitcrossing,$
@@ -1545,7 +1575,8 @@ while not eof(lun) do begin
 
                if priorwidth eq 0d0 then begin
                   ;; priorwidth = 0 => fix it at the prior value
-                  ss.(i)[priornum].(ndx).fit = 0d0                  
+                  ss.(i)[priornum].(ndx).fit = 0d0
+                  ss.(i)[priornum].(ndx).derive = 0d0
                   if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)', logname
                endif else if finite(priorwidth) and priorwidth gt 0d0 or finite(lowerbound) or finite(upperbound) then begin
                   ;; apply a Gaussian prior with width = priorwidth
