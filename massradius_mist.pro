@@ -60,7 +60,7 @@
 ; 
 ;  2018/01 -- Written, JDE
 ;-
-function massradius_mist_grid, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvcrit, alpha=alpha, $
+function massradius_mist, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvcrit, alpha=alpha, $
                                mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
                                epsname=epsname, debug=debug, gravitysun=gravitysun
 
@@ -78,13 +78,14 @@ if n_elements(gravitysun) eq 0 then $
 ;; this common block allows us to store the tracks in memory between calls
 common mist_block, tracks, allowedmass, allowedinitfeh, nmass, nfeh, nvvcrit, nalpha
 
+if mstar lt 0.1d0 or mstar gt 300d0 then return, !values.d_infinity
+if initfeh lt -4d0 or initfeh gt 0.5d0 then return, !values.d_infinity
+
 ;; if this is the first call, initialize the tracks
 if n_elements(tracks) eq 0 then begin
 
    ;; mass grid points
-   allowedmass = [0.1d0,0.15d0,0.2d0,0.10d0,0.15d0,0.20d0,0.25d0,0.30d0,0.31d0,$
-;                  0.32d0,0.33d0,0.34d0,0.35d0,0.36d0,0.37d0,0.38d0,0.39d0,0.40d0,$
-                  0.32d0,0.33d0,0.34d0,      0.36d0,0.37d0,0.38d0,0.39d0,0.40d0,$
+   allowedmass = [0.10d0,0.15d0,0.20d0,0.25d0,0.30d0,0.35d0,0.40d0,$
                   0.45d0,0.50d0,0.55d0,0.60d0,0.65d0,0.70d0,0.75d0,0.80d0,0.85d0,$
                   0.90d0,0.92d0,0.94d0,0.96d0,0.98d0,1.00d0,1.02d0,1.04d0,1.06d0,$
                   1.08d0,1.10d0,1.12d0,1.14d0,1.16d0,1.18d0,1.20d0,1.22d0,1.24d0,$
@@ -248,7 +249,7 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    mistrstariso = dblarr(neep)
    mistteffiso = dblarr(neep)
    for i=0, neep-1 do begin
-      junk = massradius_mist_grid(eepplot[i],mstar,initfeh,age,teff,rstar,feh,mistrstar=mistrstar,mistteff=mistteff)
+      junk = massradius_mist(eepplot[i],mstar,initfeh,age,teff,rstar,feh,mistrstar=mistrstar,mistteff=mistteff)
       mistrstariso[i] = mistrstar
       mistteffiso[i] = mistteff
    endfor
