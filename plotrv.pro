@@ -29,9 +29,12 @@ endif else begin
 ;   else window, 20, retain=2
 endelse
 
-symbols = [0,8,4,0,8,4]
-fills = [1,1,1,0,0,0]
-colors = [black,green,blue,black,green,blue]
+symbols = [0,8,4,3,0,8,4,3]
+fills = [1,1,1,1,0,0,0,0]
+colors = [black,green,blue,red,black,green,blue,red]
+nsymbols = n_elements(symbols)
+nfills = n_elements(fills)
+ncolors = n_elements(colors)
 
 allmindate = !values.d_infinity
 allmaxdate = -!values.d_infinity
@@ -106,7 +109,7 @@ for i=0, ss.nplanets-1 do begin
                            ss.planet[i].omega.value,slope=0)
       time=(((rv.bjd-ss.planet[i].tc.value) mod ss.planet[i].period.value)/$
             ss.planet[i].period.value+1.25d0) mod 1
-      plotsym, symbols[j], symsize, fill=fills[j], color=colors[j]
+      plotsym, symbols[j mod nsymbols], symsize, fill=fills[j mod nfills], color=colors[j mod ncolors]
       oploterr, time, rv.residuals+modelrv, rv.err, 8
 
    endfor
@@ -138,7 +141,7 @@ oplot, prettytime-bjd0, allprettymodel, color=red
 
 for j=0, ss.ntel-1 do begin 
    rv = *(ss.telescope[j].rvptrs)
-   plotsym, symbols[j], symsize, fill=fills[j], color=colors[j]
+   plotsym, symbols[j mod nsymbols], symsize, fill=fills[j mod nfills], color=colors[j mod ncolors]
    oploterr, rv.bjd-bjd0, rv.rv-ss.telescope[j].gamma.value, rv.err, 8
 endfor
 endif
