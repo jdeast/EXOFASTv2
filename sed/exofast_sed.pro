@@ -1,7 +1,7 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun
+function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles
 
-common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m
+common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m, w1, kapp1
 
 ; fluxfile is the input set of fluxes to be fit
 ; a is the vector of input parameters
@@ -22,17 +22,20 @@ if n_elements(fp) eq 0 then begin
    mag2fluxconv,fluxfile,wp,widthhm,fp,ep,teff=teff 
    n=n_elements(wp)
    m=where(ep gt 0)
-   readcol,getenv('EXOFAST_PATH') + '/sed/extinction_law.ascii',klam,kkap,/silent
+   
+   readcol,filepath('extinction_law.ascii',root_dir=getenv('EXOFAST_PATH'),subdir='sed'),klam,kkap,/silent
    kapv = interpol(kkap,klam,0.55)
+
+   w1 = findgen(24000)/1000+0.1 ;; wavelength scale on which to interpolate
+   kapp1 = interpol(kkap,klam,w1)
 endif
 
 ;; round to 0.5 dex in each (!??!)
 logg1 = double(round(logg*2d0))/2d0
 
-exofast_interp_model,teff,logg1,met,w1,lamflam1temp,alpha=alpha,/next
+exofast_interp_model,teff,logg1,met,w1,lamflam1temp,alpha=alpha,/next, interpfiles=interpfiles
 if ~finite(lamflam1temp[0]) then return, !values.d_infinity
 lamflam1=lamflam1temp*rstar*rstar*rsun*rsun/d/d/pc/pc
-kapp1 = interpol(kkap,klam,w1)
 taul1 = kapp1/kapv/1.086*Av
 extinct1 = exp(-taul1)
 
