@@ -9,6 +9,11 @@
 # will be ignored. "#" is a comment character. Inline comments are
 # allowed. Case is ignored (e.g., mstar = MStar = MSTAR = mStAr).
 #
+# The suffixes corresponding to each
+# planet/transit/instrument/wavelength will be displayed at the
+# beginning of the fit. Make sure they match those used the prior
+# file.
+#
 # See $EXOFAST_PATH/examples/*/*.priors for examples. 
 #
 #### Stellar parameters ####
@@ -34,11 +39,11 @@
 # slope    # A linear trend added to RVs; only fitted when /SLOPE keyword set
 # quad     # A quadratic trend added to RVs; only fitted when /QUAD keyword set
 #
-#### Telescope parameters ####
+#### Instrument parameters ####
 #
-# One for each RV instrument. First telescope can be optionally
-#specified with suffix "_0". Subsequent instruments suffixes must be incremented
-#(_1, _2, etc) 
+# One for each RV instrument. The first instrument can be optionally
+# specified with suffix "_0". Subsequent instrument suffixes must be incremented
+# (_1, _2, etc) 
 # gamma     # Systemic velocity or instrumental offset (m/s); fitted parameter
 # jittervar # an added variance to the RVs (m/s)^2; fitted parameter
 # jitter    # the added stellar jitter to the RVs (m/s)
@@ -46,7 +51,7 @@
 #### Planet Parameters ####
 #
 # One for each planet. The first planet can be optionally specified
-# with the suffix "_0" or "_b". Subsequent planets suffixes must be incremented
+# with the suffix "_0" or "_b". Subsequent planet suffixes must be incremented
 # (_1, _2, etc or _c, _d, etc.)
 #
 # tc        # Time of inferior conjunction (transit) (BJD_TDB); fitted parameter
