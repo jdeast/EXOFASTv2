@@ -1,13 +1,22 @@
 # Priors and starting values are modified via the 'priorfile'. Below
-# are all the allowed parameter names. You may have 2-5 white-space
-# delimited entries per line. The first entry must match a parameter
-# name from the list below (non-matching names will prompt a warning
-# and be ignored). The second is the starting value. The third is a
-# gaussian prior width. Any negative value will be ignored. 0 will fix
-# the parameter to the starting value. The fourth is a lower
-# bound. "-Inf" will be ignored. The fifth is an upper bound ("Inf")
-# will be ignored. "#" is a comment character. Inline comments are
-# allowed. Case is ignored (e.g., mstar = MStar = MSTAR = mStAr).
+# is a complete list of all the allowed parameter names. 
+#
+# You may have 2-5 white-space delimited entries per line. "#" is a
+# comment character. Inline comments are allowed.
+#
+# 1) The first entry must match a parameter name from the list below.
+# Non-matching names will be ignored with a warning. Case is ignored
+# (e.g., mstar = MStar = MSTAR = mStAr).
+# 2) The second is the starting value. This changes the default
+# starting value of the fit, but does not penalize the fit for
+# straying arbitrarily from it.
+# 3) The third is a gaussian prior width. A penalty is added at each
+# step equal to ((step_value - starting_value)/width)^2. Any negative
+# value will be ignored. 0 will fix the parameter to the starting
+# value.
+# 4) The fourth is a lower bound. Any model that steps outside of this
+# bound will be rejected. "-Inf" will be ignored.
+# 5) The fifth is an upper bound. "Inf" will be ignored.
 #
 # The suffixes corresponding to each
 # planet/transit/instrument/wavelength will be displayed at the
@@ -54,65 +63,65 @@
 # with the suffix "_0" or "_b". Subsequent planet suffixes must be incremented
 # (_1, _2, etc or _c, _d, etc.)
 #
-# tc        # Time of inferior conjunction (transit) (BJD_TDB); fitted parameter
-# logp      # log10(period/days); fitted parameter
-# period    # period (days)
-# qecosw    # e^(1/4)cos(omega_star); fitted if /EPRIOR4 set. Intended to impose a more physical eccentricity prior
-# qesinw    # e^(1/4)sin(omega_star); fitted if /EPRIOR4 set. Intended to impose a more physical eccentricity prior
-# secosw    # e^(1/2)cos(omega_star); fitted by default. Imposes a uniform eccentricity prior
-# sesinw    # e^(1/2)sin(omega_star); fitted by default. Imposes a uniform eccentricity prior
-# ecosw     # ecos(omega_star)
-# esinw     # esin(omega_star)
-# e         # planetary eccentricity
-# omega     # argument of periastron of the star (radians)
-# omegadeg  # argument of periastron of the star (degrees)
-# p         # Rp/Rstar (unitless); fitted parameter
-# delta     # (Rp/Rstar)^2 (unitless)
-# depth     # Flux decrement at mid transit (can differ from delta due to grazing geometries and limb darkening)
-# rp        # planetary radius (Rjupiter)
-# rpsun     # planetary radius (Rsun)
-# rpearth   # planetary radius (Rearth)
-# mp        # Planet mass (M_jupiter)
-# mpearth   # Planet mass (M_earth)
-# mpsun     # Planet mass (M_sun)
-# msini     # Minimum planet mass (M_jupiter)
+# tc         # Time of inferior conjunction (transit) (BJD_TDB); fitted parameter
+# logp       # log10(period/days); fitted parameter
+# period     # period (days)
+# qecosw     # e^(1/4)cos(omega_star); fitted if /EPRIOR4 set. Intended to impose a more physical eccentricity prior
+# qesinw     # e^(1/4)sin(omega_star); fitted if /EPRIOR4 set. Intended to impose a more physical eccentricity prior
+# secosw     # e^(1/2)cos(omega_star); fitted by default. Imposes a uniform eccentricity prior
+# sesinw     # e^(1/2)sin(omega_star); fitted by default. Imposes a uniform eccentricity prior
+# ecosw      # ecos(omega_star)
+# esinw      # esin(omega_star)
+# e          # planetary eccentricity
+# omega      # argument of periastron of the star (radians)
+# omegadeg   # argument of periastron of the star (degrees)
+# p          # Rp/Rstar (unitless); fitted parameter
+# delta      # (Rp/Rstar)^2 (unitless)
+# depth      # Flux decrement at mid transit (can differ from delta due to grazing geometries and limb darkening)
+# rp         # planetary radius (Rjupiter)
+# rpsun      # planetary radius (Rsun)
+# rpearth    # planetary radius (Rearth)
+# mp         # Planet mass (M_jupiter)
+# mpearth    # Planet mass (M_earth)
+# mpsun      # Planet mass (M_sun)
+# msini      # Minimum planet mass (M_jupiter)
 # msiniearth # Minimum planet mass (M_earth)
-# q         # Mass ratio (mp/mstar) (unitless)
-# rhop      # planetary density (g/cm^3)
-# loggp     # log10 planetary surface gravity (cgs)
-# teq       # Planetary equilibrium temperature (K), assuming ??
-# safronov  # Safronov number (??)
-# fave      # Average Incident flux (1e-9 erg/cm^2)
-# a         # semi-major axis (AU)
-# ar        # semi-major axis (Rstar)
-# arsun     # semi-major axis (Rsun)
-# dr        # d/Rstar, the scaled distance from the star to planet at mid transit (unitless)
-# cosi      # cosine of planet inclination; fitted
-# b         # Primary transit impact parameter
-# i         # planetary inclination (radians)
-# ideg      # planetary inclination (degrees)
-# ta        # Time of Ascending node (BJD_TDB)
-# td        # Time of Descending node (BJD_TDB)
-# ts        # Time of secondary eclipse (BJD_TDB)
-# phase     # Phase of inferior conjunction (unitless)
-# tfwhm     # duration of transit from mid ingress to mid egress (days)
-# t14       # duration of transit from 1st contact to 4th contact (days)
-# tau       # duration of ingress or egress (days)
-# pt        # A priori non-grazing transit probability
-# ptg       # A priori transit probability
-# tfwhms    # duration of secondary eclipse from mid ingress to mid egress (days)
-# t14s      # duration of secondary eclipse from 1st contact to 4th contact (days)
-# taus      # duration of secondary eclipse ingress or egress (days)
-# bs        # Secondary eclipse impact parameter
-# ps        # A priori non-grazing secondary eclipse probability
-# psg       # A priori secondary eclipse probability
-# logk      # log10 of RV semi-amplitude (log(m/s)); fitted parameter
-# k         # RV semi-amplitude (m/s)
-# lambda    # Projected spin orbit mis-alignment (radians); fitted with DT or RM data 
-# lambdadeg # Projected spin orbit mis-alignment (degrees)
-# vsini     # Projected rotational velocity of the star (m/s); fitted with DT or RM data 
-# macturb   # Macroturbulence (m/s); fitted with DT data 
-# dtscale   # a fitted error scaling term for DT data; fitted with DT data
+# q          # Mass ratio (mp/mstar) (unitless)
+# rhop       # planetary density (g/cm^3)
+# loggp      # log10 planetary surface gravity (cgs)
+# teq        # Planetary equilibrium temperature (K), assuming ??
+# safronov   # Safronov number (??)
+# fave       # Average Incident flux (1e-9 erg/cm^2)
+# a          # semi-major axis (AU)
+# ar         # semi-major axis (Rstar)
+# arsun      # semi-major axis (Rsun)
+# dr         # d/Rstar, the scaled distance from the star to planet at mid transit (unitless)
+# cosi       # cosine of planet inclination; fitted
+# b          # Primary transit impact parameter
+# i          # planetary inclination (radians)
+# ideg       # planetary inclination (degrees)
+# ta         # Time of Ascending node (BJD_TDB)
+# td         # Time of Descending node (BJD_TDB)
+# ts         # Time of secondary eclipse (BJD_TDB)
+# phase      # Phase of inferior conjunction (unitless)
+# tfwhm      # duration of transit from mid ingress to mid egress (days)
+# t14        # duration of transit from 1st contact to 4th contact (days)
+# tau        # duration of ingress or egress (days)
+# pt         # A priori non-grazing transit probability
+# ptg        # A priori transit probability
+# tfwhms     # duration of secondary eclipse from mid ingress to mid egress (days)
+# t14s       # duration of secondary eclipse from 1st contact to 4th contact (days)
+# taus       # duration of secondary eclipse ingress or egress (days)
+# bs         # Secondary eclipse impact parameter
+# ps         # A priori non-grazing secondary eclipse probability
+# psg        # A priori secondary eclipse probability
+# logk       # log10 of RV semi-amplitude (log(m/s)); fitted parameter
+# k          # RV semi-amplitude (m/s)
+# lambda     # Projected spin orbit mis-alignment (radians); fitted with DT or RM data 
+# lambdadeg  # Projected spin orbit mis-alignment (degrees)
+# vsini      # Projected rotational velocity of the star (m/s); fitted with DT or RM data 
+# macturb    # Macroturbulence (m/s); fitted with DT data 
+# dtscale    # a fitted error scaling term for DT data; fitted with DT data
 #
 #### Transit parameters ####
 #
