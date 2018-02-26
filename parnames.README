@@ -89,9 +89,9 @@
 # q          # Mass ratio (mp/mstar) (unitless)
 # rhop       # planetary density (g/cm^3)
 # loggp      # log10 planetary surface gravity (cgs)
-# teq        # Planetary equilibrium temperature (K), assuming ??
-# safronov   # Safronov number (??)
-# fave       # Average Incident flux (1e-9 erg/cm^2)
+# teq        # Planetary equilibrium temperature (K), assuming no albedo, perfect redistribution
+# safronov   # Safronov number (unitless)
+# fave       # Average Incident flux (1e9 erg/s/cm^2)
 # a          # semi-major axis (AU)
 # ar         # semi-major axis (Rstar)
 # arsun      # semi-major axis (Rsun)
@@ -146,4 +146,4 @@
 # u2        # quadratic limb darkening coefficient; fitted (with prior from Claret & Bloeman, 2011)
 # thermal   # Thermal emission from the planet (ppm); fitted parameter if THERMAL includes this wavelength
 # reflect   # reflection from the planet (ppm); fitted parameter if REFLECT includes this wavelength
-# dilute    # dilution from neighboring stars (not the host) (??); fitted parameter if DILUTE includes this wavelength
+# dilute    # dilution from neighboring stars (not the host) (fraction); fitted parameter if DILUTE includes this wavelength
