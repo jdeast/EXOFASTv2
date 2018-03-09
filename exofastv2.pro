@@ -78,7 +78,10 @@
 ;                 fit.
 ;
 ;   TRANPATH    - A string specifying the path to the transit data
-;                 file(s). The file(s) must have at least 3 columns:
+;                 file(s). Wildcards are allowed for multiple files
+;                 (e.g., '*.dat'). Each file must have at least 3
+;                 columns:
+;
 ;                   1) Time (BJD_TDB -- See Eastman et al., 2010)
 ;                   2) Normalized flux
 ;                   3) err
