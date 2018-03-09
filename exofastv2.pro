@@ -76,8 +76,9 @@
 ;                 for an explanation of times
 ;                 NOTE 3: If omitted, just the transit data will be
 ;                 fit.
-;   TRANPATH    - The path to the transit data file(s). The file(s) must
-;                 have at least 3 columns:
+;
+;   TRANPATH    - A string specifying the path to the transit data
+;                 file(s). The file(s) must have at least 3 columns:
 ;                   1) Time (BJD_TDB -- See Eastman et al., 2010)
 ;                   2) Normalized flux
 ;                   3) err
@@ -89,9 +90,11 @@
 ;                 *must* adhere to a certain format:
 ;                 nYYYYMMDD.filtername.telescope.whateveryouwant. 
 ;
-;                 nYYYYMMDD -- The UTC date of mid transit. This is only
-;                 necessary if the data has a single transit. This is
-;                 used to label the transits in the output plot.
+;                 nYYYYMMDD -- The UTC date of mid transit, where YYYY is
+;                 the year, MM is the month, and DD is the day. This
+;                 is only necessary if the data has a single
+;                 transit. This is used to label the transits in the
+;                 output plot.
 ; 
 ;                 filtername -- The name of the observed
 ;                 filter. Only certain values are allowed (use the
@@ -102,11 +105,12 @@
 ;                 Sloan: 'Sloanu','Sloang','Sloanr','Sloani','Sloanz'
 ;                 Kepler: 'Kepler'
 ;                 CoRoT: 'CoRoT'
+;                 TESS: 'TESS'
 ;                 Spitzer: 'Spit36','Spit45','Spit58','Spit80'
 ;                 Stromgren: 'u','b','v','y'
 ;
 ;                 This is used to define the limb darkening for the
-;                 transit.
+;                 transit, dilution, and secondary depth parameters.
 ;
 ;                 telescope -- a description of the telescope used for
 ;                 the observations. Anything is allowed, but all

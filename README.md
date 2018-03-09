@@ -5,6 +5,10 @@
 
 ### INSTALLATION INSTRUCTIONS ### 
 
+# License-free use still requires a (free) IDL installation and runs a
+# pre-compiled version with the virtual machine. You still must follow
+# the installation instructions below.
+
 # Note the IDL Astronomy library is required. If you don't already
 # have it, install it from here: https://github.com/wlandsman/IDLAstro
 
