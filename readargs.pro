@@ -7,14 +7,14 @@ pro readargs, argfile, priorfile=priorfile, $
               rossiter=rossiter,chen=chen,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
               nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
-              debug=debug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
-              bestonly=bestonly, plotonly=plotonly,$
+              debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
+              bestonly=bestonly, plotonly=plotonly, skipstar=skipstar, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               maxgr=maxgr, mintz=mintz, $
               noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
               fitrv=fitrv, fittran=fittran,fitdt=fitdt,$
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, earth=earth,$
-              i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
+              i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
 
 line = ''
 openr, lun, argfile, /get_lun
@@ -24,7 +24,7 @@ while not eof(lun) do begin
    if line ne '' then begin
       entries = strsplit(line,'=',/extract)
       if n_elements(entries) eq 2 then begin
-         
+
          ;; replace '$EXOFAST_PATH' with its value
          entries[1] = strjoin(strsplit(entries[1],'$EXOFAST_PATH',/regex,/extract,/preserve_null),getenv('EXOFAST_PATH'))
 
@@ -64,6 +64,8 @@ while not eof(lun) do begin
             dontstop = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'DEBUG' then begin
             debug = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'STARDEBUG' then begin
+            stardebug = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'VERBOSE' then begin
             verbose = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'SEED' then begin
@@ -72,6 +74,8 @@ while not eof(lun) do begin
             bestonly = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'PLOTONLY' then begin
             plotonly = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'SKIPSTAR' then begin
+            skipstar = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'LONGCADENCE' then begin
             longcadence = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'EXPTIME' then begin
@@ -110,6 +114,8 @@ while not eof(lun) do begin
             earth = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'I180' then begin
             i180 = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'NOCOVAR' then begin
+            nocovar = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'ALLOWORBITCROSSING' then begin
             alloworbitcrossing = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'STRETCH' then begin

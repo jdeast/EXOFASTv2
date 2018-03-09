@@ -84,6 +84,7 @@ ymin = 1d0 - depth - 3*noise
 if ss.ntran eq 1 then ymax = 1+3*noise $
 else ymax = 1d0 + 3*noise + spacing*(ss.ntran-1)
 yrange = [ymin,ymax]
+
 ;yrange = [0.994,1.001]
 xtitle='!3Time - T!DC!N (hrs)'
 
@@ -135,25 +136,32 @@ for j=0, ss.ntran-1 do begin
 
       if ss.planet[i].fittran then begin
 
-         prettyflux += (exofast_tran(prettytime, $
-                                     ss.planet[i].i.value, $
-                                     ss.planet[i].ar.value, $
-                                     ss.planet[i].tp.value, $
-                                     ss.planet[i].period.value, $
-                                     ss.planet[i].e.value,$
-                                     ss.planet[i].omega.value,$
-                                     ss.planet[i].p.value,$
-                                     band.u1.value, $
-                                     band.u2.value, $
-                                     1d0, $
-                                     q=ss.star.mstar.value/ss.planet[i].mpsun.value, $
-                                     thermal=band.thermal.value, $
-                                     reflect=band.reflect.value, $
-                                     dilute=band.dilute.value,$
-                                     tc=ss.planet[i].tc.value,$
-                                     rstar=ss.star.rstar.value/AU,$
-                                     x1=x1,y1=y1,z1=z1) - 1d0) 
-         
+         tmpflux = (exofast_tran(prettytime, $
+                                 ss.planet[i].i.value, $
+                                 ss.planet[i].ar.value, $
+                                 ss.planet[i].tp.value, $
+                                 ss.planet[i].period.value, $
+                                 ss.planet[i].e.value,$
+                                 ss.planet[i].omega.value,$
+                                 ss.planet[i].p.value,$
+                                 band.u1.value, $
+                                 band.u2.value, $
+                                 1d0, $
+                                 q=ss.star.mstar.value/ss.planet[i].mpsun.value, $
+                                 thermal=band.thermal.value, $
+                                 reflect=band.reflect.value, $
+                                 dilute=band.dilute.value,$
+                                 tc=ss.planet[i].tc.value,$
+                                 rstar=ss.star.rstar.value/AU,$
+                                 x1=x1,y1=y1,z1=z1) - 1d0) 
+         prettyflux += tmpflux
+
+         ;; if there's more than one planet, output separate model files for each
+         if keyword_set(psname) and ss.nplanets gt 1 then begin
+            base = file_dirname(psname) + path_sep() + file_basename(psname,'.transit.ps')
+            exofast_forprint, prettytime, tmpflux, format='(f0.8,x,f0.6)', textout=base + '.transit_' + strtrim(j,2) + '.planet_' + strtrim(i,2) + '.txt', /nocomment,/silent
+         endif
+
          minepoch = floor((minbjd-ss.planet[i].tc.value)/ss.planet[i].period.value)
          maxepoch = ceil((maxbjd-ss.planet[i].tc.value)/ss.planet[i].period.value)
          epochs = -minepoch + dindgen(maxepoch-minepoch+1)
@@ -191,6 +199,7 @@ for j=0, ss.ntran-1 do begin
 
 ;   wset, 1
 ;   plot, time, trandata.flux-
+
 endfor
 
 ;; make a phased plot for each planet

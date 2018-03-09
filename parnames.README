@@ -7,16 +7,39 @@
 # 1) The first entry must match a parameter name from the list below.
 # Non-matching names will be ignored with a warning. Case is ignored
 # (e.g., mstar = MStar = MSTAR = mStAr).
-# 2) The second is the starting value. This changes the default
-# starting value of the fit, but does not penalize the fit for
-# straying arbitrarily from it.
-# 3) The third is a gaussian prior width. A penalty is added at each
-# step equal to ((step_value - starting_value)/width)^2. Any negative
-# value will be ignored. 0 will fix the parameter to the starting
-# value.
-# 4) The fourth is a lower bound. Any model that steps outside of this
-# bound will be rejected. "-Inf" will be ignored.
-# 5) The fifth is an upper bound. "Inf" will be ignored.
+#
+# 2) The second entry is the starting value. This changes the default
+# starting value of the fit, but (without a third entry) does not
+# penalize the fit for straying from it. When a third value is also
+# specified, this starting value doubles as the mean of the Gaussian
+# prior. There is no option to ignore this entry.
+#
+# 3) The third entry is a gaussian prior width. A penalty is added at
+# each step equal to ((step_value - starting_value)/width)^2. Any
+# negative value (e.g., -1) will be ignored, allowing the user to
+# specify bounds (4th and 5th entries) without applying a gaussian
+# prior. A prior width of 0 will fix the parameter to the starting
+# value. Fixing parameters is generally not recommended because you
+# will underestimate the uncertainties of any covariant
+# parameter. Applying a prior with a realistic uncertainty is strongly
+# preferred. If possible, using the data set from which the prior was
+# derived is even better. The most common error I see is applying a
+# prior based on a similar analysis of the same data (e.g., imposing a
+# period prior from K2 data when fitting the K2 data, imposing an
+# SED-derived prior on Rstar while fitting the SED, or imposing a
+# prior on the stellar mass/radius from an evolutionary track while
+# using the evolutionary tracks in EXOFASTv2). This will double count
+# the constraint and artificially lower the reported
+# uncertainty. Changing starting values is wise. Adding penalties
+# should be done sparingly and with thought and care.
+#
+# 4) The fourth entry is a lower bound. Any model that steps outside
+# of this bound will be rejected. "-Inf" will be ignored. Beware of
+# biasing parameters away from these hard boundaries, like a
+# Lucy-Sweeney bias against e=0. These should be physically justified,
+# independent of the data sets being fit.
+#
+# 5) The fifth entry is an upper bound. "Inf" will be ignored.
 #
 # The suffixes corresponding to each
 # planet/transit/instrument/wavelength will be displayed at the

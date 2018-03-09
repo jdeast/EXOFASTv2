@@ -5,8 +5,18 @@ ss.star.rhostar.value = ss.star.mstar.value/(ss.star.rstar.value^3)*ss.constants
 ss.star.logg.value = alog10(ss.star.mstar.value/(ss.star.rstar.value^2)*ss.constants.gravitysun) ;; cgs
 ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
 
+;; derive the age
+if ss.mist and not ss.star.age.fit then begin
+   for i=0L, ss.nsteps-1 do begin
+      mistchi2 = massradius_mist(ss.star.eep.value[i],ss.star.mstar.value[i],$
+                                 ss.star.initfeh.value[i],ss.star.age.value[i],$
+                                 ss.star.teff.value[i],ss.star.rstar.value[i],$
+                                 ss.star.feh.value[i],mistage=mistage,fitage=ss.star.age.fit)
+      ss.star.age.value[i] = mistage
+   endfor
+endif
+
 ;; derive the absolute magnitude and distance
-nsteps = n_elements(ss.star.teff.value)
 ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
 
 for j=0, ss.ntel-1 do begin

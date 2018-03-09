@@ -6,165 +6,50 @@
 ;   Computes the chi2 for a transit and/or RV for a single planet
 ;
 ; CALLING SEQUENCE:
-;    chi2 = exofast_chi2(pars)
+;    chi2 = exofast_chi2v2(pars)
 ;
 ; INPUTS:
 ;
 ;    PARS - An array of parameters that describes the model. There
 ;           should be one for each parameter in the structure where
-;           fit==true
-; 
-;      pars.rvzeros   ;; the zero points for each RV data set
-;      pars.s         ;; a structure describing the star 
-;        s.mass       ;; stellar mass
-;        s.logg       ;; logg
-;        s.teff       ;; effective temperature
-;        s.feh        ;; metalicity
-;        s.vsini      ;; velocity
-;        s.distance   ;; stellar distance
-;        s.rstar      ;; stellar radius (derived)
-;        s.age        ;; stellar age (derived)
-;        s.luminosity ;; stellar luminosity (derived)
-;        s.umag       ;; apparent U magnitude
-;        s.bmag       ;; apparent B magnitude
-;        s.vmag       ;; apparent V magnitude
-;        s.rmag       ;; apparent R magnitude
-;        s.imag       ;; apparent I magnitude
-;        s.jmag       ;; apparent J magnitude
-;        s.hmag       ;; apparent H magnitude
-;        s.kmag       ;; apparent K magnitude
-;        s.sloanumag  ;; apparent sloan u magnitude
-;        s.sloangmag  ;; apparent sloan g magnitude
-;        s.sloanrmag  ;; apparent sloan r magnitude
-;        s.sloanimag  ;; apparent sloan i magnitude
-;        s.sloanzmag  ;; apparent sloan z magnitude
-;        s.stromumag  ;; apparent stromgren u magnitude
-;        s.strombmag  ;; apparent stromgren b magnitude
-;        s.stromvmag  ;; apparent stromgren v magnitude
-;        s.stromymag  ;; apparent stromgren y magnitude
-;        s.ra         ;; right ascension
-;        s.dec        ;; declination
-;        s.Omega      ;; orienation in real space (??)
-;        s.decpm
-;        s.rapm 
-;        
-;     pars.p  ;; an array of structures for each planet and/or observation
-;        p.tc       ;; time of inferior conjunction (primary transit)
-;        p.logP     ;; log of the period
-;        p.qecosw   ;; e^(1/4)*cosw
-;        p.qesinw   ;; e^(1/4)*sinw
-;        p.logK     ;; log of the RV semi-amplitude
-;        p.cosi     ;; cosine of the inclination
-;        p.p        ;; Rp/Rstar
-;        p.F0       ;; Baseline flux
-;        p.lambda   ;; projected Spin-Orbit alignment
-;        p.dilution ;; dilution term for the planet
-;        p.thermal  ;; thermal emission from the planet (constant offset)
-;        p.reflect  ;; reflected flux from the planet (phase dependent)
-;        p.beam     ;; beaming from the planet
-;        p.ellip    ;; ellipsoidal variation of star (tidally locked to planet)
-;        p.band     ;; the observed band
-;        p.u1       ;; linear limb darkening (depends on band)
-;        p.u2       ;; quadratic limb darkening (depends on band)
-;        p.u3       ;; 1st non-linear limb darkening (depends on band)
-;        p.u4       ;; 2nd non-linear limb darkening (depends on band)
-;        p.slope    ;; linear trend in the RVs C*(time - t0)
-;        p.quad     ;; quadratic trend in the RVs C*(time - t0)^2
-
-;    DATA - A structure that describes the data
-;    
-;    data.tranptrs ;; an array pointers to each transit data set
-;      (*tranptrs).trantime    ;; NDATA array of BJD_TDB
-;      (*tranptrs).flux        ;; NDATA array of Normalized flux
-;      (*tranptrs).fluxerr     ;; NDATA array of flux errors
-;      (*tranptrs).detrendmult ;; NTRENDS x NDATA array of multiplicative trends
-;      (*tranptrs).detrendsub  ;; NTRENDS x NDATA array of subtractive trends
-;    data.rvptrs  ;; an array of pointers to each RV data set
-;    data.options ;; a structure of options on how to fit the data
-;      options.fitrvs  ;; an NRV array of which RV data sets to fit  
-;      options.fittran ;; an NPLANET array of which transit data sets to fit  
-;      options.band    ;; an NPLANET array of the observed bands
-;      options.exptime ;; an NPLANET array of exposure times
-;      options.ninterp ;; an NPLANET array of number of interpolations
-;      options.circular ;; an NPLANET array of which planets should be circular
-;      options.yy      ;; use the YY isochrones
-;      options.tides   ;; include a rough treatment of tidal circularization
-;      options.debug   ;; debug
-
-;    PRIORS - A structure that mirrors PARS but with two-element arrays
-;             for each parameter [prior, prior width].
-;    LABELS - A structure that mirrors PARS but with 3-element strings
-;             arrays for each parameter. Each parameter is a 3-element array:
-;             Human-readable label
-;             Human-readable explanation
-;             textoidl form for machine-readable plotting
-;             labels.gamma[0] = 'gamma'
-;             labels.gamma[1] = 'Systemic velocity (m/s)'
-;             labels.gamma[2] = textoidl('\gamma')
-
-;    PARS - a parameter array containing all of the parameters in the
-;           model.
-;
-;           gamma     = pars[0]       ;; systemic velocity
-;           slope     = pars[1]       ;; slope in RVs
-;           tc        = pars[2]       ;; transit center time
-;           logP      = pars[3]       ;; alog10(Period/days)
-;           qecosw    = pars[4]       ;; eccentricity/arg of periastron
-;           qesinw    = pars[5]       ;; eccentricity/arg of periastron
-;           logK      = pars[6]       ;; alog10(velocity semi-amplitude/(m/s))
-;           cosi      = pars[7]       ;; cosine of inclination of the orbit
-;           p         = pars[8]       ;; rp/rstar
-;           log(ar)   = pars[9]       ;; alog10(a/rstar)
-;           logg      = pars[10]      ;; stellar surface gravity
-;           teff      = pars[11]      ;; stellar effective temperature
-;           feh       = pars[12]      ;; stellar metallicity
-;           depth2    = pars[13]      ;; secondary eclipse depth
-;           u1        = pars[14]      ;; linear limb darkening coeff
-;           u2        = pars[15]      ;; quadratic limb darkening coeff
-;           u3        = pars[16]      ;; 1st non-linear limb darkening coeff (not supported)
-;           u4        = pars[17]      ;; 2nd non-linear limb darkening coeff (not supported)
-;           F0        = pars[18]      ;; baseline flux
-;           coeffs = pars[19:npars-1] ;; detrending variables
+;           fit==true. This array should be generated by str2pars.pro.
 ;
 ; OPTIONAL INPUTS:
-;    PSNAME      - The name of a PS file. If set, a plot the
-;                  data/model will be written to this file.
+; 
+;    PSNAME      - If specified, this routine will generate
+;                  postscript figure for each model generated with a
+;                  base of PSNAME. 
+;
 ; OPTIONAL OUTPUTS:
-;    DETERMINANT - The determinant of the parameterization above and
-;                  the uniform priors we wish to impose. In this case,
-;                  it is always 1d0 (but is required by EXOFAST_DEMC).
-;    MODELRV     - The RV model at each time (rv.bjd).
-;    MODELFLUX   - The model light curve at each time (transit.bjd).
-;   
+;    
+;    DETERMINANT - The determinant of the Jacobian to weight the
+;                  acceptance likelihood in order to impose
+;                  non-uniform priors in the stepping parameters. This
+;                  is equal to 1 (no transformation) unless MIST
+;                  models are used. If MIST models are used,
+;                  DETERMINANT is equal to d(EEP)/d(Age) to transform
+;                  the uniform EEP prior into a uniform Age prior.
+;    MODELRV     - The RV model given the parameters
+;    MODELFLUX   - The Transit model given the parameters
+;    DERIVED     - An array of derived parameters. Nothing is ever
+;                  returned in DERIVED, but this keyword is required
+;                  by EXOFAST_DEMC.
 ;
 ; RESULT:
 ;    The chi^2 of the model given the data and parameters.
 ;
 ; COMMON BLOCKS:
-;   CHI2_BLOCK - See exofast.pro for definition
+;   CHI2_BLOCK - See exofastv2.pro for definition
 ;
 ; MODIFICATION HISTORY
 ; 
-;  2012/06 -- Public release -- Jason Eastman (LCOGT)
-;  2012/07 -- Fixed major bug in mstar/rstar prior width derivation
-;  2012/12 -- Add Long cadence, quadratic limb darkening fit.
-;  2012/12 -- Changed eccentricity constraint to e < (1-Rstar/a)
-;  2013/02 -- Fixed bug that broke detrending, introduced in 2012/12
-;  2013/03 -- Changed eccentricity prior:
-;               e > (1-Rstar/a-rp/a) -- models are rejected
-;               e > (1-3*Rstar/a) -- eccentricity set to zero if options.tides=1
-;               now step in e^(1/4)*cos(omega), e^(1/4)*sin(omega) to
-;               more closely match the observed prior distribution.
-;             Added support for Mstar/Rstar priors, replaces Torres relation
-;             Added support for YY evolutionary models, replaces
-;             Torres relation
-;             Added DERIVED parameter, which returns the age.
+;  2018/03 -- Create documentation -- Jason Eastman (CfA)
 ;-
 
 function exofast_chi2v2, pars, determinant=determinant, $
                          modelrv=modelrv, modelflux=modelflux, psname=psname, $
                          derived=derived
-  
+
 COMMON chi2_block, ss
 ;; populate the structure with the new parameters
 if n_elements(pars) ne 0 then pars2str, pars, ss
@@ -241,61 +126,6 @@ if nbad gt 0 then begin
    return, !values.d_infinity
 endif
 
-;; derive the model parameters from the stepping parameters (return if unphysical)
-ss.star.mstar.value = 10^ss.star.logmstar.value
-
-;; use the YY tracks to guide the stellar parameters
-if ~ss.noyy then begin
-   if keyword_set(psname) then epsname = psname+'.yy.eps'
-   yychi2 = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, $
-                           ss.star.age.value, ss.star.teff.value,$
-                           yyrstar=yyrstar, debug=ss.debug, psname=epsname, $
-                           sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
-                           gravitysun=ss.constants.gravitysun) 
-   if ~finite(yychi2) then begin
-      if ss.debug then printandlog, 'star is bad', ss.logname
-      return, !values.d_infinity
-   endif
-
-   yychi2 += ((ss.star.rstar.value - yyrstar)/(0.03*yyrstar))^2
-   chi2 += yychi2
-   if ss.verbose then printandlog, 'YY penalty = ' + strtrim(yychi2,2), ss.logname
-endif
-
-;; use the MIST tracks to guide the stellar parameters
-if ss.mist then begin
-   if keyword_set(psname) then epsname = psname+'.mist.eps'
-   mistchi2 = massradius_mist(ss.star.eep.value, ss.star.mstar.value, ss.star.initfeh.value, $
-                              ss.star.age.value, ss.star.teff.value,$
-                              ss.star.rstar.value, ss.star.feh.value, debug=ss.debug, $
-                              epsname=epsname, gravitysun=ss.constants.gravitysun)
-   chi2 += mistchi2
-   if ss.verbose then printandlog, 'MIST penalty = ' + strtrim(mistchi2,2), ss.logname
-   if ~finite(chi2) then begin
-      if ss.debug then printandlog, 'star not on MIST tracks', ss.logname
-      return, !values.d_infinity
-   endif
-endif
-
-;; use the Torres relation to guide the stellar parameters
-if ss.torres then begin
-   massradius_torres, ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, mstar_prior, rstar_prior
-   umstar = 0.027d0;*100d0 ;; why the factor of 100?!
-   urstar = 0.014d0;*100d0
-   if mstar_prior lt 0.6d0 then printandlog, $
-      'WARNING: Torres not applicable (mstar = ' + $
-      strtrim(mstar_prior,2) + '); ignore at beginning. Otherwise, ' + $
-      'use MIST, YY, or impose a prior on mstar/rstar',ss.logname
-   ;; add "prior" penalty
-   chi2 += (alog10(ss.star.mstar.value/mstar_prior)/umstar)^2
-   chi2 += (alog10(ss.star.rstar.value/rstar_prior)/urstar)^2
-
-   if ss.verbose then $
-      printandlog, 'Torres penalty: ' + string((alog10(ss.star.mstar.value/mstar_prior)/umstar)^2,$
-                                               (alog10(ss.star.rstar.value/rstar_prior)/urstar)^2), ss.logname
-
-endif
-
 if ss.star.errscale.value le 0 then begin
    if ss.debug then printandlog, 'error scale is bad', ss.logname
    return, !values.d_infinity
@@ -312,38 +142,105 @@ if ss.star.alpha.value lt -0.3d0 or ss.star.alpha.value gt 0.7d0 then begin
    return, !values.d_infinity
 endif
 
+;; derive the model parameters from the stepping parameters (return if unphysical)
 if step2pars(ss,verbose=ss.debug,logname=ss.logname) eq -1 then begin
    if ss.debug then printandlog, 'stellar system is bad', ss.logname
    return, !values.d_infinity
+endif
+;ss.star.mstar.value = 10^ss.star.logmstar.value
+
+;; use the YY tracks to guide the stellar parameters
+if ss.yy then begin
+   if keyword_set(psname) then epsname = psname+'.yy.eps'
+   yychi2 = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, $
+                           ss.star.age.value, ss.star.teff.value,$
+                           yyrstar=yyrstar, debug=ss.debug, psname=epsname, $
+                           sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
+                           gravitysun=ss.constants.gravitysun)
+   if ~finite(yychi2) then begin
+      if ss.debug then printandlog, 'star not on YY tracks', ss.logname
+      return, !values.d_infinity
+   endif
+
+   yychi2 += ((ss.star.rstar.value - yyrstar)/(0.03*yyrstar))^2
+   chi2 += yychi2
+   if ss.verbose then printandlog, 'YY penalty = ' + strtrim(yychi2,2), ss.logname
+endif
+
+;; use the MIST tracks to guide the stellar parameters
+if ss.mist then begin
+   if keyword_set(psname) then epsname = psname+'.mist.eps'
+   mistchi2 = massradius_mist(ss.star.eep.value, ss.star.mstar.value, ss.star.initfeh.value, $
+                              ss.star.age.value, ss.star.teff.value,$
+                              ss.star.rstar.value, ss.star.feh.value, debug=ss.debug, $
+                              epsname=epsname, gravitysun=ss.constants.gravitysun, $
+                              fitage=ss.star.age.fit, ageweight=ageweight)
+   chi2 += mistchi2
+   if ss.verbose then printandlog, 'MIST penalty = ' + strtrim(mistchi2,2), ss.logname
+   if ~finite(chi2) then begin
+      if ss.debug then printandlog, 'star not on MIST tracks', ss.logname
+      return, !values.d_infinity
+   endif
+   determinant *= ageweight ;; correct uniform EEP prior to uniform Age prior
+
+endif
+
+;; use the Torres relation to guide the stellar parameters
+if ss.torres then begin
+   massradius_torres, ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, mstar_prior, rstar_prior
+   umstar = 0.027d0;*100d0 ;; why the factor of 100?!
+   urstar = 0.014d0;*100d0
+   if mstar_prior lt 0.6d0 then printandlog, $
+      'WARNING: Torres not applicable (mstar = ' + $
+      strtrim(mstar_prior,2) + '); ignore at beginning. Otherwise, ' + $
+      'use MIST, YY, or impose a prior on mstar/rstar',ss.logname
+   ;; add "prior" penalty
+   chi2 += (alog10(ss.star.mstar.value/mstar_prior)/umstar)^2
+   chi2 += (alog10(ss.star.rstar.value/rstar_prior)/urstar)^2
+
+   if ss.verbose then $
+      printandlog, 'Torres penalty: ' + string((alog10(ss.star.mstar.value/mstar_prior)/umstar)^2, $
+                                               (alog10(ss.star.rstar.value/rstar_prior)/urstar)^2,format='(f0.6,x,f0.6)'), ss.logname
 endif
 
 ;; add prior penalties
 priors = *(ss.priors)
 for i=0, n_elements(priors[0,*])-1 do begin
 
-   ;; apply user-defined bounds
-   if ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value gt ss.(priors[0,i])[priors[1,i]].(priors[2,i]).upperbound or $
-      ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value lt ss.(priors[0,i])[priors[1,i]].(priors[2,i]).lowerbound then begin
+   ;; if it's a detrending variable
+   if priors[3,i] eq -1 then begin
+      value = ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value
+      upperbound = ss.(priors[0,i])[priors[1,i]].(priors[2,i]).upperbound
+      lowerbound =  ss.(priors[0,i])[priors[1,i]].(priors[2,i]).lowerbound 
+      label =  ss.(priors[0,i])[priors[1,i]].(priors[2,i]).label + '_' + strtrim(priors[1,i],2)
+      prior =  ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior
+      priorwidth = ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth
+   endif else begin
+      ;; otherwise
+      value = (*(ss.(priors[0,i])[priors[1,i]].(priors[2,i]))).(priors[3,i])[priors[4,i]].value
+      upperbound = (*(ss.(priors[0,i])[priors[1,i]].(priors[2,i]))).(priors[3,i])[priors[4,i]].upperbound
+      lowerbound = (*(ss.(priors[0,i])[priors[1,i]].(priors[2,i]))).(priors[3,i])[priors[4,i]].lowerbound 
+      label =  (*(ss.(priors[0,i])[priors[1,i]].(priors[2,i]))).(priors[3,i])[priors[4,i]].label + '_' + strtrim(priors[1,i],2)
+      prior = (*(ss.(priors[0,i])[priors[1,i]].(priors[2,i]))).(priors[3,i])[priors[4,i]].prior
+      priorwidth = (*(ss.(priors[0,i])[priors[1,i]].(priors[2,i]))).(priors[3,i])[priors[4,i]].priorwidth
+   endelse 
+
+   ;; apply the bounds
+   if value gt upperbound or value lt lowerbound then begin
       if ss.debug then $
-         printandlog, ss.(priors[0,i])[priors[1,i]].(priors[2,i]).label + '_' + strtrim(priors[1,i],2) + $
-                      ' (' + strtrim(ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value,2) + ') is out of bounds (' +$
-                      strtrim(ss.(priors[0,i])[priors[1,i]].(priors[2,i]).upperbound,2) + ',' + strtrim(ss.(priors[0,i])[priors[1,i]].(priors[2,i]).lowerbound,2) + ')',ss.logname
+         printandlog, label + '( ' + strtrim(value,2) + ') is out of bounds (' +$
+                      strtrim(lowerbound,2) + ',' + strtrim(upperbound,2) + ')',ss.logname
       return, !values.d_infinity
    endif
 
-   
-   chi2 += ((ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value - $
-             ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior)/$
-            ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth)^2
-   
-;   printandlog, ss.(priors[0,i])[priors[1,i]].(priors[2,i]).label,  ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value, $
-;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior, $
-;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth, $
-;          ((ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value - $
-;            ss.(priors[0,i])[priors[1,i]].(priors[2,i]).prior)/$
-;           ss.(priors[0,i])[priors[1,i]].(priors[2,i]).priorwidth)^2,$
-;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).lowerbound,$ 
-;          ss.(priors[0,i])[priors[1,i]].(priors[2,i]).upperbound, ss.logname
+   ;; apply the Gaussian prior
+   chi2 += ((value - prior)/priorwidth)^2
+
+   ;; output debugging info if requested
+   if ss.verbose then begin
+      str = string(label,((value - prior)/priorwidth)^2, format='(a," penalty = ",f0.6)')
+      printandlog, str, logname
+   endif
 
 endfor
 
@@ -367,15 +264,11 @@ for j=0, ss.nplanets-1 do begin
       ;; add a chi2 penalty for deviation from the mass-radius relation
       ;; if the radius is well-constrained (by transit depth), it
       ;; becomes an implicit constraint on mass. If the mass is well
-      ;; constrained (by RV), it becomes an implicit constraint on
+      ;; constrained (by RV), it is an explicit constraint on
       ;; radius
       chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
       
-;      printandlog, 'chen penalty = ' + strtrim(((rp - ss.planet[j].rpearth.value)/rperr)^2,2),logname
-;      printandlog, rp, ss.planet[j].rpearth.value,rperr,logname
-;      printandlog, ss.planet[j].mpearth.value,logname
-;      printandlog, ss.planet[j].k.value,logname
-
+      if ss.verbose then printandlog, 'chen penalty = ' + strtrim(((rp - ss.planet[j].rpearth.value)/rperr)^2,2),logname
    endif
 endfor
 
@@ -401,7 +294,7 @@ if file_test(ss.star.fluxfile) then begin
       return, !values.d_infinity
    endif
    chi2 += sedchi2
-;   printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
+   if ss.verbose then printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
 endif
 
 ;; RV model (non-interacting planets)
@@ -441,18 +334,16 @@ for j=0, ss.ntel-1 do begin
 
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
    
-   if keyword_set(psname) then $
-      exofast_forprint, rv.bjd, rv.rv - modelrv, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=psname + '.residuals.' + strtrim(j,2) + '.rv.txt', /nocomment,/silent
-   if keyword_set(psname) then $
-      exofast_forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6)', textout=psname + '.model.' + strtrim(j,2) + '.rv.txt', /nocomment,/silent
+   if keyword_set(psname) then begin
+      base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
+      exofast_forprint, rv.bjd, rv.rv - modelrv, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.telescope_' + strtrim(j,2) + '.txt', /nocomment,/silent
+      exofast_forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6)', textout=base + '.model.telescope_' + strtrim(j,2) + '.txt', /nocomment,/silent
+   endif
 
-;   printandlog, ss.telescope[j].jittervar.value,ss.telescope[j].jitter.value, sqrt(ss.telescope[j].jittervar.value),ss.logname
    rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jittervar.value,rv.err,/chi2)
-   
    if ~finite(rvchi2) then stop
    chi2 += rvchi2
-;   printandlog, 'RV penalty = ' + strtrim(rvchi2,2),ss.logname
-;   chi2 += total(((rv.rv - modelrv)/rv.err)^2)
+   if ss.verbose then printandlog, 'RV penalty = ' + strtrim(rvchi2,2),ss.logname
 endfor
 
 ;; if at least one RV planet is fit, plot it
@@ -494,7 +385,7 @@ for j=0, ss.ntran-1 do begin
    band = ss.band[ss.transit[j].bandndx]
 
    ;; quadratic limb darkening
-   if ~ss.noclaret then begin
+   if ss.claret then begin
       ldcoeffs = quadld(ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, band.name)
       u1claret = ldcoeffs[0]
       u2claret = ldcoeffs[1]
@@ -502,17 +393,17 @@ for j=0, ss.ntran-1 do begin
       u2err = 0.05d0
       chi2 += ((band.u1.value-u1claret)/u1err)^2
       chi2 += ((band.u2.value-u2claret)/u2err)^2
-;      printandlog, 'u1 penalty = ' + strtrim(((band.u1.value-u1claret)/u1err)^2,2),ss.logname
-;      printandlog, 'u2 penalty = ' + strtrim(((band.u2.value-u2claret)/u2err)^2,2),ss.logname
+      if ss.verbose then printandlog, 'u1 penalty = ' + strtrim(((band.u1.value-u1claret)/u1err)^2,2),ss.logname
+      if ss.verbose then printandlog, 'u2 penalty = ' + strtrim(((band.u2.value-u2claret)/u2err)^2,2),ss.logname
    endif
 
    ;; Kepler Long candence data; create several model points and average   
    ninterp = ss.transit[j].ninterp
    npoints = n_elements(transit.bjd)
    if ninterp gt 1 then begin
-      transitbjd = transit.bjd#(dblarr(ninterp)+1d0) + $     
-                   ((dindgen(ninterp)/(ninterp-1d0)-0.5d0)/$
-                    1440d*ss.transit[j].exptime)##(dblarr(npoints)+1d)
+      transitbjd = transit.bjd#(dblarr(ninterp)+1d0) + $
+                   ((dindgen(ninterp)/ninterp-(ninterp-1d0)/(2d0*ninterp))/$
+                    1440d0*ss.transit[j].exptime)##(dblarr(npoints)+1d0)
       modelflux = dblarr(npoints,ninterp) + 1d0
    endif else begin
       transitbjd = transit.bjd
@@ -557,12 +448,15 @@ for j=0, ss.ntran-1 do begin
    modelflux *=  ss.transit[j].f0.value
    
    ;; now integrate the model points (before detrending)
+   ;; Riemann integration beats trapezoidal and simpsons wins when sampling like above
    if ninterp gt 1 then modelflux = total(modelflux,2)/ninterp
 
-;   if band.thermal.fit then begin
-;      plot, transitbjd, transit.flux, /ynoz
-;      oplot, transitbjd, modelflux,color='0000ff'x
-;   endif
+   ;; Trapezoidal integration not as good
+   ;;if ninterp gt 1 then modelflux = (total(modelflux,2) - modelflux[*,0]/2d0 - modelflux[*,-1]/2d0)/(ninterp-1d0)
+
+   ;; Simpson integration (about 2x worse than trap because it
+   ;; requires sampling at the midpoint, effectively halving our resolution)
+   ;if ninterp gt 1 then modelflux = (4d0*total(modelflux,2) - 3d0*modelflux[*,0] - 3d0*modelflux[*,-1])/(4d0*ninterp - 6d0)
 
    ;; detrending
    modelflux += total(transit.detrendadd*replicate(1d0,n_elements(transit.bjd))##transit.detrendpars.value,1)  
@@ -570,30 +464,19 @@ for j=0, ss.ntran-1 do begin
    ;; chi^2
    transitchi2 = exofast_like(transit.flux - modelflux,ss.transit[j].variance.value,transit.err,/chi2)
 
-
    (*ss.transit[j].transitptrs).residuals = transit.flux - modelflux
    (*ss.transit[j].transitptrs).model = modelflux
 
-   if keyword_set(psname) then $
-      exofast_forprint, transit.bjd, transit.flux - modelflux, transit.err, format='(f0.8,x,f0.6,x,f0.6)', textout=psname + '.residuals.' + strtrim(j,2) + '.flux.txt', /nocomment,/silent
-   if keyword_set(psname) then $
-      exofast_forprint, transit.bjd, modelflux, format='(f0.8,x,f0.6)', textout=psname + '.model.' + strtrim(j,2) + '.flux.txt', /nocomment,/silent
+   if keyword_set(psname) then begin
+      base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
+      exofast_forprint, transit.bjd, transit.flux - modelflux, transit.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.transit_' + strtrim(j,2) + '.txt', /nocomment,/silent
+      exofast_forprint, transit.bjd, modelflux, format='(f0.8,x,f0.6)', textout=base + '.model.transit_' + strtrim(j,2) + '.txt', /nocomment,/silent
+   endif
 
    if ~finite(transitchi2) then stop
 
-;transitchi2 = strtrim(total(((transit.flux - modelflux)/transit.err)^2),2)
-
    chi2 += transitchi2
-;   printandlog, 'transit penalty: ' + strtrim(transitchi2,2) + ' ' + strtrim(ss.transit[j].variance.value,2),ss.logname
-
-;printandlog, 'transit chi2 = ' + strtrim(total(((transit.flux - modelflux)/transit.err)^2),2),ss.logname
-;stop
-;   screen = GET_SCREEN_SIZE()
-;   if win_state(5) then wset, 5 $
-;   else window, 5, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0
-;   transitchi22 = total((transit.flux - modelflux)^2/(ss.transit[j].variance.value+transit.err^2))
-;   plot, transitbjd, transit.flux-modelflux, title=strtrim(transitchi2,2) +  ' ' + strtrim(transitchi22,2), yrange=[-0.001,0.001]
-
+   if ss.verbose then printandlog, 'transit penalty: ' + strtrim(transitchi2,2) + ' ' + strtrim(ss.transit[j].variance.value,2),ss.logname
 
 endfor
 

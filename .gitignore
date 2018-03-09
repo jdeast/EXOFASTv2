@@ -3,5 +3,10 @@
 *.ps
 *.eps
 *.tex
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.pdf
 examples/*/*.idl
 examples/*/*.txt

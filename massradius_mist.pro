@@ -62,7 +62,7 @@
 ;-
 function massradius_mist, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvcrit, alpha=alpha, $
                                mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
-                               epsname=epsname, debug=debug, gravitysun=gravitysun
+                               epsname=epsname, debug=debug, gravitysun=gravitysun, fitage=fitage, ageweight=ageweight
 
 if n_elements(gravitysun) eq 0 then $                                           
    gravitysun = 27420.011d0 ;; cm/s^2                                           
@@ -80,6 +80,7 @@ common mist_block, tracks, allowedmass, allowedinitfeh, nmass, nfeh, nvvcrit, na
 
 if mstar lt 0.1d0 or mstar gt 300d0 then return, !values.d_infinity
 if initfeh lt -4d0 or initfeh gt 0.5d0 then return, !values.d_infinity
+if eep lt 1 then return, !values.d_infinity
 
 ;; if this is the first call, initialize the tracks
 if n_elements(tracks) eq 0 then begin
@@ -168,6 +169,7 @@ allfehs = dblarr(2,2,2)
 allteffs = dblarr(2,2,2)
 allages = dblarr(2,2,2)
 allrstars = dblarr(2,2,2) 
+allageweights = dblarr(2,2,2) 
 
 for i=0, 1 do begin
    for j=0, 1 do begin
@@ -183,9 +185,11 @@ for i=0, 1 do begin
       rstars = (*(tracks[i+minmassndx,j+minfehndx,vvcritndx,alphandx]))[1,*]
       teffs = (*(tracks[i+minmassndx,j+minfehndx,vvcritndx,alphandx]))[2,*]
       fehs = (*(tracks[i+minmassndx,j+minfehndx,vvcritndx,alphandx]))[3,*]
+      ageweights = (*(tracks[i+minmassndx,j+minfehndx,vvcritndx,alphandx]))[4,*]
 
       ;; make sure we don't overstep the EEP bounds
       neep = n_elements(ages)
+      if eep gt neep then return, !values.d_infinity
       mineepndx = floor(eep-1) < (neep-2)
 
       ;; populate the derived values
@@ -193,6 +197,7 @@ for i=0, 1 do begin
       allrstars[*,i,j] = rstars[mineepndx:mineepndx+1]
       allteffs[*,i,j] = teffs[mineepndx:mineepndx+1]
       allfehs[*,i,j] = fehs[mineepndx:mineepndx+1]
+      allageweights[*,i,j] = ageweights[mineepndx:mineepndx+1]
       
    endfor
 endfor
@@ -202,21 +207,26 @@ y_mass = (mstar-mstarbox[0])/(mstarbox[1]-mstarbox[0])
 z_feh = (initfeh-initfehbox[0])/(initfehbox[1]-initfehbox[0])
 
 if float(!version.release) le 8.2 then begin
-   mistage   = interpolate(allages  ,x_eep, y_mass, z_feh)
-   mistrstar = interpolate(allrstars,x_eep, y_mass, z_feh)
-   mistteff  = interpolate(allteffs ,x_eep, y_mass, z_feh)
-   mistfeh   = interpolate(allfehs  ,x_eep, y_mass, z_feh)
+   mistage       = interpolate(allages  ,x_eep, y_mass, z_feh)
+   mistrstar     = interpolate(allrstars,x_eep, y_mass, z_feh)
+   mistteff      = interpolate(allteffs ,x_eep, y_mass, z_feh)
+   mistfeh       = interpolate(allfehs  ,x_eep, y_mass, z_feh)
+   ageweight = interpolate(allageweights  ,x_eep, y_mass, z_feh)
 endif else begin
-   mistage   = interpolate(allages  ,x_eep, y_mass, z_feh,/double)
-   mistrstar = interpolate(allrstars,x_eep, y_mass, z_feh,/double)
-   mistteff  = interpolate(allteffs ,x_eep, y_mass, z_feh,/double)
-   mistfeh   = interpolate(allfehs  ,x_eep, y_mass, z_feh,/double)
+   mistage       = interpolate(allages  ,x_eep, y_mass, z_feh,/double)
+   mistrstar     = interpolate(allrstars,x_eep, y_mass, z_feh,/double)
+   mistteff      = interpolate(allteffs ,x_eep, y_mass, z_feh,/double)
+   mistfeh       = interpolate(allfehs  ,x_eep, y_mass, z_feh,/double)
+   ageweight = interpolate(allageweights  ,x_eep, y_mass, z_feh,/double)
 endelse
+
+;; must be less than the age of the universe
+if mistage lt 0 or mistage gt 13.82d0 then return, !values.d_infinity
 
 ;; assume 3% model errors
 chi2 = ((mistrstar - rstar)/(0.03d0*mistrstar))^2
 chi2 += ((mistteff - teff)/(0.03d0*mistteff))^2
-chi2 += ((mistage - age)/(0.03d0*mistage))^2
+if keyword_set(fitage) then chi2 += ((mistage - age)/(0.03d0*mistage))^2
 chi2 += ((mistfeh - feh)/(0.03d0))^2
 
 ;; plot it
@@ -236,8 +246,8 @@ if keyword_set(debug) or keyword_set(epsname) then begin
       loadct, 39, /silent
       red = 254
       symsize = 0.33
-      xtitle=textoidl('T_{eff}')
-      ytitle=textoidl('log g_*')
+      xtitle=exofast_textoidl('T_{eff}')
+      ytitle=exofast_textoidl('log g_*')
    endif else begin
       red = '0000ff'x
       symsize = 1

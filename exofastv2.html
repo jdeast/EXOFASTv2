@@ -14,14 +14,17 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Mon Feb 12 15:45:46 2018.<P>
+<STRONG>Last modified: </STRONG>Fri Mar  9 15:07:54 2018.<P>
  
 <HR>
  
 <A NAME="ROUTINELIST">
 <H1>List of Routines</H1></A>
 <UL>
+<LI><A HREF="#"></A>
 <LI><A HREF="#BJD2TARGET">BJD2TARGET</A>
+<LI><A HREF="#BLACKBODY">BLACKBODY</A>
+<LI><A HREF="#COMPARESTARS">COMPARESTARS</A>
 <LI><A HREF="#ELLKE">ELLKE</A>
 <LI><A HREF="#ELLPIC_BULIRSCH">ELLPIC_BULIRSCH</A>
 <LI><A HREF="#EXOFAST">EXOFAST</A>
@@ -40,12 +43,14 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_LATEXTAB[2]">EXOFAST_LATEXTAB[2]</A>
 <LI><A HREF="#EXOFAST_LIKE">EXOFAST_LIKE</A>
 <LI><A HREF="#EXOFAST_OCCULTQUAD">EXOFAST_OCCULTQUAD</A>
-<LI><A HREF="#EXOFAST_PLOTDIST[1]">EXOFAST_PLOTDIST[1]</A>
-<LI><A HREF="#EXOFAST_PLOTDIST[2]">EXOFAST_PLOTDIST[2]</A>
+<LI><A HREF="#EXOFAST_PLOTDIST">EXOFAST_PLOTDIST</A>
+<LI><A HREF="#EXOFAST_PLOTDIST_CORNER">EXOFAST_PLOTDIST_CORNER</A>
+<LI><A HREF="#EXOFAST_PTMC">EXOFAST_PTMC</A>
 <LI><A HREF="#EXOFAST_RANDOM">EXOFAST_RANDOM</A>
 <LI><A HREF="#EXOFAST_RECENTER">EXOFAST_RECENTER</A>
 <LI><A HREF="#EXOFAST_ROSSITER">EXOFAST_ROSSITER</A>
 <LI><A HREF="#EXOFAST_RV">EXOFAST_RV</A>
+<LI><A HREF="#EXOFAST_TEXTOIDL">EXOFAST_TEXTOIDL</A>
 <LI><A HREF="#EXOFAST_TWILIGHT">EXOFAST_TWILIGHT</A>
 <LI><A HREF="#JSON_PARSE">JSON_PARSE</A>
 <LI><A HREF="#KTOM2">KTOM2</A>
@@ -57,8 +62,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#PLOTIMAGE">PLOTIMAGE</A>
 <LI><A HREF="#QUADLD">QUADLD</A>
 <LI><A HREF="#SETDEFAULTVALUE">SETDEFAULTVALUE</A>
-<LI><A HREF="#TEXTOIDL[1]">TEXTOIDL[1]</A>
-<LI><A HREF="#TEXTOIDL[2]">TEXTOIDL[2]</A>
+<LI><A HREF="#TEXTOIDL">TEXTOIDL</A>
 <LI><A HREF="#TEXTOIDL_MATCHDELIM">TEXTOIDL_MATCHDELIM</A>
 <LI><A HREF="#TEXTOIDL_NEXTTOK">TEXTOIDL_NEXTTOK</A>
 <LI><A HREF="#TEXTOIDL_STRCNT">TEXTOIDL_STRCNT</A>
@@ -67,16 +71,120 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#TEXTOIDL_SUB_SUP">TEXTOIDL_SUB_SUP</A>
 <LI><A HREF="#TEXTOIDL_TABLE">TEXTOIDL_TABLE</A>
 <LI><A HREF="#TEXTOIDL_TRANS_SUB_SUPER">TEXTOIDL_TRANS_SUB_SUPER</A>
-<LI><A HREF="#[1]">[1]</A>
-<LI><A HREF="#[2]">[2]</A>
 </UL><P>
  
 <HR>
  
 <H1>Routine Descriptions</H1>
+<A NAME="">
+<H2></H2></A>
+<A HREF="#BJD2TARGET">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+
+  pg_ran
+
+ PURPOSE:
+
+ generates uniform random numbers
+
+ CATEGORY:
+
+ numeric utils
+
+ CALLING SEQUENCE:
+
+ data=pg_ran(seed,n)
+
+ INPUTS:
+
+ n: number of uniform random deviates to produce
+
+ OPTIONAL INPUTS:
+
+ seed: seed for the random number generator. Input is either a scalar integer
+       or an array of 3 UL64 integers. The internal seed of the routine is the
+       array of 3 UL64 integers.
+
+ KEYWORD PARAMETERS:
+
+ double: if set, output is double precision instead of ulong64
+
+ OUTPUTS:
+
+ data: a set of ulong64 integers, uniformly randomly distributed
+       between 0ULL and 2ULL^64-1
+       (if keyword /double is set - doubles between 0d and 1d will
+       be returned instead)
+
+ OPTIONAL OUTPUTS:
+
+ seed: the seed to be used to get the next number in the sequence.
+       It's an array of 3 L64 integers.
+
+ none
+
+ COMMON BLOCKS:
+
+ none
+
+ SIDE EFFECTS:
+
+ none
+
+ RESTRICTIONS:
+
+
+
+ PROCEDURE:
+
+ IDL implementation of the routine "ran" of numerical
+ recipes 3d edition (page 342). This is a high quality
+ random generator with a period of ~ 3.138x10^57.
+
+ EXAMPLE:
+
+
+ seed=17
+ print,pg_ran(seed,10)
+    269952321389814056
+   7477734313819993120
+  16294976781531816119
+  17039904789424739738
+   4945048831639962635
+   1565409385732501729
+   7095006703038622919
+  13927236388846696772
+    150171266583137103
+   8092874815854888167
+ seed=17
+ print,pg_ran(seed,10,/double),format='(d17.15)'
+     0.014634144665917
+     0.405368789415652
+     0.883352461356882
+     0.923735089582023
+     0.268071634315548
+     0.084861012842019
+     0.384621084061685
+     0.754996997475338
+     0.008140800673717
+     0.438715622850155
+     
+
+ MODIFICATION HISTORY:
+
+ 2008 Paolo C. Grigis written
+ 07-AUG-2009 Paolo C. Grigis updated documentation
+ 12-NOV-2009 PG added /double keyword 
+</PRE><P>
+<STRONG>(See pg_ran.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="BJD2TARGET">
 <H2>BJD2TARGET</H2></A>
-<A HREF="#ELLKE">[Next Routine]</A>
+<A HREF="#">[Previous Routine]</A>
+<A HREF="#BLACKBODY">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -138,9 +246,77 @@ at the IDL command line prompt.<P>
 <STRONG>(See bjd2target.pro)</STRONG><P>
 <HR>
  
+<A NAME="BLACKBODY">
+<H2>BLACKBODY</H2></A>
+<A HREF="#BJD2TARGET">[Previous Routine]</A>
+<A HREF="#COMPARESTARS">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ PURPOSE:
+  This function calculates the Planck function I_nu or
+  I_lambda.
+    I_nu     = 2h nu^3 c^-2 ( exp(h nu / kT) -1)^-1
+    I_lambda = 2h c^2 lambda^-5 (exp ( hc / lambda kt) -1)^-1
+
+ CATEGORY:
+  Astrophysics
+
+ CALLING SEQUENCE:
+  result = BLACKBODY(temp, x, [/freq, /wave, /cgs, /mks])
+ 
+ INPUTS:
+  temp: The temperature, in K. Scalar or vector. If it is a scalar,
+        the same temperature is assumed for each value of x.
+     x: By default, the wagelength in mks units. If /cgs is set, then
+     this number is in cgs units. If /freq is set, this number is the
+     frequency. 
+
+ KEYWORD PARAMETERS:
+  wave: Set to receive the input as a wavelength, and output I_lambda
+  freq: Set to receive the input as a frequency, and output I_nu
+        (default) 
+  cgs:  Set to receive the input and return the output in cgs units
+  mks:  Set to receive the input and return the output in mks units
+        (default) 
+
+ OUTPUTS:
+  I_nu or, if /wave is set, I_lambda
+
+ MODIFICATION HISTORY:
+  May 2009: Written by Chris Beaumont
+</PRE><P>
+<STRONG>(See blackbody.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="COMPARESTARS">
+<H2>COMPARESTARS</H2></A>
+<A HREF="#BLACKBODY">[Previous Routine]</A>
+<A HREF="#ELLKE">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   COMPARESTARS
+
+ PURPOSE: 
+   Compares the stellar parameters of several different fits using
+   the IDL save files as output by EXOFASTv2.pro.
+
+ CALLING SEQUENCE:
+   comparestars, 'savpath' [,TAGS=,PSNAME=]
+
+ INPUTS:
+   SAVPATH - A string resolved by file_search to specify the names of
+             all the idl save files to compare.
+   TAGS    - A string array specifying the tagnames to compare.
+   PSNAME  - A string specifying the name of the postscript file to
+             output. If not specified, the plots are made to the screen.
+</PRE><P>
+<STRONG>(See comparestars.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="ELLKE">
 <H2>ELLKE</H2></A>
-<A HREF="#BJD2TARGET">[Previous Routine]</A>
+<A HREF="#COMPARESTARS">[Previous Routine]</A>
 <A HREF="#ELLPIC_BULIRSCH">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -296,7 +472,8 @@ at the IDL command line prompt.<P>
              Note: May be degenerate with F0 (transit normalization) 
              TODO: automatically model dilution based on multiple
              SEDs
-  NVALUES  - ?? (I probably should have documented that when I made it...)
+  NVALUES  - By default, parameter.value is a scalar. Set this
+             to make it an array of length NVALUES.
   PRIORFILE - The name of the file that specifies all the priors. The
               prior file is an ASCII file with each line containing
               three white space delimited columns: NAME, VALUE,
@@ -699,12 +876,17 @@ with a diff
  OPTIONAL KEYWORDS:
    FITSLOPE  - If set, it will fit a linear trend to the RV data.
    FITQUAD   - If set, it will fit a quadratic trend to the RV data.
-   NOYY      - If set, do not use the YY evolutionary tracks (see
-               http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=2001ApJS..136..417Y)
-               to constrain the mass/radius of the star. If set,
-               \log(rstar) is fit instead of age. This should be set
-               for low-mass stars and an external constraint on the
-               stellar mass and radius should be supplied.
+   MIST      - If set, use the MIST evolutionary tracks 
+               see http://waps.cfa.harvard.edu/MIST/
+               And please cite
+               http://adsabs.harvard.edu/abs/2016ApJS..222....8D
+               http://adsabs.harvard.edu/abs/2016ApJ...823..102C
+               *** Use with caution, not thoroughly tested ***
+   NOYY      - If set, disable YY evolutionary tracks
+               see
+               http://adsabs.harvard.edu/abs/2001ApJS..136..417Y
+               to constrain the mass/radius of the star. YY should
+               not be used for low-mass stars (~< 0.5 msun).
    TORRES    - If set, use the Torres relations to constrain the mass
                and radius of the star. This may be useful to
                investigate potential systematics and should probably
@@ -731,15 +913,12 @@ with a diff
                period is constrained by a linear fit to all transit
                times at each step. Otherwise, a linear ephemeris is
                assumed.
-               ***NOT YET IMPLEMENTED***
    TDELTAVS  - If set, a new transit depth is fit for each
                transit. Otherwise, all transits of the same planet
                are modeled with the same same depth.
-               ***NOT YET IMPLEMENTED***              
    TIVS      - If set, a new inclination is fit for each
                transit. Otherwise, all transits of the same planet
                are modeled with the same same depth.
-               ***NOT YET IMPLEMENTED***    
    BESTONLY  - If set, only the best fit (using AMOEBA) will be
                performed.
                ***NOT YET IMPLEMENTED***
@@ -747,6 +926,8 @@ with a diff
                data is made. This is useful when refining initial
                guesses.
                ***NOT YET IMPLEMENTED***
+   SKIPSTAR  - If set, don't bother refining the stellar
+               parameters first, go straight to the global fit.
    EARTH     - If set, the output units of Mp and Rp are in Earth
                units, not Jupiter units.
    DEBUG     - If set, various debugging outputs will be printed and
@@ -755,6 +936,8 @@ with a diff
                wrong. Usually a parameter starts too far from its
                correct value to find or some parameter is not
                constrained.
+   STARDEBUG - Same as DEBUG, but applied to the stellar parameter
+               refinement at the beginning of the fit.
 
  OUTPUTS:
 
@@ -947,159 +1130,44 @@ Function value:       1.33000
    Computes the chi2 for a transit and/or RV for a single planet
 
  CALLING SEQUENCE:
-    chi2 = exofast_chi2(pars)
+    chi2 = exofast_chi2v2(pars)
 
  INPUTS:
 
     PARS - An array of parameters that describes the model. There
            should be one for each parameter in the structure where
-           fit==true
- 
-      pars.rvzeros   ;; the zero points for each RV data set
-      pars.s         ;; a structure describing the star 
-        s.mass       ;; stellar mass
-        s.logg       ;; logg
-        s.teff       ;; effective temperature
-        s.feh        ;; metalicity
-        s.vsini      ;; velocity
-        s.distance   ;; stellar distance
-        s.rstar      ;; stellar radius (derived)
-        s.age        ;; stellar age (derived)
-        s.luminosity ;; stellar luminosity (derived)
-        s.umag       ;; apparent U magnitude
-        s.bmag       ;; apparent B magnitude
-        s.vmag       ;; apparent V magnitude
-        s.rmag       ;; apparent R magnitude
-        s.imag       ;; apparent I magnitude
-        s.jmag       ;; apparent J magnitude
-        s.hmag       ;; apparent H magnitude
-        s.kmag       ;; apparent K magnitude
-        s.sloanumag  ;; apparent sloan u magnitude
-        s.sloangmag  ;; apparent sloan g magnitude
-        s.sloanrmag  ;; apparent sloan r magnitude
-        s.sloanimag  ;; apparent sloan i magnitude
-        s.sloanzmag  ;; apparent sloan z magnitude
-        s.stromumag  ;; apparent stromgren u magnitude
-        s.strombmag  ;; apparent stromgren b magnitude
-        s.stromvmag  ;; apparent stromgren v magnitude
-        s.stromymag  ;; apparent stromgren y magnitude
-        s.ra         ;; right ascension
-        s.dec        ;; declination
-        s.Omega      ;; orienation in real space (??)
-        s.decpm
-        s.rapm 
-        
-     pars.p  ;; an array of structures for each planet and/or observation
-        p.tc       ;; time of inferior conjunction (primary transit)
-        p.logP     ;; log of the period
-        p.qecosw   ;; e^(1/4)*cosw
-        p.qesinw   ;; e^(1/4)*sinw
-        p.logK     ;; log of the RV semi-amplitude
-        p.cosi     ;; cosine of the inclination
-        p.p        ;; Rp/Rstar
-        p.F0       ;; Baseline flux
-        p.lambda   ;; projected Spin-Orbit alignment
-        p.dilution ;; dilution term for the planet
-        p.thermal  ;; thermal emission from the planet (constant offset)
-        p.reflect  ;; reflected flux from the planet (phase dependent)
-        p.beam     ;; beaming from the planet
-        p.ellip    ;; ellipsoidal variation of star (tidally locked to planet)
-        p.band     ;; the observed band
-        p.u1       ;; linear limb darkening (depends on band)
-        p.u2       ;; quadratic limb darkening (depends on band)
-        p.u3       ;; 1st non-linear limb darkening (depends on band)
-        p.u4       ;; 2nd non-linear limb darkening (depends on band)
-        p.slope    ;; linear trend in the RVs C*(time - t0)
-        p.quad     ;; quadratic trend in the RVs C*(time - t0)^2
-
-    DATA - A structure that describes the data
-    
-    data.tranptrs ;; an array pointers to each transit data set
-      (*tranptrs).trantime    ;; NDATA array of BJD_TDB
-      (*tranptrs).flux        ;; NDATA array of Normalized flux
-      (*tranptrs).fluxerr     ;; NDATA array of flux errors
-      (*tranptrs).detrendmult ;; NTRENDS x NDATA array of multiplicative trends
-      (*tranptrs).detrendsub  ;; NTRENDS x NDATA array of subtractive trends
-    data.rvptrs  ;; an array of pointers to each RV data set
-    data.options ;; a structure of options on how to fit the data
-      options.fitrvs  ;; an NRV array of which RV data sets to fit  
-      options.fittran ;; an NPLANET array of which transit data sets to fit  
-      options.band    ;; an NPLANET array of the observed bands
-      options.exptime ;; an NPLANET array of exposure times
-      options.ninterp ;; an NPLANET array of number of interpolations
-      options.circular ;; an NPLANET array of which planets should be circular
-      options.yy      ;; use the YY isochrones
-      options.tides   ;; include a rough treatment of tidal circularization
-      options.debug   ;; debug
-
-    PRIORS - A structure that mirrors PARS but with two-element arrays
-             for each parameter [prior, prior width].
-    LABELS - A structure that mirrors PARS but with 3-element strings
-             arrays for each parameter. Each parameter is a 3-element array:
-             Human-readable label
-             Human-readable explanation
-             textoidl form for machine-readable plotting
-             labels.gamma[0] = 'gamma'
-             labels.gamma[1] = 'Systemic velocity (m/s)'
-             labels.gamma[2] = textoidl('\gamma')
-
-    PARS - a parameter array containing all of the parameters in the
-           model.
-
-           gamma     = pars[0]       ;; systemic velocity
-           slope     = pars[1]       ;; slope in RVs
-           tc        = pars[2]       ;; transit center time
-           logP      = pars[3]       ;; alog10(Period/days)
-           qecosw    = pars[4]       ;; eccentricity/arg of periastron
-           qesinw    = pars[5]       ;; eccentricity/arg of periastron
-           logK      = pars[6]       ;; alog10(velocity semi-amplitude/(m/s))
-           cosi      = pars[7]       ;; cosine of inclination of the orbit
-           p         = pars[8]       ;; rp/rstar
-           log(ar)   = pars[9]       ;; alog10(a/rstar)
-           logg      = pars[10]      ;; stellar surface gravity
-           teff      = pars[11]      ;; stellar effective temperature
-           feh       = pars[12]      ;; stellar metallicity
-           depth2    = pars[13]      ;; secondary eclipse depth
-           u1        = pars[14]      ;; linear limb darkening coeff
-           u2        = pars[15]      ;; quadratic limb darkening coeff
-           u3        = pars[16]      ;; 1st non-linear limb darkening coeff (not supported)
-           u4        = pars[17]      ;; 2nd non-linear limb darkening coeff (not supported)
-           F0        = pars[18]      ;; baseline flux
-           coeffs = pars[19:npars-1] ;; detrending variables
+           fit==true. This array should be generated by str2pars.pro.
 
  OPTIONAL INPUTS:
-    PSNAME      - The name of a PS file. If set, a plot the
-                  data/model will be written to this file.
+ 
+    PSNAME      - If specified, this routine will generate
+                  postscript figure for each model generated with a
+                  base of PSNAME. 
+
  OPTIONAL OUTPUTS:
-    DETERMINANT - The determinant of the parameterization above and
-                  the uniform priors we wish to impose. In this case,
-                  it is always 1d0 (but is required by EXOFAST_DEMC).
-    MODELRV     - The RV model at each time (rv.bjd).
-    MODELFLUX   - The model light curve at each time (transit.bjd).
-   
+    
+    DETERMINANT - The determinant of the Jacobian to weight the
+                  acceptance likelihood in order to impose
+                  non-uniform priors in the stepping parameters. This
+                  is equal to 1 (no transformation) unless MIST
+                  models are used. If MIST models are used,
+                  DETERMINANT is equal to d(EEP)/d(Age) to transform
+                  the uniform EEP prior into a uniform Age prior.
+    MODELRV     - The RV model given the parameters
+    MODELFLUX   - The Transit model given the parameters
+    DERIVED     - An array of derived parameters. Nothing is ever
+                  returned in DERIVED, but this keyword is required
+                  by EXOFAST_DEMC.
 
  RESULT:
     The chi^2 of the model given the data and parameters.
 
  COMMON BLOCKS:
-   CHI2_BLOCK - See exofast.pro for definition
+   CHI2_BLOCK - See exofastv2.pro for definition
 
  MODIFICATION HISTORY
  
-  2012/06 -- Public release -- Jason Eastman (LCOGT)
-  2012/07 -- Fixed major bug in mstar/rstar prior width derivation
-  2012/12 -- Add Long cadence, quadratic limb darkening fit.
-  2012/12 -- Changed eccentricity constraint to e < (1-Rstar/a)
-  2013/02 -- Fixed bug that broke detrending, introduced in 2012/12
-  2013/03 -- Changed eccentricity prior:
-               e > (1-Rstar/a-rp/a) -- models are rejected
-               e > (1-3*Rstar/a) -- eccentricity set to zero if options.tides=1
-               now step in e^(1/4)*cos(omega), e^(1/4)*sin(omega) to
-               more closely match the observed prior distribution.
-             Added support for Mstar/Rstar priors, replaces Torres relation
-             Added support for YY evolutionary models, replaces
-             Torres relation
-             Added DERIVED parameter, which returns the age.
+  2018/03 -- Create documentation -- Jason Eastman (CfA)
 </PRE><P>
 <STRONG>(See exofast_chi2v2.pro)</STRONG><P>
 <HR>
@@ -1889,7 +1957,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_OCCULTQUAD">
 <H2>EXOFAST_OCCULTQUAD</H2></A>
 <A HREF="#EXOFAST_LIKE">[Previous Routine]</A>
-<A HREF="#EXOFAST_PLOTDIST[1]">[Next Routine]</A>
+<A HREF="#EXOFAST_PLOTDIST">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -1900,7 +1968,7 @@ Function value:       1.33000
    quadratically limb-darkened source without microlensing.  Please
    cite Mandel & Agol (2002) and Eastman et al., (2013) if you make use
    of this routine in your research.  Please report errors or bugs to
-   agol@astro.washington.edu and jeastman@lcogt.net
+   agol@astro.washington.edu and jason.eastman@cfa.harvard.edu
 
  Limb darkening has the form:
   I(r)=[1-u1*(1-sqrt(1-(r/rs)^2))-u2*(1-sqrt(1-(r/rs)^2))^2]/(1-u1/3-u2/6)/pi
@@ -1959,10 +2027,10 @@ Function value:       1.33000
 <STRONG>(See exofast_occultquad.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_PLOTDIST[1]">
-<H2>EXOFAST_PLOTDIST[1]</H2></A>
+<A NAME="EXOFAST_PLOTDIST">
+<H2>EXOFAST_PLOTDIST</H2></A>
 <A HREF="#EXOFAST_OCCULTQUAD">[Previous Routine]</A>
-<A HREF="#EXOFAST_PLOTDIST[2]">[Next Routine]</A>
+<A HREF="#EXOFAST_PLOTDIST_CORNER">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2023,14 +2091,14 @@ Function value:       1.33000
 <STRONG>(See exofast_plotdist.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_PLOTDIST[2]">
-<H2>EXOFAST_PLOTDIST[2]</H2></A>
-<A HREF="#EXOFAST_PLOTDIST[1]">[Previous Routine]</A>
-<A HREF="#EXOFAST_RANDOM">[Next Routine]</A>
+<A NAME="EXOFAST_PLOTDIST_CORNER">
+<H2>EXOFAST_PLOTDIST_CORNER</H2></A>
+<A HREF="#EXOFAST_PLOTDIST">[Previous Routine]</A>
+<A HREF="#EXOFAST_PTMC">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
-   exofast_plotdist
+   exofast_plotdist_corner
  PURPOSE:
    Plots the distributions from MCMC chains (Probability Distribution
    Functions (PDFs) and covariances; returns median values and 68%
@@ -2043,35 +2111,25 @@ Function value:       1.33000
                      /NOCOVAR, PDFNAME=, COVARNAME=, BESTPARS=, PROBS=, /DEGREES]
 
  INPUTS:
-   PARS       - Array of NPARS x NSTEPS for each step in a Markov
-                Chain (with all chains concatenated together).
+   SS         - The stellar structure created by EXOFASTv2, populated
+                with an array of values for each parameter
 
  OPTIONAL INPUTS:
    ANGULAR    - An array that indexes the parameters that are
                 angular (radians unless /DEGREES is set). This will enable
                 special ways to calculate the median and plots, which
                 may otherwise fail. Default is none.
-   PARNAMES   - An NPARS string array containing the parameter names
-                to be plotted on the axes.
-                HINT: TeXtoIDL is awesome.
-   UNITS      - An NPARS string array containing the units to be
-                displayed on the X-axis of the PDFs.
    PDFNAME    - The filename of the output postscript plot of
                 PDFs. Default is pdf.ps
    COVARNAME  - The filename of the output postscript plot of
-                covariances. Default is covar.ps. 
-   BESTPARS   - An NPARS array that specifies the "best" parameters
-                of each value. If specified, a line will be drawn on
-                each PDF and a dot will be drawn on each covariance
-                plot at these values (this doesn't have to be
-                the best values).
+                covariances of fitted parameters. Default is covar.ps. 
    PROBS      - Array of probability contours to draw on the covariance
                 plots. Default is erf([1d,2d]/sqrt(2d0)) ~ [0.68,0.95].
+   LOGNAME    - The name of the logfile to print messages to.
 
  OPTIONAL KEYWORDS:
-   DEGREES    - If set, ANGULAR parameters are in degrees, not radians.
    NOCOVAR    - If set, no covariances plots will be made. Since
-                there will be NPARS*(NPARS-1)/2 plots, this can be
+                there will be NFIT*(NFIT-1)/2 plots, this can be
                 time consuming.
  OUTPUTS:
    MEDIANPARS - A 3 x NPARS array of median values, +err, -err (68%
@@ -2083,13 +2141,200 @@ Function value:       1.33000
  REVISION HISTORY:
    2009/11/24 - Written: Jason Eastman - The Ohio State University
    2013/03/12 - Fixed min/max, made slightly more efficient
+   2018/02/13 - Covariance plot now a corner plot inspired by
+                corner.py (much prettier)
 </PRE><P>
-<STRONG>(See exofast_plotdist2.pro)</STRONG><P>
+<STRONG>(See exofast_plotdist_corner.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="EXOFAST_PTMC">
+<H2>EXOFAST_PTMC</H2></A>
+<A HREF="#EXOFAST_PLOTDIST_CORNER">[Previous Routine]</A>
+<A HREF="#EXOFAST_RANDOM">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   exofast_ptmc
+ PURPOSE:
+   A Parallel Tempering, Differential Evolution, Markov Chain Monte
+   Carlo implementation to fit data and return the parameter
+   distributions, robust to widely-separated local minima.
+
+ DESCRIPTION:
+   Begins by determining the correct stepping scale by finding
+   differences in each parameters that yield a delta chi^2 = 1, then
+   uses 5*scale*randomn offsets in each parameter for the starting
+   points of each chain.
+
+   It then begins a Differential Evolution Markov Chain Monte Carlo
+   fit (ter Braak, 2006)
+   http://www.stat.columbia.edu/~gelman/stuff_for_blog/cajo.pdf. The
+   only slight modification to this basic alogorithm is that we
+   determine the magnitude of the uniform random deviate for each
+   parameter. We have found the dynamic range of our parameters can
+   be large, and thus not well suited to the one-size fits all
+   approach recommended there.
+
+   It does this for each of NTEMPS "temperatures", ranging from 1 to
+   TF, each of which is successively more likely to accept a worse
+   step. Swaps between simulations at adjacent temperatures are
+   accepted with the Metropolis-Hastings algorithm. This allows the
+   algorithm to sample widely-separated local minima
+   simultaneously. The parameters returned only come from the T=1
+   chain. By default, NTEMPS=1, and no parallel tempering is done
+   (for well-behaved parameter distributions, this is a waste of
+   time). The hot parameters can optionally be returned in the
+   HOTPARS array, but they should not be used to infer the posterior
+   and it substantially increases the memory footprint of the
+   program.
+
+   After taking 5% of MAXSTEPS, the program will estimate how many steps
+   will be necessary to be well-mixed. If it is not expected to be
+   well-mixed before taking the maximum number of steps, it will
+   output a warning and a recommended setting for NTHIN. This should
+   be accurate at the factor of 2-3 level.
+
+   The program stops when the chains are well-mixed, as defined by
+   Ford 2006 (http://adsabs.harvard.edu/abs/2006ApJ...642..505F)
+   using the Gelman-Rubin Statistic and number of independent draws,
+   or when each chain has taken MAXSTEPS, whichever is first.
+
+   Every step in the chain before all chains have crossed below the
+   median chi^2 will be considered the (the "burn-in"), and not used
+   for convergence tests. BURNNDX will specify the index of the first
+   useable chain so as not to be biased by the starting criteria.
+
+ CALLING SEQUENCE:
+   exofast_demc, bestpars, 'mychi2', pars [,CHI2=, TOFIT=,$
+                 SCALE=, SEED=,RANDOMFUNC=,NTHIN=, MAXSTEPS=,/DONTSTOP,$
+                 NCHAINS=, ANGULAR=,BURNNDX=,/REMOVEBURN]
+
+ INPUTS:
+   BESTPARS   - Array of the best-fit parameters. An accurate initial
+                fit is required to find the correct step size. MCMC
+                is not ideal for fitting data, just characterizing
+                the errors.
+   CHI2FUNC   - A string that specifies the name of the user-defined
+                function that calculates the chi^2 of a given
+                parameter set. Required data should be put in a
+                COMMON block. Its calling sequence must be:
+                chi2 = chi2func(pars, determinant=determinant)
+
+ OPTIONAL INPUTS:
+   TOFIT      - An array that indexes the parameters to fit. If not
+                specified, all parameters are fit.
+   ANGULAR    - An array that indexes the parameters that are
+                angular (must be in radians). This will enable
+                special ways to calculate the median and convergence
+                statistics, which may otherwise fail. Default is none.
+   SCALE      - An NPARS array containing the stepping scales for
+                each parameter. This is not recommended for normal
+                use. If not specified, it will be automatically
+                determined using EXOFAST_GETMCMCSCALE.
+   NTHIN      - Saves only every NTHINth link in each chain. This
+                is only recommended when the autocorrelation between
+                steps is large and memory management issues may
+                arise. Results will be more accurate the smaller this
+                is -- as long as the chain is well-mixed (pay
+                attention to the warnings).
+   MAXSTEPS   - The maximum number of steps (after thinning) for each
+                chain to take.  The default is 100,000. Take care when
+                increasing this number, as memory allocation issues
+                may arise (especially with 32 bit machines). If the
+                chain is not well-mixed, it is usually better to
+                increase NTHIN instead.
+   NCHAINS    - The number of independent chains to run. The
+                execution time scales ~linearly with this number, and
+                must be at least 3 to calculated convergence
+                statistics. The default is 10. 
+   SEED       - A seed for the random number generator. Do not mix
+                seeds from different random number
+                generators, and do not use several different seeds
+                for the same generator. If you use a random number
+                generator elsewhere, you should call EXOFAST_DEMC with
+                SEED. Default is -systime(/seconds). 
+   RANDOMFUNC - A string for the name of the random number generator
+                function. You can use your own as long as it returns
+                a uniform double precision deviate between 0 and 1,
+                accepts the /NORMAL keyword to generate random
+                gaussian deviates, and can return at least a two
+                dimensional array of deviates. You may also choose
+                between "EXOFAST_RANDOM" (default) or "RANDOMU".
+              - EXOFAST_RANDOM is an IDL wrapper for pg_ran. This is
+                a state of the art, bullet-proof generator with no
+                known statistical flaws, based on the third edition
+                of numerical recipes, pg 342. It is ~120x slower than
+                RANDOMU, though for typical DEMC fits, this accounts
+                for ~1% of the total runtime.
+              - RANDOMU is IDL's built-in, ran1-based generator with a
+                periodicity of ~10^9. ran1 is formally admonished by
+                its author, Numerical Recipes, but shown to give
+                identical results as the state of the art generator
+                See Eastman et. al., 2013 for more details.
+                http://adsabs.harvard.edu/abs/2013PASP..125...83E
+   MAXGR      - The maximum Gelman Rubin statistic that is
+                considered well-mixed (default=1.01)
+   MINTZ      - The minimum number of independent draws that is
+                considered well-mixed (default=1000)
+   NTEMPS     - The number of chains to run at different
+                temperatures. The more temperatures, the
+                easier it is to make swaps between temperatures, but
+                the longer it takes. The default is 1 (no parallel
+                tempering). 8 is a good value. Note that only the T=1
+                chain is kept.
+   TF         - The temperature of the hottest chain. The higher the
+                temperature, the more parameter space it will probe,
+                but the chains will be less likely to swap. Default is
+                200, which can robustly find minima separated by 50
+                sigma. A value of 1 will result in no temperature
+                difference between chains.
+   HOTPARS    - By default, the hot chains from the parallel
+                tempering are dynamically discarded
+                for efficiency. If this parameter is set, the
+                parameters from the hot chains will be stored
+                here. This is not useful to determine the posterior,
+                and should only be used for debugging. Note this
+                increases the (already-substantial) memory footprint
+                of the program by roughly a factor of NTEMPS.
+
+ OPTIONAL KEYWORDS:
+   DONTSTOP   - If set, the program will not stop when it is
+                converged, but will instead take MAXSTEPS steps in
+                each chain.
+   REMOVEBURN - If set, the burn-in will be removed in the returned
+                parameter array.
+ OUTPUTS:
+   PARS       - NFIT x NSTEPS x NCHAINS array of parameters.
+                NOTE: NSTEPS will be the lesser of when it is
+                converged or MAXSTEPS. 
+   CHI2       - NSTEPS x NCHAINS array with the chi^2 for each set of
+                parameters
+   DERIVED    - An NDERIVED x NSTEPS x NCHAINS array of parameters
+                that are derived during the chi^2 function. To
+                conserve memory, these should be reserved for
+                parameters that cannot be trivially rederived.
+
+ REVISION HISTORY:
+   2012/06 - Public Release - Jason Eastman (LCOGT)
+   2012/12 - When parameters aren't mixed, display the index
+             to the (more) static PARS array, not the index to the
+             dynamic TOFIT array.
+           - Removed memory-hungry vestigial code
+   2013/03 - Add GELMANRUBIN and TZ outputs, MAXGR, MINTZ inputs.
+             Added DERIVED output, to return non-trivially derived
+             parameters.
+             Added check for errant chains (stuck in local minima)
+             and discard them if the chains are not well-mixed at the
+             end. This is sketchy, but better than nothing.
+             This was a relatively common failure mode.
+   2013/11 - MAJOR CHANGE -- added parallel tempering option
+</PRE><P>
+<STRONG>(See exofast_ptmc.pro)</STRONG><P>
 <HR>
  
 <A NAME="EXOFAST_RANDOM">
 <H2>EXOFAST_RANDOM</H2></A>
-<A HREF="#EXOFAST_PLOTDIST[2]">[Previous Routine]</A>
+<A HREF="#EXOFAST_PTMC">[Previous Routine]</A>
 <A HREF="#EXOFAST_RECENTER">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -2231,7 +2476,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_RV">
 <H2>EXOFAST_RV</H2></A>
 <A HREF="#EXOFAST_ROSSITER">[Previous Routine]</A>
-<A HREF="#EXOFAST_TWILIGHT">[Next Routine]</A>
+<A HREF="#EXOFAST_TEXTOIDL">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2288,9 +2533,26 @@ Function value:       1.33000
 <STRONG>(See exofast_rv.pro)</STRONG><P>
 <HR>
  
+<A NAME="EXOFAST_TEXTOIDL">
+<H2>EXOFAST_TEXTOIDL</H2></A>
+<A HREF="#EXOFAST_RV">[Previous Routine]</A>
+<A HREF="#EXOFAST_TWILIGHT">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ SPECIAL NOTE: 
+       The file textoidl_trans_sub_super.pro contains two functions,
+       textoidl_trans_sub_super, and textoidl_sub_sup.  The former is the
+       generic routine for processing TeX sub/superscripts, the
+       latter is used only by textoidl_trans_sub_super and has no general
+       utility.  Hence it lives here.  You will see documentation for
+       textoidl_trans_sub_super second if you use DOC_LIBRARY.
+</PRE><P>
+<STRONG>(See exofast_textoidl.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="EXOFAST_TWILIGHT">
 <H2>EXOFAST_TWILIGHT</H2></A>
-<A HREF="#EXOFAST_RV">[Previous Routine]</A>
+<A HREF="#EXOFAST_TEXTOIDL">[Previous Routine]</A>
 <A HREF="#JSON_PARSE">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -3226,7 +3488,7 @@ Function value:       1.33000
 <A NAME="SETDEFAULTVALUE">
 <H2>SETDEFAULTVALUE</H2></A>
 <A HREF="#QUADLD">[Previous Routine]</A>
-<A HREF="#TEXTOIDL[1]">[Next Routine]</A>
+<A HREF="#TEXTOIDL">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  This procedure sets default values for positional and keyword arguments to
@@ -3289,26 +3551,9 @@ Function value:       1.33000
 <STRONG>(See setdefaultvalue.pro)</STRONG><P>
 <HR>
  
-<A NAME="TEXTOIDL[1]">
-<H2>TEXTOIDL[1]</H2></A>
+<A NAME="TEXTOIDL">
+<H2>TEXTOIDL</H2></A>
 <A HREF="#SETDEFAULTVALUE">[Previous Routine]</A>
-<A HREF="#TEXTOIDL[2]">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- SPECIAL NOTE: 
-       The file textoidl_trans_sub_super.pro contains two functions,
-       textoidl_trans_sub_super, and textoidl_sub_sup.  The former is the
-       generic routine for processing TeX sub/superscripts, the
-       latter is used only by textoidl_trans_sub_super and has no general
-       utility.  Hence it lives here.  You will see documentation for
-       textoidl_trans_sub_super second if you use DOC_LIBRARY.
-</PRE><P>
-<STRONG>(See textoidl.pro)</STRONG><P>
-<HR>
- 
-<A NAME="TEXTOIDL[2]">
-<H2>TEXTOIDL[2]</H2></A>
-<A HREF="#TEXTOIDL[1]">[Previous Routine]</A>
 <A HREF="#TEXTOIDL_MATCHDELIM">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -3388,12 +3633,12 @@ Function value:       1.33000
   See the file COPYRIGHT for restrictions on distrubting this code.
   This code comes with absolutely NO warranty; see DISCLAIMER for details.
 </PRE><P>
-<STRONG>(See textoidl.pro)</STRONG><P>
+<STRONG>(See exofast_textoidl.pro)</STRONG><P>
 <HR>
  
 <A NAME="TEXTOIDL_MATCHDELIM">
 <H2>TEXTOIDL_MATCHDELIM</H2></A>
-<A HREF="#TEXTOIDL[2]">[Previous Routine]</A>
+<A HREF="#TEXTOIDL">[Previous Routine]</A>
 <A HREF="#TEXTOIDL_NEXTTOK">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -3466,7 +3711,7 @@ Function value:       1.33000
   See the file COPYRIGHT for restrictions on distrubting this code.
   This code comes with absolutely NO warranty; see DISCLAIMER for details.
 </PRE><P>
-<STRONG>(See textoidl.pro)</STRONG><P>
+<STRONG>(See exofast_textoidl.pro)</STRONG><P>
 <HR>
  
 <A NAME="TEXTOIDL_NEXTTOK">
@@ -3537,7 +3782,7 @@ Function value:       1.33000
   See the file COPYRIGHT for restrictions on distrubting this code.
   This code comes with absolutely NO warranty; see DISCLAIMER for details.
 </PRE><P>
-<STRONG>(See textoidl.pro)</STRONG><P>
+<STRONG>(See exofast_textoidl.pro)</STRONG><P>
 <HR>
  
 <A NAME="TEXTOIDL_STRCNT">
@@ -3608,7 +3853,7 @@ Function value:       1.33000
   See the file COPYRIGHT for restrictions on distrubting this code.
   This code comes with absolutely NO warranty; see DISCLAIMER for details.
 </PRE><P>
-<STRONG>(See textoidl.pro)</STRONG><P>
+<STRONG>(See exofast_textoidl.pro)</STRONG><P>
 <HR>
  
 <A NAME="TEXTOIDL_STRTOK">
@@ -3688,7 +3933,7 @@ Function value:       1.33000
   See the file COPYRIGHT for restrictions on distrubting this code.
   This code comes with absolutely NO warranty; see DISCLAIMER for details.
 </PRE><P>
-<STRONG>(See textoidl.pro)</STRONG><P>
+<STRONG>(See exofast_textoidl.pro)</STRONG><P>
 <HR>
  
 <A NAME="TEXTOIDL_STRTRANS">
@@ -3771,7 +4016,7 @@ Function value:       1.33000
   See the file COPYRIGHT for restrictions on distrubting this code.
   This code comes with absolutely NO warranty; see DISCLAIMER for details.
 </PRE><P>
-<STRONG>(See textoidl.pro)</STRONG><P>
+<STRONG>(See exofast_textoidl.pro)</STRONG><P>
 <HR>
  
 <A NAME="TEXTOIDL_SUB_SUP">
@@ -3842,7 +4087,7 @@ Function value:       1.33000
   See the file COPYRIGHT for restrictions on distrubting this code.
   This code comes with absolutely NO warranty; see DISCLAIMER for details.
 </PRE><P>
-<STRONG>(See textoidl.pro)</STRONG><P>
+<STRONG>(See exofast_textoidl.pro)</STRONG><P>
 <HR>
  
 <A NAME="TEXTOIDL_TABLE">
@@ -3880,6 +4125,11 @@ Function value:       1.33000
  MODIFICATION HISTORY:
        $Id: textoidl.pro,v 1.9 2007-08-28 17:04:45 blanton Exp $
        $Log: not supported by cvs2svn $
+
+       Revision 1.81 2018/03/08, eastman
+       Rename to EXOFAST_TEXTOIDL, Remove \AA option, which is broken
+       in IDL 8.7.
+
        Revision 1.8  2004/07/19 16:48:04  schlegel
        Replace calls to the obsolete function RSTRPOS() with STRPOS(/REVERSE_SEARCH).
 
@@ -3927,13 +4177,12 @@ Function value:       1.33000
   See the file COPYRIGHT for restrictions on distrubting this code.
   This code comes with absolutely NO warranty; see DISCLAIMER for details.
 </PRE><P>
-<STRONG>(See textoidl.pro)</STRONG><P>
+<STRONG>(See exofast_textoidl.pro)</STRONG><P>
 <HR>
  
 <A NAME="TEXTOIDL_TRANS_SUB_SUPER">
 <H2>TEXTOIDL_TRANS_SUB_SUPER</H2></A>
 <A HREF="#TEXTOIDL_TABLE">[Previous Routine]</A>
-<A HREF="#[1]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4010,175 +4259,7 @@ Function value:       1.33000
   See the file COPYRIGHT for restrictions on distrubting this code.
   This code comes with absolutely NO warranty; see DISCLAIMER for details.
 </PRE><P>
-<STRONG>(See textoidl.pro)</STRONG><P>
-<HR>
- 
-<A NAME="[1]">
-<H2>[1]</H2></A>
-<A HREF="#TEXTOIDL_TRANS_SUB_SUPER">[Previous Routine]</A>
-<A HREF="#[2]">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- NAME:	    
-
-       GAUS_CONVOL
- 
- PURPOSE:
- 
-	Convolve a function with a gaussian.
- 
- CALLING SEQUENCE:
- 
-	Result=GAUS_CONVOL(X,Y,SIG)
-
- INPUTS:
-
-	X - vector of independent variables.
- 
-	Y - vector of dependent variables.
-
-	SIG - width of gaussian, in same units as X.
-
- KEYWORDS:
-
-       NSIGMA - A factor that determines how many points to use for
-                the gaussian kernel. The exact number of points used
-                depends on the value of SIG and the range of X values
-                as well, but it will be roughly equal to 2*NSIGMA*SIG.
-                Default=2.5.
-
- PROCEDURE:
- 
-       CONVOL is used to convolve y with a gaussian whose width is
-       sig, in x axis units.  The gaussian is defined as Gaussian =
-       1./sqrt(2.*!pi*sigma)*exp(-.5*(x/sigma)^2)
- 
- MODIFICATION HISTORY:
- 
-   David L. Windt, Bell Labs, July 1990.
-   
-   November 1990: added factor of 2 in gaussian argument.
-   
-   February 1997: made sure gaussian kernel has at least 2 points.
-   
-   windt@bell-labs.com
-
-   16-SEP-1998  - Introduced the keyword NSIGMA and changed the
-                  calculation of the number of points
-                  n_pts. NSIGMA=5.  Made conversion parameter DOUBLE
-                  precision and corrected the calculation of this
-                  parameter.  Note, width in xvar is only approximate
-                  (and always a little larger than +- NSIGMA).  -
-                  
-   Roger Dejus (dejus@aps.anl.gov)
-
-</PRE><P>
-<STRONG>(See multifast_gaus_convol.pro)</STRONG><P>
-<HR>
- 
-<A NAME="[2]">
-<H2>[2]</H2></A>
-<A HREF="#[1]">[Previous Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- NAME:
-
-  pg_ran
-
- PURPOSE:
-
- generates uniform random numbers
-
- CATEGORY:
-
- numeric utils
-
- CALLING SEQUENCE:
-
- data=pg_ran(seed,n)
-
- INPUTS:
-
- n: number of uniform random deviates to produce
-
- OPTIONAL INPUTS:
-
- seed: seed for the random number generator. Input is either a scalar integer
-       or an array of 3 UL64 integers. The internal seed of the routine is the
-       array of 3 UL64 integers.
-
- KEYWORD PARAMETERS:
-
- double: if set, output is double precision instead of ulong64
-
- OUTPUTS:
-
- data: a set of ulong64 integers, uniformly randomly distributed
-       between 0ULL and 2ULL^64-1
-       (if keyword /double is set - doubles between 0d and 1d will
-       be returned instead)
-
- OPTIONAL OUTPUTS:
-
- seed: the seed to be used to get the next number in the sequence.
-       It's an array of 3 L64 integers.
-
- none
-
- COMMON BLOCKS:
-
- none
-
- SIDE EFFECTS:
-
- none
-
- RESTRICTIONS:
-
-
-
- PROCEDURE:
-
- IDL implementation of the routine "ran" of numerical
- recipes 3d edition (page 342). This is a high quality
- random generator with a period of ~ 3.138x10^57.
-
- EXAMPLE:
-
-
- seed=17
- print,pg_ran(seed,10)
-    269952321389814056
-   7477734313819993120
-  16294976781531816119
-  17039904789424739738
-   4945048831639962635
-   1565409385732501729
-   7095006703038622919
-  13927236388846696772
-    150171266583137103
-   8092874815854888167
- seed=17
- print,pg_ran(seed,10,/double),format='(d17.15)'
-     0.014634144665917
-     0.405368789415652
-     0.883352461356882
-     0.923735089582023
-     0.268071634315548
-     0.084861012842019
-     0.384621084061685
-     0.754996997475338
-     0.008140800673717
-     0.438715622850155
-     
-
- MODIFICATION HISTORY:
-
- 2008 Paolo C. Grigis written
- 07-AUG-2009 Paolo C. Grigis updated documentation
- 12-NOV-2009 PG added /double keyword 
-</PRE><P>
-<STRONG>(See pg_ran.pro)</STRONG><P>
+<STRONG>(See exofast_textoidl.pro)</STRONG><P>
 <HR>
  
 </body>

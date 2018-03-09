@@ -15,7 +15,7 @@ if n_elements(afe) eq 0 then afe = 0d0
 ;; make these global for speed (restore is expensive)
 COMMON YY_BLOCK, tracks
 
-path = getenv('EXOFAST_PATH') + 'yy/'
+path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir='yy')
 
 if file_test(path + 'tracks.idl') then begin
    if n_elements(tracks) eq 0 then restore, path + 'tracks.idl' 
@@ -181,8 +181,8 @@ if keyword_set(debug) or keyword_set(psname) then begin
       loadct, 39, /silent
       red = 254
       symsize = 0.33
-      xtitle=textoidl('T_{eff}')
-      ytitle=textoidl('log g_*')
+      xtitle=exofast_textoidl('T_{eff}')
+      ytitle=exofast_textoidl('log g_*')
    endif else begin
       red = '0000ff'x
       symsize = 1

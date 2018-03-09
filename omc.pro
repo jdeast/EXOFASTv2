@@ -179,6 +179,7 @@ if keyword_set(ps) or n_elements(epsname) ne 0 then begin
    !p.multi=0
    device, /close
    device, encapsulated=0
+   set_plot, mydevice
 endif
 
 end

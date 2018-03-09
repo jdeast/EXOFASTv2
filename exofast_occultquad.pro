@@ -8,7 +8,7 @@ pro exofast_occultquad,z0,u1,u2,p0,muo1,mu0,d=d
 ;   quadratically limb-darkened source without microlensing.  Please
 ;   cite Mandel & Agol (2002) and Eastman et al., (2013) if you make use
 ;   of this routine in your research.  Please report errors or bugs to
-;   agol@astro.washington.edu and jeastman@lcogt.net
+;   agol@astro.washington.edu and jason.eastman@cfa.harvard.edu
 ;
 ; Limb darkening has the form:
 ;  I(r)=[1-u1*(1-sqrt(1-(r/rs)^2))-u2*(1-sqrt(1-(r/rs)^2))^2]/(1-u1/3-u2/6)/pi

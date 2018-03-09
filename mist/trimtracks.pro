@@ -26,10 +26,13 @@ for i=0, nfiles-1 do begin
    teff = 10^eep.log_teff                                     ;; K
    age = eep.star_age/1d9                                     ;; Gyr
    feh = logsurfz - alog10(eep.surface_h1) - alog10(0.0181d0) ;; convert Z to [Fe/H], with Asplund 2009 (Z/H1)_sun=0.0181
-   
+
+   eep = dindgen(n_elements(rstar))+1d0
+   ageweight = deriv(age,eep) ;; d(EEP)/d(Age) to transform the uniform EEP prior to a uniform Age prior 
+
    ;; structure better?
 ;   track = create_struct('age',age,'rstar',rstar,'teff',teff,'feh',feh)
-   track = transpose([[age],[rstar],[teff],[feh]])
+   track = transpose([[age],[rstar],[teff],[feh],[ageweight]])
 
    save, track, filename=files[i] + '.idl'
 

@@ -201,5 +201,8 @@ while ncalls le nmax do begin		;Each iteration
 	endif		;ytry ge ysave
     endif else ncalls = ncalls  - 1
   endwhile
+t = y[0] & y[0] = y[ilo] & y[ilo] = t ;Sort so fcn min is 0th elem
+t = p[*,ilo] & p[*,ilo] = p[*,0] & p[*,0] = t
+return, t ;; return the best we got
   return, -1		;Here, the function failed to converge.
 end

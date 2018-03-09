@@ -1,3 +1,4 @@
+THIS DOESNT WORK YET...
 ;+
 ; NAME:
 ;   resume_exofastv2
@@ -22,7 +23,43 @@
 pro resume_exofastv2, savfile, maxsteps
 
 restore, savfile
+pars = str2parsarr(mcmcss)
 
+npars = n_elements(pars[*,0])
+pars = reform(pars,npars,mcmcss.steps/mcmcss.nchains,mcmcss.nchains)
+
+newsteps = maxsteps - mcmcss.steps/mcmcss.nchains
+pars = [[pars],[dblarr(npars,newsteps,mcmcss.nchains]]
+
+resumendx = mcmcss.steps/mcmcss.nchains
+
+exofast_demc, best, chi2func, pars, chi2=chi2,$
+              nthin=nthin,maxsteps=maxsteps,$
+              burnndx=burnndx, seed=seed, randomfunc=randomfunc, $
+              gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
+              derived=rstar,stretch=stretch, logname=logname, angular=angular,$
+              resumendx=resumendx;, checkpoint=checkpoint
+
+
+bad = where(tz lt mintz or gelmanrubin gt maxgr,nbad)
+if bad[0] ne -1 then begin
+   printandlog, 'WARNING: The Gelman-Rubin statistic indicates ' + $
+                'the following parameters are not well-mixed', logname
+   printandlog, '    Parameter   Rz     Tz', logname
+   for i=0, nbad-1 do printandlog, string(name[bad[i]], gelmanrubin[bad[i]],tz[bad[i]], format='(a13,x,2(f0.4,x))'), logname
+endif
+printandlog, 'Synthesizing results; for long chains and/or many fitted parameters, this may take up to 15 minutes', logname
+
+;; combine all chains
+sz = size(pars)
+npars = sz[1]
+nsteps = sz[2]
+nchains = sz[3]
+pars = reform(pars,npars,nsteps*nchains)
+chi2 = reform(chi2,nsteps*nchains)
+minchi2 = min(chi2,bestndx)
+
+if ~ss.noyy then rstar = reform(rstar,1,nsteps*nchains)
 
 
 end

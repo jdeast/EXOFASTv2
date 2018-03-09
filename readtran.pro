@@ -27,7 +27,7 @@ endif else bandname = band
 
 allowedbands = ['U','B','V','R','I','J','H','K',$
                 'Sloanu','Sloang','Sloanr','Sloani','Sloanz',$
-                'Kepler','CoRoT','Spit36','Spit45','Spit58','Spit80',$
+                'Kepler','TESS','CoRoT','Spit36','Spit45','Spit58','Spit80',$
                 'u','b','v','y']
 
 if (where(allowedbands eq band))[0] eq -1 then message, 'Filter (' + band + ') not allowed'

@@ -116,7 +116,7 @@ eep 300
 age 1.4
 # parallax from Gaia
 # https://gea.esac.esa.int/archive/
-parallax 7.258627002303356 0.4751402732636677
+parallax 7.258627002303356 0.005 # Ultimate gaia precision of 5 uas
 # V-band extinction; upper limit from Schegel Dust maps
 # https://irsa.ipac.caltech.edu/applications/DUST/
 av 0 -1 0 0.0239 

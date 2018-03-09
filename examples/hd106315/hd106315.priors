@@ -1,7 +1,9 @@
 # Stellar parameter priors from spectra
 teff 6251.77 50
 feh -0.271 0.08
-# logg 4.094 0.1 # with a transit, a logg prior is not recommended
+#mstar 1.086
+#rstar 1.308
+logg 4.094 #0.1 # with a transit, a prior is not recommended
 # vsini 14700 200 # not necessary unless fitting DT or RM data
 ### planet b ###
 period_0 9.5518908 -1

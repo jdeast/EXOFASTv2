@@ -177,7 +177,7 @@ if keyword_set(verbose) then begin
    endelse
    
    ymax=max(lamflam1)
-   plot,wav,smooth(lamflam1,15),/xlog,/ylog,yr=[ymax/20,ymax*1.2],xr=[0.2,30],/xs,/ys,xtitle=textoidl('\lambda (\mum)'), ytitle=textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
+   plot,wav,smooth(lamflam1,15),/xlog,/ylog,yr=[ymax/20,ymax*1.2],xr=[0.2,30],/xs,/ys,xtitle=exofast_textoidl('\lambda (\mum)'), ytitle=exofast_textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
    oplot,wav,smooth(lamflam2,15),col=colors[1]
    oplot,wav,smooth(lamflam,15),col=colors[2]
 

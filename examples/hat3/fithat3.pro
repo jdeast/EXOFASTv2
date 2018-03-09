@@ -1,10 +1,15 @@
-pro fithat3, debug=debug
+pro fithat3, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin
 
-maxsteps=50000
-nthin=2
-;maxsteps=100
-;nthin=1
+;; default to a very short run (not well-mixed or publication quality)
+if n_elements(maxsteps) eq 0 then maxsteps=100 ;; 50000
+if n_elements(nthin) eq 0 then nthin=1 ;; 50
+path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','hat3'])
 
-exofastv2, nplanets=1, tranpath='n20070428.Sloani.KepCam.dat', rvpath='hat3.rv',priorfile='hat3.priors', prefix='HAT-P-3b.torres4.', maxsteps=maxsteps, nthin=nthin, circular=[1], fitrv=[1],fittran=[1], debug=debug, /noyy, /torres
+;; Fit using the Torres relation
+exofastv2, nplanets=1, tranpath=path+'n20070428.Sloani.KepCam.dat', $
+           rvpath=path+'hat3.rv',priorfile=path+'hat3.priors', $
+           prefix=path+'HAT-3b.Torres.', maxsteps=maxsteps, $
+           nthin=nthin, circular=[1], fitrv=[1],fittran=[1], $
+           debug=debug, verbose=verbose, /noyy, /torres
 
 end

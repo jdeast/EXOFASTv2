@@ -66,8 +66,8 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
       device, xsize=xsize,ysize=ysize
       loadct, 39, /silent
       colors=[0,254,128,68]
-      xtitle = textoidl('\lambda (\mum)')
-      ytitle = textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
+      xtitle = exofast_textoidl('\lambda (\mum)')
+      ytitle = exofast_textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
       plotsym, 0, 0.5, /fill, color=colors[3]
    endif else begin
 ;      set_plot, 'X'
@@ -83,7 +83,7 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
    xmax = 30
    xmin = 0.1
    ymin = min([f[m],fp[m]-ep[m]])
-   ymax = max([f[m],fp[m]+ep[m]])
+   ymax = max([f[m],fp[m]+ep[m],smooth(flux,10)])
    plot, w1, smooth(flux,10),/xlog,/ylog,xtitle=xtitle,ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs;,/ys
    oplot, wp[m], f[m], psym=8  
 
@@ -107,8 +107,14 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
 
    endfor
 
-   if keyword_set(psname) then device, /close
+   if keyword_set(psname) then begin
+      !p.font=-1
+      !p.multi=0
+      device, /close
+      device, encapsulated=0
+   endif
    set_plot, mydevice
+
 endif
 
 f0 = f

@@ -88,3 +88,29 @@ NOTE: EXOFAST_PATH is the only environment variable recognized inside
 the arg file. The full path must be given for all files.
 *************************************************************************
 
+kelt4rvonly -- Fits only the RV data from the KELT-4Ab discovery paper
+(http://adsabs.harvard.edu/abs/2016AJ....151...45E). This is meant to
+be a demonstration of what you might expect for a system where you
+have no transit data, not to match the published results. As such,
+many parameters are biased relative to the published values because we
+are agnostic to the inclination and radius in this example fit.
+
+This fit uses the Chen & Kipping relation to estimate the planet
+radius. It will also marginalize over cosi to derive a true mass
+posterior (as well as more precise msini) and posteriors on transit
+durations without the assumption that it transits. Note, however, that
+the vast majority of a uniform distribution on cosi implies the planet
+does not transit. It'll issue warnings that various parameters (T14,
+Tau, TFWHM, etc) are singularly valued (meaning all values within +/-
+1 sigma of the median are identical). These warnings can be safely
+ignored in this case because the transit duration of a non-transiting
+planet is 0. The practical consequence of this warning is that it
+won't generate some plots for those parameters and the value in the
+output table won't have error bars.
+
+You may wish to restore the idl save file and exclude non transiting
+solutions (transit = where(mcmcss.planet.b.value lt
+1d0+mcmcss.planet.p.value)) if you'd like to know what
+durations/depths to expect if it does transit.
+
+************************************************************************

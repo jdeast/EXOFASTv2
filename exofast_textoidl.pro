@@ -181,6 +181,11 @@ END
 ; MODIFICATION HISTORY:
 ;       $Id: textoidl.pro,v 1.9 2007-08-28 17:04:45 blanton Exp $
 ;       $Log: not supported by cvs2svn $
+;
+;       Revision 1.81 2018/03/08, eastman
+;       Rename to EXOFAST_TEXTOIDL, Remove \AA option, which is broken
+;       in IDL 8.7.
+;
 ;       Revision 1.8  2004/07/19 16:48:04  schlegel
 ;       Replace calls to the obsolete function RSTRPOS() with STRPOS(/REVERSE_SEARCH).
 ;
@@ -335,13 +340,6 @@ FUNCTION textoidl_table, POSTSCRIPT=ps, VECTOR=vec,  HELP=Help
 	[ '\Psi', 		'W'   ,	        'Y'         ],$
 	[ '\Omega', 		'X'   ,	        'W'         ]$
 			   ]
-;Roman --
-;
-;;         TeX SEQUENCE        VECTOR          POSTSCRIPT
-    Roman = [$
-	[ '\AA', ''+STRING("305B)+''   , ''+STRING("305B)+''   ]$
-			   ]
-
 ;Special symbols -- 
 ;  NOTES -- You must leave \infty before \in in the translatation
 ;           table to avoid having the \in part of \infty translated
@@ -396,14 +394,8 @@ FUNCTION textoidl_table, POSTSCRIPT=ps, VECTOR=vec,  HELP=Help
       SymbolFont(FontSelection) $
       + Symbols(FontSelection,*) $
       + PreviousFont(FontSelection)
-    Roman(1,*) = $
-      RomanFont(FontSelection) $
-      + Roman(FontSelection,*) $
-      + PreviousFont(FontSelection)
 
-
-
-    TranslationTable = [[LowercaseGreek],[UppercaseGreek],[Symbols],[Roman]]
+    TranslationTable = [[LowercaseGreek],[UppercaseGreek],[Symbols]]
     return,TranslationTable(0:1,*)
 
 END 
@@ -1348,10 +1340,10 @@ END
 ;  This code comes with absolutely NO warranty; see DISCLAIMER for details.
 ;-
 ;
-FUNCTION Textoidl, InputString, $
-                   FONT=fnt, $
-                   HELP=hlp, $
-                   TEX_SEQUENCES=tex_seq
+FUNCTION exofast_Textoidl, InputString, $
+                           FONT=fnt, $
+                           HELP=hlp, $
+                           TEX_SEQUENCES=tex_seq
 
 ;  Return to caller if there is an error.
     On_error, 2

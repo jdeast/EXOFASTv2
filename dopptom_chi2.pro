@@ -229,7 +229,6 @@ if keyword_set(psname) then begin
    device, /close
    device, encapsulated=0
 endif
-
 set_plot, mydevice
 
 return, chi2

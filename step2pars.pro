@@ -1,4 +1,4 @@
-function step2pars, ss, verbose=verbose, logname=logname
+function step2pars, ss, verbose=verbose, logname=logname, changedefaults=changedefaults
 
 G = ss.constants.GMSun/ss.constants.RSun^3*ss.constants.day^2 ;; R_sun^3/(m_sun*day^2)
 AU = ss.constants.au/ss.constants.rsun ;; R_sun
@@ -8,8 +8,8 @@ mearth = ss.constants.gmearth/ss.constants.gmsun ;; m_sun
 rearth = ss.constants.rearth/ss.constants.rsun  ;; r_sun
 sigmaB = ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; Stefan-Boltzmann constant
 
-mindist = dblarr(ss.nplanets)
-maxdist = dblarr(ss.nplanets)
+mindist = dblarr(ss.nplanets>1)
+maxdist = dblarr(ss.nplanets>1)
 
 ;; derive stellar parameters
 ss.star.mstar.value = 10^ss.star.logmstar.value
@@ -119,6 +119,28 @@ for i=0, ss.nplanets-1 do begin
    ;; time of periastron
    ss.planet[i].phase.value=exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value,/pri)
    ss.planet[i].tp.value = ss.planet[i].tc.value - ss.planet[i].period.value*ss.planet[i].phase.value
+
+   if keyword_set(changedefaults) then begin
+      ;; if the user supplied a value rp/rstar but not K, use
+      ;; the mass-radius relation to derive a better starting value for K
+      if ss.planet[i].k.value eq 10d0 and ss.planet[i].p.value ne 0.1d0 then begin
+         ss.planet[i].mpearth.value = massradius_chenreverse(ss.planet[i].rpearth.value)
+         ss.planet[i].mpsun.value = ss.planet[i].mpearth.value*mearth ;; m_sun
+         ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup        ;; m_jupiter
+         ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mpsun.value)^2d0))^(1d0/3d0) * $
+                                ss.planet[i].mpsun.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value^2)*ss.constants.rsun/ss.constants.meter/ss.constants.day ;; m/s
+         ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
+      endif
+
+      ;; if the user supplied a value of K changed, but not rp/rstar, use
+      ;; the mass-radius relation to derive a better starting value for rp/rstar
+      if ss.planet[i].p.value eq 0.1d0 and ss.planet[i].k.value ne 10d0 then begin
+         ss.planet[i].rpearth.value = massradius_chen(ss.planet[i].mpearth.value)
+         ss.planet[i].rpsun.value = ss.planet[i].rpearth.value*rearth ;; r_sun
+         ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup        ;; r_jupiter
+         ss.planet[i].p.value = ss.planet[i].rpsun.value/ss.star.rstar.value  
+      endif
+   endif
 
 endfor
 

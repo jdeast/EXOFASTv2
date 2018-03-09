@@ -19,7 +19,7 @@ if ss.star.distance.value eq 10.0 and ss.star.parallax.value ne 0d0 then $
 
 ;; if a starting value for the stellar radius was given, 
 ;; use it to derive a starting point for the age
-if ss.star.rstar.value ne 1d0 and ~ss.noyy then begin
+if ss.star.rstar.value ne 1d0 and ss.yy then begin
    ntries = 100
    age = dindgen(ntries)/(ntries-1)*13.82
    rstars = dblarr(ntries)
@@ -32,7 +32,7 @@ if ss.star.rstar.value ne 1d0 and ~ss.noyy then begin
    endfor
    junk = min(abs(rstars-ss.star.rstar.value),ndx)
    ss.star.age.value = age[ndx]
-endif else if ~ss.noyy then begin
+endif else if ss.yy then begin
    ;; otherwise derive the stellar radius
    junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, ss.star.teff.value,yyrstar=rstar, $
                          sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $

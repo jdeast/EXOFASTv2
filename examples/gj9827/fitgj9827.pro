@@ -1,15 +1,15 @@
-pro fitgj9827,debug=debug
+pro fitgj9827, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin
 
-maxsteps=10000
-nthin=20
-maxsteps=100
-nthin=1
+;; default to a very short run (not well-mixed or publication quality)
+if n_elements(maxsteps) eq 0 then maxsteps=100 ;; 50000
+if n_elements(nthin) eq 0 then nthin=1 ;; 50
+path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','gj9827'])
 
-
-exofastv2, nplanets=3, tranpath='gj9827.Kepler.dat',fluxfile='gj9827.flux',$
-           priorfile='gj9827.priors',debug=debug, prefix='gj9827.',maxsteps=maxsteps,$
-           nthin=nthin,fittran=[1,1,1],fitrv=[0,0,0],circular=[1,1,1],/longcadence,/noyy,/noclaret,/earth
-
-;stop
+exofastv2, nplanets=3, tranpath=path+'gj9827.Kepler.dat',$
+           fluxfile=path+'gj9827.flux',$
+           priorfile=path+'gj9827.priors',debug=debug, verbose=verbose, $
+           prefix=path+'gj9827.',maxsteps=maxsteps,$
+           nthin=nthin,fittran=[1,1,1],fitrv=[0,0,0],circular=[1,1,1],$
+           /longcadence,/noyy,/noclaret,/earth
 
 end

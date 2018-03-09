@@ -332,12 +332,17 @@
 ; OPTIONAL KEYWORDS:
 ;   FITSLOPE  - If set, it will fit a linear trend to the RV data.
 ;   FITQUAD   - If set, it will fit a quadratic trend to the RV data.
-;   NOYY      - If set, do not use the YY evolutionary tracks (see
-;               http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=2001ApJS..136..417Y)
-;               to constrain the mass/radius of the star. If set,
-;               \log(rstar) is fit instead of age. This should be set
-;               for low-mass stars and an external constraint on the
-;               stellar mass and radius should be supplied.
+;   MIST      - If set, use the MIST evolutionary tracks 
+;               see http://waps.cfa.harvard.edu/MIST/
+;               And please cite
+;               http://adsabs.harvard.edu/abs/2016ApJS..222....8D
+;               http://adsabs.harvard.edu/abs/2016ApJ...823..102C
+;               *** Use with caution, not thoroughly tested ***
+;   NOYY      - If set, disable YY evolutionary tracks
+;               see
+;               http://adsabs.harvard.edu/abs/2001ApJS..136..417Y
+;               to constrain the mass/radius of the star. YY should
+;               not be used for low-mass stars (~< 0.5 msun).
 ;   TORRES    - If set, use the Torres relations to constrain the mass
 ;               and radius of the star. This may be useful to
 ;               investigate potential systematics and should probably
@@ -364,15 +369,12 @@
 ;               period is constrained by a linear fit to all transit
 ;               times at each step. Otherwise, a linear ephemeris is
 ;               assumed.
-;               ***NOT YET IMPLEMENTED***
 ;   TDELTAVS  - If set, a new transit depth is fit for each
 ;               transit. Otherwise, all transits of the same planet
 ;               are modeled with the same same depth.
-;               ***NOT YET IMPLEMENTED***              
 ;   TIVS      - If set, a new inclination is fit for each
 ;               transit. Otherwise, all transits of the same planet
 ;               are modeled with the same same depth.
-;               ***NOT YET IMPLEMENTED***    
 ;   BESTONLY  - If set, only the best fit (using AMOEBA) will be
 ;               performed.
 ;               ***NOT YET IMPLEMENTED***
@@ -380,6 +382,8 @@
 ;               data is made. This is useful when refining initial
 ;               guesses.
 ;               ***NOT YET IMPLEMENTED***
+;   SKIPSTAR  - If set, don't bother refining the stellar
+;               parameters first, go straight to the global fit.
 ;   EARTH     - If set, the output units of Mp and Rp are in Earth
 ;               units, not Jupiter units.
 ;   DEBUG     - If set, various debugging outputs will be printed and
@@ -388,7 +392,9 @@
 ;               wrong. Usually a parameter starts too far from its
 ;               correct value to find or some parameter is not
 ;               constrained.
-
+;   STARDEBUG - Same as DEBUG, but applied to the stellar parameter
+;               refinement at the beginning of the fit.
+;
 ; OUTPUTS:
 ;
 ;   Each of the output files will be preceeded by PREFIX (defined
@@ -441,15 +447,14 @@ pro exofastv2, priorfile=priorfile, $
                rossiter=rossiter,chen=chen,$
                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
-               debug=debug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
-               bestonly=bestonly, plotonly=plotonly,$
+               debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
+               bestonly=bestonly, plotonly=plotonly,skipstar=skipstar,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-               fitrv=fitrv, fittran=fittran,fitdt=fitdt,$
-               ttvs=ttvs,tivs=tivs,tdeltavs=tdeltavs,$
-               earth=earth,$
-               i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
+               fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
+               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
+               earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch
 
 ;; this is required for virtual machines
 par = command_line_args(count=numargs)
@@ -463,17 +468,16 @@ if numargs eq 1 then begin
                 rossiter=rossiter,chen=chen,$
                 fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                 nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
-                debug=debug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
-                bestonly=bestonly, plotonly=plotonly,$
+                debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
+                bestonly=bestonly, plotonly=plotonly, skipstar=skipstar, $
                 longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                 maxgr=maxgr, mintz=mintz, $
                 noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                 fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
                 ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
-                earth=earth, i180=i180, covar=covar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
+                earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch
    endif
 endif
-
 
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -494,22 +498,36 @@ basename = file_basename(prefix)
 logname = prefix + 'log'
 file_delete, logname, /allow_nonexistent
 
+;; refine the stellar starting values based on the priors and SED (if supplied)
+;; this can be really useful if you don't know the rough stellar
+;; parameters, especially for the MIST models, but is a waste of time if you do
+if nplanets ne 0 or keyword_set(skipstar) then begin
+   printandlog, 'Refining stellar parameters'
+   ss = mkss(fluxfile=fluxfile,nplanet=0,priorfile=priorfile, $
+             noyy=noyy, torres=torres, mist=mist, logname=logname, debug=stardebug, verbose=verbose)
+   pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
+   staronlybest = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
+   if staronlybest[0] eq -1 then message, 'best fit for stellar parameters failed'
+endif
+
 ;; create the master structure
 ss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
           debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,$
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
-          rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
+          rossiter=rossiter,longcadence=longcadence, ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
           fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-          chen=chen, noyy=noyy,torres=torres,mist=mist, noclaret=noclaret,alloworbitcrossing=alloworbitcrossing, logname=logname)
+          chen=chen, noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname)
 
-npars = 0
-for i=0, n_tags(ss)-1 do begin
-   for j=0, n_elements(ss.(i))-1 do begin
-      for k=0, n_tags(ss.(i)[j])-1 do begin
+npars = 0L
+nfit = 0L
+for i=0L, n_tags(ss)-1 do begin
+   for j=0L, n_elements(ss.(i))-1 do begin
+      for k=0L, n_tags(ss.(i)[j])-1 do begin
          if n_tags(ss.(i)[j].(k)) ne 0 then begin
             if tag_exist(ss.(i)[j].(k),'fit') then begin
-               npars += 1
+               npars += 1L
+               if ss.(i)[j].(k).fit then nfit += 1L
             endif
          endif
       endfor
@@ -525,7 +543,7 @@ if n_elements(nmin) eq 0 then nmin=5
 ;; use robust (slower) random number generator by default
 if n_elements(randomfunc) eq 0 then randomfunc = 'exofast_random'
 
-memrequired = ss.nchains*maxsteps*npars*8d0/(1024d0^3)
+memrequired = double(ss.nchains)*double(maxsteps)*npars*8d0/(1024d0^3)
 printandlog, 'Fit will require ' + strtrim(memrequired,2) + ' GB of RAM for the final structure', logname
 if memrequired gt 2d0 then begin
    printandlog, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue', logname
@@ -533,10 +551,19 @@ if memrequired gt 2d0 then begin
 endif
 printandlog, '', logname
 
-pars = str2pars(ss,scale=scale,name=name)
+pars = str2pars(ss,scale=scale,name=name, angular=angular)
+
+;; replace the stellar parameters with their independently-optimized values
+if not keyword_set(skipstar) then begin
+   for i=0, n_elements(starparnames)-1 do begin
+      match = (where(name eq starparnames[i]))[0]
+      if match ne -1 then pars[match] = staronlybest[i]
+   endfor
+   pars2str, pars, ss
+endif
 
 ;; plot the data + starting guess
-modelfile = prefix + 'start.model'
+modelfile = prefix + 'start'
 bestchi2 = call_function(chi2func, pars, psname=modelfile)
 
 if keyword_set(display) then spawn, 'gv ' + modelfile + ' &'
@@ -574,7 +601,8 @@ if ss.debug and ~lmgr(/vm) then begin
 end
 
 nmax = 1d5
-printandlog, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nmax/60d0,format='(f0.1)') + ' minutes', logname
+printandlog, 'It takes ' + strtrim(modeltime,2) + ' seconds to calculate a single model'
+printandlog, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nmax/60d0,format='(f0.1)') + ' minutes if it takes the maximum allowed steps (' + strtrim(nmax,2) + ')', logname
 
 ;; do the AMOEBA fit
 ss.amoeba = 1B
@@ -585,8 +613,8 @@ if best[0] eq -1 then begin
 endif
 printandlog, 'Finished AMOEBA fit', logname
 
-;; update the parameter array with the chen-derived logks
-best = str2pars(ss,scale=scale,name=name) 
+;; update the parameter array with the chen-derived logks/rp (is this necessary?)
+;best = str2pars(ss,scale=scale,name=name) 
 
 ;; try again?
 ;printandlog, 'restarting AMOEBA with chen enabled', logname
@@ -595,18 +623,18 @@ best = str2pars(ss,scale=scale,name=name)
 ;printandlog, call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model'), logname
 
 ;; output the best-fit model fluxes/rvs
-bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'model')
+bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'amoeba')
 
 ;; do the MCMC fit
 if not keyword_set(bestonly) then begin
    exofast_demc, best, chi2func, pars, chi2=chi2,$
-                 nthin=nthin,maxsteps=maxsteps,$
+                 nthin=nthin,maxsteps=maxsteps, dontstop=dontstop, $
                  burnndx=burnndx, seed=seed, randomfunc=randomfunc, $
                  gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
-                 stretch=stretch, logname=logname,dontstop=dontstop
+                 stretch=stretch, logname=logname, angular=angular
    if pars[0] eq -1 then begin
       printandlog, 'MCMC Failed to find a stepping scale. This usually means one or more parameters are unconstrained by the data or priors.', logname
-   endif 
+   endif
 
    bad = where(tz lt mintz or gelmanrubin gt maxgr,nbad)
    if bad[0] ne -1 then begin
@@ -633,7 +661,7 @@ endelse
 ;; generate the model fit from the best MCMC values, not AMOEBA
 bestamoeba = best
 best = pars[*,bestndx]
-modelfile = prefix + 'model.mcmc'
+modelfile = prefix + 'mcmc'
 bestchi2 = call_function(chi2func,best,psname=modelfile, $
                          modelrv=modelrv, modelflux=modelflux)
 
@@ -644,10 +672,10 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile
               debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
               circular=circular,fitslope=fitslope, fitquad=fitquad, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
-              rossiter=rossiter,longcadence=longcadence, earth=earth, i180=i180,$
+              rossiter=rossiter,longcadence=longcadence, ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
               chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,torres=torres,mist=mist,noclaret=noclaret,$
-              alloworbitcrossing=alloworbitcrossing, logname=logname)
+              alloworbitcrossing=alloworbitcrossing, logname=logname, best=best)
 mcmcss.nchains = nchains
 mcmcss.burnndx = burnndx
 *(mcmcss.chi2) = chi2
@@ -669,10 +697,7 @@ covarfile = prefix + 'covar.ps'
 chainfile = prefix + 'chain.ps'
 texfile = prefix + 'median.tex'
 
-if keyword_set(covar) then nocovar = 0 $
-else nocovar = 1
-
-exofast_plotdist2, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname
+exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, angular=angular
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 exofast_plotchains, mcmcss, chainfile=chainfile
 

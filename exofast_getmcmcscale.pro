@@ -170,28 +170,41 @@ for i=0, nfit-1 do begin
             ;; can't always sample fine enough to get exactly
             ;; deltachi2 = 1 because chi^2 surface not perfectly smooth
             if abs(minstep - maxstep) lt 1d-14 or niter gt maxiter then begin
-                if not chi2changed then begin
-                    if abs(bestdeltachi2 - 1.d0) lt 0.75 then begin
-                        mcmcscale[i,j] = bestscale
-                        chi2 = bestchi2 + 1d0
-                    endif else begin
-                        printandlog, 'Cannot find the value for which deltachi^2 = 1 for parameter ' +$
-                                 strtrim(tofit[i],2) + '; assuming rough chi^2 surface. Using delta chi^2 = ' +$
-                                 strtrim(bestdeltachi2,2) + ' and scaling step (' + strtrim(mcmcscale[i,j],2) +$
-                                 ') to ' + strtrim(mcmcscale[i,j]*(bestchi2+1)/chi2,2),logname
+               testpars[tofit[i]] = bestpars[tofit[i]] - 2d0*mcmcscale[i,j]
+               lowboundchi2 = call_function(chi2func, testpars)
+               testpars[tofit[i]] = bestpars[tofit[i]] + 2d0*mcmcscale[i,j]
+               hiboundchi2 = call_function(chi2func, testpars)
 
-                        ;; extrapolate scale to delta chi^2 = 1 
-                        ;; (may cause issues near boundaries)
-                        mcmcscale[i,j] = mcmcscale[i,j]*(bestchi2+1)/chi2
-                        chi2 = bestchi2 + 1d0
-                    endelse
-                endif
+               if ~finite(chi2) or ~finite(lowboundchi2) or ~finite(hiboundchi2) then begin
+                  if j eq 0 then bound = 'upper' $
+                  else bound = 'lower'
+;                  printandlog, 'Reached the ' + bound + ' bound before hitting deltachi^2 = 1 for  parameter ' + strtrim(tofit[i],2) + '.'
+;                  printanglog, 'Using a scale of 1/10 the distance to the boundary (' + strtrim(bestscale/10d0,2) + ').'
+                  printandlog, 'The ' + bound + ' bound for parameter ' + strtrim(tofit[i],2) + ' is critical; it must be physically and independently motivated.'
+                  mcmcscale[i,j] = bestscale/10d0
+               endif else if not chi2changed then begin
+                  if abs(bestdeltachi2 - 1.d0) lt 0.75 then begin
+                     mcmcscale[i,j] = bestscale
+                  endif else begin
+                     
+                     newscale = bestscale/bestdeltachi2/10d0 ;; better to err on the side of too small
+                     printandlog, 'Cannot find the value for which deltachi^2 = 1 for parameter ' +$
+                                  strtrim(tofit[i],2) + '; assuming rough chi^2 surface. Using delta chi^2 = ' +$
+                                  strtrim(bestdeltachi2,2) + ' and scaling step (' + strtrim(bestscale,2) +$
+                                  ') to ' + strtrim(newscale,2),logname
+                     
+                     ;; extrapolate scale to delta chi^2 = 1 
+                     ;; (may cause issues near boundaries)
+                     mcmcscale[i,j] = newscale
+                  endelse
+               endif
+               chi2 = bestchi2 + 1d0
             endif
-            
+
             ;; if the parameter has no influence on the chi2
             if abs(chi2 - bestchi2 - 1.d0) eq 1.d0 and niter gt maxiter then $
-              printandlog, 'ERROR: changing parameter ' + strtrim(tofit[i],2) + $
-              ' does not change the chi^2. Exclude from fit.', logname 
+               printandlog, 'ERROR: changing parameter ' + strtrim(tofit[i],2) + $
+                            ' does not change the chi^2. Exclude from fit.', logname
 
             ;; if angle is so poorly constrained 
             ;; no value has delta chi^2 = 1

@@ -31,7 +31,7 @@ chi2 = reform((*ss.chi2),ss.nsteps/ss.nchains,ss.nchains)
 ymin = min(chi2[ss.burnndx:-1,*],max=ymax)
 xtitle='!3 Chain link number'
 if ymin lt 0 then sign = ' + ' else sign = ' - '
-ytitle='!3' + textoidl('\chi^2') + sign + strtrim(abs(ymin),2)
+ytitle='!3' + exofast_textoidl('\chi^2') + sign + strtrim(abs(ymin),2)
 plot, [0],[0], psym=10, xtitle=xtitle, ytitle=ytitle,$
       charsize=charsize,xstyle=1, yrange=[0,ymax-ymin], xrange=[0,nsteps],font=1
 for l=0L, ss.nchains-1L do $
@@ -87,9 +87,11 @@ for i=0, n_tags(ss)-1 do begin
 
             ;; check for bad values
             bad = where(~finite(pars),complement=good)
-            if bad[0] ne -1 then message, $
-               "ERROR: NaNs in " + label + " distribution"
-            
+            if bad[0] ne -1 then begin
+               printandlog, "ERROR: NaNs in " + label + " distribution"
+               continue
+            endif
+
             ;; if angular, center distribution about the mode
             if unit eq 'DEGREES' then halfrange = 180d0 $
             else if unit eq 'RADIANS' then halfrange = !dpi
@@ -126,13 +128,17 @@ for i=0, n_tags(ss)-1 do begin
                
                ;; plot labels
                xtitle='!3 Chain link number'
-               ytitle='!3' + textoidl(latex + '_{' + ss.(i)[j].label + '}')
+               ytitle='!3' + exofast_textoidl(latex + '_{' + ss.(i)[j].label + '}')
                              
                plot, [0],[0], psym=10, xtitle=xtitle, ytitle=ytitle,$
                      charsize=charsize,xstyle=1, yrange=[xmin,xmax], xrange=[0,nsteps],font=1
 
+               ;; thin the chain for plotting 
+               ;; (otherwise the file becomes unusable)
+               nplot = 1d3 < n_elements(pars[*,0])
+               thin = n_elements(pars[*,0])*lindgen(nplot)/(nplot)
                for l=0L, ss.nchains-1L do $
-                  oplot, pars[*,l], color=l*255d0/ss.nchains ;, transparency=100d0-100d0/ss.nchains
+                  oplot, thin, pars[thin,l], color=l*255d0/ss.nchains ;, transparency=100d0-100d0/ss.nchains
                oplot, [ss.burnndx,ss.burnndx],[-9d99,9d99]
 
             endelse
