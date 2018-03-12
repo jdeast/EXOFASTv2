@@ -4,7 +4,7 @@
 ;
 ; PURPOSE: 
 ;   Compares the stellar parameters of several different fits using
-;   the IDL save files as output by EXOFASTv2.pro.
+;   the IDL save files as output by exofastv2.pro.
 ;
 ; CALLING SEQUENCE:
 ;   comparestars, 'savpath' [,TAGS=,PSNAME=]
@@ -12,7 +12,9 @@
 ; INPUTS:
 ;   SAVPATH - A string resolved by file_search to specify the names of
 ;             all the idl save files to compare.
-;   TAGS    - A string array specifying the tagnames to compare.
+;   TAGS    - A string array specifying the tagnames (parameters) to
+;             compare. Default is 
+;             ['mstar','rstar','rhostar','logg','teff','feh','initfeh','age','lstar','eep']
 ;   PSNAME  - A string specifying the name of the postscript file to
 ;             output. If not specified, the plots are made to the screen.
 ;-
@@ -79,7 +81,8 @@ for i=0, n_elements(tags)-1 do begin
          continue
       endif
       ;; and find the range of the parameter
-      thismax = max((*structures[j]).star.(tagmatch[j]).value,min=thismin)
+      burnndx = (*structures[j]).burnndx
+      thismax = max((*structures[j]).star.(tagmatch[j]).value[burnndx:*],min=thismin)
       if thismax gt xmax then xmax = thismax
       if thismin lt xmin then xmin = thismin
    endfor
@@ -87,7 +90,8 @@ for i=0, n_elements(tags)-1 do begin
    ;; make a histogram of the parameter for each save file
    hists = dblarr(nfiles,100)
    for j=0, nfiles-1 do begin
-      hist = histogram((*structures[j]).star.(tagmatch[j]).value,nbin=100,locations=x,max=xmax,min=xmin)
+      burnndx = (*structures[j]).burnndx
+      hist = histogram((*structures[j]).star.(tagmatch[j]).value[burnndx:*],nbin=100,locations=x,max=xmax,min=xmin)
       hists[j,*] = hist/total(hist)
       ;; zero out singular arrays (e.g., age when age isn't fit)
       bad = where(hists[j,*] eq 1d0)
@@ -116,8 +120,9 @@ for i=0, n_elements(tags)-1 do begin
          print, 'No match for tag ' + tags[i]
          continue
       endif
-      ;; and find the range of the parameter
-      thismax = max((*structures[j]).star.(tagmatchx[j]).value,min=thismin)
+      ;; and find the range of the paramete
+      burnndx = (*structures[j]).burnndx
+      thismax = max((*structures[j]).star.(tagmatchx[j]).value[burnndx:*],min=thismin)
       if thismax gt xmax then xmax = thismax
       if thismin lt xmin then xmin = thismin
    endfor
@@ -136,7 +141,8 @@ for i=0, n_elements(tags)-1 do begin
             continue
          endif
          ;; find the range of this variable
-         thismax = max((*structures[j]).star.(tagmatchy[j]).value,min=thismin)
+         burnndx = (*structures[j]).burnndx
+         thismax = max((*structures[j]).star.(tagmatchy[j]).value[burnndx:*],min=thismin)
          if thismax gt ymax then ymax = thismax
          if thismin lt ymin then ymin = thismin
       endfor
@@ -149,8 +155,9 @@ for i=0, n_elements(tags)-1 do begin
 
       ;; overplot get the covariance contours for each save file
       for j=0, nfiles-1 do begin
-         x = (*structures[j]).star.(tagmatchx[j]).value
-         y = (*structures[j]).star.(tagmatchy[j]).value
+         burnndx = (*structures[j]).burnndx
+         x = (*structures[j]).star.(tagmatchx[j]).value[burnndx:*]
+         y = (*structures[j]).star.(tagmatchy[j]).value[burnndx:*]
          if min(x) ne max(x) and min(y) ne max(y) then begin
             exofast_errell,x,y,xpath=xpath,ypath=ypath,$
                            prob=probs,nxbin=100, nybin=100,$
