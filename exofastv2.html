@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Fri Mar  9 16:35:33 2018.<P>
+<STRONG>Last modified: </STRONG>Mon Mar 12 15:30:25 2018.<P>
  
 <HR>
  
@@ -299,7 +299,7 @@ at the IDL command line prompt.<P>
 
  PURPOSE: 
    Compares the stellar parameters of several different fits using
-   the IDL save files as output by EXOFASTv2.pro.
+   the IDL save files as output by exofastv2.pro.
 
  CALLING SEQUENCE:
    comparestars, 'savpath' [,TAGS=,PSNAME=]
@@ -307,7 +307,9 @@ at the IDL command line prompt.<P>
  INPUTS:
    SAVPATH - A string resolved by file_search to specify the names of
              all the idl save files to compare.
-   TAGS    - A string array specifying the tagnames to compare.
+   TAGS    - A string array specifying the tagnames (parameters) to
+             compare. Default is 
+             ['mstar','rstar','rhostar','logg','teff','feh','initfeh','age','lstar','eep']
    PSNAME  - A string specifying the name of the postscript file to
              output. If not specified, the plots are made to the screen.
 </PRE><P>

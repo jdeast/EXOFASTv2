@@ -5,11 +5,11 @@ sure it's your problem.
 Most examples run a minimal fit with only 100 steps per chain for
 expediency. They will not mix (not good enough for publication!), but
 should give roughly correct values with uncertainties good to a factor
-of a few on most parameters. These examples are intended to serve as a
-template for your own fits and to test your installation, and will be
-updated periodically with additional fits. If they run to completion,
-EXOFASTv2 is likely installed correctly (and I haven't introduced a
-new bug!).
+of a few on most parameters. These examples are intended to serve as
+templates for your own fits and to test your installation. They will
+be updated periodically with additional fits. If they run to
+completion, EXOFASTv2 is likely installed correctly (and I haven't
+introduced a new bug!).
 
 Each fit must have a fit*.pro file, which is the high-level code that
 calls exofastv2, a *.prior file to define the starting values and
@@ -86,6 +86,13 @@ idl -arg $EXOFAST_PATH/examples/hat3_nolicense/hat3.args -vm=$EXOFAST_PATH/exofa
 
 NOTE: EXOFAST_PATH is the only environment variable recognized inside
 the arg file. The full path must be given for all files.
+*************************************************************************
+
+hat3/hat3_comparestar.pro -- explores several methods of constraining the
+stellar parameters. Makes a pretty plot at the end comparing them all.
+
+cd $EXOFAST_PATH/examples/hat3
+
 *************************************************************************
 
 kelt4rvonly -- Fits only the RV data from the KELT-4Ab discovery paper
