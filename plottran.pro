@@ -18,6 +18,7 @@ if keyword_set(psname) then begin
    red = 254
    symsize = 0.33
    black = 0
+   charsize = 0.75
 endif else begin
    !p.multi=0
 ;   set_plot, 'X'
@@ -82,7 +83,7 @@ noise = 0.0001d0
 noise = stddev(trandata.residuals)
 ymin = 1d0 - depth - 3*noise
 if ss.ntran eq 1 then ymax = 1+3*noise $
-else ymax = 1d0 + 3*noise + spacing*(ss.ntran-1)
+else ymax = 1d0 + 3*noise + spacing*(ss.ntran - 0.5)
 yrange = [ymin,ymax]
 
 ;yrange = [0.994,1.001]

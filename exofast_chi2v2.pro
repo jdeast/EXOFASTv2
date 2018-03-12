@@ -511,7 +511,7 @@ if ss.ttvs then begin
       chi2 += ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2
       chi2 += ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
 
-      if keyword_set(verbose) then begin
+      if ss.verbose then begin
          printandlog, 'Ephemeris penalty ' + strtrim(((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2,2),ss.logname
          printandlog, 'Ephemeris penalty ' + strtrim(((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2,2),ss.logname
       endif
