@@ -137,7 +137,7 @@ for i=0, ss.nplanets-1 do begin
 
    endfor
    oplot, prettyphase[sorted], prettymodel[sorted], color=red
-   if ss.ntel gt 1 then exofast_legend, ss.telescope.label, color=colors[indgen(ss.ntel) mod ncolors],/top,/right,psym=symbols[indgen(ss.ntel) mod nsymbols], /useplotsym, charsize=0.5, fill=fills[j mod nfills]
+   if ss.ntel gt 1 then exofast_legend, ss.telescope.label, color=colors[indgen(ss.ntel) mod ncolors],/top,/right,psym=symbols[indgen(ss.ntel) mod nsymbols], /useplotsym, charsize=0.5, fill=fills[indgen(ss.ntel) mod nfills]
 
    ;; plot the residuals below
    ymin = !values.d_infinity
@@ -191,7 +191,7 @@ for j=0, ss.ntel-1 do begin
    plotsym, symbols[j mod nsymbols], symsize, fill=fills[j mod nfills], color=colors[j mod ncolors]
    oploterr, rv.bjd-bjd0, rv.rv-ss.telescope[j].gamma.value[ndx], err, 8
 endfor
-if ss.ntel gt 1 then exofast_legend, ss.telescope.label, color=colors[indgen(ss.ntel) mod ncolors],/top,/right,psym=symbols[indgen(ss.ntel) mod nsymbols], /useplotsym, charsize=0.5, fill=fills[j mod nfills]
+if ss.ntel gt 1 then exofast_legend, ss.telescope.label, color=colors[indgen(ss.ntel) mod ncolors],/top,/right,psym=symbols[indgen(ss.ntel) mod nsymbols], /useplotsym, charsize=0.5, fill=fills[indgen(ss.ntel) mod nfills]
 
 ;; plot the residuals below
 plot, [0],[0], position=position2, /noerase, $
