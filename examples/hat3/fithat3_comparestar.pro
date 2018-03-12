@@ -33,6 +33,9 @@ exofastv2, nplanets=1, tranpath='n20070428.Sloani.KepCam.dat', rvpath='hat3.rv',
 ;; Fit only the star with MIST and the SED (no transit or RV)
 exofastv2, nplanets=0, priorfile='hat3.priors', prefix='HAT-3b.SED+MIST.long.', maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose, fluxfile='hat3.flux', /noyy, /mist, dontstop=dontstop
 
+;; Fit only the star with MIST and the SED with 5 uas precision (no transit or RV)
+exofastv2, nplanets=0, priorfile='hat3.gaia.priors', prefix='HAT-3b.SED+5uas+MIST.long.', maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose, fluxfile='hat3.flux', /noyy, /mist, dontstop=dontstop
+
 comparestars, 'HAT-3b.*.long.mcmc.idl', psname='comparestars.ps'
 
 end
