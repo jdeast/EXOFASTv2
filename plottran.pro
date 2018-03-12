@@ -102,7 +102,7 @@ t0 = floor(minbjd)
 if maxbjd - minbjd lt 1 then begin
    xrange=[-t14,t14]
    xtitle='!3Time - T!DC!N (hrs)'   
-else begin
+endif else begin
    xrange = [minbjd,maxbjd]-t0
    xtitle='!3' + exofast_textoidl('BJD_{TDB}') + ' - ' + strtrim(t0,2)
 endelse
