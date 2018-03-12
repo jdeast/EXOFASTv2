@@ -373,6 +373,7 @@ for i=0, ss.ndt-1 do begin
 
    if ~finite(dtchi2) then return, !values.d_infinity
    chi2 += dtchi2
+   if ss.verbose then printandlog, 'DT penalty = ' + strtrim(dtchi2,2),ss.logname
 endfor
 
 ;; Transit model
@@ -421,8 +422,6 @@ for j=0, ss.ntran-1 do begin
    for i=0, ss.nplanets-1 do begin
       if ss.planet[i].fittran then begin
          
-;         printandlog, ss.planet[0].p.value, ss.logname
-
          modelflux += (exofast_tran(transitbjd, $
                                     ss.planet[i].i.value + ss.transit[j].tiv.value, $
                                     ss.planet[i].ar.value, $
@@ -502,17 +501,20 @@ if ss.ttvs then begin
    ;; add a chi2 penalty for the deviation of the ephemeris to the
    ;; linear fit of the transit times for each planet
    for i=0L, ss.nplanets-1L do begin
-      good = where(finite(time[i,*]),ngood)
+      good = where(finite(time[i,*]),ngood) ;; why wouldn't that be finite??
       if ngood lt 2 then continue
+;      if ngood lt 2 then stop ;continue
 
       coeffs = poly_fit((ss.transit.epoch)[i,good],time[i,good],1, sigma=sigma, yfit=yfit)
       sigma = (sigma > 1d-18)
 
       chi2 += ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2
       chi2 += ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
-      
-;      printandlog, ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2,ss.logname
-;      printandlog, ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2,ss.logname
+
+      if keyword_set(verbose) then begin
+         printandlog, 'Ephemeris penalty ' + strtrim(((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2,2),ss.logname
+         printandlog, 'Ephemeris penalty ' + strtrim(((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2,2),ss.logname
+      endif
 
       if ss.debug or keyword_set(psname) then begin
          if keyword_set(psname) then begin
@@ -582,7 +584,6 @@ if ss.ttvs then begin
             set_plot, mydevice
          endif
 
-;         printandlog, ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2, ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2,ss.logname
       endif
    endfor
 endif
