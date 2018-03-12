@@ -86,7 +86,7 @@ else ymax = 1d0 + 3*noise + spacing*(ss.ntran-1)
 yrange = [ymin,ymax]
 
 ;yrange = [0.994,1.001]
-xtitle='!3Time - T!DC!N (hrs)'
+
 
 i=0
 sini = sin(acos(ss.planet[i].cosi.value))
@@ -98,11 +98,14 @@ trandata = (*(ss.transit[0].transitptrs))
 minbjd = min(trandata.bjd,max=maxbjd)
 minbjd -= 0.25 & maxbjd += 0.25d0
 t0 = floor(minbjd)
-xtitle='!3BJD_TDB - ' + strtrim(t0,2)
 
-if maxbjd - minbjd lt 1 then xrange=[-t14,t14] $
-else xrange = [minbjd,maxbjd]-t0
-
+if maxbjd - minbjd lt 1 then begin
+   xrange=[-t14,t14]
+   xtitle='!3Time - T!DC!N (hrs)'   
+else begin
+   xrange = [minbjd,maxbjd]-t0
+   xtitle='!3' + exofast_textoidl('BJD_{TDB}') + ' - ' + strtrim(t0,2)
+endelse
 
 ;stop
 ;; position keyword required for proper bounding box
