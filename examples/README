@@ -15,8 +15,8 @@ Each fit must have a fit*.pro file, which is the high-level code that
 calls exofastv2, a *.prior file to define the starting values and
 priors for the fit, and at least one data file. It is strongly
 recommended you read and understand the *.prior file and fit*.pro file
-before attempting to modify it. More details are in the example files
-and in the exofastv2.pro header.
+before attempting to modify it. More details are in the example files,
+the exofastv2.pro header, and params.README.
 
 *************************************************************************
 *************************************************************************
@@ -31,7 +31,7 @@ hd106315 - http://adsabs.harvard.edu/abs/2017AJ....153..256R
 
 Fits a two-planet system with long cadence (/LONGCADENCE) K2 data
 (gj9827.Kepler.dat) + SED (gj9827.flux). Note the name of the transit
-file must encode the observed band (e.g., Kepler).
+lightcurve file must encode the observed band (e.g., Kepler).
 
 Applies priors on Teff and [Fe/H] to constrain the stellar parameters.
 
@@ -91,8 +91,6 @@ the arg file. The full path must be given for all files.
 hat3/hat3_comparestar.pro -- explores several methods of constraining the
 stellar parameters. Makes a pretty plot at the end comparing them all.
 
-cd $EXOFAST_PATH/examples/hat3
-
 *************************************************************************
 
 kelt4rvonly -- Fits only the RV data from the KELT-4Ab discovery paper
@@ -121,3 +119,15 @@ solutions (transit = where(mcmcss.planet.b.value lt
 durations/depths to expect if it does transit.
 
 ************************************************************************
+
+kelt6 -- Fits KELT-6 data from the discovery paper
+(http://adsabs.harvard.edu/abs/2014AJ....147...39C) and the follow-up
+HARPS RVs detecting planet c
+(http://adsabs.harvard.edu/abs/2015A%26A...581L...6D). Uses MIST
+stellar tracks, an SED, three RV telescopes, three transits (in two
+wavelengths and using both additive and multiplicative detrending),
+and two planets (one with transit data and one without).
+
+************************************************************************
+
+

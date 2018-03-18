@@ -8,5 +8,6 @@
 *.blg
 *.dvi
 *.pdf
+*.csv
 examples/*/*.idl
 examples/*/*.txt

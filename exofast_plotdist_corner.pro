@@ -45,6 +45,7 @@
 ;   2013/03/12 - Fixed min/max, made slightly more efficient
 ;   2018/02/13 - Covariance plot now a corner plot inspired by
 ;                corner.py (much prettier)
+;   2018/03/15 - Identify and discard bad chains before inference
 ;-
 pro exofast_plotdist_corner, ss, nocovar=nocovar, $
                              pdfname=pdfname, covarname=covarname, $
@@ -57,12 +58,16 @@ if n_elements(covarname) eq 0 then covarname = 'covar.ps'
 ;; 68% and 95% probability contours
 if n_elements(probs) eq 0 then probs = erf([1d,2d]/sqrt(2d0))
 
-burnndx = ss.burnndx
 nsteps = ss.nsteps/ss.nchains
-medndx = ((nsteps-ss.burnndx)/2d0) * ss.nchains
+chi2 = reform((*ss.chi2),nsteps,ss.nchains)
+burnndx = getburnndx(chi2,goodchains=goodchains)
+ngoodchains = n_elements(goodchains)
+;;burnndx = ss.burnndx
+
+medndx = ((nsteps-ss.burnndx)/2d0) * ngoodchains
 halfsigma = erf(1d/sqrt(2d0))/2d
-lowsigndx = round(((nsteps-ss.burnndx)/2.d0 - (nsteps-ss.burnndx)*halfsigma)*ss.nchains)
-hisigndx = round(((nsteps-ss.burnndx)/2.d0 + (nsteps-ss.burnndx)*halfsigma)*ss.nchains)
+lowsigndx = round(((nsteps-ss.burnndx)/2.d0 - (nsteps-ss.burnndx)*halfsigma)*ngoodchains)
+hisigndx = round(((nsteps-ss.burnndx)/2.d0 + (nsteps-ss.burnndx)*halfsigma)*ngoodchains)
 
 ;; prepare the postscript device
 mydevice=!d.name
@@ -87,6 +92,11 @@ alltitles=[]
 
 minchi2 = min(*ss.chi2,bestndx)
 
+if n_elements(csvfile) ne 0 then begin
+   openw, csvlun, csvfile, /get_lun
+   printf, csvlun, '#parname, median value, upper errorbar, lower errorbar'
+endif
+
 !p.multi=[0,2,4] ;; 8 to a page
 for i=0, n_tags(ss)-1 do begin
    for j=0, n_elements(ss.(i))-1 do begin
@@ -95,22 +105,46 @@ for i=0, n_tags(ss)-1 do begin
          derive = 0B
          fit = 0B
          m=-1
+
          ;; this captures the detrending variables
-         if (size(ss.(i)[j].(k)))[1] eq 10 then begin
-            if (size(ss.(i)[j].(k)))[0] ne 0 then begin
-               for l=0L, n_tags(*(ss.(i)[j].(k)))-1 do begin
-                  if (size((*(ss.(i)[j].(k))).(l)))[2] eq 8 then begin 
-                     for m=0L, n_elements((*(ss.(i)[j].(k))).(l))-1 do begin
-                        if tag_exist((*(ss.(i)[j].(k))).(l)[m],'derive') then begin
-                           if (*(ss.(i)[j].(k))).(l)[m].derive or (*(ss.(i)[j].(k))).(l)[m].fit then begin
-                              pars = (reform((*(ss.(i)[j].(k))).(l)[m].value,nsteps,ss.nchains))[burnndx:*,*]
-                              derive = 1B
-                              if (*(ss.(i)[j].(k))).(l)[m].fit then fit = 1B
-                              label = (*(ss.(i)[j].(k))).(l)[m].label
-                              unit = (*(ss.(i)[j].(k))).(l)[m].unit
-                              latex = (*(ss.(i)[j].(k))).(l)[m].latex
-                              best = (*(ss.(i)[j].(k))).(l)[m].best
-                              if ~finite(best) then best = (*(ss.(i)[j].(k))).(l)[m].value[bestndx]
+         if (size(ss.(i)[j].(k)))[1] eq 10 then begin ;; if it's a pointer
+            if ss.(i)[j].(k) ne !NULL then begin ;; if it's not empty
+               for l=0L, n_tags(*(ss.(i)[j].(k)))-1 do begin ;; loop through each tag
+                  if (size((*(ss.(i)[j].(k))).(l)))[2] eq 8 then begin ;; if it's an array of structures
+                     for m=0L, n_elements((*(ss.(i)[j].(k))).(l))-1 do begin ;; loop through each structure
+                        if tag_exist((*(ss.(i)[j].(k))).(l)[m],'derive') then begin ;; if it's a parameter
+                           if (*(ss.(i)[j].(k))).(l)[m].derive or (*(ss.(i)[j].(k))).(l)[m].fit then begin ;; if it's requested to be fit or 
+                              
+                              ;; remove the burn-in, discard bad chains
+                              pars = (reform((*(ss.(i)[j].(k))).(l)[m].value,nsteps,ss.nchains))[burnndx:*,goodchains]
+
+                              ;; plot the histogram, get the median and 68% confidence interval
+                              summarizepar, pars, label= (*(ss.(i)[j].(k))).(l)[m].label,$
+                                            unit=(*(ss.(i)[j].(k))).(l)[m].unit,$
+                                            latex=(*(ss.(i)[j].(k))).(l)[m].latex,$
+                                            best=(*(ss.(i)[j].(k))).(l)[m].value[bestndx],$
+                                            logname=logname,value=value,errlo=errlo,errhi=errhi,$
+                                            medianpars=medianpars,charsize=charsize
+                              
+                              ;; populate the median value and error bars
+                              (*ss.(i)[j].(k)).(l)[m].medvalue = strtrim(value,2)
+                              (*ss.(i)[j].(k)).(l)[m].upper = strtrim(errhi,2)
+                              (*ss.(i)[j].(k)).(l)[m].lower = strtrim(errlo,2)
+                              
+                              if n_elements(csvfile) ne 0 then $
+                                 printf, csvlun, (*(ss.(i)[j].(k))).(l)[m].latex, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),format='(3(a,","),a)'
+
+                              ;; store these for the covariance plot
+                              if (*(ss.(i)[j].(k))).(l)[m].fit or keyword_set(useallpars) then begin
+                                 sz = size(pars)
+                                 if n_elements(allpars) eq 0 then allpars = transpose(reform(pars,sz[1]*sz[2])) $
+                                 else allpars = [allpars,transpose(reform(pars,sz[1]*sz[2]))]
+                                 parnames = [parnames,(*(ss.(i)[j].(k))).(l)[m].latex]
+                                 if n_elements(allparndx) eq 0 then allparndx = [n_elements(medianpars[0,*])-1] $
+                                 else allparndx = [allparndx,n_elements(medianpars[0,*])-1]
+                                 bestpars = [bestpars,(*(ss.(i)[j].(k))).(l)[m].value[bestndx]]
+                              endif
+                     
                            endif
                         endif
                      endfor
@@ -118,133 +152,53 @@ for i=0, n_tags(ss)-1 do begin
                endfor
             endif            
          endif else if n_tags(ss.(i)[j].(k)) ne 0 then begin
+            ;; and all other parameters
             if n_tags(ss.(i)[j].(k)) ne 0 then begin
                if tag_exist(ss.(i)[j].(k),'derive') then begin
                   if ss.(i)[j].(k).derive or ss.(i)[j].(k).fit then begin
-                     pars = (reform(ss.(i)[j].(k).value,nsteps,ss.nchains))[burnndx:*,*]
-                     derive = 1B                     
-                     if ss.(i)[j].(k).fit then fit = 1B
-                     label = ss.(i)[j].(k).label 
-                     unit = ss.(i)[j].(k).unit
-                     latex = ss.(i)[j].(k).latex
-                     best = ss.(i)[j].(k).best
-                     if ~finite(best) then best = ss.(i)[j].(k).value[bestndx]
+
+                     ;; remove the burn-in, discard bad chains
+                     pars = (reform(ss.(i)[j].(k).value,nsteps,ss.nchains))[burnndx:*,goodchains]
+
+                     ;; plot the histogram, get the median and 68% confidence interval
+                     summarizepar, pars, label=ss.(i)[j].(k).label,$ 
+                                   unit=ss.(i)[j].(k).unit,$
+                                   latex=ss.(i)[j].(k).latex,$
+                                   best=ss.(i)[j].(k).value[bestndx],$
+                                   logname=logname,value=value,errlo=errlo,errhi=errhi,$
+                                   medianpars=medianpars,charsize=charsize
+                                   
+                     ;; populate the median value and error bars
+                     ss.(i)[j].(k).medvalue = strtrim(value,2)
+                     ss.(i)[j].(k).upper = strtrim(errhi,2)
+                     ss.(i)[j].(k).lower = strtrim(errlo,2)
+
+                     if n_elements(csvfile) ne 0 then $
+                        printf, csvlun, ss.(i)[j].(k).latex, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),format='(3(a,","),a)'
+
+                     ;; store these for the covariance plot
+                     if ss.(i)[j].(k).fit or keyword_set(useallpars) then begin
+                        sz = size(pars)
+                        if n_elements(allpars) eq 0 then allpars = transpose(reform(pars,sz[1]*sz[2])) $
+                        else allpars = [allpars,transpose(reform(pars,sz[1]*sz[2]))]
+                        parnames = [parnames,ss.(i)[j].(k).latex]
+                        if n_elements(allparndx) eq 0 then allparndx = [n_elements(medianpars[0,*])-1] $
+                        else allparndx = [allparndx,n_elements(medianpars[0,*])-1]
+                        bestpars = [bestpars,ss.(i)[j].(k).value[bestndx]]
+                     endif
+
                   endif
                endif
             endif
-         endif
-
-         if fit or (keyword_set(useallpars) and derive) then begin
-            sz = size(pars)
-            if n_elements(allpars) eq 0 then allpars = transpose(reform(pars,sz[1]*sz[2])) $
-            else allpars = [allpars,transpose(reform(pars,sz[1]*sz[2]))]
-            parnames = [parnames,latex]
-            if n_elements(medianpars) eq 0 then allparndx = [allparndx,0] $
-            else allparndx = [allparndx,n_elements(medianpars[0,*])]
-            bestpars = [bestpars,best]
-         endif
-
-         if derive then begin
-
-            ;; check for bad values
-            bad = where(~finite(pars),complement=good)
-            if bad[0] ne -1 then printandlog, $
-               "ERROR: NaNs in " + label + " distribution",logname
-            
-            ;; if angular, center distribution about the mode
-            if unit eq 'DEGREES' then halfrange = 180d0 $
-            else if unit eq 'RADIANS' then halfrange = !dpi
-            if unit eq 'DEGREES' or unit eq 'RADIANS' then begin
-               
-               ;; find the mode
-               hist = histogram(pars,nbins=100,locations=x,/nan)
-               max = max(hist,modendx)
-               mode = x[modendx]
-               
-               toohigh = where(pars gt (mode + halfrange))
-               if toohigh[0] ne -1 then pars[toohigh] -= 2.d0*halfrange
-               
-               toolow = where(pars lt (mode - halfrange))
-               if toolow[0] ne -1 then pars[toolow] += 2.d0*halfrange
-            endif                     
-            
-            ;; 68% confidence interval
-            sorted = sort(pars)
-            medvalue = pars[sorted[medndx]]
-            upper = pars[sorted[hisigndx]] - medvalue
-            lower = medvalue - pars[sorted[lowsigndx]]
-            
-            if n_elements(medianpars) eq 0 then medianpars = [medvalue,upper,lower] $
-            else medianpars = [[medianpars],[[medvalue,upper,lower]]]
-            
-            xmax = (medvalue + 4*upper) < max(pars)
-            xmin = (medvalue - 4*lower) > min(pars)
-            
-            if xmin eq xmax then begin
-               printandlog, 'WARNING: ' + label + ' is singularly valued.',logname
-            endif else begin
-               
-               ;; plot labels
-               xtitle='!3' + exofast_textoidl(latex + '_{' + ss.(i)[j].label + '}')
-               ytitle='!3Probability'
-              
-               hist = histogram(pars,nbins=100,locations=x,min=xmin,max=xmax)
-               plot, x, hist/double(total(hist)), psym=10, xtitle=xtitle, ytitle=ytitle,$
-                     charsize=charsize,xstyle=1, xrange=[xmin,xmax], font=1
-
-               for l=0L, ss.nchains-1L do  begin
-                  hist = histogram(pars[*,l],nbins=100,locations=x,min=xmin,max=xmax)
-                  if total(hist) gt 0 then $
-                     oplot, x, hist/double(total(hist)), psym=10,color=l*255d0/ss.nchains
-               endfor
-
-               hist = histogram(pars,nbins=100,locations=x,min=xmin,max=xmax)
-               oplot, x, hist/double(total(hist)), psym=10, thick=3
-               
-               ;; if the best parameters are given, overplot them on the PDFs
-               if finite(best) then $
-                  oplot, [best,best],[-9d9,9d9]
-            endelse
-            
-            ;; format values for table (rounded appropriately)
-            ;; round the high error to 2 sig figs
-            exphi=fix(alog10(upper))
-            if (upper lt 1d0) then exphi=exphi-1
-            roundhi=round(upper/10.d0^(exphi-1d0),/L64)*10.d0^(exphi-1d0)
-            if (roundhi gt 10) then errhi = strtrim(round(roundhi,/L64),2) $
-            else errhi = string(roundhi,format='(f255.'+strtrim(1-exphi,2)+')')
-            
-            ;; round the low error to 2 sig figs
-            explo=fix(alog10(lower))
-            if (lower lt 1d0) then explo=explo-1
-            roundlo=round(lower/10.d0^(explo-1d0),/L64)*10.d0^(explo-1d0)
-            if (roundlo gt 10) then errlo = strtrim(round(roundlo,/L64),2) $
-            else errlo = string(roundlo,format='(f255.'+strtrim(1-explo,2)+')')
-            
-            ;; round the value to the greater number of sig figs
-            ndec = long(1 - (exphi < explo))
-            if ndec eq 0 then value = string(medvalue,format='(i255)') $
-            else if ndec lt 0 then $
-               value=round(round(medvalue/10.d0^(-ndec),/L64)*10.d0^(-ndec),/L64) $
-            else value = string(medvalue,format='(f255.'+strtrim(ndec,2)+')')
-            
-            alltitles = [alltitles,strtrim(value,2) + '^{+' + strtrim(errhi,2) + '}_{-' + strtrim(errlo,2) + '}']
-            if m ne -1 then begin
-               (*ss.(i)[j].(k)).(l)[m].medvalue = strtrim(value,2)
-               (*ss.(i)[j].(k)).(l)[m].upper = strtrim(errhi,2)
-               (*ss.(i)[j].(k)).(l)[m].lower = strtrim(errlo,2)
-            endif else begin
-               ss.(i)[j].(k).medvalue = strtrim(value,2)
-               ss.(i)[j].(k).upper = strtrim(errhi,2)
-               ss.(i)[j].(k).lower = strtrim(errlo,2)
-            endelse
-
          endif
       endfor
    endfor
 endfor
 
 device, /close
+
+if n_elements(csvfile) ne 0 then free_lun, csvlun
+
 
 ;; if covariance plots aren't wanted (they take a while), we're done
 if keyword_set(nocovar) then begin
@@ -260,7 +214,7 @@ npars = n_elements(allpars[*,0])
 
 !p.multi=0
 charsize = 4d0/npars
-multiplot, [npars,npars], /square, mXtitle='', mYtitle='', /rowmajor
+exofast_multiplot, [npars,npars], /square, mXtitle='', mYtitle='', /rowmajor
 for i=0, npars-1 do begin
   
    ;; x range of the plots/histograms
@@ -293,7 +247,7 @@ for i=0, npars-1 do begin
 
          endif
 
-         multiplot ;; next plot
+         exofast_multiplot ;; next plot
          continue
       endif
       
@@ -326,14 +280,14 @@ for i=0, npars-1 do begin
 
          endif
       endif
-      multiplot ;; next plot
+      exofast_multiplot ;; next plot
    endfor
 
 endfor
 
 ;; reset back to default plotting parameters
-multiplot, /reset
-multiplot, /default 
+exofast_multiplot, /reset
+exofast_multiplot, /default 
 
 ;; clean up the postscript device
 device, /close

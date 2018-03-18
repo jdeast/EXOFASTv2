@@ -73,6 +73,7 @@ printf, lun, '\newcommand{\fave}{\langle F \rangle}'
 printf, lun, '\newcommand{\fluxcgs}{10$^9$ erg s$^{-1}$ cm$^{-2}$}'
 printf, lun, '\usepackage{apjfonts}'
 printf, lun, '\begin{document}'
+printf, lun, '\LongTables'
 
 ;; number of columns
 maxvalues = 0
@@ -80,7 +81,7 @@ for i=0, n_tags(ss)-1 do begin
    nvalues = n_elements(ss.(i)[*])
    if nvalues gt maxvalues then maxvalues=nvalues
 endfor
-printf, lun, '\begin{deluxetable}{lc' + strjoin(replicate('c',maxvalues)) + '}'
+printf, lun, '\begin{deluxetable*}{lc' + strjoin(replicate('c',maxvalues)) + '}'
 
 if n_elements(caption) ne 0 then printf, lun, '\tablecaption{' + caption + '}'
 printf, lun, '\tablehead{\colhead{~~~Parameter} & \colhead{Units} & \multicolumn{' + strtrim(maxvalues,2) + '}{c}{Values}}'
@@ -94,19 +95,77 @@ for i=0, n_tags(ss)-1 do begin
 
    ;; the Side labels
    if n_tags(ss.(i)[0]) ne 0 then begin
-      if tag_exist(ss.(i)[0], 'rootlabel') then $
-         printf, lun, ss.(i)[0].rootlabel, format='("\sidehead{",a,"}")'
+      if tag_exist(ss.(i)[0], 'rootlabel') then begin
+;         printf, lun, ss.(i)[0].rootlabel, format='("\sidehead{",a,"}")'
+         printf, lun, '\smallskip\\\multicolumn{2}{l}{' + ss.(i)[0].rootlabel + '}' + strjoin('&' + ss.(i).label) + '\smallskip\\' 
+;        if ss.(i)[0].label ne '' then printf, lun, '&' + strjoin('&' + ss.(i).label) + '\\'
 ;      printf, lun, ss.(i)[0].rootlabel, ss.(i)[*].label, format='("\sidehead{",a,"&",' + strtrim(nvalues,2) + '("&",a),"}")'
 ;; how to do this (latex problem).. separate tables?
+      endif
    endif
 
    ;; for each tag
-   for k=0, n_tags(ss.(i)[0])-1 do begin
-      
-      if n_tags(ss.(i)[0].(k)) ne 0 then begin
-         
-         if tag_exist(ss.(i)[0].(k),'derive') then begin
-            
+   for k=0, n_tags(ss.(i)[0])-1 do begin      
+
+      ;; this captures the detrending variables
+      if (size(ss.(i)[0].(k)))[1] eq 10 then begin ;; if it's a pointer
+         if ss.(i)[0].(k) ne !NULL then begin ;; if it's not empty
+            for l=0L, n_tags(*(ss.(i)[0].(k)))-1 do begin ;; loop through each tag
+               if (size((*(ss.(i)[0].(k))).(l)))[2] eq 8 then begin ;; if it's an array of structures
+                  maxm = 0
+                  maxj = 0
+                  for j=0L, nvalues-1 do begin
+                     if n_elements((*(ss.(i)[j].(k))).(l)) gt maxm then begin 
+                        maxm = n_elements((*(ss.(i)[j].(k))).(l))
+                        maxj = j
+                     endif
+                  endfor
+                  for m=0L, maxm-1 do begin ;; loop through each structure
+                     if tag_exist((*(ss.(i)[maxj].(k))).(l)[m],'derive') then begin ;; if it's a parameter
+                        if (*(ss.(i)[maxj].(k))).(l)[m].derive then begin ;; if we want to derive it
+
+                           ;; format the units
+                           if (*(ss.(i)[maxj].(k))).(l)[m].unit eq '' then unit = '' $
+                           else unit = "(" + (*(ss.(i)[maxj].(k))).(l)[m].unit + ")"
+
+                           ;; before all the values
+                           header = string((*(ss.(i)[maxj].(k))).(l)[m].latex,$
+                                           (*(ss.(i)[maxj].(k))).(l)[m].description,unit,$
+                                           format='("~~~~$",a,"$\dotfill &",a,x,a,"\dotfill ")')
+
+                           ;; put each value of the array in a new column
+                           values = ''
+                           for j=0, nvalues-1 do begin
+                              if n_elements((*(ss.(i)[j].(k))).(l)) gt (m) then begin
+                                 if (*(ss.(i)[j].(k))).(l)[m].derive then begin
+                                    ;; format the errors
+                                    if (*(ss.(i)[j].(k))).(l)[m].upper eq (*(ss.(i)[j].(k))).(l)[m].lower then begin
+                                       ;; fixed value, no errors
+                                       if (*(ss.(i)[j].(k))).(l)[m].upper eq '0.00' then error = '' $ 
+                                       else error = '\pm' + (*(ss.(i)[j].(k))).(l)[m].upper ;; symmetric errors, use +/-
+                                    endif else begin
+                                       ;; asymmetric errors, use ^+_-
+                                       error = "^{+" + (*(ss.(i)[j].(k))).(l)[m].upper + "}_{-" +  $
+                                               (*(ss.(i)[j].(k))).(l)[m].lower + "}"
+                                    endelse
+                                    if (*(ss.(i)[j].(k))).(l)[m].medvalue eq '0.00' and error eq '' then values += '&--' $
+                                    else values = values + '&$' + (*(ss.(i)[j].(k))).(l)[m].medvalue + error + '$'
+                                 endif else values += '&--'
+                              endif else values += '&--'
+                           endfor
+                           
+                           ;; print the line of the latex table
+                           printf, lun, header + values + '\\'
+
+                        endif
+                     endif
+                  endfor
+               endif
+            endfor
+         endif
+      endif else if n_tags(ss.(i)[0].(k)) ne 0 then begin
+         ;; this captures everything else
+         if tag_exist(ss.(i)[0].(k),'derive') then begin            
             if (where(ss.(i)[*].(k).derive))[0] ne -1 then begin
                
                ;; format the units
@@ -128,7 +187,7 @@ for i=0, n_tags(ss)-1 do begin
                         if ss.(i)[j].(k).upper eq '0.00' then error = '' $ 
                         else error = '\pm' + ss.(i)[j].(k).upper ;; symmetric errors, use +/-
                      endif else begin
-                        ;; assymetric errors, use ^+_-
+                        ;; asymmetric errors, use ^+_-
                         error = "^{+" + ss.(i)[j].(k).upper + "}_{-" +  $
                                 ss.(i)[j].(k).lower + "}"
                      endelse
@@ -148,7 +207,7 @@ endfor
 ; finish the table
 printf, lun, '\enddata'
 if n_elements(label) ne 0 then printf, lun, '\label{' + label + '}'
-printf, lun, '\end{deluxetable}'
+printf, lun, '\end{deluxetable*}'
 printf, lun, '\end{document}'
 
 if n_elements(texfile) ne 0 then free_lun, lun

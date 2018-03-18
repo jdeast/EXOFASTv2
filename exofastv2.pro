@@ -19,49 +19,19 @@
 ; INPUTS:
 ;
 ;   PRIORFILE  - An ASCII file with each line containing three white
-;                space delimited columns: NAME, VALUE, WIDTH. NAME
-;                must match a parameter.label defined in MKSS.pro. If
-;                the parameter is in an array (e.g., of planets), add
-;                "_i", where "i" is the zero-indexed index into the
-;                array. If WIDTH is set to 0, the parameter is fixed
-;                at VALUE (this is generally not recommended; it's far
-;                better to apply a realistic prior). If WIDTH is set
-;                to -1, it only overrides the default starting guess
-;                for that parameter, but there is no penalty if the
-;                model deviates from VALUE. If WIDTH is positive, a
-;                gaussian prior is applied. That is, a chi^2 penalty
-;                equal to ((parameter - VALUE)/WIDTH)^2 is applied to
-;                the likelihood function. Here is the contents of a
-;                sample priorfile for the EPXXXXXXXXX system published
-;                in Eastman et al, 2017:
-;
-;                teff 6167 78 # Gaussian prior on T_eff of 6167 +/- 78 K
-;                feh -0.04 0.1 # Gaussian prior on [Fe/H] of -0.04 +/- 0.1 dex
-;                logg 4.22 0.06 # Gaussian prior on logg of 4.22 +/- 0.06
-;                vsini 9400 300 # Gaussian prior on vsini of 9400 +/- 300 (ignored since vsini is not fitted without RM data)
-;                # parallax 4.034 0.93 # Gaussian prior on parallax of 4.036 +/- 0.93 mas. However, it is commented out, so not applied.
-;                tc_0 2457166.0543 -1 # start the fit with a TC for planet 0 (EPXXXXXXXXb) at BJD_TDB=2457166.0543
-;                p_0 0.020 -1 # start the fit with Rp/Rstar for planet 0 at 0.020
-;                period_0 26.847 -1 # start the fit with period for planet 0 at 26.847 days
-;                tc_1 2457213.5328 -1 # start the fit with a TC for planet 1 (EPXXXXXXXXc) at BJD_TDB=2457213.5328
-;                p_1 0.02 -1 # start the fit with Rp/Rstar for planet 1 at 0.020
-;                period_1 39.5419 -1 # start the fit with period for planet 0 at 39.5419 days
-;                tc_2 2457191.8894 -1 # start the fit with a TC for planet 2 (EPXXXXXXXXd) at BJD_TDB=2457191.8894
-;                p_2 0.020 -1 # start the fit with Rp/Rstar for planet 2 at 0.020
-;                period_2 125 -1 # start the fit with period for planet 2 at 125 days
-;                tc_3 2457170.4990 -1 # start the fit with a TC for planet 3 (EPXXXXXXXXe) at BJD_TDB=2457170.4990
-;                p_3 0.029 -1 # start the fit with Rp/Rstar for planet 3 at 0.020
-;                period_3 160 -1 # start the fit with period for planet 3 at 160 days
-;              
-;                NOTE: if the parameters you put a prior on are not
-;                explicitly fit, you must make sure they are
-;                appropriately derived in $EXOFAST_PATH/pars2step.pro
-;                and $EXOFAST_PATH/step2pars.pro
+;                space delimited columns. See
+;                $EXOFAST_PATH/parnames.README for a detailed
+;                explanation of this file and $EXOFAST_PATH/examples/
+;                for templates to use.
 ;
 ; OPTIONAL INPUTS:
 ;   NPLANETS    - The number of planets you wish to fit to the
-;                 data. Default is 1.
-;   RVPATH      - The path to the RV data file(s). The file must have 3 columns:
+;                 data. Default is 1. If 0 is set, it will just fit
+;                 the star.
+;   RVPATH      - A string specifying the path to the RV data
+;                 file(s). Wildcards are allowed for multiple files
+;                 (e.g., '*.rv'). Each file must have at least 3
+;                 columns:
 ;                   1) Time (BJD_TDB -- See Eastman et al., 2010)
 ;                   2) RV (m/s)
 ;                   3) err (m/s)
@@ -74,8 +44,8 @@
 ;                 convert input times.  See
 ;                 http://adsabs.harvard.edu/abs/2010PASP..122..935E
 ;                 for an explanation of times
-;                 NOTE 3: If omitted, just the transit data will be
-;                 fit.
+;                 NOTE 3: If RVPATH is omitted, no RV model will be
+;                 generated.
 ;
 ;   TRANPATH    - A string specifying the path to the transit data
 ;                 file(s). Wildcards are allowed for multiple files
@@ -88,6 +58,32 @@
 ;                   4) Detrend parameter 1
 ;                   ....
 ;                   N+3) Detrend parameter N
+;       
+;                 An optional header specifies which parameters
+;                 should be multiplicatively detrended and which
+;                 should be additively detrended. Without a header,
+;                 all detrending parameters are additively detrended.
+; 
+;                 The first character in the header line must be
+;                 "#". It must have whitespace delimited columns
+;                 corresponding to the data. Each multiplicative
+;                 detrending variable is preceeded with "M" (case
+;                 sensitive). For example, the header line
+;
+;                 #BJD_TDB FLUX ERR MAIRMASS SKY myval
+;
+;                 Will fit a multiplicative detrending to the 4th
+;                 column (MAIRMASS) and an additive detrending to the
+;                 5th and 6th columns (SKY and myval).
+;
+;                 The corresponding model will be:
+;
+;                 model = (transit + C0*SKY + C1*myval)*(F0 + M0*MAIRMASS)
+;
+;                 Where C0, C1, and M0 are fitted detrending
+;                 parameters, F0 is the normalization, and SKY,
+;                 motion, and MAIRMASS are vectors for each data point
+;                 to detrend against.
 ;
 ;                 The names of the files describing the transits
 ;                 *must* adhere to a certain format:
@@ -247,16 +243,19 @@
 ;
 ;   PREFIX      - Each of the output files will have this string as a
 ;                 prefix. Default is 'planet.'
+
 ;   MAXSTEPS    - The maximum number of steps to take in the MCMC
 ;                 chain. Note that a 32-bit installation of IDL cannot
 ;                 allocate more than 260 million double-precision
 ;                 numbers, and redundant copies of each parameter are
 ;                 required. Even a 64-bit installation may require
-;                 very slow disk swapping. A very large number will
-;                 cause memory management problems. Default is
-;                 100,000, and larger values are strongly
-;                 discouraged. Increase NTHIN if the chains are not
-;                 well-mixed. 
+;                 very slow disk swapping. A very large number for
+;                 MAXSTEPS will cause memory management
+;                 problems. Default is 100,000, and larger values are
+;                 strongly discouraged. Increase NTHIN if the chains
+;                 are not well-mixed. For complex fits with many
+;                 parameters, users may wish to revise this downward.
+
 ;                 NOTE: If the MCMC chains run to MAXSTEPS,
 ;                 doubling this value will double the runtime. Short
 ;                 test runs (MAXSTEPS=100) are strongly encouraged
@@ -411,21 +410,78 @@
 ;                with the full chains for each parameter, including
 ;                derived parameters, the chi2 at each link, and the
 ;                index of the burn-in period.
+;   chain.ps   - A postscript plot of each parameter as a function of
+;                chain link, 8 to a page. Each color is a separate
+;                chain.
 ;   pdf.ps     - A postscript plot of each posterior distribution
-;                function, 8 to a page.
+;                function, 8 to a page. Each color is a separate
+;                chain. The thick black line is the average of all
+;                chains.
 ;   covar.ps   - A postscript plot of the covariances between each
-;                parameter, 16 to a page. The title of each plot is
-;                the correlation coefficient between the two
-;                parameters
+;                fitted parameter in a corner plot.
 ;   median.tex - The LaTeX source code for a deluxe table of the
 ;                median values and 68% confidence interval, rounded to
 ;                two sig figs in the uncertainty.
-;   model.ps   - An postscript plot of the best-fit models and residuals.
-;                *** Fairly cursory at the moment ***
-;   model.rv   - A text file containing the best-fit model RV for each
-;                input time
-;   model.flux - A text file containing the best-fit model flux for
-;                each input time
+;   median.csv - A machine readable table of the median values and 68%
+;                confidence interval, rounded to two sig figs in the
+;                uncertainty.
+;   log        - A file containing everything printed to screen during
+;                the fit for later review.
+;   
+;   Each of the following outputs are created at 3 distinct phases in
+;   the fit. 
+;
+;   1) Files preceeded with "start." are the starting values of the
+;   fit. Often times it is necessary to tweak these by hand until the
+;   starting values are a pretty good match.
+;
+;   2) Files preceeded with "amoeba." are the models after the amoeba
+;   minimization is complete. If this model is not a good fit to the
+;   data, the fit is likely to fail and you should refine your
+;   starting values, priors, and constraints. At a minimum, the fit
+;   will take longer to converge if this is not a good fit.
+;
+;   3) Files preceeded with "mcmc." are the final plots meant for
+;   publication. They represent the best fit among all links of all
+;   chains.
+;
+;   transit.ps - An postscript plot of the best-fit transit model.
+;                *** Fairly cursory at the moment, and poorly behaved
+;                for complex fits ***
+;   rv.ps      - A postscript plot of each planet, phased to its
+;                period with all other planets subtracted (one per
+;                page) and the unphased model and data.
+;   mist.eps   - A plot of the star with its MIST isochrone
+;                overplotted. The black point is the best-fit value,
+;                the red point is the corresponding model value. Only
+;                generated if the /MIST keyword is set.
+;   yy.eps     - A plot of the star with its YY isochrone
+;                overplotted. The black point is the best-fit value,
+;                the red point is the corresponding model value. Only
+;                generated if the /NOYY keyword is not set.
+;   sed.eps    - A plot of the broadband photometry and best fit
+;                SED. Only generated if FLUXFILE is given.
+; 
+;  The following outputs are intended to allow the user to generate
+;  their own customized plots easily.
+;
+;  residuals.telescope_#.txt - A text file containing the residuals to
+;                              the best-fit model RV for telescope
+;                              #. Makes one for each telescope.
+;   model.telescope_#.txt - A text file containing the best-fit model
+;                           (with gamma, slope, and quad subtracted)
+;                           RVs for each time given for telescope
+;                           #. Makes one for each telescope. These are
+;                           intendened for easy generation of user
+;                           plots.
+;   model.transit_[i].txt - The model of the ith transit, detrended
+;                           and normalized to 1.
+;   residuals.transit_[i].txt -The residuals of the ith transit
+;   transit_[i].planet_[j].txt - The model of the ith transit of the
+;                                jth planet minus 1. Sum all
+;                                transit[i].planet_*.txt for the
+;                                combined model. Useful for
+;                                separating overlapping transits.
 ;
 ;   NOTE: To extract a single page out of a multi-page PS file, use:
 ;         psselect -p# input.ps output.ps where # is the page number
@@ -508,7 +564,7 @@ file_delete, logname, /allow_nonexistent
 ;; refine the stellar starting values based on the priors and SED (if supplied)
 ;; this can be really useful if you don't know the rough stellar
 ;; parameters, especially for the MIST models, but is a waste of time if you do
-if nplanets ne 0 or keyword_set(skipstar) then begin
+if nplanets ne 0 and ~keyword_set(skipstar) then begin
    printandlog, 'Refining stellar parameters'
    ss = mkss(fluxfile=fluxfile,nplanet=0,priorfile=priorfile, $
              noyy=noyy, torres=torres, mist=mist, logname=logname, debug=stardebug, verbose=verbose)
@@ -561,7 +617,7 @@ printandlog, '', logname
 pars = str2pars(ss,scale=scale,name=name, angular=angular)
 
 ;; replace the stellar parameters with their independently-optimized values
-if not keyword_set(skipstar) then begin
+if ~keyword_set(skipstar) then begin
    for i=0, n_elements(starparnames)-1 do begin
       match = (where(name eq starparnames[i]))[0]
       if match ne -1 then pars[match] = staronlybest[i]
@@ -572,6 +628,10 @@ endif
 ;; plot the data + starting guess
 modelfile = prefix + 'start'
 bestchi2 = call_function(chi2func, pars, psname=modelfile)
+if ~finite(bestchi2) then begin
+   printandlog, 'Starting conditions outside of bounds. Setting the /VERBOSE and /DEBUG flags may help you revise the starting values'
+   return
+endif
 
 if keyword_set(display) then spawn, 'gv ' + modelfile + ' &'
 if keyword_set(plotonly) then return
@@ -703,10 +763,11 @@ parfile = prefix + 'pdf.ps'
 covarfile = prefix + 'covar.ps'
 chainfile = prefix + 'chain.ps'
 texfile = prefix + 'median.tex'
+csvfile = prefix + 'median.csv'
 
-exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, angular=angular
+exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, angular=angular,csvfile=csvfile
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
-exofast_plotchains, mcmcss, chainfile=chainfile
+exofast_plotchains, mcmcss, chainfile=chainfile, logname=logname
 
 ;; display all the plots, if desired
 if keyword_set(display) then begin

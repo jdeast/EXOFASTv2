@@ -220,6 +220,10 @@ if tranpath ne '' then begin
                       'Sloanu','Sloang','Sloanr','Sloani','Sloanz',$
                       'Kepler','TESS','CoRoT','Spit36','Spit45','Spit58','Spit80',$
                       'u','b','v','y']
+      prettybands = ['U','B','V','R','I','J','H','K',$
+                     "u'","g'","r'","i'","z'",$
+                     'Kepler','TESS','CoRoT','$3.6\mu m$','$4.5\mu m$','$5.8\mu m$','$8.0\mu m$',$
+                     'u','b','v','y']
       if (where(bands eq bands[i]))[0] eq -1 then begin
          printandlog, 'ERROR: band (' + bands[i] + ') not recognized; please select one of the following:'
          printandlog, string(allowedbands)
@@ -263,11 +267,15 @@ if n_elements(nvalues) ne 0 then value = dblarr(nvalues) $
 else value = 0d0
 nsteps = n_elements(value)
 
-if ntran eq 0 then fittran = bytarr(nplanets>1) $
-else fittran = bytarr(nplanets>1)+1B
+if n_elements(fittran) eq 0 then begin
+   if ntran eq 0 then fittran = bytarr(nplanets>1) $
+   else fittran = bytarr(nplanets>1)+1B
+endif
 
-if ntel eq 0 then fitrv = bytarr(nplanets>1) $
-else fitrv = bytarr(nplanets>1)+1B
+if n_elements(fitrv) eq 0 then begin
+   if ntel eq 0 then fitrv = bytarr(nplanets>1) $
+   else fitrv = bytarr(nplanets>1)+1B
+endif
 
 if n_elements(chen) ne nplanets or nplanets eq 0 then chen = fittran xor fitrv
 if n_elements(i180) ne nplanets or nplanets eq 0 then i180 = bytarr(nplanets>1)
@@ -1048,7 +1056,7 @@ if nplanets eq 0 then fave.derive = 0
 
 u1 = parameter
 u1.description = 'linear limb-darkening coeff'
-u1.latex = 'u_1'
+u1.latex = 'u_{1}'
 u1.label = 'u1'
 u1.scale = 0.15d0
 if nplanets eq 0 then u1.derive = 0 $
@@ -1056,7 +1064,7 @@ else u1.fit = 1
 
 u2 = parameter
 u2.description = 'quadratic limb-darkening coeff'
-u2.latex = 'u_2'
+u2.latex = 'u_{2}'
 u2.label = 'u2'
 u2.scale = 0.15d0
 if nplanets eq 0 then u2.derive = 0 $
@@ -1064,14 +1072,14 @@ else u2.fit = 1
 
 u3 = parameter
 u3.description = 'non-linear limb-darkening coeff'
-u3.latex = 'u_3'
+u3.latex = 'u_{3}'
 u3.label = 'u3'
 u3.scale = 0.15d0
 u3.derive = 0
 
 u4 = parameter
 u4.description = 'non-linear limb-darkening coeff'
-u4.latex = 'u_4'
+u4.latex = 'u_{4}'
 u4.label = 'u4'
 u4.scale = 0.15d0
 u4.derive = 0
@@ -1187,6 +1195,7 @@ errscale.derive = 0
 ;;                          output table.
 
 ;; for each star
+columnlabels = ''
 star = create_struct(mstar.label,mstar,$
                      rstar.label,rstar,$
                      lstar.label,lstar,$
@@ -1217,6 +1226,7 @@ star = create_struct(mstar.label,mstar,$
                      quad.label,quad,$
                      'fluxfile','',$
                      'rootlabel','Stellar Parameters:',$
+                     'columnlabels',columnlabels,$
                      'label','')
        
 ;; Unit constants (converted to cgs)
@@ -1240,7 +1250,6 @@ if n_elements(fluxfile) ne 0 then begin
    endif else printandlog, 'Could not find ' + fluxfile, logname
 endif
 
-;; for each planet 
 planet = create_struct($
          period.label,period,$    ;; fundamental (most interesting) parameters
          rp.label,rp,$
@@ -1319,7 +1328,7 @@ band = create_struct(u1.label,u1,$ ;; linear limb darkening
                      reflect.label,reflect,$ ;; reflection
                      mag.label,mag,$
                      'name','',$
-                     'rootlabel','Wavelength Parameters',$
+                     'rootlabel','Wavelength Parameters:',$
                      'label','')
 
 ;; for each telescope
@@ -1329,7 +1338,7 @@ telescope = create_struct(gamma.label,gamma,$
                           'rvptrs', ptr_new(),$
                           'name','',$
                           'chi2',0L,$
-                          'rootlabel','Telescope parameters',$
+                          'rootlabel','Telescope Parameters:',$
                           'label','')
 
 if ntel le 0 then begin
@@ -1353,7 +1362,7 @@ transit = create_struct(variance.label,variance,$ ;; Red noise
                         'epoch',dblarr(nplanets>1) + !values.d_nan,$
                         'pndx',0L,$ ;; index to which planet this corresponds to (-1=>all)
                         'chi2',0L,$
-                        'rootlabel','Transit Parameters',$
+                        'rootlabel','Transit Parameters:',$
                         'label','') 
 
 if n_elements(dtpath) ne 0 then begin
@@ -1362,9 +1371,9 @@ endif else dtfiles = []
 ndt = n_elements(dtfiles)
 doptom = create_struct('dtptrs',ptr_new(),$
                        'rootlabel','Doppler Tomography Parameters:',$
+                       'label','',$
                        dtscale.label,dtscale) ;,$
 ;                       'lambdarange',0,$
-;                       'label','',$
 ;                       'tel','',$
 ;                       'night','',$
 ;                       'planetndx')
@@ -1397,8 +1406,9 @@ ss = create_struct('star',star,$
                    'tdeltavs', keyword_set(tdeltavs),$
                    'alloworbitcrossing', keyword_set(alloworbitcrossing),$
                    'nsteps',nsteps,$
-                   'nchains',1L,$
                    'burnndx',0L,$
+                   'nchains',1L,$
+                   'goodchains',1L,$
                    'amoeba',0L,$
                    'logname','',$
                    'chi2',ptr_new(1),$
@@ -1425,6 +1435,7 @@ if ndt gt 0 then begin
    endfor
 endif
 
+;; for each planet 
 ;; populate the planet fitting parameters
 ;; planetary labels, a bit optimistic...
 plabels = ['b','c','d','e','f','g','h','i','j','k','l','m','n',$
@@ -1523,17 +1534,13 @@ endfor
 
 for i=0, nband-1 do begin
    ss.band[i].name = bands[i]
-   ss.band[i].label = bands[i]
+   ss.band[i].label = prettybands[(where(bands[i] eq allowedbands))[0]]
 
    ldcoeffs = quadld(ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, bands[i])
    if finite(ldcoeffs[0]) then ss.band[i].u1.value = ldcoeffs[0] $
    else ss.band[i].u1.value = 0d0
    if finite(ldcoeffs[1]) then ss.band[i].u2.value = ldcoeffs[1] $
    else ss.band[i].u2.value = 0d0
-   ss.band[i].u1.latex = 'u_{1,' + bands[i] + '}'
-   ss.band[i].u2.latex = 'u_{2,' + bands[i] + '}'
-   ss.band[i].u3.latex = 'u_{3,' + bands[i] + '}'
-   ss.band[i].u4.latex = 'u_{4,' + bands[i] + '}'
 
    match = where(fitthermal eq ss.band[i].name)
    if match[0] ne -1 then begin
@@ -1604,10 +1611,15 @@ if ntran gt 0 then begin
       printandlog, string(i,tranfiles[i],format='(i2,x,a)'),logname
       *(ss.transit[i].transitptrs) = readtran(tranfiles[i], detrendpar=detrend)
 
-      ;; create an array of detrending variables 
-      ;; (one for each extra column in the transit file)
-      ndetrend = (*(ss.transit[i].transitptrs)).ndetrend
-      if ndetrend ge 1 then *(ss.transit[i].detrend) = replicate(detrend,ndetrend)
+;      stop
+
+;      ;; create an array of detrending variables 
+;      ;; (one for each extra column in the transit file)
+;      nadd = (*(ss.transit[i].transitptrs)).nadd
+;      if nadd ge 1 then *(ss.transit[i].detrendadd) = replicate(detrendadd,nadd)
+;      nmult = (*(ss.transit[i].transitptrs)).nmult
+;      if nmult ge 1 then *(ss.transit[i].detrendmult) = replicate(detrendmult,nmult)
+;stop
 
       ss.transit[i].exptime = exptime[i]
       ss.transit[i].ninterp = ninterp[i]
@@ -1703,7 +1715,7 @@ while not eof(lun) do begin
          for k=0, n_tags(ss.(i)[priornum])-1 do begin
 
             ;; this captures the detrending variables
-            if (size(ss.(i)[priornum].(k)))[1] eq 10 then begin
+            if (size(ss.(i)[priornum].(k)))[1] eq 10 then begin ;; if it's a pointer
                if ss.(i)[priornum].(k) ne !NULL then begin
                   for l=0L, n_tags(*(ss.(i)[priornum].(k)))-1 do begin
 
