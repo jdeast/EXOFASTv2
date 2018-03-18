@@ -271,7 +271,6 @@ tz0 = 0d0 ;;
 tzsteps = 0L
 alreadywarned = 0L
 t0 = systime(/seconds)
-minburnndx = 0L
 
 ;; start MCMC chain
 for i=resumendx,maxsteps-1L do begin
@@ -345,30 +344,9 @@ for i=resumendx,maxsteps-1L do begin
    ;; must be converged for 6 consecutive passes
    ;; tz > 1000 and Gelman-Rubin < 1.01 => converged 
    if i eq nextrecalc then begin
-      ;; discard the burn-in (the first point at which all chains
-      ;; have had at least one chi^2 lower than the median chi^2)
+      ;; discard the burn-in
+      burnndx = getburnndx(chi2[0:i,*],goodchains=goodchains)
 
-      ;; the minimum chi2 of each chain
-      minchi2 = min(chi2[0.1*i:i,*],dimension=1)
-
-      ;; the median chi2 of the best chain
-      medchi2 = min(median(chi2[0.1*i:i,*],dimension=1))
-
-      ;; good chains must have some values below this median
-      goodchains = where(minchi2 lt medchi2,ngood)
-      if ngood lt 3 then begin
-         goodchains = lindgen(nchains)
-         ngood = nchains
-      endif
-
-      burnndx = 0.1d0*i ;; discard at least the first 10% of the chains
-      for j=0L, ngood-1 do begin
-         tmpndx = (where(chi2[0:i,goodchains[j]] lt medchi2))(0)
-         if tmpndx gt burnndx then burnndx = tmpndx
-      endfor
-      ;; allows Gelman-Rubin calculation if one chain is being problematic
-      burnndx = burnndx < (i-3) 
-      
       ;; calculate the Gelman-Rubin statistic (remove burn-in)
       converged = exofast_gelmanrubin(pars[0:nfit-1,burnndx:i,goodchains],$
                                       gelmanrubin,tz,angular=gelmanangular,$
@@ -463,22 +441,8 @@ printandlog, '', logname ;; now just add a space
 ;; it doesn't necessarily stop at MAXSTEPS if it was interrupted or converged early
 nstop = i-1L
 
-;; the minimum chi2 of each chain
-minchi2 = min(chi2[0.1*nstop:nstop,*],dimension=1)
-
-;; the median chi2 of the best chain
-medchi2 = min(median(chi2[0.1*nstop:nstop,*],dimension=1))
-
-;; good chains must have some values below this median
-goodchains = where(minchi2 lt medchi2,ngood)
-
-burnndx = 0.1d0*nstop
-for j=0L, ngood-1 do begin
-   tmpndx = (where(chi2[0:nstop,goodchains[j]] lt medchi2))(0)
-   if tmpndx gt burnndx then burnndx = tmpndx
-endfor
-;; allows Gelman-Rubin calculation if one chain is being problematic
-burnndx = burnndx < (i-3) 
+burnndx = getburnndx(chi2[0:nstop,*],goodchains=goodchains)
+ngood = n_elements(goodchains)
 
 ;; if there are bad chains, is it better without them?
 ;; (it usually is unless it's a very short run)
