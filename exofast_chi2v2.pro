@@ -444,8 +444,6 @@ for j=0, ss.ntran-1 do begin
 
    endfor
 
-   modelflux *=  ss.transit[j].f0.value
-   
    ;; now integrate the model points (before detrending)
    ;; Riemann integration beats trapezoidal and simpsons wins when sampling like above
    if ninterp gt 1 then modelflux = total(modelflux,2)/ninterp
@@ -458,7 +456,9 @@ for j=0, ss.ntran-1 do begin
    ;if ninterp gt 1 then modelflux = (4d0*total(modelflux,2) - 3d0*modelflux[*,0] - 3d0*modelflux[*,-1])/(4d0*ninterp - 6d0)
 
    ;; detrending
-   modelflux += total(transit.detrendadd*replicate(1d0,n_elements(transit.bjd))##transit.detrendpars.value,1)  
+   modelflux += total(transit.detrendadd*(replicate(1d0,n_elements(transit.bjd))##transit.detrendaddpars.value),1) 
+   modelflux *= (ss.transit[j].f0.value + $
+                 total(transit.detrendmult*(replicate(1d0,n_elements(transit.bjd))##transit.detrendmultpars.value),1))
 
    ;; chi^2
    transitchi2 = exofast_like(transit.flux - modelflux,ss.transit[j].variance.value,transit.err,/chi2)
