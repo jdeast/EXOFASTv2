@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Mon Mar 12 15:30:25 2018.<P>
+<STRONG>Last modified: </STRONG>Sun Mar 18 15:34:28 2018.<P>
  
 <HR>
  
@@ -42,6 +42,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_LATEXTAB[1]">EXOFAST_LATEXTAB[1]</A>
 <LI><A HREF="#EXOFAST_LATEXTAB[2]">EXOFAST_LATEXTAB[2]</A>
 <LI><A HREF="#EXOFAST_LIKE">EXOFAST_LIKE</A>
+<LI><A HREF="#EXOFAST_MULTIPLOT">EXOFAST_MULTIPLOT</A>
 <LI><A HREF="#EXOFAST_OCCULTQUAD">EXOFAST_OCCULTQUAD</A>
 <LI><A HREF="#EXOFAST_PLOTDIST">EXOFAST_PLOTDIST</A>
 <LI><A HREF="#EXOFAST_PLOTDIST_CORNER">EXOFAST_PLOTDIST_CORNER</A>
@@ -52,6 +53,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_RV">EXOFAST_RV</A>
 <LI><A HREF="#EXOFAST_TEXTOIDL">EXOFAST_TEXTOIDL</A>
 <LI><A HREF="#EXOFAST_TWILIGHT">EXOFAST_TWILIGHT</A>
+<LI><A HREF="#GETBURNNDX">GETBURNNDX</A>
 <LI><A HREF="#JSON_PARSE">JSON_PARSE</A>
 <LI><A HREF="#KTOM2">KTOM2</A>
 <LI><A HREF="#LEGEND">LEGEND</A>
@@ -565,49 +567,19 @@ with a diff
  INPUTS:
 
    PRIORFILE  - An ASCII file with each line containing three white
-                space delimited columns: NAME, VALUE, WIDTH. NAME
-                must match a parameter.label defined in MKSS.pro. If
-                the parameter is in an array (e.g., of planets), add
-                "_i", where "i" is the zero-indexed index into the
-                array. If WIDTH is set to 0, the parameter is fixed
-                at VALUE (this is generally not recommended; it's far
-                better to apply a realistic prior). If WIDTH is set
-                to -1, it only overrides the default starting guess
-                for that parameter, but there is no penalty if the
-                model deviates from VALUE. If WIDTH is positive, a
-                gaussian prior is applied. That is, a chi^2 penalty
-                equal to ((parameter - VALUE)/WIDTH)^2 is applied to
-                the likelihood function. Here is the contents of a
-                sample priorfile for the EPXXXXXXXXX system published
-                in Eastman et al, 2017:
-
-                teff 6167 78 # Gaussian prior on T_eff of 6167 +/- 78 K
-                feh -0.04 0.1 # Gaussian prior on [Fe/H] of -0.04 +/- 0.1 dex
-                logg 4.22 0.06 # Gaussian prior on logg of 4.22 +/- 0.06
-                vsini 9400 300 # Gaussian prior on vsini of 9400 +/- 300 (ignored since vsini is not fitted without RM data)
-                # parallax 4.034 0.93 # Gaussian prior on parallax of 4.036 +/- 0.93 mas. However, it is commented out, so not applied.
-                tc_0 2457166.0543 -1 # start the fit with a TC for planet 0 (EPXXXXXXXXb) at BJD_TDB=2457166.0543
-                p_0 0.020 -1 # start the fit with Rp/Rstar for planet 0 at 0.020
-                period_0 26.847 -1 # start the fit with period for planet 0 at 26.847 days
-                tc_1 2457213.5328 -1 # start the fit with a TC for planet 1 (EPXXXXXXXXc) at BJD_TDB=2457213.5328
-                p_1 0.02 -1 # start the fit with Rp/Rstar for planet 1 at 0.020
-                period_1 39.5419 -1 # start the fit with period for planet 0 at 39.5419 days
-                tc_2 2457191.8894 -1 # start the fit with a TC for planet 2 (EPXXXXXXXXd) at BJD_TDB=2457191.8894
-                p_2 0.020 -1 # start the fit with Rp/Rstar for planet 2 at 0.020
-                period_2 125 -1 # start the fit with period for planet 2 at 125 days
-                tc_3 2457170.4990 -1 # start the fit with a TC for planet 3 (EPXXXXXXXXe) at BJD_TDB=2457170.4990
-                p_3 0.029 -1 # start the fit with Rp/Rstar for planet 3 at 0.020
-                period_3 160 -1 # start the fit with period for planet 3 at 160 days
-              
-                NOTE: if the parameters you put a prior on are not
-                explicitly fit, you must make sure they are
-                appropriately derived in $EXOFAST_PATH/pars2step.pro
-                and $EXOFAST_PATH/step2pars.pro
+                space delimited columns. See
+                $EXOFAST_PATH/parnames.README for a detailed
+                explanation of this file and $EXOFAST_PATH/examples/
+                for templates to use.
 
  OPTIONAL INPUTS:
    NPLANETS    - The number of planets you wish to fit to the
-                 data. Default is 1.
-   RVPATH      - The path to the RV data file(s). The file must have 3 columns:
+                 data. Default is 1. If 0 is set, it will just fit
+                 the star.
+   RVPATH      - A string specifying the path to the RV data
+                 file(s). Wildcards are allowed for multiple files
+                 (e.g., '*.rv'). Each file must have at least 3
+                 columns:
                    1) Time (BJD_TDB -- See Eastman et al., 2010)
                    2) RV (m/s)
                    3) err (m/s)
@@ -620,8 +592,8 @@ with a diff
                  convert input times.  See
                  http://adsabs.harvard.edu/abs/2010PASP..122..935E
                  for an explanation of times
-                 NOTE 3: If omitted, just the transit data will be
-                 fit.
+                 NOTE 3: If RVPATH is omitted, no RV model will be
+                 generated.
 
    TRANPATH    - A string specifying the path to the transit data
                  file(s). Wildcards are allowed for multiple files
@@ -634,6 +606,32 @@ with a diff
                    4) Detrend parameter 1
                    ....
                    N+3) Detrend parameter N
+       
+                 An optional header specifies which parameters
+                 should be multiplicatively detrended and which
+                 should be additively detrended. Without a header,
+                 all detrending parameters are additively detrended.
+ 
+                 The first character in the header line must be
+                 "#". It must have whitespace delimited columns
+                 corresponding to the data. Each multiplicative
+                 detrending variable is preceeded with "M" (case
+                 sensitive). For example, the header line
+
+                 #BJD_TDB FLUX ERR MAIRMASS SKY myval
+
+                 Will fit a multiplicative detrending to the 4th
+                 column (MAIRMASS) and an additive detrending to the
+                 5th and 6th columns (SKY and myval).
+
+                 The corresponding model will be:
+
+                 model = (transit + C0*SKY + C1*myval)*(F0 + M0*MAIRMASS)
+
+                 Where C0, C1, and M0 are fitted detrending
+                 parameters, F0 is the normalization, and SKY,
+                 motion, and MAIRMASS are vectors for each data point
+                 to detrend against.
 
                  The names of the files describing the transits
                  *must* adhere to a certain format:
@@ -793,16 +791,19 @@ with a diff
 
    PREFIX      - Each of the output files will have this string as a
                  prefix. Default is 'planet.'
+
    MAXSTEPS    - The maximum number of steps to take in the MCMC
                  chain. Note that a 32-bit installation of IDL cannot
                  allocate more than 260 million double-precision
                  numbers, and redundant copies of each parameter are
                  required. Even a 64-bit installation may require
-                 very slow disk swapping. A very large number will
-                 cause memory management problems. Default is
-                 100,000, and larger values are strongly
-                 discouraged. Increase NTHIN if the chains are not
-                 well-mixed. 
+                 very slow disk swapping. A very large number for
+                 MAXSTEPS will cause memory management
+                 problems. Default is 100,000, and larger values are
+                 strongly discouraged. Increase NTHIN if the chains
+                 are not well-mixed. For complex fits with many
+                 parameters, users may wish to revise this downward.
+
                  NOTE: If the MCMC chains run to MAXSTEPS,
                  doubling this value will double the runtime. Short
                  test runs (MAXSTEPS=100) are strongly encouraged
@@ -957,21 +958,78 @@ with a diff
                 with the full chains for each parameter, including
                 derived parameters, the chi2 at each link, and the
                 index of the burn-in period.
+   chain.ps   - A postscript plot of each parameter as a function of
+                chain link, 8 to a page. Each color is a separate
+                chain.
    pdf.ps     - A postscript plot of each posterior distribution
-                function, 8 to a page.
+                function, 8 to a page. Each color is a separate
+                chain. The thick black line is the average of all
+                chains.
    covar.ps   - A postscript plot of the covariances between each
-                parameter, 16 to a page. The title of each plot is
-                the correlation coefficient between the two
-                parameters
+                fitted parameter in a corner plot.
    median.tex - The LaTeX source code for a deluxe table of the
                 median values and 68% confidence interval, rounded to
                 two sig figs in the uncertainty.
-   model.ps   - An postscript plot of the best-fit models and residuals.
-                *** Fairly cursory at the moment ***
-   model.rv   - A text file containing the best-fit model RV for each
-                input time
-   model.flux - A text file containing the best-fit model flux for
-                each input time
+   median.csv - A machine readable table of the median values and 68%
+                confidence interval, rounded to two sig figs in the
+                uncertainty.
+   log        - A file containing everything printed to screen during
+                the fit for later review.
+   
+   Each of the following outputs are created at 3 distinct phases in
+   the fit. 
+
+   1) Files preceeded with "start." are the starting values of the
+   fit. Often times it is necessary to tweak these by hand until the
+   starting values are a pretty good match.
+
+   2) Files preceeded with "amoeba." are the models after the amoeba
+   minimization is complete. If this model is not a good fit to the
+   data, the fit is likely to fail and you should refine your
+   starting values, priors, and constraints. At a minimum, the fit
+   will take longer to converge if this is not a good fit.
+
+   3) Files preceeded with "mcmc." are the final plots meant for
+   publication. They represent the best fit among all links of all
+   chains.
+
+   transit.ps - An postscript plot of the best-fit transit model.
+                *** Fairly cursory at the moment, and poorly behaved
+                for complex fits ***
+   rv.ps      - A postscript plot of each planet, phased to its
+                period with all other planets subtracted (one per
+                page) and the unphased model and data.
+   mist.eps   - A plot of the star with its MIST isochrone
+                overplotted. The black point is the best-fit value,
+                the red point is the corresponding model value. Only
+                generated if the /MIST keyword is set.
+   yy.eps     - A plot of the star with its YY isochrone
+                overplotted. The black point is the best-fit value,
+                the red point is the corresponding model value. Only
+                generated if the /NOYY keyword is not set.
+   sed.eps    - A plot of the broadband photometry and best fit
+                SED. Only generated if FLUXFILE is given.
+ 
+  The following outputs are intended to allow the user to generate
+  their own customized plots easily.
+
+  residuals.telescope_#.txt - A text file containing the residuals to
+                              the best-fit model RV for telescope
+                              #. Makes one for each telescope.
+   model.telescope_#.txt - A text file containing the best-fit model
+                           (with gamma, slope, and quad subtracted)
+                           RVs for each time given for telescope
+                           #. Makes one for each telescope. These are
+                           intendened for easy generation of user
+                           plots.
+   model.transit_[i].txt - The model of the ith transit, detrended
+                           and normalized to 1.
+   residuals.transit_[i].txt -The residuals of the ith transit
+   transit_[i].planet_[j].txt - The model of the ith transit of the
+                                jth planet minus 1. Sum all
+                                transit[i].planet_*.txt for the
+                                combined model. Useful for
+                                separating overlapping transits.
 
    NOTE: To extract a single page out of a multi-page PS file, use:
          psselect -p# input.ps output.ps where # is the page number
@@ -1915,7 +1973,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_LIKE">
 <H2>EXOFAST_LIKE</H2></A>
 <A HREF="#EXOFAST_LATEXTAB[2]">[Previous Routine]</A>
-<A HREF="#EXOFAST_OCCULTQUAD">[Next Routine]</A>
+<A HREF="#EXOFAST_MULTIPLOT">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -1963,9 +2021,166 @@ Function value:       1.33000
 <STRONG>(See exofast_like.pro)</STRONG><P>
 <HR>
  
+<A NAME="EXOFAST_MULTIPLOT">
+<H2>EXOFAST_MULTIPLOT</H2></A>
+<A HREF="#EXOFAST_LIKE">[Previous Routine]</A>
+<A HREF="#EXOFAST_OCCULTQUAD">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ Name:
+   EXOFAST_MULTIPLOT
+
+ Purpose:
+	Create multiple plots with simple control over the gaps between plots.
+   By default, the gap is zero but this can be set with the
+   gap= keyword, or xgap=, ygap= for individual control over different axes.
+   You can also place a single title along the x, y and top axes of the
+   matrix of plots using the mtitle, mxtitle and mytitle keywords.
+
+	It is good for data with one or two shared axes and retains all the
+	versatility of the plot commands (e.g. all keywords and log scaling).
+	The plots are connected with the shared axes, which saves space by
+	omitting redundant ticklabels and titles.  Multiplot does this by
+	setting !p.position, !x.tickname and !y.tickname automatically.
+	A call (multiplot,/reset) restores original values.
+
+   Coyote graphics users can find similar functionality in CGLAYOUT
+        http://www.idlcoyote.com/idldoc/cg/cglayout.html
+   Users of the post-8.0 IDL function graphics can find similar functionality
+   in Paulo Penteado's routine PP_MULTIPLOT
+        http://ppenteado.net/idl/pp_lib/doc/pp_multiplot__define.html
+ CALLING SEQUENCE:
+	multiplot, pmulti, 
+       gap=, xgap=, ygap=, 
+       /square, 
+       /doxaxis, /doyaxis, 
+       mTitle=, mTitSize=, mTitOffset=, 
+       mxTitle=, mxTitSize=, mxTitOffset=, 
+       myTitle=, myTitSize=, myTitOffset=, 
+       xtickformat=, ytickformat=
+       /default, /reset, /rowmajor, /initialize
+
+ INPUTS:
+   pmulti: Optional input. [Nx,Ny] array describing the shape of the
+       matrix of plots.  This is equivalent to the 2nd and 3rd elements
+       of !p.multi.  Or you can send all 5 elements of the !p.multi.
+
+ KEYWORD INPUTS:
+   gap=: Set the gap between plots in normalized units.  Default is 0.
+       This input overrides the xgap and ygap inputs.
+   xgap=: Gap between plots in the x direction. Default 0. To set both
+       x and y gap to the same value just use the gap keyword.
+   ygap=: Gap between plots in the y direction. Default 0. To set both
+       x and y gap to the same value just use the gap keyword.
+
+   mTitle: A single title to go across the top of the matrix of plots,
+       as opposed to the plot over single plots you generate with the
+       plot command for example. 
+   mTitSize: The font size of the top title. Default is 1.25*!p.charsize
+   mTitOffset: Offset of the title in the y-direction.
+   mxTitle, mxTitSize, mxTitOffset: same as above but for the x-axis title
+   myTitle, myTitSize, myTitOffset: same as above but for the y-axis title
+
+   xtickformat, ytickformat: Set the default tick formats when the ticks
+       are plotted. This allows the user to avoid sending this to each
+       plotting command which can have unexpected results if that axis
+       was not to get tick labels in a given point in the matrix.
+
+ KEYWORDS SWITCHES:
+   /square: Force the axis ratio of each plot to be square. Note if
+       xgap and ygap are set to different values, this axis ratio will
+       not be preserved.  It will be preserved if gap= is used.
+
+   /doxaxis: Put axis labels, etc on the axis. Default is to place labels
+       only on the left side and bottom sides of the plot matrix, but may
+       be useful when some cells are empty; for example the x-axis of
+       a 2x2 grid when only 3 total plots will be created.
+   /doyaxis: Put axis labels, etc on the yxis.  Default is to place labels
+       only on the left side and bottom sides of the plot matrix, but may
+       be useful when some cells are empty; for example the x-axis of
+       a 2x2 grid when only 3 total plots will be created.
+
+   /rowmajor: Like setting 5th element of !p.multi to 1. 
+   /reset: Set plotting parameters to their saved values from before
+       multiplot was initially called.
+   /default: Set plotting parameters to IDL defaults.  This is useful
+       when the saved parameters get in a whacky state.
+   /initialize: Just do the initialization. This is what happends when
+       you first call multiplot anyway.
+
+ EXAMPLES:
+   ; Make an array of plots [4,3] with a gap of 0.1 (in norm. coords.)
+   ; and overall titles along the x and y axes as given.  Force the
+   ; plots to be square.
+
+       cgerase & multiplot, [4,3], /square, gap=0.1, mXtitle='R', mYtitle='F(R)'
+       for i=0,4*3-1 do begin
+           cgplot, struct[i].x, struct[i].y, psym=4
+           multiplot
+       endfor
+       multiplot,/reset
+
+ Side Effects:
+   Multiplot sets a number of system variables: !p.position, !p.multi,
+	!x.tickname, !y.tickname, !P.noerase---but all can be reset with
+	the call: multiplot,/reset  
+
+   Things can get out of wack if your program crashes in the middle of 
+   making a matrix of plots, and often /reset will not fix it.  In those 
+   cases, calling multiplot,/default will often fix the problem.
+
+ Restrictions:
+	1. If you use !p.multi as the method of telling how many plots
+	are present, you have to set !p.multi at the beginning each time you
+	use multiplot or call multiplot with the /reset keyword.
+	2. There is no way to make plots of different sizes; each plot
+	covers the same area on the screen or paper.
+
+ Modification history:
+	write, 21-23 Mar 94, Fred Knight (knight@ll.mit.edu)
+	alter plot command that sets !x.window, etc. per suggestion of
+	  Mark Hadfield (hadfield@storm.greta.cri.nz), 7 Apr 94, FKK
+	add a /default keyword restore IDL's default values of system vars,
+	  7 Apr 94, FKK
+	modify two more sys vars !x(y).tickformat to suppress user-formatted
+	  ticknames, per suggestion of Mark Hadfield (qv), 8 Apr 94, FKK
+       
+   2001-03-20    Added /square keyword
+       Work in device coordinates so we can force aspect ratio to be square 
+       if requested. Erin Scott Sheldon UMichigan
+       
+   2007-06-18
+       Can now place titles on the overall x and y axes, as well as a 
+       top title using these new keywords. 
+           mTitle=, mTitSize=, mTitOffset=, 
+           mxTitle=, mxTitSize=, mxTitOffset=, 
+           myTitle=, myTitSize=, myTitOffset=, 
+       Can also control overall tick formats. Useful because can just call
+       multiplot initially and set this, while calling on each call to
+       the plotting program will have unexpected results if the ticks
+       are not to be labelled for that place in the matrix.
+           xtickformat, ytickformat
+       Erin Sheldon, NYU
+   2007-08-28:
+       Can now add gaps between the plots with these keywords:
+           gap=, xgap=, ygap=
+       where the values are in normalized coordinates. Erin Sheldon, NYU
+   2009-11-23
+       Initialize common block if M[X/Y]TITLE set W. Landsman 
+   2011-02-07
+        Use Coyote Graphics  W. Landsman    
+   2012-03-21
+        Use cgplot on initial call to get right background  W.L.
+   2014-02-04
+        Handle  [X/Y].OMargin   A. Negri, Bologna
+
+</PRE><P>
+<STRONG>(See exofast_multiplot.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="EXOFAST_OCCULTQUAD">
 <H2>EXOFAST_OCCULTQUAD</H2></A>
-<A HREF="#EXOFAST_LIKE">[Previous Routine]</A>
+<A HREF="#EXOFAST_MULTIPLOT">[Previous Routine]</A>
 <A HREF="#EXOFAST_PLOTDIST">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -2152,6 +2367,7 @@ Function value:       1.33000
    2013/03/12 - Fixed min/max, made slightly more efficient
    2018/02/13 - Covariance plot now a corner plot inspired by
                 corner.py (much prettier)
+   2018/03/15 - Identify and discard bad chains before inference
 </PRE><P>
 <STRONG>(See exofast_plotdist_corner.pro)</STRONG><P>
 <HR>
@@ -2562,7 +2778,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_TWILIGHT">
 <H2>EXOFAST_TWILIGHT</H2></A>
 <A HREF="#EXOFAST_TEXTOIDL">[Previous Routine]</A>
-<A HREF="#JSON_PARSE">[Next Routine]</A>
+<A HREF="#GETBURNNDX">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2614,9 +2830,61 @@ Function value:       1.33000
 <STRONG>(See exofast_twilight.pro)</STRONG><P>
 <HR>
  
+<A NAME="GETBURNNDX">
+<H2>GETBURNNDX</H2></A>
+<A HREF="#EXOFAST_TWILIGHT">[Previous Routine]</A>
+<A HREF="#JSON_PARSE">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   GETBURNNDX
+ PURPOSE:
+   Returns the index of the first useable link in a Markov chain.
+
+ DESCRIPTION: 
+   Determines the point at which all chains have had at least one
+   chi^2 lower than the median chi^2 of the best chain. If some
+   chains never reach this point, they are ignored in the
+   calculation. 
+   
+   nsteps*0.1 <= burnndx <= nsteps*0.9
+ 
+   That is...
+
+   It will always discard at least 10% of the steps in case the
+   initialization of the chains is insufficiently scattered around
+   the best fit, which would bias the results.
+ 
+   It will never discard more than 90% of the steps to enable the
+   robust calculation of mixing criteria.
+
+ CALLING SEQUENCE: 
+   burnndx = getburnndx(chi2 [,GOODCHAINS=,BADCHAINS=])
+
+ INPUTS:
+   
+   CHI2 - An NSTEPS x NCHAINS array of chi2 values
+ 
+ OPTIONAL OUTPUTS:
+ 
+   GOODCHAINS - An array of indices of chains that are good, meaning
+                they have at least one point below the median of the
+                best chain.  
+   BADCHAINS  - An array of indices of chains that are bad, meaning
+                their chi2 is never below the median of the best
+                chain
+
+   MEDCHI2    - The median chi2 of the best chain
+
+ REVISION HISTORY:
+   2018/03 - Written -- Jason Eastman (CfA)
+</PRE><P>
+<STRONG>(See getburnndx.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="JSON_PARSE">
 <H2>JSON_PARSE</H2></A>
-<A HREF="#EXOFAST_TWILIGHT">[Previous Routine]</A>
+<A HREF="#GETBURNNDX">[Previous Routine]</A>
 <A HREF="#KTOM2">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
