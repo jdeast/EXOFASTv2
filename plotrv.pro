@@ -27,7 +27,7 @@ endif else begin
             '800080'x,'00ffff'x,'ffff00'x,'80d000'x,'660000'x]
    red = '0000ff'x
    symsize = 1d0
-   charsize = 2
+   charsize = 1
    device,window_state=win_state
    symsize=1
 
@@ -74,6 +74,29 @@ if not keyword_set(psname) then begin
    !p.multi = [0,nx,ny]
 endif
 
+;; calculate the residuals
+for j=0, ss.ntel-1 do begin
+   rv = *(ss.telescope[j].rvptrs)
+   mintime = min(rv.bjd,max=maxtime)
+   t0 = (maxtime+mintime)/2.d0
+   rv.residuals = rv.rv - (ss.telescope[j].gamma.value[ndx] + (rv.bjd-t0)*ss.star.slope.value[ndx])
+
+   for i=0, ss.nplanets-1 do begin
+
+      modelrv = exofast_rv(rv.bjd,ss.planet[i].tp.value[ndx],$
+                           ss.planet[i].period.value[ndx],0d0,$
+                           ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
+                           ss.planet[i].omega.value[ndx],slope=0,$
+                           rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
+                           p=ss.planet[i].p.value[ndx],vsini=ss.star.vsini.value[ndx],$
+                           lambda=ss.planet[i].lambda.value[ndx],$
+                           u1=0d0, t0=0d0,deltarv=deltarv)
+      ;; populate the residual array
+      rv.residuals -= modelrv
+      *(ss.telescope[j].rvptrs) = rv
+   endfor
+endfor
+
 for i=0, ss.nplanets-1 do begin
    
    ;; pretty model without slope or gamma
@@ -108,10 +131,6 @@ for i=0, ss.nplanets-1 do begin
       
       mintime = min(rv.bjd,max=maxtime)
       t0 = (maxtime+mintime)/2.d0
-
-      ;; populate the residual array
-      rv.residuals = rv.rv - (modelrv + ss.telescope[j].gamma.value[ndx] + (rv.bjd-t0)*ss.star.slope.value[ndx])
-      *(ss.telescope[j].rvptrs) = rv
 
       minrv = min(rv.residuals-err+modelrv)
       maxrv = max(rv.residuals+err+modelrv)
