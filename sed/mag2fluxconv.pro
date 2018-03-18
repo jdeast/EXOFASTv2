@@ -62,7 +62,7 @@ for i=0,n_elements(band)-1 do begin
              weff(i)=poly(theta,[863.,494.,-833.,192.]) / 1.e4
              lamflamzp = 2.90e-5
              flux(i)=lamflamzp*10^(-0.4*mag(i))
-           end
+         end
      'V':  begin
              lameff(i)=poly(theta,[5442.,130.,159.,-53.]) / 1.e4
              weff(i)=poly(theta,[827.,167.,-156.,-63.]) / 1.e4
@@ -229,7 +229,21 @@ for i=0,n_elements(band)-1 do begin
              endif else begin
                 flux(i)=lamflamzp*10^(-0.4*(mag(i)+6.604d0))  
              endelse
-           end
+          end
+;; still working on this
+;     'GBP': begin ; Gaia Blue
+;             lameff(i)=0.253d0
+;             weff(i)=0.532d0
+;             lamflamzp = 3.46d0 * 3d-9 / lameff(i)^2 * lameff(i)
+;             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)))  
+;          end
+;     'GRP': begin ; Gaia Red
+;             lameff(i)=0.296d0
+;             weff(i)=0.797d0
+;             lamflamzp = 3.46d0 * 3d-9 / lameff(i)^2 * lameff(i)
+;             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)))  
+;          end
+
   endcase
 endfor
 
