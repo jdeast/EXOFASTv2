@@ -58,11 +58,14 @@ burnndx = round(0.1*nsteps) ;; discard at least the first 10% of the chains
 minchi2 = min(chi2[burnndx:nsteps-1,*],dimension=1)
 
 ;; some chains get stuck (why??) -- identify them and discard them
-uniqvals = dblarr(nchains)
-for i=0, nchains-1 do uniqvals[i]= n_elements(uniq(chi2[*,i]))
-djs_iterstat,uniqvals,sigrej=5,mask=mask
-goodchains = where(mask eq 1)
-if goodchains[0] eq -1 then goodchains = lindgen(nchains)
+;uniqvals = dblarr(nchains)
+;for i=0, nchains-1 do uniqvals[i]= n_elements(uniq(chi2[*,i]))
+;djs_iterstat,uniqvals,sigrej=5,mask=mask
+;goodchains = where(mask eq 1)
+;if goodchains[0] eq -1 then begin
+   goodchains = lindgen(nchains)
+   mask = lonarr(nchains) + 1L
+;endif
 
 ;; the median chi2 of the best chain
 medchi2 = min(median(chi2[burnndx:nsteps-1,goodchains],dimension=1))
@@ -75,6 +78,7 @@ goodchains = where(minchi2 lt medchi2 and mask eq 1, ngood, complement=badchains
 if ngood lt 3 then begin
    goodchains = lindgen(nchains)
    ngood = nchains
+   badchains = -1L
 endif
 
 ;; the burnndx is the first link where all good chains have been below
