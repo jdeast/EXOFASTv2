@@ -2,27 +2,28 @@ function readtran, filename, detrendpar=detrend
 
 if not file_test(filename) then message, 'Transit file (' + filename + ') does not exist'
 
-if n_elements(strsplit(filename,'.',/extract)) lt 3 then message, 'filename (' + filename + ') must have format nYYYYMMDD.FILTER.TELESCOPE.whateveryouwant (see readtran.pro for details)'
+basename = file_basename(filename)
+if n_elements(strsplit(basename,'.',/extract)) lt 3 then message, 'filename (' + basename + ') must have format nYYYYMMDD.FILTER.TELESCOPE.whateveryouwant (see readtran.pro for details)'
 
 ;; Read the transit data file into a structure
 ;; (with an arbitary number of detrending variables)
-band = (strsplit(filename,'.',/extract))(1)
+band = (strsplit(basename,'.',/extract))(1)
 
-if band eq 'u' then begin
+if band eq 'u' or band eq 'Sloanu' then begin
    band = 'Sloanu'
-   bandname = "u"
-endif else if band eq 'g' then begin
+   bandname = "u'"
+endif else if band eq 'g' or band eq 'Sloang' then begin
    band = 'Sloang'
-   bandname = "g"
-endif else if band eq 'r' then begin
+   bandname = "g'"
+endif else if band eq 'r' or band eq 'Sloanr' then begin
    band = 'Sloanr'
-   bandname = "r"
-endif else if band eq 'i' then begin
+   bandname = "r'"
+endif else if band eq 'i' or band eq 'Sloani' then begin
    band = 'Sloani'
-   bandname = "i"
-endif else if band eq 'z' then begin
+   bandname = "i'"
+endif else if band eq 'z' or band eq 'Sloanz' then begin
    band = 'Sloanz'
-   bandname = "z"
+   bandname = "z'"
 endif else bandname = band
 
 allowedbands = ['U','B','V','R','I','J','H','K',$
@@ -35,15 +36,46 @@ if (where(allowedbands eq band))[0] eq -1 then message, 'Filter (' + band + ') n
 line = ""
 openr, lun, filename, /get_lun
 readf, lun, line
+
+if strpos(line,'#') eq 0 then begin
+   mult = []
+   add = []
+   header = 1
+   entries = strsplit(line,'# ',/extract)
+   ncol = n_elements(entries)
+   for i=3, ncol-1 do begin
+      if strpos(entries[i],'M') eq 0 then begin
+         ;; if it's preceeded by an M, make it a multiplicative detrending
+         mult = [mult,i]
+      endif else begin
+         ;; otherwise, make it additive
+         add = [add,i]
+      endelse
+   endfor
+   readf, lun, line ;; now read the first data line
+endif else begin
+   header = 0
+   mult = []
+endelse
+
 entries = double(strsplit(line,/extract))
 ncol = n_elements(entries)
+;; if no header, assume all additive
+if not header then begin
+   if ncol le 3 then add = [] $
+   else add = 3L + lindgen(ncol-3)
+endif
 
 if ncol lt 3 then message, 'Transit file (' + filename + ') must contain at least 3 white-space delimited columns (BJD_TDB flux err). Comments are not allowed. The first line is ' + line
 
-nrow = file_lines(filename)
+nadd = n_elements(add)
+nmult = n_elements(mult)
+
+nrow = file_lines(filename) - header
 
 ;; rewind file to beginning
 point_lun, lun, 0
+if header then readf, lun, line
 array = dblarr(ncol,nrow)
 readf, lun, array
 free_lun, lun
@@ -51,28 +83,56 @@ free_lun, lun
 bjd = transpose(array[0,*])
 flux = transpose(array[1,*])
 err = transpose(array[2,*])
-if ncol gt 3 then begin
-   da = array[3:ncol-1,*]
+if nadd gt 0 then begin
+   da = array[add,*]
    ;; zero average the detrending parameters
-   da -=  transpose(total(da,2)/n_elements(da[0,*])##replicate(1d0,n_elements(da[0,*])))
-   ndetrend = ncol-3
+   da -= transpose(total(da,2)/n_elements(da[0,*])##replicate(1d0,n_elements(da[0,*])))
 endif else begin
    da = 0d0
-   ndetrend=0
+   nadd=0L
 endelse
 
-detrendpars = replicate(detrend,ndetrend > 1)
-detrendpars.label = 'C' + strtrim(indgen(ndetrend > 1),2)
-if ndetrend eq 0 then detrendpars.fit = 0
+if nmult gt 0 then begin
+   dm = array[mult,*]
+   ;; zero average the detrending parameters 
+   dm -= transpose(total(dm,2)/n_elements(dm[0,*])##replicate(1d0,n_elements(dm[0,*])))
+endif else begin
+   dm = 1d0
+   nmult=0L
+endelse
+
+detrendaddpar = detrend
+detrendaddpar.description = 'Additive detrending coeff'
+detrendaddpars = replicate(detrendaddpar,nadd > 1)
+detrendaddpars.label = 'C' + strtrim(indgen(nadd > 1),2)
+detrendaddpars.latex = 'C_{' + strtrim(indgen(nadd > 1),2) + '}'
+if nadd eq 0 then begin
+   detrendaddpars.fit = 0
+   detrendaddpars.derive = 0
+endif
+
+detrendmultpar = detrend
+detrendmultpar.description = 'Multiplicative detrending coeff'
+detrendmultpars = replicate(detrendmultpar,nmult > 1)
+detrendmultpars.label = 'M' + strtrim(indgen(nmult > 1),2)
+detrendmultpars.latex = 'M_{' + strtrim(indgen(nmult > 1),2) + '}'
+if nmult eq 0 then begin
+   detrendmultpars.fit = 0
+   detrendmultpars.derive = 0
+endif
 
 residuals = flux*0d0
 model = flux*0d0
 
-night = strmid(filename,1,4)+'-'+strmid(filename,5,2)+'-'+strmid(filename,7,2)
-label = (strsplit(filename,'.',/extract))(2) + ' UT ' + night + ' ('+ bandname + ')'
+night = strmid(basename,1,4)+'-'+strmid(basename,5,2)+'-'+strmid(basename,7,2)
+label = (strsplit(basename,'.',/extract))(2) + ' UT ' + night + ' ('+ bandname + ')'
+
 transit=create_struct('bjd',bjd,'flux',flux,'err',err,'band',band,'ndx',0,$
-                      'epoch',0.0,'detrendadd',da,'detrendmult',da,'label',$
-                      label,'ndetrend',ndetrend,'residuals',residuals,'model',model, 'detrendpars',detrendpars)
+                      'epoch',0.0,'detrendadd',da,'detrendmult',dm,'label',$
+                      label,$;'nadd',nadd,'nmult',nmult,$
+                      'residuals',residuals,'model',model, $
+                      'detrendaddpars',detrendaddpars, 'detrendmultpars',detrendmultpars)
+
 return, transit
 
 end
