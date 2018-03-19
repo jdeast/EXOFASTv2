@@ -97,6 +97,7 @@ for i=0, n_tags(ss)-1 do begin
    if n_tags(ss.(i)[0]) ne 0 then begin
       if tag_exist(ss.(i)[0], 'rootlabel') then begin
 ;         printf, lun, ss.(i)[0].rootlabel, format='("\sidehead{",a,"}")'
+         point_lun, -lun, pos
          printf, lun, '\smallskip\\\multicolumn{2}{l}{' + ss.(i)[0].rootlabel + '}' + strjoin('&' + ss.(i).label) + '\smallskip\\' 
 ;        if ss.(i)[0].label ne '' then printf, lun, '&' + strjoin('&' + ss.(i).label) + '\\'
 ;      printf, lun, ss.(i)[0].rootlabel, ss.(i)[*].label, format='("\sidehead{",a,"&",' + strtrim(nvalues,2) + '("&",a),"}")'
@@ -104,6 +105,7 @@ for i=0, n_tags(ss)-1 do begin
       endif
    endif
 
+   npars = 0L
    ;; for each tag
    for k=0, n_tags(ss.(i)[0])-1 do begin      
 
@@ -156,6 +158,7 @@ for i=0, n_tags(ss)-1 do begin
                            
                            ;; print the line of the latex table
                            printf, lun, header + values + '\\'
+                           npars++
 
                         endif
                      endif
@@ -197,11 +200,15 @@ for i=0, n_tags(ss)-1 do begin
       
                ;; print the line of the latex table
                printf, lun, header + values + '\\'
+               npars++
 
             endif
          endif
       endif
    endfor
+   ;; if no parameters in this section, rewind the file to erase the header
+   if npars eq 0L then point_lun, lun, pos
+
 endfor
 
 ; finish the table
