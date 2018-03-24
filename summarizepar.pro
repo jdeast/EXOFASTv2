@@ -52,7 +52,7 @@ if xmin eq xmax then begin
 endif else begin
                
    ;; plot labels
-   xtitle='!3' + exofast_textoidl(latex + '_{' + label + '}')
+   xtitle='!3' + exofast_textoidl(latex)
    ytitle='!3Probability'
               
    hist = histogram(pars,nbins=100,locations=x,min=xmin,max=xmax)

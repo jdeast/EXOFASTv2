@@ -24,6 +24,23 @@ for j=0, ss.ntel-1 do begin
    ss.telescope[j].jitter.value[positive] = sqrt(ss.telescope[j].jittervar.value[positive])
 endfor
 
+;; find the extent of the data
+minbjd = !values.d_infinity
+maxbjd = -!values.d_infinity
+for i=0, ss.ntel-1 do begin
+   tmpminbjd = min((*ss.telescope[i].rvptrs).bjd,max=tmpmaxbjd)
+   if tmpminbjd lt minbjd then minbjd = tmpminbjd
+   if tmpmaxbjd gt maxbjd then maxbjd = tmpmaxbjd
+endfor
+for i=0, ss.ntran-1 do begin
+   tmpminbjd = min((*ss.transit[i].transitptrs).bjd,max=tmpmaxbjd)
+   if tmpminbjd lt minbjd then minbjd = tmpminbjd
+   if tmpmaxbjd gt maxbjd then maxbjd = tmpmaxbjd
+endfor
+
+starbb36 = blackbody(ss.star.teff.value,replicate(3550d0/1d9,ss.nsteps),/wave)
+starbb45 = blackbody(ss.star.teff.value,replicate(4493d0/1d9,ss.nsteps),/wave)
+
 for i=0, ss.nplanets-1 do begin
 
    ;; eccentricity and argument of periastron
@@ -167,10 +184,33 @@ for i=0, ss.nplanets-1 do begin
       ss.planet[i].depth.value[j] = 1d0-mu1[0]
    endfor
 
-   if ss.planet[i].fittran then begin
-      
+   ;; find the ideal Tc that minimizes the Tc uncertainty and the
+   ;; covariance between Tc and Period
+   minepoch = floor((minbjd - median(ss.planet[i].tc.value))/median(ss.planet[i].period.value))-1
+   maxepoch =  ceil((maxbjd - median(ss.planet[i].tc.value))/median(ss.planet[i].period.value))+1
+   mincovar = !values.d_infinity
+   for epoch=minepoch, maxepoch do begin
+      corr = correlate(transpose([[ss.planet[i].tc.value+epoch*ss.planet[i].period.value],[ss.planet[i].period.value]]))
+      if abs(corr[0,1]) lt mincovar then begin
+         mincovar = abs(corr[0,1])
+         bestepoch = epoch
+      endif
+   endfor
+   ;; apply the best
+   ss.planet[i].t0.value = ss.planet[i].tc.value + bestepoch*ss.planet[i].period.value
 
-   endif
+   ;; blackbody eclipse depths
+   planetbb36 = blackbody(ss.planet[i].teq.value,replicate(3550d0/1d9,ss.nsteps),/wave)
+   planetbb45 = blackbody(ss.planet[i].teq.value,replicate(4493d0/1d9,ss.nsteps),/wave)
+   x = ss.planet[i].p.value^2*planetbb36/starbb36
+   ss.planet[i].eclipsedepth36.value = x/(1d0+x)*1d6
+   x = ss.planet[i].p.value^2*planetbb45/starbb45
+   ss.planet[i].eclipsedepth45.value = x/(1d0+x)*1d6
+   
+;   if ss.planet[i].fittran then begin
+;      
+;
+;   endif
 
 
 endfor

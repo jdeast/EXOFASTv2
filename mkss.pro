@@ -518,6 +518,14 @@ if nplanets eq 0 then tc.derive=0 $
 else tc.fit = 1
 tc.scale = 0.1
 
+t0 = parameter
+t0.unit = '\bjdtdb'
+t0.description = 'Optimal Transit Time'
+t0.latex = 'T_0'
+t0.label = 't0'
+t0.cgs = 86400d0
+if nplanets eq 0 then t0.derive=0
+
 logp = parameter
 logp.unit = ''
 logp.description = 'Log of Period'
@@ -891,7 +899,7 @@ detrend.value = 0d0
 detrend.description = 'Detrending variable'
 detrend.latex = ''
 detrend.label = 'detrend'
-detrend.scale = 1
+detrend.scale = 0.1
 detrend.fit = 1
 detrend.derive = 1
 
@@ -1255,6 +1263,7 @@ planet = create_struct($
          rp.label,rp,$
          rpearth.label,rpearth,$
          tc.label,tc,$
+         t0.label,t0,$
          a.label,a,$              
          i.label,i,$
          ideg.label,ideg,$
@@ -1280,6 +1289,8 @@ planet = create_struct($
          taus.label,taus,$
          t14s.label,t14s,$
          tfwhms.label,tfwhms,$
+         eclipsedepth36.label,eclipsedepth36,$
+         eclipsedepth45.label,eclipsedepth45,$
          rhop.label,rhop,$      ;; less useful parameters            
          rpsun.label,rpsun,$
          logP.label,logp,$  
@@ -1720,10 +1731,26 @@ while not eof(lun) do begin
                   for l=0L, n_tags(*(ss.(i)[priornum].(k)))-1 do begin
 
                      if (size((*(ss.(i)[priornum].(k))).(l)))[2] eq 8 then begin
-                        
-                        if (*(ss.(i)[priornum].(k))).ndetrend gt 0 then begin
+
+                        valid = 0
+                        if strpos(strupcase(priorlabel),'C') ne -1 then begin
+                           if strmid((*(ss.(i)[priornum].(k))).(l)[0].label,0,1) eq 'C' then begin ;; if it's the additive variable
+                              if (*(ss.(i)[priornum].(k))).nadd gt 0 then begin
+                                 detrendnum = long((strsplit(strupcase(priorlabel),'C',/extract))[0])
+                                 if detrendnum lt (*(ss.(i)[priornum].(k))).nadd then valid = 1
+                              endif
+                           endif
+                        endif else if strpos(strupcase(priorlabel),'M') ne -1 then begin
+                           if strmid((*(ss.(i)[priornum].(k))).(l)[0].label,0,1) eq 'M' then begin
+                              if (*(ss.(i)[priornum].(k))).nmult gt 0 then begin
+                                 detrendnum = long((strsplit(strupcase(priorlabel),'M',/extract))[0])
+                                 if detrendnum lt (*(ss.(i)[priornum].(k))).nmult then valid = 1
+                              endif
+                           endif
+                        endif
                            
-                           detrendnum = long((strsplit(strupcase(priorlabel),'C',/extract))[0])
+                        if valid then begin
+
                            if (*(ss.(i)[priornum].(k))).(l)[detrendnum].label eq strupcase(priorlabel) then begin
 
                               if not (*(ss.(i)[priornum].(k))).(l)[detrendnum].fit and not (*(ss.(i)[priornum].(k))).(l)[detrendnum].derive then begin

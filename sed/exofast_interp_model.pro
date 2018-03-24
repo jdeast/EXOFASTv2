@@ -30,7 +30,6 @@ if n_elements(model) eq 0 then begin
    w1 = findgen(24000)/1000+0.1 ;; wavelength scale on which to interpolate
 endif
 
-
 ;; select the nearest models
 allowedz = [-4,-3.5,-3,-2.5,-2,-1.5,-1,-0.5,0,0.3,0.5]
 junk = min(abs(allowedz-feh),ndx)

@@ -37,12 +37,31 @@ if n_elements(psname) ne 0 then begin
    device,  filename=psname,/color,bits=24
    red = 254
    green = 159
-   blue = 60
    purple = 32
    cyan = 104
    orange = 201
-   black = 0
-   colors = [red,green,blue,purple,cyan,orange,black]
+   yellow = 207
+   bluegreen = 111
+   lightgreen = 191
+
+   black = 0         ; 0
+   darkpurple = 16   ; 9
+   purple = 32       ; 6
+   darkblue = 48     ; 12 
+   blue = 64         ; 3
+   lightblue = 80    ; 14
+   cyan = 96         ; 5
+   bluegreen = 112   ; 13
+   greenblue = 128   ; 11
+   green = 144       ; 2
+   lightgreen = 160  ; 10
+   yellowgreen = 176 ; 8 
+   yellow = 192      ; 15
+   orange = 208      ; 4
+   redorange = 224   ; 7
+   red = 254         ; 1
+   colors = [black,red,green,blue,orange,cyan,purple,redorange,yellowgreen,$
+             darkpurple,lightgreen,greenblue,darkblue,bluegreen,lightblue,yellow]
    legendsize = 1
    thick=2
 endif else begin

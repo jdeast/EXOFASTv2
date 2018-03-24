@@ -41,7 +41,7 @@ if strpos(line,'#') eq 0 then begin
    mult = []
    add = []
    header = 1
-   entries = strsplit(line,'# ',/extract)
+   entries = strsplit(line,'# '+string(9B),/extract)
    ncol = n_elements(entries)
    for i=3, ncol-1 do begin
       if strpos(entries[i],'M') eq 0 then begin
@@ -129,7 +129,7 @@ label = (strsplit(basename,'.',/extract))(2) + ' UT ' + night + ' ('+ bandname +
 
 transit=create_struct('bjd',bjd,'flux',flux,'err',err,'band',band,'ndx',0,$
                       'epoch',0.0,'detrendadd',da,'detrendmult',dm,'label',$
-                      label,$;'nadd',nadd,'nmult',nmult,$
+                      label,'nadd',nadd,'nmult',nmult,$
                       'residuals',residuals,'model',model, $
                       'detrendaddpars',detrendaddpars, 'detrendmultpars',detrendmultpars)
 

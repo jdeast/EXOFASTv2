@@ -679,6 +679,7 @@ if best[0] eq -1 then begin
    return
 endif
 printandlog, 'Finished AMOEBA fit', logname
+save, best, filename=prefix + 'amoeba.idl'
 
 ;; update the parameter array with the chen-derived logks/rp (is this necessary?)
 ;best = str2pars(ss,scale=scale,name=name) 

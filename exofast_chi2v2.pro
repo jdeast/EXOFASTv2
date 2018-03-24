@@ -279,9 +279,10 @@ if file_test(ss.star.fluxfile) then begin
                          ss.star.rstar.value,$
                          ss.star.av.value, ss.star.distance.value, $
                          logg=ss.star.logg.value,met=ss.star.feh.value,$
-                         alpha=ss.star.alpha.value,verbose=ss.debug, $
+                         alpha=ss.star.alpha.value,verbose=ss.verbose, $
                          f0=f, fp0=fp, ep0=ep, psname=epsname, $
-                         pc=ss.constants.pc, rsun=ss.constants.rsun)
+                         pc=ss.constants.pc, rsun=ss.constants.rsun, $
+                         logname=logname)
 
    if ~finite(sedchi2) then begin
       if ss.debug then printandlog, 'sed is bad', ss.logname
