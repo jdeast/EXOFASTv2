@@ -21,13 +21,12 @@ if keyword_set(psname) then begin
    charsize = 0.75
 endif else begin
    !p.multi=0
-;   set_plot, 'X'
    screen = GET_SCREEN_SIZE()
    device,window_state=win_state
    xsize = 600
    ysize=(xsize/aspect_ratio + (ss.ntran)*150) < screen[1]
    if win_state[30] then wset, 30 $
-   else window, 30, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0
+   else window, 30, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0, retain=2
    red = '0000ff'x
    black = 'ffffff'x
    symsize = 0.5         
@@ -37,15 +36,9 @@ plotsym, 0, /fill, color=black
 
 ;; breaks for grazing transits...
 depth = max(ss.planet.p.value^2)
-;depth = 0.0004
 
-if keyword_set(noresiduals) then spacing = depth*3d0 $;0.035d0 $
-else spacing = depth*4d0;0.045d0
-
-
-
-;xrange = [-3.25,3.25]
-;yrange = [0.98d0,1.02d0+spacing*((ss.ntran-1d0)>0)]
+if keyword_set(noresiduals) then spacing = depth*3d0 $
+else spacing = depth*4d0
 
 cosi = ss.planet.cosi.value
 sini = sin(acos(cosi))
@@ -65,29 +58,29 @@ bp = ar*cosi*(1d0-e^2)/(1d0+esinw)
 t14 = period/!dpi*asin(sqrt((1d0+p)^2 - bp^2)/(sini*ar))*$
       sqrt(1d0-e^2)/(1d0+esinw)
 
+;;secondary eclipse time
+phase = exofast_getphase(e,omega,/primary)
+phase2 = exofast_getphase(e,omega,/secondary)
+ts = ss.planet.tc.value - ss.planet.period.value*(phase-phase2)
+
 xmax = max(t14)*36d0
 xmin = -xmax
 xrange = [xmin,xmax]
 
-
 j=0
 trandata = (*(ss.transit[j].transitptrs)) 
 time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].epoch*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
-;t0 = 2450000
 
 xmin = min(time,max=xmax)
 xrange=[xmin,xmax]
 
 
-noise = 0.0001d0
-noise = stddev(trandata.residuals)
-ymin = 1d0 - depth - 3*noise
-if ss.ntran eq 1 then ymax = 1+3*noise $
-else ymax = 1d0 + 3*noise + spacing*(ss.ntran - 0.5)
+maxnoise = stddev((*(ss.transit[0].transitptrs)).residuals)
+minnoise = stddev((*(ss.transit[ss.ntran-1].transitptrs)).residuals)
+ymin = 1d0 - depth - spacing/2d0 - 3*minnoise
+if ss.ntran eq 1 then ymax = 1+3*maxnoise $
+else ymax = 1d0 + 3*maxnoise + spacing*(ss.ntran - 0.5)
 yrange = [ymin,ymax]
-
-;yrange = [0.994,1.001]
-
 
 i=0
 sini = sin(acos(ss.planet[i].cosi.value))
@@ -188,38 +181,30 @@ for j=0, ss.ntran-1 do begin
          epochs = -minepoch + dindgen(maxepoch-minepoch+1)
          tcs = ss.planet[i].tc.value + epochs*ss.planet[i].period.value
          xyouts, tcs-t0, epochs*0d0+(ymax+1d0)/2d0, ss.planet[i].label, align=0.5d0
-
+         
       endif
    endfor
 ;   prettyflux *= ss.transit[j].f0.value
    period = ss.planet[ss.transit[j].pndx].period.value
 
-;   dummy = min(abs(trandata.bjd - ss.planet[*].tc.value),match)
    if maxbjd - minbjd lt 1 then begin
       time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].epoch[ss.transit[j].pndx]*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
-      prettytime = (prettytime - ss.planet[ss.transit[j].pndx].tc.value  - ss.transit[j].epoch[ss.transit[j].pndx]*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+
+      good = where(time ge xrange[0] and time le xrange[1], ngood)
+      if ngood eq 0 then begin
+         time = (trandata.bjd - ts[ss.transit[j].pndx] - ss.transit[j].epoch[ss.transit[j].pndx]*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+         prettytime = (prettytime - ts[ss.transit[j].pndx] - ss.transit[j].epoch[ss.transit[j].pndx]*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0         
+      endif else prettytime = (prettytime - ss.planet[ss.transit[j].pndx].tc.value  - ss.transit[j].epoch[ss.transit[j].pndx]*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
+
+
    endif else begin
       time = trandata.bjd - t0
       prettytime -= t0
    endelse
 
-;   if max(time) gt period*12d0 or min(time) lt -period*12d0 then time = time mod (period*24d0)
-
-
-
-;   prettytime = prettytime - 2457000d0
-
-;   if max(prettytime) gt period*12d0 or min(prettytime) lt -period*12d0 then prettytime = prettytime mod (period*24d0)
-;   sorted = sort(prettytime)
-;   prettytime = prettytime[sorted]
-;   prettyflux = prettyflux[sorted]
-
    oplot, time, modelflux + trandata.residuals + spacing*(ss.ntran-j-1), psym=8, symsize=symsize
    oplot, prettytime, prettyflux + spacing*(ss.ntran-j-1), thick=2, color=red;, linestyle=0
    xyouts, 0, 1.0075 + spacing*(ss.ntran-j-1), trandata.label,charsize=charsize,alignment=0.5
-
-;   wset, 1
-;   plot, time, trandata.flux-
 
 endfor
 
@@ -233,14 +218,14 @@ if keyword_set(psname) then begin
    device, xsize=xsize,ysize=ysize
 endif else begin
    if win_state[31] then wset, 31 $
-   else window, 31, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0
+   else window, 31, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0, retain=2
 endelse
 trandata = (*(ss.transit[0].transitptrs)) 
 
 for i=0L, ss.nplanets-1 do begin
    
    if ss.planet[i].fittran then begin
-      ymax = 1d0 + 3*noise ;+ spacing*((ss.ntran-1d0)>0)
+      ymax = 1d0 + 3*maxnoise ;+ spacing*((ss.ntran-1d0)>0)
 
       time = []
       residuals = []
@@ -278,7 +263,7 @@ for i=0L, ss.nplanets-1 do begin
                                 rstar=ss.star.rstar.value/AU,$
                                 x1=x1,y1=y1,z1=z1) - 1d0) + 1d0
        
-      ymin = min(modelflux) - 3d0*noise
+      ymin = min(modelflux) - 3d0*minnoise
 
       phasetime = ((time - ss.planet[i].tc.value) mod ss.planet[i].period.value)*24d0
       toohigh = where(phasetime gt (ss.planet[i].period.value/2d0*24d0))

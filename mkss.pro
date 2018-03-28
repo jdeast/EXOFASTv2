@@ -349,7 +349,7 @@ teff = parameter
 teff.value = 6000d0
 teff.unit = 'K'
 teff.description = 'Effective Temperature'
-teff.latex = 'T_{eff}'
+teff.latex = 'T_{\rm eff}'
 teff.label = 'teff'
 teff.fit=1
 teff.scale = 500d0
@@ -357,7 +357,7 @@ teff.scale = 500d0
 feh = parameter
 feh.value = 0d0
 feh.description = 'Metalicity'
-feh.latex = '[Fe/H]'
+feh.latex = '[{\rm Fe/H}]'
 feh.label = 'feh'
 feh.fit=1
 feh.scale = 0.5d0
@@ -365,7 +365,7 @@ feh.scale = 0.5d0
 initfeh = parameter
 initfeh.value = 0d0
 initfeh.description = 'Initial Metalicity'
-initfeh.latex = '[Fe/H]_{0}'
+initfeh.latex = '[{\rm Fe/H}]_{0}'
 initfeh.label = 'initfeh'
 initfeh.scale = 0.5d0
 if keyword_set(mist) then begin
@@ -1926,11 +1926,13 @@ for i=0, ntran-1 do begin
       if n_elements(nvalues) ne 0 then begin
          tc = median(ss.planet[j].tc.value)
          period = median(ss.planet[j].period.value)
+         if period eq 0 then period = median(10^ss.planet[j].logp.value)
       endif else begin
          tc = ss.planet[j].tc.value
          period = ss.planet[j].period.value
+         if period eq 0 then period = 10^ss.planet[j].logp.value
       endelse
-
+      
       epoch = (mean((*(ss.transit[i].transitptrs)).bjd) - tc)/period
       normepoch = ((epoch mod 1) + 1) mod 1
 

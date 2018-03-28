@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Fri Mar 23 22:20:36 2018.<P>
+<STRONG>Last modified: </STRONG>Wed Mar 28 09:56:06 2018.<P>
  
 <HR>
  
@@ -57,8 +57,11 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#JSON_PARSE">JSON_PARSE</A>
 <LI><A HREF="#KTOM2">KTOM2</A>
 <LI><A HREF="#LEGEND">LEGEND</A>
+<LI><A HREF="#LINLD">LINLD</A>
 <LI><A HREF="#MASSRADIUS_MIST">MASSRADIUS_MIST</A>
 <LI><A HREF="#MASSRADIUS_TORRES">MASSRADIUS_TORRES</A>
+<LI><A HREF="#MKCONSTANTS">MKCONSTANTS</A>
+<LI><A HREF="#MKPRIOR">MKPRIOR</A>
 <LI><A HREF="#OMC">OMC</A>
 <LI><A HREF="#PARS2STR">PARS2STR</A>
 <LI><A HREF="#PLOTIMAGE">PLOTIMAGE</A>
@@ -2987,7 +2990,7 @@ Function value:       1.33000
 <A NAME="LEGEND">
 <H2>LEGEND</H2></A>
 <A HREF="#KTOM2">[Previous Routine]</A>
-<A HREF="#MASSRADIUS_MIST">[Next Routine]</A>
+<A HREF="#LINLD">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -3201,9 +3204,65 @@ Function value:       1.33000
 <STRONG>(See exofast_legend.pro)</STRONG><P>
 <HR>
  
+<A NAME="LINLD">
+<H2>LINLD</H2></A>
+<A HREF="#LEGEND">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_MIST">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   LINLD
+
+ PURPOSE: 
+   Interpolates the linear limb darkening tables of Claret and
+   Bloemen (2011). http://adsabs.harvard.edu/abs/2011A%26A...529A..75C
+
+ DESCRIPTION:
+   Loads an IDL save file found in $EXOFAST_PATH/quadld/, then
+   does a 3D linear interpolation of the table. 
+
+ CALLING SEQUENCE:
+    coeffs = linld(logg, teff, feh, band [,MODEL=, METHOD=, VT=]);
+ INPUTS:
+    LOGG - The log of the stellar surface gravity
+    TEFF - The stellar effective temperature
+    FEH  - The stellar metalicity
+    BAND - The observed bandpass. Allowed values are those defined in
+           Claret and Bloemen:
+             U,B,V,R,I,J,H,K, (Johnson/Cousins)
+             u',g',r',i',z', (Sloan)
+             Kepler, CoRoT, 
+             Spitzer 3.6 um, Spitzer 4.5 um, Spitzer 5.8 um Spitzer 8.0 um, 
+             u,b,v,y (Stromgren)
+
+ OPTIONAL INPUTS:
+    MODEL  - The atmospheric model used to determine the limb
+             darkening values. Choose ATLAS or PHOENIX (default ATLAS).
+    METHOD - The method used. Choose L or F (default L)
+    VT     - The microturbulent velocity (0,2,4,or 8, default 2)
+ 
+ RESULT:
+    The linear limb darkening parameter
+
+ COMMON BLOCKS:
+   LINLD_BLOCK - This is a self-contained block that stores the
+                 contents of the IDL save files. This common block saves
+                 the expensive step of restoring the same save files
+                 for repeated calls (e.g., during and MCMC fit).
+
+ MODIFICATION HISTORY
+ 
+  2012/06 -- Public release -- Jason Eastman (LCOGT)
+  2013/01 -- Changed save filenames so they're not case sensitive
+             (now works with OSX)
+             Thanks Stefan Hippler
+</PRE><P>
+<STRONG>(See linld.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="MASSRADIUS_MIST">
 <H2>MASSRADIUS_MIST</H2></A>
-<A HREF="#LEGEND">[Previous Routine]</A>
+<A HREF="#LINLD">[Previous Routine]</A>
 <A HREF="#MASSRADIUS_TORRES">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -3274,7 +3333,7 @@ Function value:       1.33000
 <A NAME="MASSRADIUS_TORRES">
 <H2>MASSRADIUS_TORRES</H2></A>
 <A HREF="#MASSRADIUS_MIST">[Previous Routine]</A>
-<A HREF="#OMC">[Next Routine]</A>
+<A HREF="#MKCONSTANTS">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -3306,9 +3365,72 @@ Function value:       1.33000
 <STRONG>(See massradius_torres.pro)</STRONG><P>
 <HR>
  
+<A NAME="MKCONSTANTS">
+<H2>MKCONSTANTS</H2></A>
+<A HREF="#MASSRADIUS_TORRES">[Previous Routine]</A>
+<A HREF="#MKPRIOR">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   mkconstants
+ PURPOSE:
+   Returns a structure containing all the physical constants used
+   throughout EXOFASTv2, in cgs units and double precision.
+
+ DESCRIPTION:
+   Unit constants (converted to cgs)
+   As defined by IAU resolutions B2, B3
+   https://www.iau.org/static/resolutions/IAU2012_English.pdf
+   https://arxiv.org/abs/1510.07674, 
+   https://arxiv.org/abs/1507.07956, Table 1
+</PRE><P>
+<STRONG>(See mkconstants.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="MKPRIOR">
+<H2>MKPRIOR</H2></A>
+<A HREF="#MKCONSTANTS">[Previous Routine]</A>
+<A HREF="#OMC">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   mkprior
+ PURPOSE:
+
+   Prints the contents of an EXOFASTv2 prior file so the next fit
+   starts at the most likely model from a previous EXOFASTv2
+   run. Often times such iteration can be helpful to make the fit
+   converge faster, since it is often difficult to find a good best
+   fit of complex fits with strong covariances and many parameters.
+
+   Note: If priors widths or bounds were supplied in the original
+   fit, these will be preserved and override the best-fit values.
+
+ INPUTS:
+
+   FILENAME - The name of an IDL save file containing an MCMCSS
+              structure output by EXOFASTv2. Takes precendence over
+              MCMCSS.
+
+              Hint: a poorly behaving run can be terminated and still
+              generate this file by typing "ctrl+c", then
+              "!stopnow=1" and ".con" in the window.
+
+   MCMCSS   - The stellar stucture output by EXOFASTv2.
+
+   PRIORFILENAME - If specified, create a new priorfile with this
+                   name. Otherwise, output to the screen.
+
+ REVISION HISTORY:
+   2018/03 - Public Release - Jason Eastman (CfA)
+
+</PRE><P>
+<STRONG>(See mkprior.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="OMC">
 <H2>OMC</H2></A>
-<A HREF="#MASSRADIUS_TORRES">[Previous Routine]</A>
+<A HREF="#MKPRIOR">[Previous Routine]</A>
 <A HREF="#PARS2STR">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>

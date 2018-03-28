@@ -42,6 +42,7 @@ endif
 zstr = ['-4.0','-3.5','-3.0','-2.5','-2.0','-1.5','-1.0','-0.5','+0.0','+0.3','+0.5']
 junk = min(abs(allowedz-feh),zndx)
 if allowedz[zndx] gt feh then zndx -= 1
+zndx = zndx < (n_elements(allowedz)-2)
 
 allowedalpha = [0d0,0.2d0,-0.2d0,0.4d0,0.6d0]
 alphastr = ['+0.0','+0.2','-0.2','+0.4','+0.6']
@@ -56,6 +57,7 @@ endif
 loggstr = ['-0.5','+0.0','+0.5','+1.0','+1.5','+2.0','+2.5','+3.0','+3.5','+4.0','+4.5','+5.0','+5.5','+6.0']
 junk = min(abs(allowedlogg-logg),loggndx)
 if allowedlogg[loggndx] gt logg then loggndx -= 1
+loggndx = loggndx < (n_elements(allowedlogg)-2)
 
 allowedteff = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, $
                23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, $
@@ -74,6 +76,7 @@ allowedteff *= 100d0
 nteff = n_elements(allowedteff)
 junk = min(abs(allowedteff-teff),teffndx)
 if allowedteff[teffndx] gt teff then teffndx -= 1
+teffndx = teffndx < (n_elements(allowedteff)-2)
 
 if keyword_set(nextgen) or keyword_set(dusty) or keyword_set(cond) then begin
 

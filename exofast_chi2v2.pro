@@ -282,7 +282,7 @@ if file_test(ss.star.fluxfile) then begin
                          alpha=ss.star.alpha.value,verbose=ss.verbose, $
                          f0=f, fp0=fp, ep0=ep, psname=epsname, $
                          pc=ss.constants.pc, rsun=ss.constants.rsun, $
-                         logname=logname)
+                         logname=logname, debug=ss.debug)
 
    if ~finite(sedchi2) then begin
       if ss.debug then printandlog, 'sed is bad', ss.logname
@@ -318,14 +318,17 @@ for j=0, ss.ntel-1 do begin
                             omega=ss.planet[i].omega.value,/primary)
          
          ;; calculate the RV model
+         if ss.planet[i].rossiter then $
+            u1 = linld(ss.star.logg.value,ss.star.teff.value,ss.star.feh.value,'V') $
+         else u1 = 0d0
          modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
                                0d0,ss.planet[i].K.value,$
                                ss.planet[i].e.value,ss.planet[i].omega.value,$
                                slope=0, $
                                rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
-                               p=ss.planet[i].p.value,vsini=ss.star.vsini.value,$
+                               p=abs(ss.planet[i].p.value),vsini=ss.star.vsini.value,$
                                lambda=ss.planet[i].lambda.value,$
-                               u1=0d0,t0=t0,deltarv=deltarv)
+                               u1=u1,t0=t0,deltarv=deltarv)
 
       endif
 
@@ -499,9 +502,11 @@ if ss.ttvs then begin
           ss.planet.tc.value#replicate(1,ss.ntran) + $
           ss.planet.period.value#replicate(1,ss.ntran)*$
           ss.transit.epoch
+
    ;; add a chi2 penalty for the deviation of the ephemeris to the
    ;; linear fit of the transit times for each planet
    for i=0L, ss.nplanets-1L do begin
+
       good = where(finite(time[i,*]),ngood) ;; why wouldn't that be finite??
       if ngood lt 2 then continue
 ;      if ngood lt 2 then stop ;continue

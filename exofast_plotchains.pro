@@ -91,7 +91,7 @@ red = 254
 ymin = min(chi2,max=ymax)
 if ymin lt 0 then sign = ' + ' else sign = ' - '
 latex = '\chi^2' + sign + strtrim(abs(ymin),2)
-plotchain, chi2[*,goodchains], latex=latex, unit='', label='chi2', logname=logname, burnndx=burnndx
+plotchain, chi2[*,goodchains]-ymin, latex=latex, unit='', label='chi2', logname=logname, burnndx=burnndx
 
 for i=0, n_tags(ss)-1 do begin
    for j=0, n_elements(ss.(i))-1 do begin

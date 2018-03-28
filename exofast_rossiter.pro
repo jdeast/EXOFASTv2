@@ -64,6 +64,7 @@ endif
 ;; ingress/egress phase
 inegress = where(abs(etap) lt p and z gt 0)
 if inegress[0] ne -1 then begin
+
     ;; equation 33
     x0 = 1.d0 - (p^2-etap[inegress]^2)/(2d0*(1d0+etap[inegress])) ;; equation 33
     zeta = 1.d0 + etap[inegress] - x0 ;; equation 34

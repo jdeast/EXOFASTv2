@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol
+function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug
 
 common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m, w1, kapp1
 
@@ -42,7 +42,7 @@ extinct1 = exp(-taul1)
 
 flux = lamflam1*extinct1
 
-fbol= total(flux)
+;fbol= total(flux)
 
 f=fltarr(n)
 for i=0,n-1 do begin
@@ -52,7 +52,7 @@ for i=0,n-1 do begin
    f[i]=mean(flux[l:u])
 endfor
 
-if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
+if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    ;; The Spectral Energy Distribution (black), with broad band
    ;; averages (blue circles) and broad band measurements (red). The error
    ;; bars in wavelength denote the bandwidth of the corresponding
@@ -73,10 +73,9 @@ if keyword_set(verbose) or keyword_set(psname) eq 1 then begin
       ytitle = exofast_textoidl('log \lambda F_\lambda (erg s^{-1} cm^{-2})')
       plotsym, 0, 0.5, /fill, color=colors[3]
    endif else begin
-;      set_plot, 'X'
       device,window_state=win_state
       if win_state[5] eq 1 then wset, 5 $
-      else window, 5
+      else window, 5, retain=2
       colors = ['ffffff'x,'0000ff'x,'00ff00'x,'ff0000'x]
       xtitle = 'lambda (um)'
       ytitle = 'log(lambda F_lambda) (erg/s/cm^2)'

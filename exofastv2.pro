@@ -653,9 +653,10 @@ printandlog,'',logname
 printandlog, '**************************************************************', logname
 printandlog, '*** ESPECIALLY DURING BETA TESTING, YOU SHOULD MAKE SURE   ***', logname
 printandlog, '*** THESE MAKE SENSE AND AGREE WITH YOUR EXPECTATION FROM  ***', logname
-printandlog, '*** PRIORFILE. IF NOT, YOUR STARTING PRIORS ARE LIKELY NOT ***', logname
-printandlog, '*** BEING TRANSLATED INTO THE STEPPING PARAMETERIZATION    ***', logname
-printandlog, '*** CORRECTLY BY pars2step.pro.                            ***', logname
+printandlog, '*** PRIORFILE. IF NOT, YOUR STARTING PRIORS MAY NOT BE     ***', logname
+printandlog, '*** TRANSLATED CORRECTLY INTO THE STEPPING                 ***', logname
+printandlog, '*** PARAMETERIZATION BY pars2step.pro. NOT ALL PARAMETER   ***', logname
+printandlog, '*** COMBINATIONS ARE ALLOWED/SUPPORTED.                    ***', logname
 printandlog, '**************************************************************', logname
 printandlog, '', logname
 printandlog, 'Par #      Par Name    Par Value       Amoeba Scale', logname

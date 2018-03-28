@@ -1,9 +1,17 @@
-;; Unit constants (converted to cgs)
-;; As defined by IAU resolutions B2, B3
-;; https://www.iau.org/static/resolutions/IAU2012_English.pdf
-;; https://arxiv.org/abs/1510.07674, 
-;; https://arxiv.org/abs/1507.07956, Table 1
-
+;+
+; NAME:
+;   mkconstants
+; PURPOSE:
+;   Returns a structure containing all the physical constants used
+;   throughout EXOFASTv2, in cgs units and double precision.
+;
+; DESCRIPTION:
+;   Unit constants (converted to cgs)
+;   As defined by IAU resolutions B2, B3
+;   https://www.iau.org/static/resolutions/IAU2012_English.pdf
+;   https://arxiv.org/abs/1510.07674, 
+;   https://arxiv.org/abs/1507.07956, Table 1
+;-
 function mkconstants
 
 constants = create_struct('G', 6.67408d-8,$           ;; Gravitational Constant (cm^3/g/s^2)

@@ -276,10 +276,11 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    teffplottrack = mistteffiso
    loggplot =  alog10(mstar/(rstar^2)*gravitysun)
 
-   xmin=max(teffplottrack,min=xmax) ;; plot range backwards
+   use = where(loggplottrack gt 3 and loggplottrack lt 5)
+   xmin=max(teffplottrack[use],min=xmax) ;; plot range backwards
    ymin = min([loggplot,3,5],max=ymax)
-
-   plot, teffplottrack, loggplottrack,xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax]
+   
+   plot, teffplottrack, loggplottrack,xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax];, xtickinterval=1500
    plotsym,0,/fill
    oplot, [teff], [loggplot], psym=8,symsize=0.5 ;; the model point
    junk = min(abs(eepplot-eep),ndx)

@@ -88,10 +88,10 @@ for j=0, ss.ntel-1 do begin
                            ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
                            ss.planet[i].omega.value[ndx],slope=0,$
                            rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
-                           p=ss.planet[i].p.value[ndx],vsini=ss.star.vsini.value[ndx],$
+                           p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star.vsini.value[ndx],$
                            lambda=ss.planet[i].lambda.value[ndx],$
                            u1=0d0, t0=0d0,deltarv=deltarv)
-      ;; populate the residual array
+      ;; re-populate the residual array
       rv.residuals -= modelrv
       *(ss.telescope[j].rvptrs) = rv
    endfor
@@ -105,7 +105,7 @@ for i=0, ss.nplanets-1 do begin
                             ss.planet[i].e.value[ndx],ss.planet[i].omega.value[ndx],$
                             slope=0,$
                             rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
-                            p=ss.planet[i].p.value[ndx],vsini=ss.star.vsini.value[ndx],$
+                            p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star.vsini.value[ndx],$
                             lambda=ss.planet[i].lambda.value[ndx],$
                             u1=0d0, t0=0d0,deltarv=deltarv)
    allprettymodel += prettymodel
@@ -125,7 +125,7 @@ for i=0, ss.nplanets-1 do begin
                            ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
                            ss.planet[i].omega.value[ndx],slope=0,$
                            rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
-                           p=ss.planet[i].p.value[ndx],vsini=ss.star.vsini.value[ndx],$
+                           p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star.vsini.value[ndx],$
                            lambda=ss.planet[i].lambda.value[ndx],$
                            u1=0d0, t0=0d0,deltarv=deltarv)
       
@@ -148,7 +148,11 @@ for i=0, ss.nplanets-1 do begin
       modelrv = exofast_rv(rv.bjd,ss.planet[i].tp.value[ndx],$
                            ss.planet[i].period.value[ndx],0d0,$
                            ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
-                           ss.planet[i].omega.value[ndx],slope=0)
+                           ss.planet[i].omega.value[ndx],slope=0,$
+                           rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
+                           p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star.vsini.value[ndx],$
+                           lambda=ss.planet[i].lambda.value[ndx],$
+                           u1=0d0, t0=0d0,deltarv=deltarv)
       time=(((rv.bjd-ss.planet[i].tc.value[ndx]) mod ss.planet[i].period.value[ndx])/$
             ss.planet[i].period.value[ndx]+1.25d0) mod 1
       plotsym, symbols[j mod nsymbols], symsize, fill=fills[j mod nfills], color=colors[j mod ncolors]

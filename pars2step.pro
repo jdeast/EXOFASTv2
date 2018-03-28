@@ -76,6 +76,12 @@ for i=0, nplanets-1 do begin
    if ss.planet[i].secosw.value eq 0d0 then ss.planet[i].secosw.value = sqrt(ss.planet[i].e.value)*cos(ss.planet[i].omega.value)
    if ss.planet[i].sesinw.value eq 0d0 then ss.planet[i].sesinw.value = sqrt(ss.planet[i].e.value)*sin(ss.planet[i].omega.value)
 
+   ;; overwrite default cosi with starting value for i or ideg
+   if ss.planet[i].cosi.value eq 0d0 then begin
+      if ss.planet[i].i.value ne 0d0 then ss.planet[i].cosi.value = cos(ss.planet[i].i.value) $
+      else if ss.planet[i].ideg.value ne 0d0 then ss.planet[i].cosi.value = cos(ss.planet[i].ideg.value*!pi/180d0)
+   endif
+
    ;; scale of cosi (scales with projected disk size)
    if ss.planet[i].i.value eq 0d0 then ss.planet[i].i.value = acos(ss.planet[i].cosi.value)
 
