@@ -629,7 +629,7 @@ endif
 modelfile = prefix + 'start'
 bestchi2 = call_function(chi2func, pars, psname=modelfile)
 if ~finite(bestchi2) then begin
-   printandlog, 'Starting conditions outside of bounds. Setting the /VERBOSE and /DEBUG flags may help you revise the starting values'
+   printandlog, 'Starting conditions outside of bounds. Setting the /VERBOSE and /DEBUG flags may help you revise the starting values', logname
    return
 endif
 
