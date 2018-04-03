@@ -1132,7 +1132,8 @@ ttv.latex = 'TTV'
 ttv.label = 'ttv'
 ttv.unit = 'days'
 ttv.scale = 0.02 ;; ~30 minutes
-if keyword_set(ttvs) then begin
+junk = where(fittran, nfittran)
+if keyword_set(ttvs) and nfittran ge 1 then begin
    ttv.fit = 1
 endif else ttv.derive=0
 
