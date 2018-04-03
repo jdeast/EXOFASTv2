@@ -83,22 +83,26 @@ for j=0, ss.ntel-1 do begin
 
    for i=0, ss.nplanets-1 do begin
 
-      modelrv = exofast_rv(rv.bjd,ss.planet[i].tp.value[ndx],$
-                           ss.planet[i].period.value[ndx],0d0,$
-                           ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
-                           ss.planet[i].omega.value[ndx],slope=0,$
-                           rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
-                           p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star.vsini.value[ndx],$
-                           lambda=ss.planet[i].lambda.value[ndx],$
-                           u1=0d0, t0=0d0,deltarv=deltarv)
-      ;; re-populate the residual array
-      rv.residuals -= modelrv
-      *(ss.telescope[j].rvptrs) = rv
+      if ss.planet[i].fitrv then begin
+         modelrv = exofast_rv(rv.bjd,ss.planet[i].tp.value[ndx],$
+                              ss.planet[i].period.value[ndx],0d0,$
+                              ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
+                              ss.planet[i].omega.value[ndx],slope=0,$
+                              rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
+                              p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star.vsini.value[ndx],$
+                              lambda=ss.planet[i].lambda.value[ndx],$
+                              u1=0d0, t0=0d0,deltarv=deltarv)
+         ;; re-populate the residual array
+         rv.residuals -= modelrv
+         *(ss.telescope[j].rvptrs) = rv
+      endif
    endfor
 endfor
 
 for i=0, ss.nplanets-1 do begin
    
+   if ~ss.planet[i].fitrv then continue
+
    ;; pretty model without slope or gamma
    prettymodel = exofast_rv(prettytime,ss.planet[i].tp.value[ndx],$
                             ss.planet[i].period.value[ndx],0d0,ss.planet[i].K.value[ndx],$
