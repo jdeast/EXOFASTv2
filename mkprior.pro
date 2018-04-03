@@ -151,23 +151,20 @@ for i=0L, mcmcss.ntran-1 do begin
       endif
    endfor
 
+   if tag_exist((*(mcmcss.transit[i].transitptrs)), 'NADD') then begin
+      for j=0, (*(mcmcss.transit[i].transitptrs)).nadd-1 do begin
+         line = getpriorline((*(mcmcss.transit[i].transitptrs)).detrendaddpars[j],ndx, num=i)
+         if line ne '' then printf, lun, line
+      endfor
+   endif
 
-;   print, 'F0_' + strtrim(i,2) + ' ' + strtrim(mcmcss.transit[i].f0.value[ndx],2)
-;   if mcmcss.transit[i].ttv.fit then print, 'TTV_' + strtrim(i,2) + ' ' + strtrim(mcmcss.transit[i].ttv.value[ndx],2)
-;   if mcmcss.transit[i].variance.fit then print, 'VARIANCE_' + strtrim(i,2) + ' ' + strtrim(mcmcss.transit[i].variance.value[ndx],2)
-
-
-   for j=0, (*(mcmcss.transit[i].transitptrs)).nadd-1 do begin
-      line = getpriorline((*(mcmcss.transit[i].transitptrs)).detrendaddpars[j],ndx, num=i)
-      if line ne '' then printf, lun, line
-   endfor
-   for j=0, (*(mcmcss.transit[i].transitptrs)).nmult-1 do begin
-      line = getpriorline((*(mcmcss.transit[i].transitptrs)).detrendmultpars[j],ndx, num=i)
-      if line ne '' then printf, lun, line
-
-
-;      print, 'M' + strtrim(j,2) + '_' + strtrim(i,2) + ' ' + strtrim((*(mcmcss.transit[i].transitptrs)).detrendmultpars[j].value[ndx],2)
-   endfor
+   if tag_exist((*(mcmcss.transit[i].transitptrs)), 'NMULT') then begin
+      for j=0, (*(mcmcss.transit[i].transitptrs)).nmult-1 do begin
+         line = getpriorline((*(mcmcss.transit[i].transitptrs)).detrendmultpars[j],ndx, num=i)
+         if line ne '' then printf, lun, line
+      endfor
+   endif
+   
 endfor      
 
 if lun ne -1 then free_lun, lun
