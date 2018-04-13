@@ -230,19 +230,32 @@ for i=0,n_elements(band)-1 do begin
                 flux(i)=lamflamzp*10^(-0.4*(mag(i)+6.604d0))  
              endelse
           end
-;; still working on this
-;     'GBP': begin ; Gaia Blue
-;             lameff(i)=0.253d0
-;             weff(i)=0.532d0
-;             lamflamzp = 3.46d0 * 3d-9 / lameff(i)^2 * lameff(i)
-;             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)))  
-;          end
-;     'GRP': begin ; Gaia Red
-;             lameff(i)=0.296d0
-;             weff(i)=0.797d0
-;             lamflamzp = 3.46d0 * 3d-9 / lameff(i)^2 * lameff(i)
-;             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)))  
-;          end
+     ;; Table 1 of Jordi et al, 2010
+     ;; with DR2 Vega to AB mag offsets from
+     ;; https://www.cosmos.esa.int/web/gaia/iow_20180316
+     ;; commented offsets are more accurate, but not used for DR2 mags
+     'Gaia': begin ; Gaia
+             lameff(i)=0.673d0
+             weff(i)=0.440d0
+             lamflamzp = 3631d0 * 3d-9 / lameff(i)^2 * lameff(i)
+             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.1050312311d0))  
+             ;flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.1001113078d0))  
+          end
+     'GBP': begin ; Gaia Blue
+             lameff(i)=0.532d0
+             weff(i)=0.253d0
+             lamflamzp = 3631d0 * 3d-9 / lameff(i)^2 * lameff(i)
+             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.0291714680d0))  
+             ;flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.0373453185d0))  
+          end
+     'GRP': begin ; Gaia Red
+             lameff(i)=0.797d0
+             weff(i)=0.296d0
+             lamflamzp = 3631d0 * 3d-9 / lameff(i)^2 * lameff(i)
+             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.3542076819d0))  
+             ;flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.3534919681d0))  
+          end
+     else: print, 'Band not recognized: ' + band[i]
 
   endcase
 endfor
