@@ -404,8 +404,8 @@
 ;               data is made. This is useful when refining initial
 ;               guesses.
 ;               ***NOT YET IMPLEMENTED***
-;   SKIPSTAR  - If set, don't bother refining the stellar
-;               parameters first, go straight to the global fit.
+;   REFINESTAR- If set, refining the stellar parameters first, before
+;               the global fit.
 ;   EARTH     - If set, the output units of Mp and Rp are in Earth
 ;               units, not Jupiter units.
 ;   DEBUG     - If set, various debugging outputs will be printed and
@@ -527,7 +527,7 @@ pro exofastv2, priorfile=priorfile, $
                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
                debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
-               bestonly=bestonly, plotonly=plotonly,skipstar=skipstar,$
+               bestonly=bestonly, plotonly=plotonly,refinestar=refinestar,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                maxgr=maxgr, mintz=mintz, $
                noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
@@ -548,7 +548,7 @@ if numargs eq 1 then begin
                 fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                 nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
                 debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
-                bestonly=bestonly, plotonly=plotonly, skipstar=skipstar, $
+                bestonly=bestonly, plotonly=plotonly, refinestar=refinestar, $
                 longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                 maxgr=maxgr, mintz=mintz, $
                 noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
@@ -580,7 +580,7 @@ file_delete, logname, /allow_nonexistent
 ;; refine the stellar starting values based on the priors and SED (if supplied)
 ;; this can be really useful if you don't know the rough stellar
 ;; parameters, especially for the MIST models, but is a waste of time if you do
-if nplanets ne 0 and ~keyword_set(skipstar) then begin
+if nplanets ne 0 and keyword_set(refinestar) then begin
    printandlog, 'Refining stellar parameters'
    ss = mkss(fluxfile=fluxfile,nplanet=0,priorfile=priorfile, $
              noyy=noyy, torres=torres, mist=mist, logname=logname, debug=stardebug, verbose=verbose)
@@ -633,7 +633,7 @@ printandlog, '', logname
 pars = str2pars(ss,scale=scale,name=name, angular=angular)
 
 ;; replace the stellar parameters with their independently-optimized values
-if ~keyword_set(skipstar) then begin
+if keyword_set(refinestar) then begin
    for i=0, n_elements(starparnames)-1 do begin
       match = (where(name eq starparnames[i]))[0]
       if match ne -1 then pars[match] = staronlybest[i]
