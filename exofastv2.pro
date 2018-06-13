@@ -182,6 +182,10 @@
 ;                 So a transit taken on UTC 2017-01-27 with the TRES
 ;                 spectrograph (R=44000) would be called
 ;                 "n20170127.TRES.44000.fits"
+; 
+;                 NOTE 0: When supplied this way, the DT data does not
+;                 constrain vsini. A gaussian prior must be given in
+;                 the prior file.
 ;
 ;                 NOTE 1: NAXIS1 must equal the number of velocities and
 ;                 NAXIS2 must equal the number of times.
@@ -225,25 +229,17 @@
 ;                Tycho: 'BT','VT'
 ;                Kepler INT: 'U_KIS','gKIS','rKIS','iKIS'
 ;
-;                The contents of this file for EPXXXXXXX is below:
+;                The program mksed.pro will automatically generate
+;                this file using queryVizier based on the object's
+;                name or coordinates. Exercise caution that the
+;                correct object was selected for each catalog.
 ; 
-;                B      11.949 0.129
-;                V      11.572 0.142
-;                J2M    10.872 0.022
-;                H2M    10.665 0.025
-;                K2M    10.601 0.020
-;                WISE1  10.537 0.023
-;                WISE2  10.583 0.021
-;                WISE3  10.618 0.097
-;                uSDSS 14.51798 0.05
-;                gSDSS 12.14652 0.03
-;                rSDSS 11.81735 0.03
-;                iSDSS 11.70544 0.03
-;                zSDSS 13.20863 0.03
+;                Thank you to Keivan Stassun at Vanderbilt for the
+;                majority of the SED-related code.
 ;
 ;   PREFIX      - Each of the output files will have this string as a
 ;                 prefix. Default is 'planet.'
-
+;
 ;   MAXSTEPS    - The maximum number of steps to take in the MCMC
 ;                 chain. Note that a 32-bit installation of IDL cannot
 ;                 allocate more than 260 million double-precision
@@ -319,6 +315,26 @@
 ;                 should fit using a Doppler Tomography model.
 ;                 Default is bytarr(nplanets)
 ;                 ***NOT YET IMPLEMENTED***
+;  FITTHERMAL- A string array specifying which bands to fit thermal
+;             emission for. This is what you want to set to fit an
+;             isolated secondary eclipse. All observations in this
+;             band will be modeled with a baseline of 1 between t2 and
+;             t3 of the secondary eclipse and 1 + thermal emission (in
+;             PPM) out of eclipse.
+;  FITREFLECT- A string array specifying which bands to fit reflected
+;             light for. Set this along with thermal if you're
+;             fitting a full phase curve. It will be modeled as a
+;             sinusoid with the orbital period, a minimum at the
+;             primary transit, and a fitted amplitude (in PPM).
+;  FITDILUTE-   A string array specifying which bands to fit a dilution
+;             term for. Set this if the star is blended with a
+;             neighbor and you expect color-dependent depth
+;             variations.
+;             Note: May be degenerate with F0 (transit normalization) 
+;             Note: this only affects the transit model. It is not
+;             accounted for in the SED fitting.
+;             TODO: automatically model dilution based on multiple
+;             SEDs
 ;   CHEN        - An NPLANET boolean array that specifies which
 ;                 planets should have the Chen & Kipping, 2017
 ;                 mass-radius relation applied. By default CHEN =
@@ -576,7 +592,7 @@ endif
 ;; create the master structure
 ss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
           debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
-          circular=circular,fitslope=fitslope, fitquad=fitquad,$
+          circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,$
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
           rossiter=rossiter,longcadence=longcadence, ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
           fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
@@ -739,7 +755,7 @@ bestchi2 = call_function(chi2func,best,psname=modelfile, $
 ;mcmcss = mcmc2str(pars, ss)
 mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
               debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
-              circular=circular,fitslope=fitslope, fitquad=fitquad, $
+              circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
               rossiter=rossiter,longcadence=longcadence, ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
