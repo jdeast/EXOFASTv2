@@ -58,7 +58,7 @@
 
 function bjd2target, bjd_tdb, inclination=inclination, a=a, tp=tp, $
                      period=period,e=e, omega=omega, q=q, tol=tol, $
-                     primary=primary,pars=pars
+                     primary=primary,pars=pars, c=c
 
 if n_elements(tol) eq 0 then tol = 1d-8 ;; 1 ms
 bjd_target = bjd_tdb
@@ -69,7 +69,7 @@ niter = 0
 repeat begin
 
    target_new = target2bjd(bjd_target,inclination=inclination, a=a, tp=tp, $
-                           period=period,e=e,omega=omega,q=q,primary=primary)
+                           period=period,e=e,omega=omega,q=q,primary=primary,c=c)
 
    diff = bjd_tdb-target_new
    bjd_target += diff
