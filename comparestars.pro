@@ -101,7 +101,14 @@ for i=0, n_elements(tags)-1 do begin
       endif
       ;; and find the range of the parameter
       burnndx = (*structures[j]).burnndx
-      thismax = max((*structures[j]).star.(tagmatch[j]).value[burnndx:*],min=thismin)
+      nchains = (*structures[j]).nchains
+      nsteps = (*structures[j]).nsteps/nchains
+    
+      chi2 = reform((*(*structures[j]).chi2),nsteps,nchains)
+      burnndx = getburnndx(chi2,goodchains=goodchains)
+      par = (reform((*structures[j]).star.(tagmatch[j]).value,nsteps,nchains))[burnndx:*,goodchains]
+
+      thismax = max(par,min=thismin)
       if thismax gt xmax then xmax = thismax
       if thismin lt xmin then xmin = thismin
    endfor
@@ -110,7 +117,15 @@ for i=0, n_elements(tags)-1 do begin
    hists = dblarr(nfiles,100)
    for j=0, nfiles-1 do begin
       burnndx = (*structures[j]).burnndx
-      hist = histogram((*structures[j]).star.(tagmatch[j]).value[burnndx:*],nbin=100,locations=x,max=xmax,min=xmin)
+
+      nchains = (*structures[j]).nchains
+      nsteps = (*structures[j]).nsteps/nchains
+      chi2 = reform((*(*structures[j]).chi2),nsteps,nchains)
+      burnndx = getburnndx(chi2,goodchains=goodchains)
+      
+      par = (reform((*structures[j]).star.(tagmatch[j]).value,nsteps,nchains))[burnndx:*,goodchains]
+
+      hist = histogram(par,nbin=100,locations=x,max=xmax,min=xmin)
       hists[j,*] = hist/total(hist)
       ;; zero out singular arrays (e.g., age when age isn't fit)
       bad = where(hists[j,*] eq 1d0)
@@ -141,7 +156,15 @@ for i=0, n_elements(tags)-1 do begin
       endif
       ;; and find the range of the paramete
       burnndx = (*structures[j]).burnndx
-      thismax = max((*structures[j]).star.(tagmatchx[j]).value[burnndx:*],min=thismin)
+
+      nchains = (*structures[j]).nchains
+      nsteps = (*structures[j]).nsteps/nchains
+      chi2 = reform((*(*structures[j]).chi2),nsteps,nchains)
+      burnndx = getburnndx(chi2,goodchains=goodchains)
+      
+      par = (reform((*structures[j]).star.(tagmatchx[j]).value,nsteps,nchains))[burnndx:*,goodchains]
+
+      thismax = max(par,min=thismin)
       if thismax gt xmax then xmax = thismax
       if thismin lt xmin then xmin = thismin
    endfor
@@ -161,7 +184,15 @@ for i=0, n_elements(tags)-1 do begin
          endif
          ;; find the range of this variable
          burnndx = (*structures[j]).burnndx
-         thismax = max((*structures[j]).star.(tagmatchy[j]).value[burnndx:*],min=thismin)
+ 
+         nchains = (*structures[j]).nchains
+         nsteps = (*structures[j]).nsteps/nchains
+         chi2 = reform((*(*structures[j]).chi2),nsteps,nchains)
+         burnndx = getburnndx(chi2,goodchains=goodchains)
+
+         par = (reform((*structures[j]).star.(tagmatchy[j]).value,nsteps,nchains))[burnndx:*,goodchains]
+      
+         thismax = max(par,min=thismin)
          if thismax gt ymax then ymax = thismax
          if thismin lt ymin then ymin = thismin
       endfor
@@ -175,8 +206,15 @@ for i=0, n_elements(tags)-1 do begin
       ;; overplot get the covariance contours for each save file
       for j=0, nfiles-1 do begin
          burnndx = (*structures[j]).burnndx
-         x = (*structures[j]).star.(tagmatchx[j]).value[burnndx:*]
-         y = (*structures[j]).star.(tagmatchy[j]).value[burnndx:*]
+         nchains = (*structures[j]).nchains
+         nsteps = (*structures[j]).nsteps/nchains
+
+         chi2 = reform((*(*structures[j]).chi2),nsteps,nchains)
+         burnndx = getburnndx(chi2,goodchains=goodchains)
+
+         x = (reform((*structures[j]).star.(tagmatchx[j]).value,nsteps,nchains))[burnndx:*,goodchains]
+         y = (reform((*structures[j]).star.(tagmatchy[j]).value,nsteps,nchains))[burnndx:*,goodchains]
+
          if min(x) ne max(x) and min(y) ne max(y) then begin
             exofast_errell,x,y,xpath=xpath,ypath=ypath,$
                            prob=probs,nxbin=100, nybin=100,$
