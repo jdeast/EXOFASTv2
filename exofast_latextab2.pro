@@ -101,7 +101,7 @@ for i=0, n_tags(ss)-1 do begin
          printf, lun, '\smallskip\\\multicolumn{2}{l}{' + ss.(i)[0].rootlabel + '}' + strjoin('&' + ss.(i).label) + '\smallskip\\' 
 ;        if ss.(i)[0].label ne '' then printf, lun, '&' + strjoin('&' + ss.(i).label) + '\\'
 ;      printf, lun, ss.(i)[0].rootlabel, ss.(i)[*].label, format='("\sidehead{",a,"&",' + strtrim(nvalues,2) + '("&",a),"}")'
-;; how to do this (latex problem).. separate tables?
+;; how to do this (latex problem)... separate tables?
       endif
    endif
 
@@ -216,6 +216,7 @@ printf, lun, '\enddata'
 if n_elements(label) ne 0 then printf, lun, '\label{' + label + '}'
 printf, lun, '\end{deluxetable*}'
 printf, lun, '\end{document}'
+printf, lun, ''
 
 if n_elements(texfile) ne 0 then free_lun, lun
 
