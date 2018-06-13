@@ -66,8 +66,10 @@
 function target2bjd, bjd_target, inclination=inclination, a=a, tp=tp, $
                      period=period,e=e, omega=omega, q=q, primary=primary
 
+if n_elements(q) eq 0 then q = !values.d_infinity
+
 ;; no correction necessary, already in the SSB frame
-if n_elements(q) eq 0 and keyword_set(primary) then return, bjd_target
+if  ~finite(q) and keyword_set(primary) then return, bjd_target
 
 c = 173.144483d0 ;; AU/day
 
@@ -87,8 +89,10 @@ trueanom = 2d0*atan(sqrt((1d0 + e)/(1d0 - e))*tan(0.5d0*eccanom))
 
 ;; displacement from barycenter
 if n_elements(q) ne 0 then begin
-   if keyword_set(primary) then factor = 1d0/(1d0+q) $ ;; a*factor = a1
-   else factor = q/(1d0+q)                             ;; a*factor = a2
+   if finite(q) then begin
+      if keyword_set(primary) then factor = 1d0/(1d0+q) $ ;; a*factor = a1
+      else factor = q/(1d0+q)                             ;; a*factor = a2
+   endif else factor = 1d0
 endif else factor = 1d0 ;; infinite mass ratio
 
 ;; distance from barycenter to target
