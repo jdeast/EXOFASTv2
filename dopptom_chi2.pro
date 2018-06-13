@@ -5,7 +5,7 @@
 function dopptom_chi2, doptom, tc, period, e, omega, cosi, p, ar, lambda, logg, teff, feh, vsini, macturb, errscale, debug=debug,like=like,psname=psname
 
 if macturb lt 0d0 then return, !values.d_infinity ; invalid line width
-if vsini lt 0d0 then return, !values.d_infinity ; invalid vsini
+if vsini le 0d0 then return, !values.d_infinity ; invalid vsini
 
 chisqr = 0.0d0;
 convolve_limit = 5. ;; The gaussian broadening has to be less than this factor larger than vsini for it to try and include the rotation kernel. E.g., gaussian broadening ('GaussTerm') = 10km/s, vsini needs to be at least 2km/s. Otherwise just use a gaussian for the shadow.
@@ -17,9 +17,16 @@ velsini = doptom.vel/vsini
 stepsize = doptom.stepsize / vsini
 meanstepsize = mean(stepsize)
 
+c = 299792.458d0
+rvel = c/doptom.rspec ;; spectrograph resolution in velocity 
+
+;; convert form FWHM to sigma
+fwhm2sigma = 2d0*sqrt(2d0*alog(2d0))
+
 relevantVels = where((velsini gt -1.5) and (velsini lt 1.5))  ; we only care about these, to speed things up
-IndepVels = (300000./doptom.rspec) / (meanstepsize*vsini)     ; accounts for the fact that we're supersampling within the actual spectral res. of the spectrograph, to adjust chi^2 later
-GaussTerm = sqrt(macturb^2. + (300000./doptom.rspec)^2.) ; so we can add in both the broadening from the instrument's spectral resolution, and the macturb parameter
+IndepVels = (rvel/fwhm2sigma) / (meanstepsize*vsini)     ; accounts for the fact that we're supersampling within the actual spectral res. of the spectrograph, to adjust chi^2 later
+
+GaussTerm = sqrt(macturb^2. + rvel^2.)/fwhm2sigma ; so we can add in both the broadening from the instrument's spectral resolution, and the macturb parameter
 
 GaussRel = GaussTerm/vsini
 
@@ -29,10 +36,10 @@ phase = (doptom.bjd-localtc) / Period
 
 ;; init for planet shadow model
 velwidth = p
-c1 = 2 / (3.14159*velwidth)
+c1 = 2d0 / (!dpi*velwidth)
 
-xp = ar * sin(phase*2.*!dpi)
-zp = ar * cos(phase*2.*!dpi) * cosi
+xp = ar * sin(phase*2d0*!dpi)
+zp = ar * cos(phase*2d0*!dpi) * cosi
 up = xp*cos(lambda) + zp*sin(lambda)
 
 ;; Calculate Collier-Cameron's "beta" as the actual transit LC in V
@@ -75,7 +82,7 @@ for i = 0, nphase-1 do begin
                normalization = 1d0 / total(unnormalized*stepsize)
                doptom.model[relevantVels,i] += (beta[i] * normalization * unnormalized)
             endif
-         endif else begin       ; gaussian line width dominates
+         endif else begin ;; gaussian line width dominates
             expterm = -1d0*(velsini[relevantVels]-up[i])^2./(2*GaussRel^2.)
             unnormalized = exp(expterm)
             normalization = 1d0 / total(unnormalized*stepsize)
