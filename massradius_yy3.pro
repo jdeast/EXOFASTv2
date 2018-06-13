@@ -199,12 +199,35 @@ if keyword_set(debug) or keyword_set(psname) then begin
    teffplottrack = yytrack[0,*]
    loggplot =  alog10(mstar/(yyrstar^2)*gravitysun)
 
-   xmin=max(teffplottrack,min=xmax) ;; plot range backwards
-   ymin = min([loggplot,3,5],max=ymax)
+;   xmin=max(teffplottrack,min=xmax) ;; plot range backwards
 
-   plot, teffplottrack, loggplottrack,xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax]
+   use = where(loggplottrack gt 3 and loggplottrack lt 5 and yytrack[2,*] gt 0.1d0 and yytrack[2,*] lt 13.82d0)
+   xmin=max(teffplottrack[use],min=xmax) ;; plot range backwards
+
+   ;; increase xrange so there are 4 equally spaced ticks that land on 100s
+   xticks = 3
+   xmin = ceil(xmin/100)*100
+   xmax = floor(xmax/100)*100
+   repeat begin
+      spacing = ceil((xmin-xmax)/3d0/100d0)*100d0
+      if (xmin-xmax)/spacing ne xticks then begin
+         xmin += 100d0
+         xmax -= 100d0
+      endif
+   endrep until (xmin-xmax)/spacing eq xticks
+   xminor = spacing/100d0
+ 
+   ymax = min([loggplottrack[use],3,5],max=ymin) ;; plot range backwards
+   ymax = min([loggplottrack[use]],max=ymin) ;; plot range backwards
+
+;stop
+
+   plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor
    plotsym,0,/fill
-   oplot, [teff], [loggplot], psym=8,symsize=0.5 ;; the model point
+   oplot, [teff], [loggplot], psym=8,symsize=0.5 ;; the step point
+
+   junk = min(abs(yytrack[2,*]-age),ndx)
+   oplot, [teffplottrack[ndx]],[loggplottrack[ndx]], psym=2, color=red ;; overplot the time 
 
    if keyword_set(psname) then begin
       !p.font=-1
