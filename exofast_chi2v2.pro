@@ -142,11 +142,16 @@ if ss.star.alpha.value lt -0.3d0 or ss.star.alpha.value gt 0.7d0 then begin
    return, !values.d_infinity
 endif
 
-;; derive the model parameters from the stepping parameters (return if unphysical)
+;; derive the model parameters from the stepping parameters (return if
+;; unphysical)
 if step2pars(ss,verbose=ss.debug,logname=ss.logname) eq -1 then begin
    if ss.debug then printandlog, 'stellar system is bad', ss.logname
    return, !values.d_infinity
 endif
+
+;; if omega is fit, repopulate the parameter array (it keeps it in range)
+if (where(ss.planet.omega.fit))[0] ne -1 then pars = str2pars(ss)
+
 ;ss.star.mstar.value = 10^ss.star.logmstar.value
 
 ;; use the YY tracks to guide the stellar parameters
@@ -170,11 +175,13 @@ endif
 ;; use the MIST tracks to guide the stellar parameters
 if ss.mist then begin
    if keyword_set(psname) then epsname = psname+'.mist.eps'
+
    mistchi2 = massradius_mist(ss.star.eep.value, ss.star.mstar.value, ss.star.initfeh.value, $
                               ss.star.age.value, ss.star.teff.value,$
                               ss.star.rstar.value, ss.star.feh.value, debug=ss.debug, $
                               epsname=epsname, gravitysun=ss.constants.gravitysun, $
-                              fitage=ss.star.age.fit, ageweight=ageweight)
+                              fitage=ss.star.age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose)
+
    chi2 += mistchi2
    if ss.verbose then printandlog, 'MIST penalty = ' + strtrim(mistchi2,2), ss.logname
    if ~finite(chi2) then begin
@@ -298,6 +305,15 @@ if file_test(ss.star.fluxfile) then begin
    if ss.verbose then printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
 endif
 
+;; if fitting in v/vcirc & omega, correct for a uniform eccentricity prior
+for i=0, ss.nplanets-1 do begin
+   if ss.planet[i].vvcirc.fit and ss.planet[i].omega.fit then begin
+      jacobian = (-sin(ss.planet[i].omega.value)-ss.planet[i].e.value)/$
+                 (sqrt(1d0-ss.planet[i].e.value^2)*(ss.planet[i].e.value*sin(ss.planet[i].omega.value)+1d0)^2)
+      determinant *= jacobian
+   endif
+endfor
+
 ;; RV model (non-interacting planets)
 for j=0, ss.ntel-1 do begin
 
@@ -315,7 +331,8 @@ for j=0, ss.ntel-1 do begin
          rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
                             a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
                             period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
-                            omega=ss.planet[i].omega.value,/primary)
+                            omega=ss.planet[i].omega.value,/primary,$
+                            c=ss.constants.c/ss.constants.au*ss.constants.day)
          
          ;; calculate the RV model
          if ss.planet[i].rossiter then $
@@ -347,7 +364,7 @@ for j=0, ss.ntel-1 do begin
    rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jittervar.value,rv.err,/chi2)
    if ~finite(rvchi2) then stop
    chi2 += rvchi2
-   if ss.verbose then printandlog, 'RV penalty = ' + strtrim(rvchi2,2),ss.logname
+   if ss.verbose then printandlog, ss.telescope[j].label + ' RV penalty = ' + strtrim(rvchi2,2),ss.logname
 endfor
 
 ;; if at least one RV planet is fit, plot it
@@ -361,7 +378,7 @@ endif
 
 ;; Doppler Tomography Model
 for i=0, ss.ndt-1 do begin
-   if keyword_set(psname) then epsname = psname + 'dt.eps'
+   if keyword_set(psname) then epsname = psname + '.dt_' + strtrim(i,2) + '.eps'
    dtchi2 = dopptom_chi2(*(ss.doptom[i].dtptrs),$
                          ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].tc.value, $
                          ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].period.value, $
@@ -377,7 +394,7 @@ for i=0, ss.ndt-1 do begin
 
    if ~finite(dtchi2) then return, !values.d_infinity
    chi2 += dtchi2
-   if ss.verbose then printandlog, 'DT penalty = ' + strtrim(dtchi2,2),ss.logname
+   if ss.verbose then printandlog, ss.doptom[i].label + ' DT penalty = ' + strtrim(dtchi2,2),ss.logname
 endfor
 
 ;; Transit model
@@ -398,8 +415,8 @@ for j=0, ss.ntran-1 do begin
       u2err = 0.05d0
       chi2 += ((band.u1.value-u1claret)/u1err)^2
       chi2 += ((band.u2.value-u2claret)/u2err)^2
-      if ss.verbose then printandlog, 'u1 penalty = ' + strtrim(((band.u1.value-u1claret)/u1err)^2,2),ss.logname
-      if ss.verbose then printandlog, 'u2 penalty = ' + strtrim(((band.u2.value-u2claret)/u2err)^2,2),ss.logname
+      if ss.verbose then printandlog, band.label + ' u1 penalty = ' + strtrim(((band.u1.value-u1claret)/u1err)^2,2),ss.logname
+      if ss.verbose then printandlog, band.label + ' u2 penalty = ' + strtrim(((band.u2.value-u2claret)/u2err)^2,2),ss.logname
    endif
 
    ;; Kepler Long candence data; create several model points and average   
@@ -415,7 +432,7 @@ for j=0, ss.ntran-1 do begin
       modelflux = dblarr(npoints) + 1d0
    endelse
 
-   ;; get the motion of the star due to the planet
+   ;; get the motion of the star due to all planets
    junk = exofast_getb2(transitbjd,inc=ss.planet.i.value,a=ss.planet.ar.value,$
                         tperiastron=ss.planet.tp.value,$
                         period=ss.planet.period.value,$
@@ -443,7 +460,8 @@ for j=0, ss.ntran-1 do begin
                                     dilute=band.dilute.value,$
                                     tc=ss.planet[i].tc.value,$
                                     rstar=ss.star.rstar.value/AU,$
-                                    x1=x1,y1=y1,z1=z1,au=au) - 1d0)
+                                    x1=x1,y1=y1,z1=z1,au=au,$
+                                    c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0)
       endif
 
    endfor
@@ -479,7 +497,7 @@ for j=0, ss.ntran-1 do begin
    if ~finite(transitchi2) then stop
 
    chi2 += transitchi2
-   if ss.verbose then printandlog, 'transit penalty: ' + strtrim(transitchi2,2) + ' ' + strtrim(ss.transit[j].variance.value,2),ss.logname
+   if ss.verbose then printandlog, ss.transit[j].label + ' transit penalty: ' + strtrim(transitchi2,2) + ' ' + strtrim(ss.transit[j].variance.value,2),ss.logname
 
 endfor
 
@@ -496,7 +514,8 @@ endif
 ;; if TTVs are allowed, add a chi2 penalty to the period and t0 from
 ;; the fit to a linear ephemeris
 ;; this imposes the constraint of the linear ephemeris while allowing TTVs
-if ss.ttvs then begin
+junk = where(ss.fittran, nfittran)
+if ss.ttvs and nfittran eq 1 then begin
    ;; an nplanets x ntransits array of model transit times
    time = replicate(1,ss.nplanets)#ss.transit.ttv.value + $
           ss.planet.tc.value#replicate(1,ss.ntran) + $
@@ -518,8 +537,8 @@ if ss.ttvs then begin
       chi2 += ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
 
       if ss.verbose then begin
-         printandlog, 'Ephemeris penalty ' + strtrim(((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2,2),ss.logname
-         printandlog, 'Ephemeris penalty ' + strtrim(((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2,2),ss.logname
+         printandlog, 'Tc penalty ' + strtrim(((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2,2),ss.logname
+         printandlog, 'Period penalty ' + strtrim(((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2,2),ss.logname
       endif
 
       if ss.debug or keyword_set(psname) then begin
