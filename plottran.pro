@@ -37,8 +37,10 @@ plotsym, 0, /fill, color=black
 ;; breaks for grazing transits...
 depth = max(ss.planet.p.value^2)
 
-if keyword_set(noresiduals) then spacing = depth*3d0 $
-else spacing = depth*4d0
+noise = 0d0
+for i=0, ss.ntran-1 do if stddev((*(ss.transit[i].transitptrs)).residuals) gt noise then noise = stddev((*(ss.transit[i].transitptrs)).residuals)
+if keyword_set(noresiduals) then spacing = (depth+noise)*3d0 $
+else spacing = (depth+noise)*4d0
 
 cosi = ss.planet.cosi.value
 sini = sin(acos(cosi))
@@ -74,7 +76,6 @@ time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].ep
 xmin = min(time,max=xmax)
 xrange=[xmin,xmax]
 
-
 maxnoise = stddev((*(ss.transit[0].transitptrs)).residuals)
 minnoise = stddev((*(ss.transit[ss.ntran-1].transitptrs)).residuals)
 ymin = 1d0 - depth - spacing/2d0 - 3*minnoise
@@ -101,7 +102,6 @@ endif else begin
    xtitle='!3' + exofast_textoidl('BJD_{TDB}') + ' - ' + strtrim(t0,2)
 endelse
 
-;stop
 ;; position keyword required for proper bounding box
 plot, [0],[0],yrange=yrange, xrange=xrange,/xstyle,/ystyle,$;position=[0.15, 0.05, 0.93, 0.93],$
       ytitle='!3Normalized flux + Constant',xtitle=xtitle
@@ -184,7 +184,6 @@ for j=0, ss.ntran-1 do begin
          
       endif
    endfor
-;   prettyflux *= ss.transit[j].f0.value
    period = ss.planet[ss.transit[j].pndx].period.value
 
    if maxbjd - minbjd lt 1 then begin
@@ -196,11 +195,16 @@ for j=0, ss.ntran-1 do begin
          prettytime = (prettytime - ts[ss.transit[j].pndx] - ss.transit[j].epoch[ss.transit[j].pndx]*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0         
       endif else prettytime = (prettytime - ss.planet[ss.transit[j].pndx].tc.value  - ss.transit[j].epoch[ss.transit[j].pndx]*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
 
-
    endif else begin
       time = trandata.bjd - t0
       prettytime -= t0
    endelse
+
+;   tmp = trandata.flux / (ss.transit[j].f0.value + total(trandata.detrendmult*(replicate(1d0,n_elements(trandata.bjd))##trandata.detrendmultpars.value),1))
+;   tmp -= total(trandata.detrendadd*(replicate(1d0,n_elements(trandata.bjd))##trandata.detrendaddpars.value),1)
+;   set_plot, 'x'
+;   plot, tmp - (modelflux+trandata.residuals)
+;   stop
 
    oplot, time, modelflux + trandata.residuals + spacing*(ss.ntran-j-1), psym=8, symsize=symsize
    oplot, prettytime, prettyflux + spacing*(ss.ntran-j-1), thick=2, color=red;, linestyle=0
@@ -283,7 +287,7 @@ for i=0L, ss.nplanets-1 do begin
             xtitle='!3Time - Tc (Hrs)',title=ss.planet[i].label
       oplot, phasetime, residuals + modelflux, psym=8, symsize=symsize
       oplot, phasetime[sorted], modelflux[sorted], thick=2, color=red, linestyle=0
-      
+
       ;;  pad the plot to the nearest 5 in the second sig-fig
 ;      ymin = round5(min(trandata.residuals + modelflux - trandata.err,/nan))
 ;      ymax = round5(max(trandata.residuals + modelflux + trandata.err,/nan))
