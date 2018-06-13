@@ -62,7 +62,7 @@
 ;-
 function massradius_mist, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvcrit, alpha=alpha, $
                                mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
-                               epsname=epsname, debug=debug, gravitysun=gravitysun, fitage=fitage, ageweight=ageweight
+                               epsname=epsname, debug=debug, gravitysun=gravitysun, fitage=fitage, ageweight=ageweight, verbose=verbose, logname=logname
 
 if n_elements(gravitysun) eq 0 then $                                           
    gravitysun = 27420.011d0 ;; cm/s^2                                           
@@ -78,9 +78,20 @@ if n_elements(gravitysun) eq 0 then $
 ;; this common block allows us to store the tracks in memory between calls
 common mist_block, tracks, allowedmass, allowedinitfeh, nmass, nfeh, nvvcrit, nalpha
 
-if mstar lt 0.1d0 or mstar gt 300d0 then return, !values.d_infinity
-if initfeh lt -4d0 or initfeh gt 0.5d0 then return, !values.d_infinity
-if eep lt 1 then return, !values.d_infinity
+if mstar lt 0.1d0 or mstar gt 300d0 then begin
+   if keyword_set(verbose) then printandlog, 'Mstar (' + strtrim(mstar,2) + ') is out of range [0.1,300]', logname
+   return, !values.d_infinity
+endif
+
+if initfeh lt -4d0 or initfeh gt 0.5d0 then begin
+   if keyword_set(verbose) then printandlog, 'initfeh (' + strtrim(initfeh,2) + ') is out of range [-4,0.5]', logname
+   return, !values.d_infinity
+endif
+
+if eep lt 1 then begin
+   if keyword_set(verbose) then printandlog, 'EEP (' + strtrim(eep,2) + ') is out of range [1,infinity]', logname
+   return, !values.d_infinity
+endif
 
 ;; if this is the first call, initialize the tracks
 if n_elements(tracks) eq 0 then begin
@@ -189,7 +200,11 @@ for i=0, 1 do begin
 
       ;; make sure we don't overstep the EEP bounds
       neep = n_elements(ages)
-      if eep gt neep then return, !values.d_infinity
+      if eep gt neep then begin
+         if keyword_set(verbose) then printandlog, 'EEP (' + strtrim(eep,2) + ') is out of range [1,' + strtrim(neep,2) + ']', logname
+         return, !values.d_infinity
+      endif
+
       mineepndx = floor(eep-1) < (neep-2)
 
       ;; populate the derived values
@@ -221,13 +236,18 @@ endif else begin
 endelse
 
 ;; must be less than the age of the universe
-if mistage lt 0 or mistage gt 13.82d0 then return, !values.d_infinity
+if mistage lt 0 or mistage gt 13.82d0 then begin
+   if keyword_set(verbose) then printandlog, 'Age (' + strtrim(mistage,2) + ') is out of range',logname
+   return, !values.d_infinity
+endif
 
-;; assume 3% model errors
-chi2 = ((mistrstar - rstar)/(0.03d0*mistrstar))^2
-chi2 += ((mistteff - teff)/(0.03d0*mistteff))^2
-if keyword_set(fitage) then chi2 += ((mistage - age)/(0.03d0*mistage))^2
-chi2 += ((mistfeh - feh)/(0.03d0))^2
+;; assume 3% model errors at 1 msun, 10% at 0.1 msun, 5% at 10 msun
+percenterror = 0.03d0 -0.025d0*alog10(mstar) + 0.045d0*alog10(mstar)^2
+
+chi2 = ((mistrstar - rstar)/(percenterror*mistrstar))^2
+chi2 += ((mistteff - teff)/(percenterror*mistteff))^2
+if keyword_set(fitage) then chi2 += ((mistage - age)/(percenterror*mistage))^2
+chi2 += ((mistfeh - feh)/(percenterror))^2
 
 ;; plot it
 if keyword_set(debug) or keyword_set(epsname) then begin
@@ -259,12 +279,13 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    endelse
 
    ;; interpolate the entire track to plot the isochrone
-   mineep = 150
+   mineep = min([202,eep])
    maxeep = 808
    neep = maxeep - mineep + 1
    eepplot = mineep + dindgen(neep)
    mistrstariso = dblarr(neep)
    mistteffiso = dblarr(neep)
+
    for i=0, neep-1 do begin
       junk = massradius_mist(eepplot[i],mstar,initfeh,age,teff,rstar,feh,mistrstar=mistrstar,mistteff=mistteff)
       mistrstariso[i] = mistrstar
@@ -276,11 +297,25 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    teffplottrack = mistteffiso
    loggplot =  alog10(mstar/(rstar^2)*gravitysun)
 
-   use = where(loggplottrack gt 3 and loggplottrack lt 5)
+   use = where(loggplottrack gt 3 and loggplottrack lt 5 and eepplot ge min([202,eep]))
    xmin=max(teffplottrack[use],min=xmax) ;; plot range backwards
-   ymin = min([loggplot,3,5],max=ymax)
+
+   ;; increase xrange so there are 4 equally spaced ticks that land on 100s
+   xticks = 3
+   xmin = ceil(xmin/100)*100
+   xmax = floor(xmax/100)*100
+   repeat begin
+      spacing = ceil((xmin-xmax)/3d0/100d0)*100d0
+      if (xmin-xmax)/spacing ne xticks then begin
+         xmin += 100d0
+         xmax -= 100d0
+      endif
+   endrep until (xmin-xmax)/spacing eq xticks
+   xminor = spacing/100d0
+  
+   ymax = min([loggplot,3,5],max=ymin) ;; plot range backwards
    
-   plot, teffplottrack, loggplottrack,xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax];, xtickinterval=1500
+   plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor
    plotsym,0,/fill
    oplot, [teff], [loggplot], psym=8,symsize=0.5 ;; the model point
    junk = min(abs(eepplot-eep),ndx)
