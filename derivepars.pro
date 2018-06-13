@@ -38,19 +38,47 @@ for i=0, ss.ntran-1 do begin
    if tmpmaxbjd gt maxbjd then maxbjd = tmpmaxbjd
 endfor
 
-starbb36 = blackbody(ss.star.teff.value,replicate(3550d0/1d9,ss.nsteps),/wave)
-starbb45 = blackbody(ss.star.teff.value,replicate(4493d0/1d9,ss.nsteps),/wave)
+starbb36 = exofast_blackbody(ss.star.teff.value,replicate(3550d0/1d9,ss.nsteps),/wave)
+starbb45 = exofast_blackbody(ss.star.teff.value,replicate(4493d0/1d9,ss.nsteps),/wave)
 
 for i=0, ss.nplanets-1 do begin
 
    ;; eccentricity and argument of periastron
-   if ss.planet[i].qecosw.fit then begin
-      ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2
-      ss.planet[i].omega.value = atan(ss.planet[i].qesinw.value,ss.planet[i].qecosw.value)
-   endif else begin
+   if ss.planet[i].secosw.fit and ss.planet[i].sesinw.fit then begin
       ss.planet[i].e.value = ss.planet[i].secosw.value^2 + ss.planet[i].sesinw.value^2
       ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
-   endelse
+   endif else if ss.planet[i].omega.fit and ss.planet[i].vvcirc.fit then begin
+      a = ss.planet[i].vvcirc.value^2*sin(ss.planet[i].omega.value)^2 + 1d0
+      b = 2d0*ss.planet[i].vvcirc.value^2*sin(ss.planet[i].omega.value)
+      c = ss.planet[i].vvcirc.value^2-1d0
+
+      e1 = (-b + sqrt(b^2 - 4d0*a*c))/(2d0*a)
+      e2 = (-b + sqrt(b^2 - 4d0*a*c))/(2d0*a)
+
+      for j=0L, n_elements(a)-1 do begin
+         
+
+         if ~finite(e1[j]) or e1[j] lt 0 then begin
+            ss.planet[i].e.value[j] = e2[j] ;; e1 bad, e2 good; use e2
+         endif else begin
+            if ~finite(e2[j]) or e2[j] lt 0 then begin
+               ss.planet[i].e.value[j] = e1[j] ;; e2 bad, e1 good, use e1
+            endif else begin
+               ;; both e1 and e2 are good
+               ;; use a reproduceable seed to get a 50/50 chance 
+               ;; to recreate this choice later
+               ;; sort of an abuse of RNG seeds, but not bad...
+               random = exofast_random((ss.planet[i].vvcirc.value[j]-floor(ss.planet[i].vvcirc.value[j]))*(2ULL^64-1))
+               if random ge 0.5 then ss.planet[i].e.value[j] = e1[j] $
+               else ss.planet[i].e.value[j] = e2[j]
+            endelse
+         endelse
+      endfor
+   endif else if ss.planet[i].qecosw.fit and ss.planet[i].qesinw.fit then begin
+      ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2
+      ss.planet[i].omega.value = atan(ss.planet[i].qesinw.value,ss.planet[i].qecosw.value)
+   endif
+
    zero = where(ss.planet[i].e.value eq 0d0,complement=nonzero)
    if zero[0] ne -1 then ss.planet[i].omega.value[zero] = !dpi/2d0 
 
@@ -200,8 +228,8 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].t0.value = ss.planet[i].tc.value + bestepoch*ss.planet[i].period.value
 
    ;; blackbody eclipse depths
-   planetbb36 = blackbody(ss.planet[i].teq.value,replicate(3550d0/1d9,ss.nsteps),/wave)
-   planetbb45 = blackbody(ss.planet[i].teq.value,replicate(4493d0/1d9,ss.nsteps),/wave)
+   planetbb36 = exofast_blackbody(ss.planet[i].teq.value,replicate(3550d0/1d9,ss.nsteps),/wave)
+   planetbb45 = exofast_blackbody(ss.planet[i].teq.value,replicate(4493d0/1d9,ss.nsteps),/wave)
    x = ss.planet[i].p.value^2*planetbb36/starbb36
    ss.planet[i].eclipsedepth36.value = x/(1d0+x)*1d6
    x = ss.planet[i].p.value^2*planetbb45/starbb45
