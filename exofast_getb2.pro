@@ -76,8 +76,13 @@ x2 = dblarr(nplanets,ntimes)
 y2 = dblarr(nplanets,ntimes)
 z2 = dblarr(nplanets,ntimes)
 
-a2 = a*q/(1d0+q)
-a1 = a2/q
+if ~finite(q) then begin
+   a2 = a 
+   a1 = 0d0
+endif else begin
+   a2 = a*q/(1d0+q)
+   a1 = a2/q
+endelse
 
 for i=0L, nplanets-1L do begin
 
