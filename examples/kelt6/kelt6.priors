@@ -1,3 +1,4 @@
+# see $EXOFAST_PATH/parnames.README for a detailed description of each prior
 teff 6100 44
 feh -0.277 0.04
 mstar 1.085
