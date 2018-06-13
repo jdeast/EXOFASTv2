@@ -1,3 +1,4 @@
+# see $EXOFAST_PATH/parnames.README for a detailed description of each prior
 # Stellar parameter priors from spectra
 teff 6251.77 50
 feh -0.271 0.08
