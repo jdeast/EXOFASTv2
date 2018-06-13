@@ -1,6 +1,6 @@
 function exofast_tran, time, inc, ar, tp, period, e, omega, p, u1, u2, f0, $
                        rstar=rstar, thermal=thermal, reflect=reflect, $
-                       dilute=dilute, tc=tc, q=q,x1=x1,y1=y1,z1=z1, au=au
+                       dilute=dilute, tc=tc, q=q,x1=x1,y1=y1,z1=z1, au=au,c=c
 
 if n_elements(thermal) eq 0 then thermal = 0
 if n_elements(reflect) eq 0 then reflect = 0
@@ -11,7 +11,7 @@ if n_elements(AU) eq 0 then AU = 215.094177d0
 ;; target's barycentric frame
 if arg_present(rstar) then begin
    transitbjd = bjd2target(time, inclination=inc, a=ar*rstar, tp=tp, $
-                           period=period, e=e, omega=omega,q=q)
+                           period=period, e=e, omega=omega,q=q,c=c)
 endif else transitbjd = time
 
 ;; the impact parameter for each BJD
