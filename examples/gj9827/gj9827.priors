@@ -1,3 +1,4 @@
+# see $EXOFAST_PATH/parnames.README for a detailed description of each prior
 # Stellar parameter priors from spectra
 teff 4270 100
 feh -0.5 0.1 # with /NOYY and /NOCLARET set, this has no impact on the fit
