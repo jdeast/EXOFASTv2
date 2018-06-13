@@ -83,23 +83,18 @@ free_lun, lun
 bjd = transpose(array[0,*])
 flux = transpose(array[1,*])
 err = transpose(array[2,*])
-if nadd gt 0 then begin
-   da = array[add,*]
-   ;; zero average the detrending parameters
-   da -= transpose(total(da,2)/n_elements(da[0,*])##replicate(1d0,n_elements(da[0,*])))
-endif else begin
-   da = 0d0
-   nadd=0L
-endelse
 
-if nmult gt 0 then begin
-   dm = array[mult,*]
-   ;; zero average the detrending parameters 
-   dm -= transpose(total(dm,2)/n_elements(dm[0,*])##replicate(1d0,n_elements(dm[0,*])))
-endif else begin
-   dm = 1d0
-   nmult=0L
-endelse
+;; zero average the detrending parameters
+array -= transpose(total(array,2)/n_elements(array[0,*])##replicate(1d0,n_elements(array[0,*])))
+
+;; rescale the detrending parameters to the range -1 to 1
+array /= transpose(max(abs(array),dim=2)##replicate(1d0,n_elements(array[0,*])))
+
+if nadd gt 0 then da = array[add,*] $
+else da = 0d0
+
+if nmult gt 0 then dm = array[mult,*] $
+else dm = 0d0
 
 detrendaddpar = detrend
 detrendaddpar.description = 'Additive detrending coeff'
@@ -132,6 +127,7 @@ transit=create_struct('bjd',bjd,'flux',flux,'err',err,'band',band,'ndx',0,$
                       label,'nadd',nadd,'nmult',nmult,$
                       'residuals',residuals,'model',model, $
                       'detrendaddpars',detrendaddpars, 'detrendmultpars',detrendmultpars)
+
 
 return, transit
 
