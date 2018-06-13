@@ -34,6 +34,7 @@ endif else begin
    title = ss.planet.label
    position1 = [0.07, 0.22, 0.97, 0.95]    ;; data plot
    position2 = [0.07, 0.07, 0.97, 0.22]    ;; residual plot
+   font=-1
 
 ;   if win_state[20] eq 1 then wset, 20 $
 ;   else window, 20, retain=2
@@ -143,7 +144,7 @@ for i=0, ss.nplanets-1 do begin
       if maxrv gt allmaxrv then allmaxrv = maxrv
    endfor
 
-   xtitle1='!3' + exofast_textoidl('Phase + (T_P - T_C)/P + 0.25')
+   xtitle1='!3' + exofast_textoidl('Phase + (T_P - T_C)/P + 0.25',font=font)
    plot, [0], [0], xrange=[0,1], yrange=[allminrv,allmaxrv], $
          ytitle='!3RV (m/s)', charsize=charsize, title=title[i],position=position1,xtickformat='(A1)'
    for j=0, ss.ntel-1 do begin 
@@ -205,7 +206,7 @@ if not keyword_set(psname) then begin
    else window, 21, retain=2
 endif
 
-xtitle2='!3' + exofast_textoidl('BJD_{TDB} - ' + string(bjd0,format='(i7)'))
+xtitle2='!3' + exofast_textoidl('BJD_{TDB} - ' + string(bjd0,format='(i7)'),font=font)
 plot, [0], [0], xrange=[allmindate,allmaxdate]-bjd0,/xstyle,$
       yrange=[allminrv,allmaxrv], $
       ytitle='!3RV (m/s)', position=position1,xtickformat='(A1)'
@@ -238,8 +239,5 @@ if keyword_set(psname) then begin
    device, /close
    set_plot, mydevice
 endif
-
-
-;stop
 
 end
