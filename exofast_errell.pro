@@ -115,6 +115,7 @@ hist2d = hist_2d(xpar,ypar,$
                  bin1=xbinsz,min1=xmin,max1=xmax,$
                  bin2=ybinsz,min2=ymin,max2=ymax)
 
+
 ;; find the fraction of points enclosed above each bin 
 ;; NOTE: includes points excluded by xmin, xmax, ymin, ymax
 maxhist = max(hist2d)
@@ -123,7 +124,7 @@ for i=0L, maxhist do begin
     good = where(hist2d ge i)
     if good[0] ne -1 then enclosed[i] = total(hist2d[good])
 endfor
-fraction = enclosed/n_elements(xpar)
+fraction = enclosed/n_elements(where(finite(xpar)))
 
 ;; find the levels that correspond to the different values of sigma
 levels = dblarr(n_elements(probs))
