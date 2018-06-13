@@ -34,6 +34,8 @@
 ;   Q          - The mass ratio of the targets (M1/M2). If not
 ;                specified, an infinite mass ratio is assumed (M1
 ;                stationary) (8 ms effect for Hot Jupiters).
+;   C          - The speed of light, in AU/day. If not given,
+;                initialized to 173.144483d0
 ;
 ; OPTIONAL KEYWORDS:
 ;   PRIMARY    - If set, the information comes from the position of
@@ -64,14 +66,14 @@
 ; 2011/06: Written by Jason Eastman (OSU)
 
 function target2bjd, bjd_target, inclination=inclination, a=a, tp=tp, $
-                     period=period,e=e, omega=omega, q=q, primary=primary
+                     period=period,e=e, omega=omega, q=q, primary=primary,c=c
 
 if n_elements(q) eq 0 then q = !values.d_infinity
 
 ;; no correction necessary, already in the SSB frame
 if  ~finite(q) and keyword_set(primary) then return, bjd_target
 
-c = 173.144483d0 ;; AU/day
+if n_elements(c) eq 0 then c = 173.144483d0 ;; AU/day
 
 meananom = (2.d0*!dpi*(1.d0 + (bjd_target - Tp)/Period)) mod (2*!dpi) 
 
