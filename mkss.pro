@@ -81,6 +81,8 @@
 ;             neighbor and you expect color-dependent depth
 ;             variations.
 ;             Note: May be degenerate with F0 (transit normalization) 
+;             Note: this only affects the transit model. It is not
+;             accounted for in the SED fitting.
 ;             TODO: automatically model dilution based on multiple
 ;             SEDs
 ;  NVALUES  - By default, parameter.value is a scalar. Set this
@@ -155,7 +157,7 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                longcadence=longcadence, ninterp=ninterp, exptime=exptime,$
                earth=earth, silent=silent, noyy=noyy, torres=torres, mist=mist, $
                noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
-               logname=logname, best=best
+               logname=logname, best=best, tides=tides
 
 if n_elements(nplanets) eq 0 then nplanets = 1
 if n_elements(circular) ne nplanets and n_elements(circular) gt 1 then begin
@@ -295,6 +297,22 @@ if nplanets ne 0 then begin
       printandlog, 'Either a transit or RV must be fit for each planet', logname
       stop
    end
+endif
+
+;; was rvpath specified but no planets are fit? (ignore it)
+junk = where(fitrv,nrvfit)
+if rvpath ne '' and nrvfit eq 0 then begin
+   printandlog, 'WARNING: an RVPATH was specified, but no RV planets are fit. Ignoring the supplied RVs'
+   printandlog, 'Remove RVPATH or set at least one planet in FITRV to 1 to remove this message.'
+   ntel = 0
+endif
+
+;; was tranpath specified but no planets are fit? (ignore it)
+junk = where(fittran,ntranfit)
+if tranpath ne '' and ntranfit eq 0 then begin
+   printandlog, 'WARNING: a TRANPATH was specified, but no transits are fit. Ignoring the supplied transits'
+   printandlog, 'Remove TRANPATH or set at least one planet in FITTRAN to 1 to remove this message.'
+   ntran = 0
 endif
 
 ;; each parameter is a structure, as defined here
@@ -510,7 +528,7 @@ rhostar.label = 'rhostar'
 
 tc = parameter
 tc.unit = '\bjdtdb'
-tc.description = 'Time of Transit'
+tc.description = 'Time of conjunction'
 tc.latex = 'T_C'
 tc.label = 'tc'
 tc.cgs = 86400d0
@@ -520,7 +538,7 @@ tc.scale = 0.1
 
 t0 = parameter
 t0.unit = '\bjdtdb'
-t0.description = 'Optimal Transit Time'
+t0.description = 'Optimal conjunction Time'
 t0.latex = 'T_0'
 t0.label = 't0'
 t0.cgs = 86400d0
@@ -571,6 +589,16 @@ secosw.label = 'secosw'
 secosw.cgs = !values.d_nan
 secosw.scale = 0.1d0
 secosw.derive = 0
+
+vvcirc = parameter
+vvcirc.unit = ''
+vvcirc.description = ''
+vvcirc.latex = 'V/V_C'
+vvcirc.label = 'vvcirc'
+vvcirc.cgs = !values.d_nan
+vvcirc.scale = 1
+vvcirc.value = 1
+vvcirc.derive = 0
 
 if keyword_set(eprior4) then begin
    ;; step in qesinw (prior favoring lower e)
@@ -1311,6 +1339,7 @@ planet = create_struct($
          sesinw.label,sesinw,$
          qecosw.label,qecosw,$
          qesinw.label,qesinw,$
+         vvcirc.label,vvcirc,$
          msini.label,msini,$
          msiniearth.label,msiniearth,$
          q.label,q,$
@@ -1373,6 +1402,7 @@ transit = create_struct(variance.label,variance,$ ;; Red noise
                         'name','',$
                         'epoch',dblarr(nplanets>1) + !values.d_nan,$
                         'pndx',0L,$ ;; index to which planet this corresponds to (-1=>all)
+                        'bitmask',0ULL,$ ;; a bitmask for which planet(s) this transit corresponds to
                         'chi2',0L,$
                         'rootlabel','Transit Parameters:',$
                         'label','') 
@@ -1442,9 +1472,12 @@ if n_elements(logname) eq 1 then ss.logname=logname
 
 if ndt gt 0 then begin
    ss.doptom[*].dtptrs = ptrarr(ndt,/allocate_heap)
+   printandlog, 'The index for each DT file is',logname
    for i=0, n_elements(dtfiles)-1 do begin
       *(ss.doptom[i].dtptrs) = exofast_readdt(dtfiles[i])
+      printandlog, string(i,dtfiles[i],format='(i2,x,a)'),logname
    endfor
+   printandlog, '', logname
 endif
 
 ;; for each planet 
@@ -1497,6 +1530,15 @@ for i=0, nplanets-1 do begin
    ss.planet[i].fittran = fittran[i]
    ss.planet[i].fitrv = fitrv[i]
    ss.planet[i].chen = chen[i]
+
+   ;; fit in V/Vcirc and omega if only fitting transit (far more efficient)
+   if ~ss.planet[i].fitrv and ss.planet[i].fittran and ~circular[i] then begin
+      ss.planet[i].secosw.fit = 0
+      ss.planet[i].sesinw.fit = 0
+      ss.planet[i].omega.fit = 1
+      ss.planet[i].vvcirc.fit = 1
+      ss.planet[i].vvcirc.derive = 1
+   endif
 
    ;; we can marginalize over these parameters 
    ;; even if a transit is not fit.
@@ -1922,6 +1964,9 @@ for i=0, ntran-1 do begin
    endif
 
    for j=0, nplanets-1 do begin
+
+      
+
 ;      ss.transit[i].epoch = min(round((mean((*(ss.transit[i].transitptrs)).bjd) - ss.planet[ss.transit[i].pndx].tc.value)/ss.planet[ss.transit[i].pndx].period.value))
 
       if n_elements(nvalues) ne 0 then begin
@@ -1934,14 +1979,21 @@ for i=0, ntran-1 do begin
          if period eq 0 then period = 10^ss.planet[j].logp.value
       endelse
       
-      epoch = (mean((*(ss.transit[i].transitptrs)).bjd) - tc)/period
-      normepoch = ((epoch mod 1) + 1) mod 1
+      minbjd = min((*(ss.transit[i].transitptrs)).bjd, max=maxbjd)
+      epoch = round(((maxbjd+minbjd)/2d0 - tc)/period)
+      
+;      t14 = ??
+;      t14s = ??
 
-      ;; this causes the transit to be ignored if it's slightly
-      ;; off... what was the purpose of this if statement code anyway??
-;      if normepoch lt 0.05 or normepoch gt 0.95 then ss.transit[i].epoch[j] = round(epoch)
+;      thistc = tc + epoch*period
+;      thists = 
+;      if (minbjd le thistc + t14 and maxbjd ge thistc - t14) or $
+;         (minbjd le thists + t14s and maxbjd ge thists - t14s) then $
+;            ;; the ith transit covers the jth planet; add it to the bitmask
+;            transit[i].bitmask += 2ULL^j 
+;
 
-      ss.transit[i].epoch[j] = round(epoch)
+      ss.transit[i].epoch[j] = epoch
 
    endfor
 endfor
