@@ -9,37 +9,42 @@ sz = size(pars)
 nchains = sz[2]
 
 ;; check for bad values
-bad = where(~finite(pars),complement=good)
+;bad = where(~finite(pars),complement=good)
+good = where(finite(pars),complement=bad,nsteps)
 if bad[0] ne -1 then printandlog, $
    "ERROR: NaNs in " + label + " distribution",logname
+
+if nsteps eq 0 then begin
+   printandlog,"ERROR: all NaNs in " + label + " distribution",logname
+   return
+endif
 
 ;; if angular, center distribution about the mode first
 if unit eq 'DEGREES' then halfrange = 180d0 $
 else if unit eq 'RADIANS' then halfrange = !dpi
 if unit eq 'DEGREES' or unit eq 'RADIANS' then begin
    ;; find the mode
-   hist = histogram(pars,nbins=100,locations=x,/nan)
+   hist = histogram(pars[good],nbins=100,locations=x,/nan)
    max = max(hist,modendx)
    mode = x[modendx]
    
-   toohigh = where(pars gt (mode + halfrange))
-   if toohigh[0] ne -1 then pars[toohigh] -= 2.d0*halfrange
+   toohigh = where(pars[good] gt (mode + halfrange))
+   if toohigh[0] ne -1 then pars[good[toohigh]] -= 2.d0*halfrange
    
-   toolow = where(pars lt (mode - halfrange))
-   if toolow[0] ne -1 then pars[toolow] += 2.d0*halfrange
+   toolow = where(pars[good] lt (mode - halfrange))
+   if toolow[0] ne -1 then pars[good[toolow]] += 2.d0*halfrange
 endif                     
 
 ;; 68% confidence interval
-nsteps = n_elements(pars)
 medndx = nsteps/2d0
 halfsigma = erf(1d/sqrt(2d0))/2d
 lowsigndx = round(nsteps/2.d0 - nsteps*halfsigma)
 hisigndx = round(nsteps/2.d0 + nsteps*halfsigma)
 
-sorted = sort(pars)
-medvalue = pars[sorted[medndx]]
-upper = pars[sorted[hisigndx]] - medvalue
-lower = medvalue - pars[sorted[lowsigndx]]
+sorted = sort(pars[good])
+medvalue = pars[good[sorted[medndx]]]
+upper = pars[good[sorted[hisigndx]]] - medvalue
+lower = medvalue - pars[good[sorted[lowsigndx]]]
 
 if n_elements(medianpars) eq 0 then medianpars = [medvalue,upper,lower] $
 else medianpars = [[medianpars],[[medvalue,upper,lower]]]
