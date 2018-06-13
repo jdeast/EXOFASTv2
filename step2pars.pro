@@ -35,14 +35,62 @@ for i=0, ss.nplanets-1 do begin
       ss.planet[i].tc.value -= nper*ss.planet[i].period.value
    endif
 
-   ;; derive quantities we'll use later
-   if ss.planet[i].qecosw.fit then begin
-      ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2 
-      ss.planet[i].omega.value = atan(ss.planet[i].qecosw.value,ss.planet[i].qesinw.value)
-   endif else begin
+   ;; eccentricity and argument of periastron
+   if ss.planet[i].secosw.fit and ss.planet[i].sesinw.fit then begin
       ss.planet[i].e.value = ss.planet[i].secosw.value^2 + ss.planet[i].sesinw.value^2
       ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
-   endelse
+   endif else if ss.planet[i].omega.fit and ss.planet[i].vvcirc.fit then begin
+      if ss.planet[i].vvcirc.value le 0 then begin
+         if keyword_set(verbose) then printandlog, 'vvcirc is not in range', logname
+         return, -1
+      endif
+
+      ;; scale from -pi to pi
+      ss.planet[i].omega.value = (ss.planet[i].omega.value mod (2d0*!dpi)) 
+      if ss.planet[i].omega.value gt !dpi then ss.planet[i].omega.value -= 2d0*!dpi
+      if ss.planet[i].omega.value le -!dpi then ss.planet[i].omega.value += 2d0*!dpi
+
+
+      a = ss.planet[i].vvcirc.value^2*sin(ss.planet[i].omega.value)^2 + 1d0
+      b = 2d0*ss.planet[i].vvcirc.value^2*sin(ss.planet[i].omega.value)
+      c = ss.planet[i].vvcirc.value^2-1d0
+
+      e1 = (-b + sqrt(b^2 - 4d0*a*c))/(2d0*a)
+      e2 = (-b + sqrt(b^2 - 4d0*a*c))/(2d0*a)
+
+      if ~finite(e1) or e1 lt 0 then begin
+         if ~finite(e2) or e2 lt 0 then begin
+            ;; e1 and e2 are bad, return
+            if keyword_set(verbose) then printandlog, 'e is not in range', logname
+            return, -1   
+         endif else ss.planet[i].e.value = e2 ;; e1 bad, e2 good; use e2
+      endif else begin
+         if ~finite(e2) or e2 lt 0 then begin
+            ss.planet[i].e.value = e1 ;; e2 bad, e1 good, use e1
+         endif else begin
+            ;; both e1 and e2 are good
+            ;; use a reproduceable seed to get a 50/50 chance 
+            ;; to recreate this choice later
+            ;; sort of an abuse of RNG seeds, but not bad...
+            random = exofast_random((ss.planet[i].vvcirc.value-floor(ss.planet[i].vvcirc.value))*(2ULL^64-1))
+            if random ge 0.5 then ss.planet[i].e.value = e1 $
+            else ss.planet[i].e.value = e2
+         endelse
+      endelse
+
+   endif else if ss.planet[i].qecosw.fit and ss.planet[i].qesinw.fit then begin
+      ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2
+      ss.planet[i].omega.value = atan(ss.planet[i].qesinw.value,ss.planet[i].qecosw.value)
+   endif
+      
+;   ;; derive quantities we'll use later
+;   if ss.planet[i].qecosw.fit then begin
+;      ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2 
+;      ss.planet[i].omega.value = atan(ss.planet[i].qecosw.value,ss.planet[i].qesinw.value)
+;   endif else begin
+;      ss.planet[i].e.value = ss.planet[i].secosw.value^2 + ss.planet[i].sesinw.value^2
+;      ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
+;   endelse
 
    if ss.planet[i].k.value le 0d0 then ss.planet[i].mpsun.value = 0d0 $
    else ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
