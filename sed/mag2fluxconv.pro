@@ -117,7 +117,7 @@ for i=0,n_elements(band)-1 do begin
              lamflamzp = 3761. * 3e-9 / 0.5244^2 * 0.5244	; Spitzer cookbook website (Fnu to Flam)
              flux(i)=lamflamzp*10^(-0.4*mag(i))
            end
-     'U_KIS': begin
+     'UKIS': begin
              lameff(i)=3581. / 1e4
              weff(i)= 638. / 1e4
              lamflamzp = 1.51e-5			; adopting same as U Johnson
@@ -230,37 +230,48 @@ for i=0,n_elements(band)-1 do begin
                 flux(i)=lamflamzp*10^(-0.4*(mag(i)+6.604d0))  
              endelse
           end
+
+;; JDE: 2018-07-13 -- I don't trust these...
      ;; Table 1 of Jordi et al, 2010
      ;; with DR2 Vega to AB mag offsets from
      ;; https://www.cosmos.esa.int/web/gaia/iow_20180316
      ;; commented offsets are more accurate, but not used for DR2 mags
-     'Gaia': begin ; Gaia
-             lameff(i)=0.673d0
-             weff(i)=0.440d0
-             lamflamzp = 3631d0 * 3d-9 / lameff(i)^2 * lameff(i)
-             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.1050312311d0))  
-             ;flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.1001113078d0))  
-          end
-     'GBP': begin ; Gaia Blue
-             lameff(i)=0.532d0
-             weff(i)=0.253d0
-             lamflamzp = 3631d0 * 3d-9 / lameff(i)^2 * lameff(i)
-             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.0291714680d0))  
-             ;flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.0373453185d0))  
-          end
-     'GRP': begin ; Gaia Red
-             lameff(i)=0.797d0
-             weff(i)=0.296d0
-             lamflamzp = 3631d0 * 3d-9 / lameff(i)^2 * lameff(i)
-             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.3542076819d0))  
-             ;flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.3534919681d0))  
-          end
+;     'Gaia': begin ; Gaia
+;             lameff(i)=0.673d0
+;             weff(i)=0.440d0
+;             lamflamzp = 3631d0 * 3d-9 / lameff(i)^2 * lameff(i)
+;             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.1050312311d0))  
+;             ;flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.1001113078d0))  
+;          end
+;     'GBP': begin ; Gaia Blue
+;             lameff(i)=0.532d0
+;             weff(i)=0.253d0
+;             lamflamzp = 3631d0 * 3d-9 / lameff(i)^2 * lameff(i)
+;             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.0291714680d0))  
+;             ;flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.0373453185d0))  
+;          end
+;     'GRP': begin ; Gaia Red
+;             lameff(i)=0.797d0
+;             weff(i)=0.296d0
+;             lamflamzp = 3631d0 * 3d-9 / lameff(i)^2 * lameff(i)
+;             flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.3542076819d0))  
+;             ;flux(i)=lamflamzp*10^(-0.4d0*(mag(i)+0.3534919681d0))  
+;          end
      else: print, 'Band not recognized: ' + band[i]
 
   endcase
 endfor
 
 fluxerr = flux * alog(10)/2.5*merr
+
+good = where(fluxerr ne 0)
+if good[0] eq -1 then message, 'No good bands in SED file'
+
+band = band[good]
+lameff = lameff[good]
+weff = weff[good]
+flux = flux[good]
+fluxerr = fluxerr[good]
 
 ;forprint,band,lameff,weff,flux,fluxerr
 
