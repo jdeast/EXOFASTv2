@@ -59,9 +59,13 @@ end
 ;                Renamed, documented, and cleaned up for distribution with EXOFASTv2
 ;
 ;-
-pro mksed,name,outfile,dist=dist,galdist=galdist,noapass=noapass,$
-           nogaia=nogaia,nowise=nowise,over=over,cfa=cfa,nokepler=nokepler,$
-           ra=ra,dec=dec,silent=silent
+pro mksed,name,outfile,dist=dist,galdist=galdist,$
+          apass=apass,merm=merm,stromgren=stromgren,kepler=kepler,galex=galex,$
+          nogaia=nogaia,nowise=nowise,over=over,cfa=cfa,$
+          ra=ra,dec=dec,silent=silent, parallax=parallax, uparallax=uparallax
+
+parallax = 0d0
+uparallax = -1d0
 
 if n_params() lt 1 then begin
   print,'syntax: get_eb_phot_data,name,outfile,dist=dist,galdist=galdist,/noapass,/nogaia,/nowise,/over,/cfa,/kepler,ra=ra,dec=dec'
@@ -70,7 +74,7 @@ if n_params() lt 1 then begin
 endif
 
 star=name
-if not keyword_set(dist) then dist=45d0
+if not keyword_set(dist) then dist=2d0
 if not keyword_set(galdist) then galdist=dist
 if not keyword_set(ra) then querysimbad,star,ra,dec,cfa=cfa else star=[ra,dec]
 
@@ -87,48 +91,51 @@ endelse
 printf, lun, '# Band, Mag, used mag error, catalog mag error'
 fmt = '(a-6,x,f7.3,x,f5.3,x,f5.3)'
 
+;; get GALEX -- by default, skip; models are unreliable here
+if keyword_set(galax) then begin
+   qgalex=QueryVizier('II/312/ais',star,galdist/60d0,/silent,/all,cfa=cfa)
+   if long(tag_exist(qgalex,'fuv',/quiet)) ne 0L then begin
+      printf, lun, '# Galex DR5, Bianchi+ 2011'
+      printf, lun, '# http://adsabs.harvard.edu/abs/2011Ap%26SS.335..161B'
+      if n_elements(qgalex) gt 1 then begin
+         print,'Warning: More than 1 GALEX source found; using nearest one only.'
+         printf, lun,'# Warning: More than 1 GALEX source found; using nearest one only.'
+         junk = min(qgalex._r,m)
+         qgalex=qgalex[m]
+      endif
+      if qgalex.fuv gt -99 and finite(qgalex.e_fuv) then begin
+         printf, lun,'# including the FUV is likely to bias the result due to model errors'
+         printf, lun, '# ' + string('galFUV',qgalex.fuv,max([0.1d,qgalex.e_fuv]),qgalex.e_fuv, format=fmt)
+      endif
+      if qgalex.nuv gt -99 and finite(qgalex.e_nuv) then printf, lun,'galNUV',qgalex.nuv,max([0.1d,qgalex.e_nuv]),qgalex.e_nuv, format=fmt
+   endif else qgalex={fuv_6:-99.,nuv_6:-99.}
+endif
 
-; get GALEX
-qgalex=QueryVizier('II/312/ais',star,galdist/60d0,/silent,/all,cfa=cfa)
-if long(tag_exist(qgalex,'fuv',/quiet)) ne 0L then begin
-   printf, lun, '# Galex DR5, Bianchi+ 2011'
-   printf, lun, '# http://adsabs.harvard.edu/abs/2011Ap%26SS.335..161B'
-   if n_elements(qgalex) gt 1 then begin
-      print,'Warning: More than 1 GALEX source found; using nearest one only.'
-      printf, lun,'# Warning: More than 1 GALEX source found; using nearest one only.'
-      junk = min(qgalex._r,m)
-      qgalex=qgalex[m]
-   endif
-   if qgalex.fuv gt -99 and finite(qgalex.e_fuv) then begin
-      printf, lun,'# including the FUV is likely to bias the result due to model errors'
-      printf, lun, '# ' + string('galFUV',qgalex.fuv,max([0.1d,qgalex.e_fuv]),qgalex.e_fuv, format=fmt)
-   endif
-   if qgalex.nuv gt -99 and finite(qgalex.e_nuv) then printf, lun,'galNUV',qgalex.nuv,max([0.1d,qgalex.e_nuv]),qgalex.e_nuv, format=fmt
-endif else qgalex={fuv_6:-99.,nuv_6:-99.}
-
-; get Mermilliod 1991 UBV
-qmermilliod91=QueryVizier('II/168/ubvmeans',star,dist/60.,/silent,/all,cfa=cfa) 
-if long(tag_exist(qmermilliod91,'vmag',/quiet)) ne 0L then begin
-  if n_elements(qmermilliod91) gt 1 then begin
-    print,'Warning: More than 1 Mermilliod source found; using nearest one only.'
-    printf, lun,'# Warning: More than 1 Mermilliod source found; using nearest one only.'
-    junk = min(qmermilliod91._r,m)
-    qmermilliod91=qmermilliod91[m]
-  endif
-
-  printf, lun, '# Mermilliod, 1994'
-  printf, lun, '# http://adsabs.harvard.edu/abs/1994yCat.2193....0M'
-  if qmermilliod91.u_b+qmermilliod91.b_v+qmermilliod91.vmag gt -9 and $
-     finite(qmermilliod91.e_u_b) and finite(qmermilliod91.e_b_v) and $
-     finite(qmermilliod91.e_vmag) then $
-        printf, lun,'U',qmermilliod91.u_b+qmermilliod91.b_v+qmermilliod91.vmag,max([0.02d,sqrt(qmermilliod91.e_u_b^2+qmermilliod91.e_b_v^2+qmermilliod91.e_vmag^2)]), format=fmt
-  if qmermilliod91.b_v+qmermilliod91.vmag gt -9 and $
-     finite(qmermilliod91.e_b_v) and $
-     finite(qmermilliod91.e_vmag) then $
-        printf, lun,'B',qmermilliod91.b_v+qmermilliod91.vmag,max([0.02d,sqrt(qmermilliod91.e_b_v^2+qmermilliod91.e_vmag^2)]), format=fmt
-  if qmermilliod91.vmag gt -9 and $
-     finite(qmermilliod91.e_vmag) then printf, lun,'V',qmermilliod91.vmag,max([0.02d,qmermilliod91.e_vmag]), format=fmt
-endif else qmermilliod91={vmag:-99.}
+; get Mermilliod 1991 UBV ;; by default skip (Gaia better)
+if keyword_set(merm) then begin
+   qmermilliod91=QueryVizier('II/168/ubvmeans',star,dist/60.,/silent,/all,cfa=cfa) 
+   if long(tag_exist(qmermilliod91,'vmag',/quiet)) ne 0L then begin
+      if n_elements(qmermilliod91) gt 1 then begin
+         print,'Warning: More than 1 Mermilliod source found; using nearest one only.'
+         printf, lun,'# Warning: More than 1 Mermilliod source found; using nearest one only.'
+         junk = min(qmermilliod91._r,m)
+         qmermilliod91=qmermilliod91[m]
+      endif
+      
+      printf, lun, '# Mermilliod, 1994'
+      printf, lun, '# http://adsabs.harvard.edu/abs/1994yCat.2193....0M'
+      if qmermilliod91.u_b+qmermilliod91.b_v+qmermilliod91.vmag gt -9 and $
+         finite(qmermilliod91.e_u_b) and finite(qmermilliod91.e_b_v) and $
+         finite(qmermilliod91.e_vmag) then $
+            printf, lun,'U',qmermilliod91.u_b+qmermilliod91.b_v+qmermilliod91.vmag,max([0.02d,sqrt(qmermilliod91.e_u_b^2+qmermilliod91.e_b_v^2+qmermilliod91.e_vmag^2)]), format=fmt
+      if qmermilliod91.b_v+qmermilliod91.vmag gt -9 and $
+         finite(qmermilliod91.e_b_v) and $
+         finite(qmermilliod91.e_vmag) then $
+            printf, lun,'B',qmermilliod91.b_v+qmermilliod91.vmag,max([0.02d,sqrt(qmermilliod91.e_b_v^2+qmermilliod91.e_vmag^2)]), format=fmt
+      if qmermilliod91.vmag gt -9 and $
+         finite(qmermilliod91.e_vmag) then printf, lun,'V',qmermilliod91.vmag,max([0.02d,qmermilliod91.e_vmag]), format=fmt
+   endif else qmermilliod91={vmag:-99.}
+endif
 
 ; Tycho-2
 qtyc2=QueryVizier('I/259/TYC2',star,dist/60.,/silent,/all,cfa=cfa)
@@ -146,25 +153,27 @@ if long(tag_exist(qtyc2,'BTMAG',/quiet)) ne 0L then begin
 endif else qtyc2={btmag:-99.,vtmag:-99.}
 
 ; Paunzen, 2015 Stromgren
-qpaunzen15=QueryVizier('J/A+A/580/A23/catalog',star,dist/60.,/silent,/all,cfa=cfa)
-if long(tag_exist(qpaunzen15,'vmag',/quiet)) ne 0L then begin
-   if n_elements(qpaunzen15) gt 1 then begin
-      print,'Warning: More than 1 Paunzen source found; using nearest one only.'
-      printf, lun,'# Warning: More than 1 Paunzen source found; using nearest one only.'
-      junk = min(qpaunzen15._r,m)
-      qpaunzen15=qpaunzen15[m]
-   endif
-   ubvymags=strom_conv(qpaunzen15.vmag,max([0.01d,qpaunzen15.e_vmag]),$
-                       qpaunzen15.b_y,max([0.02d,qpaunzen15.e_b_y]),$
-                       qpaunzen15.m1,max([0.02d,qpaunzen15.e_m1]),$
-                       qpaunzen15.c1,max([0.02d,qpaunzen15.e_c1]),/silent)
-   printf, lun, '# Stromgren photometry, Paunzen, 2015'
-   printf, lun, '# http://adsabs.harvard.edu/abs/2015A%26A...580A..23P'
-   if ubvymags(0) gt -9 then printf, lun,'uStr',ubvymags(0),max([0.02d,ubvymags(1)]), format=fmt
-   if ubvymags(2) gt -9 then printf, lun,'vStr',ubvymags(2),max([0.02d,ubvymags(3)]), format=fmt
-   if ubvymags(4) gt -9 then printf, lun,'bStr',ubvymags(4),max([0.02d,ubvymags(5)]), format=fmt
-   if ubvymags(6) gt -9 then printf, lun,'yStr',ubvymags(6),max([0.02d,ubvymags(7)]), format=fmt
-endif else qpaunzen15={vmag:-99.}
+if keyword_set(stromgren) then begin
+   qpaunzen15=QueryVizier('J/A+A/580/A23/catalog',star,dist/60.,/silent,/all,cfa=cfa)
+   if long(tag_exist(qpaunzen15,'vmag',/quiet)) ne 0L then begin
+      if n_elements(qpaunzen15) gt 1 then begin
+         print,'Warning: More than 1 Paunzen source found; using nearest one only.'
+         printf, lun,'# Warning: More than 1 Paunzen source found; using nearest one only.'
+         junk = min(qpaunzen15._r,m)
+         qpaunzen15=qpaunzen15[m]
+      endif
+      ubvymags=strom_conv(qpaunzen15.vmag,max([0.01d,qpaunzen15.e_vmag]),$
+                          qpaunzen15.b_y,max([0.02d,qpaunzen15.e_b_y]),$
+                          qpaunzen15.m1,max([0.02d,qpaunzen15.e_m1]),$
+                          qpaunzen15.c1,max([0.02d,qpaunzen15.e_c1]),/silent)
+      printf, lun, '# Stromgren photometry, Paunzen, 2015'
+      printf, lun, '# http://adsabs.harvard.edu/abs/2015A%26A...580A..23P'
+      if ubvymags(0) gt -9 then printf, lun,'uStr',ubvymags(0),max([0.02d,ubvymags(1)]), format=fmt
+      if ubvymags(2) gt -9 then printf, lun,'vStr',ubvymags(2),max([0.02d,ubvymags(3)]), format=fmt
+      if ubvymags(4) gt -9 then printf, lun,'bStr',ubvymags(4),max([0.02d,ubvymags(5)]), format=fmt
+      if ubvymags(6) gt -9 then printf, lun,'yStr',ubvymags(6),max([0.02d,ubvymags(7)]), format=fmt
+   endif else qpaunzen15={vmag:-99.}
+endif
 
 ; UCAC4 - check if APASS BV is actually just TYC2 BV, and adjust errors from integer to centimag
 qucac4=QueryVizier('UCAC4',star,dist/60.,/silent,/all,cfa=cfa)
@@ -177,7 +186,7 @@ if long(tag_exist(qucac4,'bmag',/quiet)) ne 0L then begin
       junk = min(qucac4._r,m)
       qucac4=qucac4[m]
    endif
-   if not keyword_set(noapass) then begin
+   if keyword_set(apass) then begin
       printf, lun, '# APASS DR6 (via UCAC4), Henden+ 2016'
       printf, lun, '# http://adsabs.harvard.edu/abs/2016yCat.2336....0H'
       if qucac4.bmag ne qtyc2.btmag and qucac4.bmag gt -9 and qucac4.e_bmag ne 99 then printf, lun,'B',qucac4.bmag,max([0.02d,qucac4.e_bmag*0.01d]),qucac4.e_bmag*0.01d, format=fmt
@@ -237,11 +246,11 @@ if (qucac4.jmag lt -90 or ~finite(qucac4.jmag)) and (qwise.Jmag lt -90 or ~finit
    endif
 endif
 
-;; Gaia DR1
+;; Gaia DR2
 if not keyword_set(nogaia) then begin
-   qgaia=QueryVizier('I/337/gaia',star,dist/60.,/silent,cfa=cfa,/all)
-   if long(tag_exist(qgaia,'_gmag_',/quiet)) ne 0L then begin
-      printf, lun, '# Gaia DR1, Gaia Collaboration, 2016'
+   qgaia=QueryVizier('I/345/gaia2',star,dist/60.,/silent,cfa=cfa,/all)
+   if long(tag_exist(qgaia,'gmag',/quiet)) ne 0L then begin
+      printf, lun, '# Gaia DR2, Gaia Collaboration, 2018'
       printf, lun, '# http://adsabs.harvard.edu/abs/2016A%26A...595A...2G'
       if n_elements(qgaia) gt 1 then begin
          print,'Warning: More than 1 Gaia source found; using nearest one only.'
@@ -249,12 +258,21 @@ if not keyword_set(nogaia) then begin
          match = crossref(ra, dec, qgaia.ra_icrs,qgaia.de_icrs)
          qgaia = qgaia[match]
       endif
-      if qgaia._gmag_ gt -9 and finite(qgaia.e__fg_) then printf, lun,'Gaia',qgaia._gmag_,max([0.03d,qgaia.e__fg_/qgaia._fg_]),qgaia.e__fg_/qgaia._fg_, format=fmt
-   endif else qgaia={_gmag_:-99.}
+
+      print, name
+      print, 'parallax',qgaia.plx, qgaia.e_plx, ' # Gaia DR2'
+      parallax = qgaia.plx
+      uparallax = qgaia.e_plx
+
+      if qgaia.gmag gt -9 and finite(qgaia.e_gmag) then printf, lun,'Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
+      if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) then printf, lun,'GBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
+      if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag) then printf, lun,'GRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt
+
+   endif
 endif
 
 ; KIS DR2
-if not keyword_set(nokepler) then begin
+if keyword_set(kepler) then begin
    qkis=QueryVizier('J/AJ/144/24/kisdr2',star,dist/60.,/silent,cfa=cfa,/all)
    if long(tag_exist(qkis,'KIS',/quiet)) ne 0L then begin
       printf, lun, '# KIS DR2, Greiss+ 2012'
@@ -262,7 +280,7 @@ if not keyword_set(nokepler) then begin
       if n_elements(qkis) gt 1 then begin
          print,'Warning: More than 1 KIS source found; using nearest one only.'
          printf, lun,'# Warning: More than 1 KIS source found; using nearest one only.'
-         match = crossref(ra, dec, qkis.ra_ircs, qkis.de_ircs)
+         match = crossref(ra, dec, qkis.raj2000, qkis.dej2000)
          qkis = qkis[match]
       endif
       if qkis.umag gt -9 and finite(qkis.e_umag) then printf, lun,'UKIS',qkis.umag,max([0.02d,qkis.e_umag]),qkis.e_umag, format=fmt
