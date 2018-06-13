@@ -30,8 +30,9 @@
 # prior on the stellar mass/radius from an evolutionary track while
 # using the evolutionary tracks in EXOFASTv2). This will double count
 # the constraint and artificially lower the reported
-# uncertainty. Changing starting values is wise. Adding penalties
-# should be done sparingly and with thought and care.
+# uncertainty. Changing starting values is wise and usually
+# required. Adding penalties should be done sparingly and with thought
+# and care.
 #
 # 4) The fourth entry is a lower bound. Any model that steps outside
 # of this bound will be rejected. "-Inf" will be ignored. Beware of
