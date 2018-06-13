@@ -50,7 +50,7 @@
 pro exofast_plotdist_corner, ss, nocovar=nocovar, $
                              pdfname=pdfname, covarname=covarname, $
                              probs=probs,logname=logname, angular=angular,$
-                             useallpars=useallpars, csvfile=csvfile
+                             useallpars=useallpars, csvfile=csvfile, mask=mask
 
 if n_elements(pdfname) eq 0 then pdfname = 'pdf.ps'
 if n_elements(covarname) eq 0 then covarname = 'covar.ps'
@@ -63,11 +63,6 @@ chi2 = reform((*ss.chi2),nsteps,ss.nchains)
 burnndx = getburnndx(chi2,goodchains=goodchains)
 ngoodchains = n_elements(goodchains)
 ;;burnndx = ss.burnndx
-
-medndx = ((nsteps-ss.burnndx)/2d0) * ngoodchains
-halfsigma = erf(1d/sqrt(2d0))/2d
-lowsigndx = round(((nsteps-ss.burnndx)/2.d0 - (nsteps-ss.burnndx)*halfsigma)*ngoodchains)
-hisigndx = round(((nsteps-ss.burnndx)/2.d0 + (nsteps-ss.burnndx)*halfsigma)*ngoodchains)
 
 ;; prepare the postscript device
 mydevice=!d.name
@@ -116,7 +111,9 @@ for i=0, n_tags(ss)-1 do begin
                            if (*(ss.(i)[j].(k))).(l)[m].derive or (*(ss.(i)[j].(k))).(l)[m].fit then begin ;; if it's requested to be fit or 
                               
                               ;; remove the burn-in, discard bad chains
-                              pars = (reform((*(ss.(i)[j].(k))).(l)[m].value,nsteps,ss.nchains))[burnndx:*,goodchains]
+                              pars0 = (*(ss.(i)[j].(k))).(l)[m].value
+                              if n_elements(mask) ne 0 then pars0[mask] = !values.d_nan
+                              pars = (reform(pars0,nsteps,ss.nchains))[burnndx:*,goodchains]
 
                               ;; plot the histogram, get the median and 68% confidence interval
                               summarizepar, pars, label= (*(ss.(i)[j].(k))).(l)[m].label,$
@@ -158,7 +155,9 @@ for i=0, n_tags(ss)-1 do begin
                   if ss.(i)[j].(k).derive or ss.(i)[j].(k).fit then begin
 
                      ;; remove the burn-in, discard bad chains
-                     pars = (reform(ss.(i)[j].(k).value,nsteps,ss.nchains))[burnndx:*,goodchains]
+                     pars0 = ss.(i)[j].(k).value
+                     if n_elements(mask) ne 0 then pars0[mask] = !values.d_nan
+                     pars = (reform(pars0,nsteps,ss.nchains))[burnndx:*,goodchains]
 
                      ;; plot the histogram, get the median and 68% confidence interval
                      summarizepar, pars, label=ss.(i)[j].(k).label,$ 
