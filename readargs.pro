@@ -8,13 +8,13 @@ pro readargs, argfile, priorfile=priorfile, $
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
               nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
               debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
-              bestonly=bestonly, plotonly=plotonly, skipstar=skipstar, $
+              bestonly=bestonly, plotonly=plotonly, refinestar=refinestar, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               maxgr=maxgr, mintz=mintz, $
               noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
               fitrv=fitrv, fittran=fittran,fitdt=fitdt,$
-              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, earth=earth,$
-              i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
+              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
+              earth=earth, i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
 
 line = ''
 openr, lun, argfile, /get_lun
@@ -74,8 +74,8 @@ while not eof(lun) do begin
             bestonly = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'PLOTONLY' then begin
             plotonly = boolean(entries[1])
-         endif else if strupcase(strtrim(entries[0],2)) eq 'SKIPSTAR' then begin
-            skipstar = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'REFINESTAR' then begin
+            refinestar = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'LONGCADENCE' then begin
             longcadence = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'EXPTIME' then begin
