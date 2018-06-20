@@ -1,6 +1,6 @@
 ;; t - teff
 ;; logg - the logg of the star
-;; z  - metalicity
+;; z  - metallicity
 ;; wav - wavelength, in ??
 ;; lamflam -
 ;; blamflam - 
