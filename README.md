@@ -1,71 +1,120 @@
-# EXOFASTv2 -- Jason Eastman (jason.eastman@cfa.harvard.edu)
-# An exoplanet transit and radial velocity fitting software package in IDL
-# If you use this in a publication, please cite:
-# http://adsabs.harvard.edu/abs/2017ascl.soft10003E
+EXOFASTv2 -- Jason Eastman (jason.eastman@cfa.harvard.edu) An
+exoplanet transit and radial velocity fitting software package in IDL
+If you use this in a publication, please cite:
+http://adsabs.harvard.edu/abs/2017ascl.soft10003E
 
-### INSTALLATION INSTRUCTIONS ### 
+# Installation instructions #
 
-# License-free use still requires a (free) IDL installation and runs a
-# pre-compiled version with the virtual machine. You still must follow
-# the installation instructions below.
+License-free use still requires a (free) IDL installation and runs a
+pre-compiled version with the virtual machine. You still must follow
+the installation instructions below.
 
-# Note the IDL Astronomy library is required. If you don't already
-# have it, install it from here: https://github.com/wlandsman/IDLAstro
+Note the IDL Astronomy library is required. If you don't already have
+it, install it from here: https://github.com/wlandsman/IDLAstro
 
-# This package is best installed with git
-cd $HOME/idl
-git clone https://github.com/jdeast/EXOFASTv2.git
+This package is best installed with git
 
-# define environment variables (bash shell, e.g., .bashrc)
-# EXOFAST_PATH="$HOME/idl/EXOFASTv2/" ; export EXOFAST_PATH
-# IDL_PATH="$IDL_PATH:+$EXOFAST_PATH" ; export IDL_PATH
-#
-#--- OR ---
-#
-# define environment variables (c shell, e.g., .tcshrc)
-# setenv EXOFAST_PATH "${HOME}/idl/EXOFASTv2/"
-# setenv IDL_PATH "${IDL_PATH}:+${EXOFAST_PATH}"
+  cd $HOME/idl
+  git clone https://github.com/jdeast/EXOFASTv2.git
 
-# If you have used the old version of EXOFAST, you must remove it from
-# your IDL_PATH to run correctly.
+define environment variables (bash shell, e.g., .bashrc)
 
-# to test your installation, try the HAT-3b example:
-cd $EXOFAST_PATH/examples/hat3
-idl -e "fithat3"
+  EXOFAST_PATH="$HOME/idl/EXOFASTv2/" ; export EXOFAST_PATH
+  IDL_PATH="$IDL_PATH:+$EXOFAST_PATH" ; export IDL_PATH
 
-# TIP: make your terminal wide so the MCMC updates don't spam the screen
+--- OR ---
 
-# this should complete in a couple minutes and generate several 
-# output files (HAT-P-3b.*). If it does not compile or fails, check for missing 
-# dependencies (e.g., IDL astronomy library)
+define environment variables (c shell, e.g., .tcshrc)
 
-# to get future updates
-cd $EXOFAST_PATH
-git pull
+  setenv EXOFAST_PATH "${HOME}/idl/EXOFASTv2/"
+  setenv IDL_PATH "${IDL_PATH}:+${EXOFAST_PATH}"
 
-#### TIPS, WARNINGS and CAVEATS #####
+NOTE: If you have used the old version of EXOFAST, you must remove it
+from your IDL_PATH to run correctly.
 
-# EXOFASTv2 has been built and tested on linux with IDL 8.5, though I
-# am not aware of any incompatibility for other versions or
-# platforms. The original EXOFAST has been used successfully with v6.4
-# and with Mac and Windows. It is my hope to support as many versions
-# as reasonable, so if you have version related bugs, please let me
-# know. This code relies heavily on pointers and structures, so
-# versions older than IDL 5.0 will never be supported.
+To test your installation, try the HAT-3b example:
 
-# other examples are available for various use cases, which are
-# intended to be templates for your own fits, including running
-# EXOFASTv2 without an IDL license. 
-# See $EXOFAST_PATH/examples/README for more information.
+  cd $EXOFAST_PATH/examples/hat3
+  idl -e "fithat3"
 
-# This is a BETA version. EXPECT BUGS!!! And please report any
-# unexpected behavior.
+TIP 1: make your terminal wide so the MCMC updates don't spam the screen
 
-# It is not fully documented. Please don't hesitate to email me with
-# questions. See the $EXOFAST_PATH/examples directory for templates to
-# get started on your own fits.
+TIP 2: If you don't care about the results, run a very short fit by
+setting maxsteps=100 (idl -e "fithat3, maxsteps=100"). This will give
+you a very imprecise/unreliable answer, but allow you to check your
+installation in ~5 seconds instead of ~10 minutes.
 
-# Major releases or bug fixes will be announced on twitter
-# (@exofastupdates)
+It will generate many output files
+($EXOFAST_PATH/examples/hat3/HAT-P-3b.Torres.*) (see
+$EXOFAST_PATH/exofastv2.pro for an explanation of outputs). The last
+file it generates is HAT-3b.Torres.chain.ps. If that is generated
+without error, you're good to go!
+
+To get future updates, simply type
+
+  cd $EXOFAST_PATH
+  git pull
+
+# Troubleshooting #
+
+I try hard to test thoroughly before pushing new code (but I'm not
+perfect!). If it does not compile or you get a syntax error, it is
+very likely a problem with your setup. The most likely reasons are:
+
+1) Your IDL_PATH or EXOFAST_PATH environment variables are not set up
+correctly. From a terminal, type "echo $IDL_PATH" (it should include
+EXOFASTv2) and "echo $EXOFAST_PATH" (it should point to your
+installation) to check.
+
+2) You have missing dependencies (e.g., IDL astronomy library)
+
+3) You have programs with the same name higher in your IDL
+path. Renaming or moving your version will fix it, but please send me
+an email if the conflicting code is a library routine. I will rename
+the EXOFASTv2 version to avoid conflicts with others.
+
+4) You have an old version of IDL. EXOFASTv2 has been built and tested
+on linux with IDL 8.5. I am not aware of any incompatibility for any
+platform (Windows, Mac, Linux) other versions newer than 8.0 (please
+report it if you find any). I currently use empty arrays and negative
+indices, which is not supported for versions less than IDL version
+8.0. I plan to remove those dependencies to support older versions. If
+you can't run EXOFASTv2 because your version is too old, please send
+me an email to help me gauge user interest. 
+
+Note 1: The latest version can be installed for free and EXOFASTv2
+can be run within a virtual machine without a license.
+
+Note 2: This code relies heavily on pointers and structures, so
+versions older than IDL 5.0 will never be supported.
+
+5) EXOFASTv2 has been tried with GDL and does not work. If you're
+interested in making it work with GDL, please contact me.
+
+# Tips, Warnings and Caveats #
+
+Other examples are available for various use cases, which are intended
+to be templates for various types of fits, and includes an example of
+running EXOFASTv2 without an IDL license. See
+$EXOFAST_PATH/examples/README for more information.
+
+Error checking is not thorough. You may encounter cryptic error
+messages and strange failure modes if you use it in a way it wasn't
+intended. Do not stray far from the examples blindly. 
+
+Do not ignore the warnings about the Gelman Rubin statistic without
+thoroughly inspecting the PDFs and chains.
+
+If you're stuck, feel free to ask me for guidance.
+
+This is a BETA version. EXPECT BUGS!!! And please report any
+unexpected behavior.
+
+It is not fully documented. Please don't hesitate to email me with
+questions. See the $EXOFAST_PATH/examples directory for templates to
+get started on your own fits.
+
+Major releases or bug fixes will be announced on twitter
+(@exofastupdates)
 
 
