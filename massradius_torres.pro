@@ -15,7 +15,7 @@
 ; INPUTS:
 ;    LOGG - The log of the stellar surface gravity
 ;    TEFF - The stellar effective temperature
-;    FEH  - The stellar metalicity
+;    FEH  - The stellar metallicity
 ;
 ; OUTPUTS:
 ;    MSTAR - The stellar mass, in solar masses
