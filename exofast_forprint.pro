@@ -29,6 +29,8 @@ if n_elements(v16) ne 0 and n_elements(v16) ne nv1 then message, 'dimensions of 
 if n_elements(v17) ne 0 and n_elements(v17) ne nv1 then message, 'dimensions of v17 ' + strtrim(n_elements(v17),2) + ' does not match v1 (' + strtrim(nv1,2) + ')'
 if n_elements(v18) ne 0 and n_elements(v18) ne nv1 then message, 'dimensions of v18 ' + strtrim(n_elements(v18),2) + ' does not match v1 (' + strtrim(nv1,2) + ')'
 
+if n_elements(comment) ne 0 then printf, lun, comment
+
 for i=0, n_elements(v1)-1 do begin
 
    if n_elements(v18) ne 0 then begin
