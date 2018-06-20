@@ -9,19 +9,20 @@ if n_elements(strsplit(basename,'.',/extract)) lt 3 then message, 'filename (' +
 ;; (with an arbitary number of detrending variables)
 band = (strsplit(basename,'.',/extract))(1)
 
-if band eq 'u' or band eq 'Sloanu' then begin
+;; this means stromgren u can't be used -- remove
+if band eq 'Sloanu' then begin
    band = 'Sloanu'
    bandname = "u'"
-endif else if band eq 'g' or band eq 'Sloang' then begin
+endif else if band eq 'Sloang' then begin
    band = 'Sloang'
    bandname = "g'"
-endif else if band eq 'r' or band eq 'Sloanr' then begin
+endif else if band eq 'Sloanr' then begin
    band = 'Sloanr'
    bandname = "r'"
-endif else if band eq 'i' or band eq 'Sloani' then begin
+endif else if band eq 'Sloani' then begin
    band = 'Sloani'
    bandname = "i'"
-endif else if band eq 'z' or band eq 'Sloanz' then begin
+endif else if band eq 'Sloanz' then begin
    band = 'Sloanz'
    bandname = "z'"
 endif else bandname = band
