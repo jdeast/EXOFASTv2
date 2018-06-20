@@ -76,13 +76,18 @@ x2 = dblarr(nplanets,ntimes)
 y2 = dblarr(nplanets,ntimes)
 z2 = dblarr(nplanets,ntimes)
 
-if ~finite(q) then begin
-   a2 = a 
-   a1 = 0d0
-endif else begin
-   a2 = a*q/(1d0+q)
-   a1 = a2/q
-endelse
+isinfinite = where(~finite(q),complement=isfinite)
+a2 = a*0d0
+a1 = a*0d0
+if isinfinite[0] ne -1 then begin
+   a2[isinfinite] = a[isinfinite] 
+   a1[isinfinite] = 0d0
+endif 
+
+if isfinite[0] ne -1 then begin
+   a2[isfinite] = a[isfinite]*q[isfinite]/(1d0+q[isfinite])
+   a1[isfinite] = a2[isfinite]/q[isfinite]
+endif
 
 for i=0L, nplanets-1L do begin
 
