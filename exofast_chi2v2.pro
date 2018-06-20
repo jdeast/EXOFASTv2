@@ -422,6 +422,7 @@ for j=0, ss.ntran-1 do begin
    ;; Kepler Long candence data; create several model points and average   
    ninterp = ss.transit[j].ninterp
    npoints = n_elements(transit.bjd)
+
    if ninterp gt 1 then begin
       transitbjd = transit.bjd#(dblarr(ninterp)+1d0) + $
                    ((dindgen(ninterp)/ninterp-(ninterp-1d0)/(2d0*ninterp))/$
@@ -439,10 +440,13 @@ for j=0, ss.ntran-1 do begin
                         e=ss.planet.e.value,omega=ss.planet.omega.value,$
                         q=ss.star.mstar.value/ss.planet.mpsun.value,$
                         x1=x1,y1=y1,z1=z1)
+   x1 = reform(x1,npoints,ninterp)
+   y1 = reform(y1,npoints,ninterp)
+   z1 = reform(z1,npoints,ninterp)
 
    for i=0, ss.nplanets-1 do begin
       if ss.planet[i].fittran then begin
-         
+
          modelflux += (exofast_tran(transitbjd, $
                                     ss.planet[i].i.value + ss.transit[j].tiv.value, $
                                     ss.planet[i].ar.value, $
@@ -467,7 +471,8 @@ for j=0, ss.ntran-1 do begin
    endfor
 
    ;; now integrate the model points (before detrending)
-   ;; Riemann integration beats trapezoidal and simpsons wins when sampling like above
+   ;; Riemann integration beats trapezoidal and simpsons wins when
+   ;; sampling like above
    if ninterp gt 1 then modelflux = total(modelflux,2)/ninterp
 
    ;; Trapezoidal integration not as good
