@@ -17,6 +17,7 @@ ss.star.logg.value = alog10(ss.constants.gravitysun*ss.star.mstar.value/(ss.star
 ;; derive the distance from lstar
 ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*sigmaB    ;; L_sun
 ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
+;ss.star.fbol.value = (ss.star.lstar.value/ss.constants.lsun)/(4d0*!dpi*ss.star.distance.value/ss.constants.pc) ;; cgs
 
 for j=0, ss.ntel-1 do begin
    if ss.telescope[j].jittervar.value gt 0 then $
