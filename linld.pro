@@ -15,7 +15,7 @@
 ; INPUTS:
 ;    LOGG - The log of the stellar surface gravity
 ;    TEFF - The stellar effective temperature
-;    FEH  - The stellar metalicity
+;    FEH  - The stellar metallicity
 ;    BAND - The observed bandpass. Allowed values are those defined in
 ;           Claret and Bloemen:
 ;             U,B,V,R,I,J,H,K, (Johnson/Cousins)
