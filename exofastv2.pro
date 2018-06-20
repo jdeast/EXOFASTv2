@@ -573,6 +573,14 @@ if double(!version.release) ge 6.4d0 and ~lmgr(/vm) then $
 if n_elements(prefix) eq 0 then prefix = 'planet.'
 basename = file_basename(prefix)
 
+;; if the directory doesn't exist, make it
+dirname = file_dirname(prefix)
+if dirname ne '.' then begin
+   if ~file_test(dirname,/directory) then begin
+      file_mkdir, dirname
+   endif
+endif
+
 ;; output to log file too
 logname = prefix + 'log'
 file_delete, logname, /allow_nonexistent
