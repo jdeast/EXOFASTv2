@@ -129,7 +129,7 @@ nages = 0
 
 if afe eq 0d0 then begin
    repeat begin
-      ;; 2D cubic convolution interpolation (metalicity and mass)
+      ;; 2D cubic convolution interpolation (metallicity and mass)
       yytrack[0,nages] = interpolate(tracks[0,*,*,nages,0],z_one,m_one,cubic=-0.5d0) ;; teff
       yytrack[1,nages] = interpolate(tracks[0,*,*,nages,1],z_one,m_one,cubic=-0.5d0) ;; rstar
       yytrack[2,nages] = interpolate(tracks[0,*,*,nages,2],z_one,m_one,cubic=-0.5d0) ;; age
@@ -142,7 +142,7 @@ if afe eq 0d0 then begin
    endrep until yytrack[2,nages-1] ge 13.9 or nages eq sz[4]
 endif else begin
    repeat begin
-      ;; 3D trilinear interpolation (afe, metalicity, and mass)
+      ;; 3D trilinear interpolation (afe, metallicity, and mass)
       yytrack[0,nages] = interpolate(tracks[*,*,*,nages,0],a_one,z_one,m_one) ;; teff
       yytrack[1,nages] = interpolate(tracks[*,*,*,nages,1],a_one,z_one,m_one) ;; rstar
       yytrack[2,nages] = interpolate(tracks[*,*,*,nages,2],a_one,z_one,m_one) ;; age
