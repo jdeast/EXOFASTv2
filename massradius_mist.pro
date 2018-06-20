@@ -4,7 +4,7 @@
 ;
 ; PURPOSE: 
 ;   Interpolate the MIST stellar evolutionary models to derive Teff
-;   and Rstar from mass, metalicity, and age. Intended to be a drop in
+;   and Rstar from mass, metallicity, and age. Intended to be a drop in
 ;   replacement for the Yonsie Yale model interpolation
 ;   (massradius_yy3.pro).
 ;
@@ -15,7 +15,7 @@
 ; INPUTS:
 ;
 ;    MSTAR  - The mass of the star, in m_sun
-;    FEH    - The metalicity of the star [Fe/H]
+;    FEH    - The metallicity of the star [Fe/H]
 ;    AGE    - The age of the star, in Gyr
 ;    RSTAR  - The radius you expect; used to calculate a chi^2
 ;    TEFF   - The Teff you expect; used to calculate a chi^2
@@ -27,7 +27,7 @@
 ;               placeholder for future improvements to MIST models.
 ;   SPAN      - The interpolation is done at the closest value +/-
 ;               SPAN grid points in the evolutionary tracks in mass,
-;               age, metalicity. The larger this number, the longer it
+;               age, metallicity. The larger this number, the longer it
 ;               takes. Default=1. Change with care.
 ;   EPSNAME   - A string specifying the name of postscript file to plot
 ;               the evolutionary track. If not specified, no plot is
@@ -61,8 +61,9 @@
 ;  2018/01 -- Written, JDE
 ;-
 function massradius_mist, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvcrit, alpha=alpha, $
-                               mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
-                               epsname=epsname, debug=debug, gravitysun=gravitysun, fitage=fitage, ageweight=ageweight, verbose=verbose, logname=logname
+                          mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
+                          epsname=epsname, debug=debug, gravitysun=gravitysun, fitage=fitage, $
+                          ageweight=ageweight, verbose=verbose, logname=logname, trackfile=trackfile
 
 if n_elements(gravitysun) eq 0 then $                                           
    gravitysun = 27420.011d0 ;; cm/s^2                                           
@@ -136,7 +137,7 @@ if n_elements(tracks) eq 0 then begin
    nvvcrit = n_elements(allowedvvcrit)
    nalpha = n_elements(allowedalpha)
 
-   ;; each mass/metalicity points to a 3xN array for rstar and Teff for N ages
+   ;; each mass/metallicity points to a 3xN array for rstar and Teff for N ages
    ;; which we only load as needed (expensive)
    tracks = ptrarr(nmass, nfeh, nvvcrit, nalpha, /allocate_heap)
 
@@ -285,12 +286,17 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    eepplot = mineep + dindgen(neep)
    mistrstariso = dblarr(neep)
    mistteffiso = dblarr(neep)
+   mistageiso = dblarr(neep)
 
    for i=0, neep-1 do begin
-      junk = massradius_mist(eepplot[i],mstar,initfeh,age,teff,rstar,feh,mistrstar=mistrstar,mistteff=mistteff)
+      junk = massradius_mist(eepplot[i],mstar,initfeh,age,teff,rstar,feh,mistrstar=mistrstar,mistteff=mistteff,mistage=mistage)
       mistrstariso[i] = mistrstar
       mistteffiso[i] = mistteff
+      mistageiso[i] = mistage
    endfor
+
+   if n_elements(trackfile) ne 0 then $
+      exofast_forprint, mistteffiso, mistrstariso, mistageiso, format='(f0.5,x,f0.5,x,f0.5)', comment='#teff, rstar, age', textout=trackfile
 
    ;; make a publication-ready plot of the YY track -- Teff vs logg
    loggplottrack =  alog10(mstar/(mistrstariso^2)*gravitysun)
