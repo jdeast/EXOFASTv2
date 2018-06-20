@@ -374,7 +374,7 @@ teff.scale = 500d0
 
 feh = parameter
 feh.value = 0d0
-feh.description = 'Metalicity'
+feh.description = 'Metallicity'
 feh.latex = '[{\rm Fe/H}]'
 feh.label = 'feh'
 feh.fit=1
@@ -382,7 +382,7 @@ feh.scale = 0.5d0
 
 initfeh = parameter
 initfeh.value = 0d0
-initfeh.description = 'Initial Metalicity'
+initfeh.description = 'Initial Metallicity'
 initfeh.latex = '[{\rm Fe/H}]_{0}'
 initfeh.label = 'initfeh'
 initfeh.scale = 0.5d0
@@ -519,6 +519,13 @@ lstar.description = 'Luminosity'
 lstar.latex = 'L_*'
 lstar.label = 'lstar'
 lstar.cgs = 3600d0*24d0*365.242d0*1d9
+
+;fbol = parameter
+;fbol.unit = 'cgs'
+;fbol.description = 'Bolometric Flux'
+;fbol.latex = 'F_{Bol}'
+;fbol.label = 'fbol'
+;fbol.cgs = 1d0
 
 rhostar = parameter
 rhostar.unit = 'cgs'
@@ -1236,6 +1243,7 @@ columnlabels = ''
 star = create_struct(mstar.label,mstar,$
                      rstar.label,rstar,$
                      lstar.label,lstar,$
+;                     fbol.label,fbol,$
                      rhostar.label,rhostar,$
                      logg.label,logg,$
                      teff.label,teff,$
