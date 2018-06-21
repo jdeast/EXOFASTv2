@@ -78,9 +78,13 @@ xrange=[xmin,xmax]
 
 maxnoise = stddev((*(ss.transit[0].transitptrs)).residuals)
 minnoise = stddev((*(ss.transit[ss.ntran-1].transitptrs)).residuals)
-ymin = 1d0 - depth - (spacing*(ss.ntran-1))/2d0 - 3*minnoise
-if ss.ntran eq 1 then ymax = 1+3*maxnoise $
-else ymax = 1d0 + 3*maxnoise + spacing*(ss.ntran - 0.5)
+if ss.ntran eq 1 then begin
+   ymin = 1-3*maxnoise-depth
+   ymax = 1+3*maxnoise
+endif else begin
+   ymin = 1d0 - depth - 3*minnoise - spacing/2d0
+   ymax = 1d0 + 3*maxnoise + spacing*(ss.ntran - 0.5)
+endelse
 yrange = [ymin,ymax]
 
 i=0
