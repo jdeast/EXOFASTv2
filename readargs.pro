@@ -11,7 +11,7 @@ pro readargs, argfile, priorfile=priorfile, $
               bestonly=bestonly, plotonly=plotonly, refinestar=refinestar, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               maxgr=maxgr, mintz=mintz, $
-              noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+              yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
               fitrv=fitrv, fittran=fittran,fitdt=fitdt,$
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
               earth=earth, i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
@@ -86,12 +86,12 @@ while not eof(lun) do begin
             maxgr = double(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MINTZ' then begin
             mintz = double(entries[1])
-         endif else if strupcase(strtrim(entries[0],2)) eq 'NOYY' then begin
-            noyy = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'YY' then begin
+            yy = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'TORRES' then begin
             torres = boolean(entries[1])
-         endif else if strupcase(strtrim(entries[0],2)) eq 'MIST' then begin
-            mist = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'NOMIST' then begin
+            nomist = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOCLARET' then begin
             noclaret = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'TIDES' then begin
