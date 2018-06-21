@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Thu Mar 29 10:38:28 2018.<P>
+<STRONG>Last modified: </STRONG>Thu Jun 21 14:23:58 2018.<P>
  
 <HR>
  
@@ -22,20 +22,22 @@ at the IDL command line prompt.<P>
 <H1>List of Routines</H1></A>
 <UL>
 <LI><A HREF="#"></A>
+<LI><A HREF="#ANGSEP">ANGSEP</A>
 <LI><A HREF="#BJD2TARGET">BJD2TARGET</A>
-<LI><A HREF="#BLACKBODY">BLACKBODY</A>
 <LI><A HREF="#COMPARESTARS">COMPARESTARS</A>
 <LI><A HREF="#ELLKE">ELLKE</A>
 <LI><A HREF="#ELLPIC_BULIRSCH">ELLPIC_BULIRSCH</A>
 <LI><A HREF="#EXOFAST">EXOFAST</A>
 <LI><A HREF="#EXOFASTV2">EXOFASTV2</A>
 <LI><A HREF="#EXOFAST_AMOEBA">EXOFAST_AMOEBA</A>
+<LI><A HREF="#EXOFAST_BLACKBODY">EXOFAST_BLACKBODY</A>
 <LI><A HREF="#EXOFAST_CHI2">EXOFAST_CHI2</A>
 <LI><A HREF="#EXOFAST_DEMC">EXOFAST_DEMC</A>
 <LI><A HREF="#EXOFAST_ERRELL">EXOFAST_ERRELL</A>
 <LI><A HREF="#EXOFAST_GELMANRUBIN">EXOFAST_GELMANRUBIN</A>
 <LI><A HREF="#EXOFAST_GETB">EXOFAST_GETB</A>
-<LI><A HREF="#EXOFAST_GETB2">EXOFAST_GETB2</A>
+<LI><A HREF="#EXOFAST_GETB2[1]">EXOFAST_GETB2[1]</A>
+<LI><A HREF="#EXOFAST_GETB2[2]">EXOFAST_GETB2[2]</A>
 <LI><A HREF="#EXOFAST_GETMCMCSCALE">EXOFAST_GETMCMCSCALE</A>
 <LI><A HREF="#EXOFAST_GETPHASE">EXOFAST_GETPHASE</A>
 <LI><A HREF="#EXOFAST_KEPLEREQ">EXOFAST_KEPLEREQ</A>
@@ -53,7 +55,11 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_RV">EXOFAST_RV</A>
 <LI><A HREF="#EXOFAST_TEXTOIDL">EXOFAST_TEXTOIDL</A>
 <LI><A HREF="#EXOFAST_TWILIGHT">EXOFAST_TWILIGHT</A>
+<LI><A HREF="#GETAVPRIOR">GETAVPRIOR</A>
 <LI><A HREF="#GETBURNNDX">GETBURNNDX</A>
+<LI><A HREF="#GETSED[1]">GETSED[1]</A>
+<LI><A HREF="#GETSED[2]">GETSED[2]</A>
+<LI><A HREF="#GETTC">GETTC</A>
 <LI><A HREF="#JSON_PARSE">JSON_PARSE</A>
 <LI><A HREF="#KTOM2">KTOM2</A>
 <LI><A HREF="#LEGEND">LEGEND</A>
@@ -62,6 +68,8 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#MASSRADIUS_TORRES">MASSRADIUS_TORRES</A>
 <LI><A HREF="#MKCONSTANTS">MKCONSTANTS</A>
 <LI><A HREF="#MKPRIOR">MKPRIOR</A>
+<LI><A HREF="#MKSED[1]">MKSED[1]</A>
+<LI><A HREF="#MKSED[2]">MKSED[2]</A>
 <LI><A HREF="#OMC">OMC</A>
 <LI><A HREF="#PARS2STR">PARS2STR</A>
 <LI><A HREF="#PLOTIMAGE">PLOTIMAGE</A>
@@ -83,7 +91,7 @@ at the IDL command line prompt.<P>
 <H1>Routine Descriptions</H1>
 <A NAME="">
 <H2></H2></A>
-<A HREF="#BJD2TARGET">[Next Routine]</A>
+<A HREF="#ANGSEP">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -186,10 +194,57 @@ at the IDL command line prompt.<P>
 <STRONG>(See pg_ran.pro)</STRONG><P>
 <HR>
  
+<A NAME="ANGSEP">
+<H2>ANGSEP</H2></A>
+<A HREF="#">[Previous Routine]</A>
+<A HREF="#BJD2TARGET">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+  angsep
+ PURPOSE:
+  Compute the angular distance between two spherical coordinates.
+ DESCRIPTION:
+
+ CATEGORY:
+  Mathematical
+ CALLING SEQUENCE:
+  ans=angsep(ra1,dec1,ra2,dec2)
+
+ INPUTS:
+  ra1  - RA of first position (radians)
+  dec1 - Dec of first position (radians)
+  ra2  - RA of second position (radians)
+  dec2 - Dec of second position (radians)
+
+ OPTIONAL INPUT PARAMETERS:
+
+ KEYWORD INPUT PARAMETERS:
+
+ OUTPUTS:
+  return value is the angular distance in radians.
+
+ KEYWORD OUTPUT PARAMETERS:
+
+ COMMON BLOCKS:
+
+ SIDE EFFECTS:
+
+ RESTRICTIONS:
+
+ PROCEDURE:
+
+ MODIFICATION HISTORY:
+  Written by Marc W. buie, Lowell Observatory, 1997/09/08
+  2009/02/26, MWB, added protection against round off error generating NaN
+</PRE><P>
+<STRONG>(See angsep.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="BJD2TARGET">
 <H2>BJD2TARGET</H2></A>
-<A HREF="#">[Previous Routine]</A>
-<A HREF="#BLACKBODY">[Next Routine]</A>
+<A HREF="#ANGSEP">[Previous Routine]</A>
+<A HREF="#COMPARESTARS">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -251,51 +306,9 @@ at the IDL command line prompt.<P>
 <STRONG>(See bjd2target.pro)</STRONG><P>
 <HR>
  
-<A NAME="BLACKBODY">
-<H2>BLACKBODY</H2></A>
-<A HREF="#BJD2TARGET">[Previous Routine]</A>
-<A HREF="#COMPARESTARS">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- PURPOSE:
-  This function calculates the Planck function I_nu or
-  I_lambda.
-    I_nu     = 2h nu^3 c^-2 ( exp(h nu / kT) -1)^-1
-    I_lambda = 2h c^2 lambda^-5 (exp ( hc / lambda kt) -1)^-1
-
- CATEGORY:
-  Astrophysics
-
- CALLING SEQUENCE:
-  result = BLACKBODY(temp, x, [/freq, /wave, /cgs, /mks])
- 
- INPUTS:
-  temp: The temperature, in K. Scalar or vector. If it is a scalar,
-        the same temperature is assumed for each value of x.
-     x: By default, the wagelength in mks units. If /cgs is set, then
-     this number is in cgs units. If /freq is set, this number is the
-     frequency. 
-
- KEYWORD PARAMETERS:
-  wave: Set to receive the input as a wavelength, and output I_lambda
-  freq: Set to receive the input as a frequency, and output I_nu
-        (default) 
-  cgs:  Set to receive the input and return the output in cgs units
-  mks:  Set to receive the input and return the output in mks units
-        (default) 
-
- OUTPUTS:
-  I_nu or, if /wave is set, I_lambda
-
- MODIFICATION HISTORY:
-  May 2009: Written by Chris Beaumont
-</PRE><P>
-<STRONG>(See blackbody.pro)</STRONG><P>
-<HR>
- 
 <A NAME="COMPARESTARS">
 <H2>COMPARESTARS</H2></A>
-<A HREF="#BLACKBODY">[Previous Routine]</A>
+<A HREF="#BJD2TARGET">[Previous Routine]</A>
 <A HREF="#ELLKE">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -477,6 +490,8 @@ at the IDL command line prompt.<P>
              neighbor and you expect color-dependent depth
              variations.
              Note: May be degenerate with F0 (transit normalization) 
+             Note: this only affects the transit model. It is not
+             accounted for in the SED fitting.
              TODO: automatically model dilution based on multiple
              SEDs
   NVALUES  - By default, parameter.value is a scalar. Set this
@@ -733,6 +748,10 @@ with a diff
                  So a transit taken on UTC 2017-01-27 with the TRES
                  spectrograph (R=44000) would be called
                  "n20170127.TRES.44000.fits"
+ 
+                 NOTE 0: When supplied this way, the DT data does not
+                 constrain vsini. A gaussian prior must be given in
+                 the prior file.
 
                  NOTE 1: NAXIS1 must equal the number of velocities and
                  NAXIS2 must equal the number of times.
@@ -776,21 +795,13 @@ with a diff
                 Tycho: 'BT','VT'
                 Kepler INT: 'U_KIS','gKIS','rKIS','iKIS'
 
-                The contents of this file for EPXXXXXXX is below:
+                The program mksed.pro will automatically generate
+                this file using queryVizier based on the object's
+                name or coordinates. Exercise caution that the
+                correct object was selected for each catalog.
  
-                B      11.949 0.129
-                V      11.572 0.142
-                J2M    10.872 0.022
-                H2M    10.665 0.025
-                K2M    10.601 0.020
-                WISE1  10.537 0.023
-                WISE2  10.583 0.021
-                WISE3  10.618 0.097
-                uSDSS 14.51798 0.05
-                gSDSS 12.14652 0.03
-                rSDSS 11.81735 0.03
-                iSDSS 11.70544 0.03
-                zSDSS 13.20863 0.03
+                Thank you to Keivan Stassun at Vanderbilt for the
+                majority of the SED-related code.
 
    PREFIX      - Each of the output files will have this string as a
                  prefix. Default is 'planet.'
@@ -870,6 +881,26 @@ with a diff
                  should fit using a Doppler Tomography model.
                  Default is bytarr(nplanets)
                  ***NOT YET IMPLEMENTED***
+  FITTHERMAL- A string array specifying which bands to fit thermal
+             emission for. This is what you want to set to fit an
+             isolated secondary eclipse. All observations in this
+             band will be modeled with a baseline of 1 between t2 and
+             t3 of the secondary eclipse and 1 + thermal emission (in
+             PPM) out of eclipse.
+  FITREFLECT- A string array specifying which bands to fit reflected
+             light for. Set this along with thermal if you're
+             fitting a full phase curve. It will be modeled as a
+             sinusoid with the orbital period, a minimum at the
+             primary transit, and a fitted amplitude (in PPM).
+  FITDILUTE-   A string array specifying which bands to fit a dilution
+             term for. Set this if the star is blended with a
+             neighbor and you expect color-dependent depth
+             variations.
+             Note: May be degenerate with F0 (transit normalization) 
+             Note: this only affects the transit model. It is not
+             accounted for in the SED fitting.
+             TODO: automatically model dilution based on multiple
+             SEDs
    CHEN        - An NPLANET boolean array that specifies which
                  planets should have the Chen & Kipping, 2017
                  mass-radius relation applied. By default CHEN =
@@ -889,24 +920,24 @@ with a diff
  OPTIONAL KEYWORDS:
    FITSLOPE  - If set, it will fit a linear trend to the RV data.
    FITQUAD   - If set, it will fit a quadratic trend to the RV data.
-   MIST      - If set, use the MIST evolutionary tracks 
+   NOMIST    - If set, do not use the MIST evolutionary tracks 
                see http://waps.cfa.harvard.edu/MIST/
                And please cite
                http://adsabs.harvard.edu/abs/2016ApJS..222....8D
                http://adsabs.harvard.edu/abs/2016ApJ...823..102C
                *** Use with caution, not thoroughly tested ***
-   NOYY      - If set, disable YY evolutionary tracks
-               see
+   YY        - If set, use the YY evolutionary tracks see
                http://adsabs.harvard.edu/abs/2001ApJS..136..417Y
                to constrain the mass/radius of the star. YY should
-               not be used for low-mass stars (~< 0.5 msun).
+               not be used for low-mass stars (~< 0.5 msun). This
+               should be accompanied by the NOMIST keyword (but is
+               not enforced).
    TORRES    - If set, use the Torres relations to constrain the mass
                and radius of the star. This may be useful to
-               investigate potential systematics and should probably
-               be accompanied by the NOYY keyword (but is not
-               enforced). This is not a substitute for YY for low
-               mass stars; the Torres relations are equally
-               inapplicable.
+               investigate potential systematics and should be
+               accompanied by the NOMIST keyword (but is not
+               enforced). The Torres relations are not applicable for
+               low mass (< 0.6 msun) stars.
    NOCLARET  - If set, ignore the Claret & Bloeman limb darkening
                tables and just fit the limb darkening. This should be
                specified for low-mass stars where these tables are
@@ -939,8 +970,8 @@ with a diff
                data is made. This is useful when refining initial
                guesses.
                ***NOT YET IMPLEMENTED***
-   SKIPSTAR  - If set, don't bother refining the stellar
-               parameters first, go straight to the global fit.
+   REFINESTAR- If set, refining the stellar parameters first, before
+               the global fit.
    EARTH     - If set, the output units of Mp and Rp are in Earth
                units, not Jupiter units.
    DEBUG     - If set, various debugging outputs will be printed and
@@ -960,7 +991,8 @@ with a diff
    mcmc.idl   - An IDL save file that contains the stellar structure
                 with the full chains for each parameter, including
                 derived parameters, the chi2 at each link, and the
-                index of the burn-in period.
+                index of the burn-in period, called MCMCSS (MCMC
+                stellar structure).
    chain.ps   - A postscript plot of each parameter as a function of
                 chain link, 8 to a page. Each color is a separate
                 chain.
@@ -984,59 +1016,84 @@ with a diff
 
    1) Files preceeded with "start." are the starting values of the
    fit. Often times it is necessary to tweak these by hand until the
-   starting values are a pretty good match.
+   starting values are a pretty good match to the data.
 
    2) Files preceeded with "amoeba." are the models after the amoeba
    minimization is complete. If this model is not a good fit to the
    data, the fit is likely to fail and you should refine your
-   starting values, priors, and constraints. At a minimum, the fit
-   will take longer to converge if this is not a good fit.
+   starting values, priors, and constraints. At a minimum, the MCMC
+   is likely to take significantly longer to converge if this is not
+   a good fit.
 
    3) Files preceeded with "mcmc." are the final plots meant for
    publication. They represent the best fit among all links of all
    chains.
 
-   transit.ps - An postscript plot of the best-fit transit model.
+   transit.ps - A multi-page postscript plot of the transit
+                model. The first page has each transit (file) stacked
+                on the same plot, offset by a constant. Subsequent
+                pages are the detrended, phase-folded transits for
+                each planet. Note that the model on the phase folded
+                model may have some fuzz due to different limb
+                darkening for each model.  
                 *** Fairly cursory at the moment, and poorly behaved
                 for complex fits ***
-   rv.ps      - A postscript plot of each planet, phased to its
-                period with all other planets subtracted (one per
-                page) and the unphased model and data.
+   rv.ps      - A multi-page postscript plot of the RV model. The
+                first page is the unphased model with gamma and any
+                fitted linear or quadratic terms subtracted from both
+                the data and model. If more than one instrument is
+                used, a legend is produced in the corner. Subsequent
+                pages are each planet, phased to its period, with all
+                other planets, gamma, and any fitted linear and
+                quadratic terms subtracted.
    mist.eps   - A plot of the star with its MIST isochrone
                 overplotted. The black point is the best-fit value,
                 the red point is the corresponding model value. Only
-                generated if the /MIST keyword is set.
+                generated if the /NOMIST keyword is not set.
    yy.eps     - A plot of the star with its YY isochrone
                 overplotted. The black point is the best-fit value,
                 the red point is the corresponding model value. Only
-                generated if the /NOYY keyword is not set.
+                generated if the /YY keyword is not set.
    sed.eps    - A plot of the broadband photometry and best fit
                 SED. Only generated if FLUXFILE is given.
  
-  The following outputs are intended to allow the user to generate
-  their own customized plots easily.
+  We recognize that in many cases, the outputs plots are not
+  publication quality. The following text outputs are intended to
+  allow the user to generate their own, more complicated or
+  customized plots without having to recreate the model or
+  detrending.
 
-  residuals.telescope_#.txt - A text file containing the residuals to
-                              the best-fit model RV for telescope
-                              #. Makes one for each telescope.
-   model.telescope_#.txt - A text file containing the best-fit model
-                           (with gamma, slope, and quad subtracted)
-                           RVs for each time given for telescope
-                           #. Makes one for each telescope. These are
-                           intendened for easy generation of user
-                           plots.
-   model.transit_[i].txt - The model of the ith transit, detrended
-                           and normalized to 1.
-   residuals.transit_[i].txt -The residuals of the ith transit
-   transit_[i].planet_[j].txt - The model of the ith transit of the
-                                jth planet minus 1. Sum all
-                                transit[i].planet_*.txt for the
-                                combined model. Useful for
-                                separating overlapping transits.
+  residuals.telescope_[i].txt --
+      A text file containing the residuals to the best-fit model RV
+      for the ith telescope.
+   model.telescope_[i].txt --
+      A text file containing the best-fit model (with gamma, slope,
+      and quad subtracted) RVs for each time given for telescope.
+      One for each telescope is generated.
+   model.transit_[i].txt - 
+      The model of the ith transit at each input data point,
+      including detrending.
+   residuals.transit_[i].txt -- 
+      The residuals of the ith transit file at each data point.
+   detrendedmodel.transit_[i].planet_[j].txt -- 
+      The detrended model of the ith transit of the jth planet minus
+      1 at each input data point. Sum all transit[i].planet_*.txt and add
+      one for the combined model. Useful for separating overlapping
+      transits.
+   prettymodel.transit_[i].planet_[j].txt -- 
+      Same as detrendedmodel.transit_[i].planet_[j].txt, but sampled
+      every minute from the first to the last data point. This is
+      intended to make a pretty model plot if there are gaps in the
+      data.
 
-   NOTE: To extract a single page out of a multi-page PS file, use:
-         psselect -p# input.ps output.ps where # is the page number
-         to extract.
+   NOTE 1: The detrended data can by derived by adding the residuals
+      to the detrended model
+
+   NOTE 2: To extract a single page out of a multi-page PS file, use:
+
+         psselect -p# input.ps output.ps 
+
+      where # is the page number to extract.
 
  COMMON BLOCKS:
    CHI2_BLOCK:
@@ -1060,7 +1117,7 @@ with a diff
 <A NAME="EXOFAST_AMOEBA">
 <H2>EXOFAST_AMOEBA</H2></A>
 <A HREF="#EXOFASTV2">[Previous Routine]</A>
-<A HREF="#EXOFAST_CHI2">[Next Routine]</A>
+<A HREF="#EXOFAST_BLACKBODY">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -1187,9 +1244,51 @@ Function value:       1.33000
 <STRONG>(See exofast_amoeba.pro)</STRONG><P>
 <HR>
  
+<A NAME="EXOFAST_BLACKBODY">
+<H2>EXOFAST_BLACKBODY</H2></A>
+<A HREF="#EXOFAST_AMOEBA">[Previous Routine]</A>
+<A HREF="#EXOFAST_CHI2">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ PURPOSE:
+  This function calculates the Planck function I_nu or
+  I_lambda.
+    I_nu     = 2h nu^3 c^-2 ( exp(h nu / kT) -1)^-1
+    I_lambda = 2h c^2 lambda^-5 (exp ( hc / lambda kt) -1)^-1
+
+ CATEGORY:
+  Astrophysics
+
+ CALLING SEQUENCE:
+  result = BLACKBODY(temp, x, [/freq, /wave, /cgs, /mks])
+ 
+ INPUTS:
+  temp: The temperature, in K. Scalar or vector. If it is a scalar,
+        the same temperature is assumed for each value of x.
+     x: By default, the wagelength in mks units. If /cgs is set, then
+     this number is in cgs units. If /freq is set, this number is the
+     frequency. 
+
+ KEYWORD PARAMETERS:
+  wave: Set to receive the input as a wavelength, and output I_lambda
+  freq: Set to receive the input as a frequency, and output I_nu
+        (default) 
+  cgs:  Set to receive the input and return the output in cgs units
+  mks:  Set to receive the input and return the output in mks units
+        (default) 
+
+ OUTPUTS:
+  I_nu or, if /wave is set, I_lambda
+
+ MODIFICATION HISTORY:
+  May 2009: Written by Chris Beaumont
+</PRE><P>
+<STRONG>(See exofast_blackbody.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="EXOFAST_CHI2">
 <H2>EXOFAST_CHI2</H2></A>
-<A HREF="#EXOFAST_AMOEBA">[Previous Routine]</A>
+<A HREF="#EXOFAST_BLACKBODY">[Previous Routine]</A>
 <A HREF="#EXOFAST_DEMC">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -1554,7 +1653,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_GETB">
 <H2>EXOFAST_GETB</H2></A>
 <A HREF="#EXOFAST_GELMANRUBIN">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETB2">[Next Routine]</A>
+<A HREF="#EXOFAST_GETB2[1]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -1611,10 +1710,10 @@ Function value:       1.33000
 <STRONG>(See exofast_getb.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_GETB2">
-<H2>EXOFAST_GETB2</H2></A>
+<A NAME="EXOFAST_GETB2[1]">
+<H2>EXOFAST_GETB2[1]</H2></A>
 <A HREF="#EXOFAST_GETB">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETMCMCSCALE">[Next Routine]</A>
+<A HREF="#EXOFAST_GETB2[2]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -1677,9 +1776,76 @@ Function value:       1.33000
 <STRONG>(See exofast_getb2.pro)</STRONG><P>
 <HR>
  
+<A NAME="EXOFAST_GETB2[2]">
+<H2>EXOFAST_GETB2[2]</H2></A>
+<A HREF="#EXOFAST_GETB2[1]">[Previous Routine]</A>
+<A HREF="#EXOFAST_GETMCMCSCALE">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   EXOFAST_GETB2
+
+ PURPOSE: 
+   This function returns the impact parameter as a function of BJD
+   given orbital elements of many planets, assuming keplerian orbits.
+   Optionally, the 3-space barycentric coordinates of the planets
+   (x1,y1,z1) and star (x2,y2,z2) or the stellar coordinates of the
+   planets (x0,y0,z0) can be returned.
+ 
+ CALLING SEQUENCE:
+   result = getb(jds, i=i,a=a,tperiastron=tperiastron,period=p,$
+                 e=e,omega=omega, x=x, y=y, z=z)
+
+ INPUTS:
+   bjd         - Barycentric Julians dates for desired impact
+                 parameters (ideally in the target's
+                 barycentric frame; see BJD2TARGET)
+   i           - an NPLANETS array of planetary inclinations (radians)
+   a           - an NPLANETS array of semi-major axis, a = a1+a2 (in
+                 units of R_*). That is, the semi-major axis should be calculated
+                 from Kepler's equation: a/rstar = G(M+m)P^2/(4pi^2rstar).
+                 Using G = 2942.71377d0 R_sun^3/(m_sun*day^2), masses
+                 in solar masses, period in days, and rstar in solar
+                 radii will give the appropriate input.
+   tperiastron - an NPLANETS array of periastron passage times (same
+                 units as BJD)
+   Period      - an NPLANETS array of Period of orbit (days)
+
+ OPTIONAL INPUTS:  
+   e           - an NPLANETS array of eccentricities (0 if not specified)
+   omega       - an NPLANETS array of arguments of periastron of the star's orbit, in radians
+                 -- omega_* is typically quoted from RV
+                 -- assumed to be pi/2 if e not specified
+                 -- omega_* = omega_planet + !dpi
+   lonascnode  - an NPLANETS array of Longitudes of the ascending node
+                 (radians). Assumed to be !dpi if not specified.
+   Q           - an NPLANETS array of mass ratios of the primary to secondary
+                 (M1/M2). If not specified, the mass ratio is assumed
+                 to be infinite. The returned coordinates are the
+                 motion of the companion with respect to the primary.
+
+ OUTPUTS:
+    result     - the impact parameter as a function of BJD, in units
+                 of R_*.
+
+ OPTIONAL OUTPUTS:
+    x,y,z - Arrays of the cartesian coordinates of the planet at
+            each BJD, in the units of R_*. 
+              +X is right
+              +Y is up
+              +Z is out of the page (primary transit)
+
+ MODIFICATION HISTORY 
+  2009/05/01 -- Jason Eastman (Ohio State University)
+  2017/04/12 -- Add optional mass ratio keyword
+  2017/04/12 -- Add optional mass ratio keyword
+</PRE><P>
+<STRONG>(See exofast_getb2d.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="EXOFAST_GETMCMCSCALE">
 <H2>EXOFAST_GETMCMCSCALE</H2></A>
-<A HREF="#EXOFAST_GETB2">[Previous Routine]</A>
+<A HREF="#EXOFAST_GETB2[2]">[Previous Routine]</A>
 <A HREF="#EXOFAST_GETPHASE">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -2781,7 +2947,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_TWILIGHT">
 <H2>EXOFAST_TWILIGHT</H2></A>
 <A HREF="#EXOFAST_TEXTOIDL">[Previous Routine]</A>
-<A HREF="#GETBURNNDX">[Next Routine]</A>
+<A HREF="#GETAVPRIOR">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2833,10 +2999,52 @@ Function value:       1.33000
 <STRONG>(See exofast_twilight.pro)</STRONG><P>
 <HR>
  
+<A NAME="GETAVPRIOR">
+<H2>GETAVPRIOR</H2></A>
+<A HREF="#EXOFAST_TWILIGHT">[Previous Routine]</A>
+<A HREF="#GETBURNNDX">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   GETAVPRIOR
+
+ PURPOSE:
+
+   Returns the maximum V-band extinction (Av) from Schlafly and
+   Finkbeiner (2011) to be used as an upper bound on EXOFASTv2 SED
+   fits.
+
+   If you use this code in your research, please cite:
+   Schlafly and Finkbeiner (2011)
+   http://adsabs.harvard.edu/abs/2011ApJ...737..103S
+ 
+ CALLING SEQUENCE:
+   maxav = getavprior(ra=ra,dec=dec,object=object,line=line)
+
+ OPTIONAL INPUTS:
+ 
+   RA     - The J2000 RA of the object in decimal degrees, from which to get the Av.
+   DEC    - The J2000 Dec of the object in decimal degrees, from which to get the Av.
+   OBJECT - The name of the object to be resolved by SIMBAD. Either
+            OBJECT or RA and DEC must be specified
+ OPTIONAL OUTPUTS:
+   LINE   - The line in the prior file to impose an upper bound at
+            the maxav from the Schlegel maps.
+ 
+  RESULT 
+   The maximum V-band extinction (Av)
+
+ MODIFICATION HISTORY
+ 
+  2018/04 -- Written, Jason Eastman (CfA)
+</PRE><P>
+<STRONG>(See getavprior.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="GETBURNNDX">
 <H2>GETBURNNDX</H2></A>
-<A HREF="#EXOFAST_TWILIGHT">[Previous Routine]</A>
-<A HREF="#JSON_PARSE">[Next Routine]</A>
+<A HREF="#GETAVPRIOR">[Previous Routine]</A>
+<A HREF="#GETSED[1]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2847,8 +3055,8 @@ Function value:       1.33000
  DESCRIPTION: 
    Determines the point at which all chains have had at least one
    chi^2 lower than the median chi^2 of the best chain. If some
-   chains never reach this point, they are ignored in the
-   calculation. 
+   chains never reach this point or reach this point very late, they
+   are ignored in the calculation.
    
    nsteps*0.1 <= burnndx <= nsteps*0.9
  
@@ -2856,7 +3064,8 @@ Function value:       1.33000
 
    It will always discard at least 10% of the steps in case the
    initialization of the chains is insufficiently scattered around
-   the best fit, which would bias the results.
+   the best fit, which would bias the results toward the starting
+   value.
  
    It will never discard more than 90% of the steps to enable the
    robust calculation of mixing criteria.
@@ -2881,13 +3090,78 @@ Function value:       1.33000
 
  REVISION HISTORY:
    2018/03 - Written -- Jason Eastman (CfA)
+   2018/04 - Modified goodchains to maximize the total number of
+             saved links
 </PRE><P>
 <STRONG>(See getburnndx.pro)</STRONG><P>
 <HR>
  
+<A NAME="GETSED[1]">
+<H2>GETSED[1]</H2></A>
+<A HREF="#GETBURNNDX">[Previous Routine]</A>
+<A HREF="#GETSED[2]">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+
+</PRE><P>
+<STRONG>(See getsed.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="GETSED[2]">
+<H2>GETSED[2]</H2></A>
+<A HREF="#GETSED[1]">[Previous Routine]</A>
+<A HREF="#GETTC">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ PURPOSE:
+    Given an object name (resolved with simbad) or RA and DEC, return
+    available broad band photometry from a variety of catalogs in the
+    format expected by EXOFASTv2 to perform an SED fit. 
+
+    NOTE: Priors on extinction and parallax should be included (see
+    mkpriors.pro), as well as a prior on Teff.
+
+ Modification 
+    20??-??-??: Written: Keivan Stassun, Vanderbilt
+    2018-04-12: Jason Eastman, CfA
+                Renamed, documented, and cleaned up for distribution with EXOFASTv2
+
+</PRE><P>
+<STRONG>(See getsed.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="GETTC">
+<H2>GETTC</H2></A>
+<A HREF="#GETSED[2]">[Previous Routine]</A>
+<A HREF="#JSON_PARSE">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+
+ MCMCSS - The MCMC Stellar structure output by exofastv2.pro 
+
+ EPOCHS - An NPLANETS pointer array (must match mcmcss.nplanets),
+          pointing to an array specifying the epochs of the desired
+          transit times. A null pointer signifies no output desired
+          for that planet.
+
+ NSAMPLES - This calculation is expensive and may take a decent
+            fraction of the total MCMC runtime. We randomly sample
+            NSAMPLES from the MCMCSS values to compute the
+            uncertainty in each transit time. Default is 1000. Use -1
+            or a value larger than mcmcss.nvalues to compute the Tcs
+            at each epoch for all values.
+
+ RESULT - An NPLANETS pointer array, pointing to an NEPOCHS x NSAMPLES
+          array of Transit times, including stellar reflex motion and
+          fitted TTVs.
+ 
+</PRE><P>
+<STRONG>(See gettc.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="JSON_PARSE">
 <H2>JSON_PARSE</H2></A>
-<A HREF="#GETBURNNDX">[Previous Routine]</A>
+<A HREF="#GETTC">[Previous Routine]</A>
 <A HREF="#KTOM2">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -3226,7 +3500,7 @@ Function value:       1.33000
  INPUTS:
     LOGG - The log of the stellar surface gravity
     TEFF - The stellar effective temperature
-    FEH  - The stellar metalicity
+    FEH  - The stellar metallicity
     BAND - The observed bandpass. Allowed values are those defined in
            Claret and Bloemen:
              U,B,V,R,I,J,H,K, (Johnson/Cousins)
@@ -3271,7 +3545,7 @@ Function value:       1.33000
 
  PURPOSE: 
    Interpolate the MIST stellar evolutionary models to derive Teff
-   and Rstar from mass, metalicity, and age. Intended to be a drop in
+   and Rstar from mass, metallicity, and age. Intended to be a drop in
    replacement for the Yonsie Yale model interpolation
    (massradius_yy3.pro).
 
@@ -3282,7 +3556,7 @@ Function value:       1.33000
  INPUTS:
 
     MSTAR  - The mass of the star, in m_sun
-    FEH    - The metalicity of the star [Fe/H]
+    FEH    - The metallicity of the star [Fe/H]
     AGE    - The age of the star, in Gyr
     RSTAR  - The radius you expect; used to calculate a chi^2
     TEFF   - The Teff you expect; used to calculate a chi^2
@@ -3294,7 +3568,7 @@ Function value:       1.33000
                placeholder for future improvements to MIST models.
    SPAN      - The interpolation is done at the closest value +/-
                SPAN grid points in the evolutionary tracks in mass,
-               age, metalicity. The larger this number, the longer it
+               age, metallicity. The larger this number, the longer it
                takes. Default=1. Change with care.
    EPSNAME   - A string specifying the name of postscript file to plot
                the evolutionary track. If not specified, no plot is
@@ -3352,7 +3626,7 @@ Function value:       1.33000
  INPUTS:
     LOGG - The log of the stellar surface gravity
     TEFF - The stellar effective temperature
-    FEH  - The stellar metalicity
+    FEH  - The stellar metallicity
 
  OUTPUTS:
     MSTAR - The stellar mass, in solar masses
@@ -3390,7 +3664,7 @@ Function value:       1.33000
 <A NAME="MKPRIOR">
 <H2>MKPRIOR</H2></A>
 <A HREF="#MKCONSTANTS">[Previous Routine]</A>
-<A HREF="#OMC">[Next Routine]</A>
+<A HREF="#MKSED[1]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -3428,9 +3702,49 @@ Function value:       1.33000
 <STRONG>(See mkprior.pro)</STRONG><P>
 <HR>
  
+<A NAME="MKSED[1]">
+<H2>MKSED[1]</H2></A>
+<A HREF="#MKPRIOR">[Previous Routine]</A>
+<A HREF="#MKSED[2]">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+
+</PRE><P>
+<STRONG>(See mksed.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="MKSED[2]">
+<H2>MKSED[2]</H2></A>
+<A HREF="#MKSED[1]">[Previous Routine]</A>
+<A HREF="#OMC">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ PURPOSE:
+    Given an object name (resolved with simbad) or RA and DEC, return
+    available broad band photometry from a variety of catalogs in the
+    format expected by EXOFASTv2 to perform an SED fit.
+    $EXOFAST_PATH/sed/mag2fluxconv.pro reads this file.
+
+    NOTE: Priors on extinction and parallax should be included (see
+    mkpriors.pro), as well as a prior on Teff.
+
+ INPUTS:
+
+    
+ 
+    References included in the output file -- please cite the appropriate catalogs.
+ Modification 
+    20??-??-??: Written: Keivan Stassun, Vanderbilt
+    2018-04-12: Jason Eastman, CfA
+                Renamed, documented, and cleaned up for distribution with EXOFASTv2
+
+</PRE><P>
+<STRONG>(See mksed.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="OMC">
 <H2>OMC</H2></A>
-<A HREF="#MKPRIOR">[Previous Routine]</A>
+<A HREF="#MKSED[2]">[Previous Routine]</A>
 <A HREF="#PARS2STR">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -3851,7 +4165,7 @@ Function value:       1.33000
  INPUTS:
     LOGG - The log of the stellar surface gravity
     TEFF - The stellar effective temperature
-    FEH  - The stellar metalicity
+    FEH  - The stellar metallicity
     BAND - The observed bandpass. Allowed values are those defined in
            Claret and Bloemen:
              U,B,V,R,I,J,H,K, (Johnson/Cousins)
