@@ -425,7 +425,8 @@
 ;   mcmc.idl   - An IDL save file that contains the stellar structure
 ;                with the full chains for each parameter, including
 ;                derived parameters, the chi2 at each link, and the
-;                index of the burn-in period.
+;                index of the burn-in period, called MCMCSS (MCMC
+;                stellar structure).
 ;   chain.ps   - A postscript plot of each parameter as a function of
 ;                chain link, 8 to a page. Each color is a separate
 ;                chain.
@@ -449,24 +450,36 @@
 ;
 ;   1) Files preceeded with "start." are the starting values of the
 ;   fit. Often times it is necessary to tweak these by hand until the
-;   starting values are a pretty good match.
+;   starting values are a pretty good match to the data.
 ;
 ;   2) Files preceeded with "amoeba." are the models after the amoeba
 ;   minimization is complete. If this model is not a good fit to the
 ;   data, the fit is likely to fail and you should refine your
-;   starting values, priors, and constraints. At a minimum, the fit
-;   will take longer to converge if this is not a good fit.
+;   starting values, priors, and constraints. At a minimum, the MCMC
+;   is likely to take significantly longer to converge if this is not
+;   a good fit.
 ;
 ;   3) Files preceeded with "mcmc." are the final plots meant for
 ;   publication. They represent the best fit among all links of all
 ;   chains.
 ;
-;   transit.ps - An postscript plot of the best-fit transit model.
+;   transit.ps - A multi-page postscript plot of the transit
+;                model. The first page has each transit (file) stacked
+;                on the same plot, offset by a constant. Subsequent
+;                pages are the detrended, phase-folded transits for
+;                each planet. Note that the model on the phase folded
+;                model may have some fuzz due to different limb
+;                darkening for each model.  
 ;                *** Fairly cursory at the moment, and poorly behaved
 ;                for complex fits ***
-;   rv.ps      - A postscript plot of each planet, phased to its
-;                period with all other planets subtracted (one per
-;                page) and the unphased model and data.
+;   rv.ps      - A multi-page postscript plot of the RV model. The
+;                first page is the unphased model with gamma and any
+;                fitted linear or quadratic terms subtracted from both
+;                the data and model. If more than one instrument is
+;                used, a legend is produced in the corner. Subsequent
+;                pages are each planet, phased to its period, with all
+;                other planets, gamma, and any fitted linear and
+;                quadratic terms subtracted.
 ;   mist.eps   - A plot of the star with its MIST isochrone
 ;                overplotted. The black point is the best-fit value,
 ;                the red point is the corresponding model value. Only
@@ -478,30 +491,43 @@
 ;   sed.eps    - A plot of the broadband photometry and best fit
 ;                SED. Only generated if FLUXFILE is given.
 ; 
-;  The following outputs are intended to allow the user to generate
-;  their own customized plots easily.
+;  We recognize that in many cases, the outputs plots are not
+;  publication quality. The following text outputs are intended to
+;  allow the user to generate their own, more complicated or
+;  customized plots without having to recreate the model or
+;  detrending.
 ;
-;  residuals.telescope_#.txt - A text file containing the residuals to
-;                              the best-fit model RV for telescope
-;                              #. Makes one for each telescope.
-;   model.telescope_#.txt - A text file containing the best-fit model
-;                           (with gamma, slope, and quad subtracted)
-;                           RVs for each time given for telescope
-;                           #. Makes one for each telescope. These are
-;                           intendened for easy generation of user
-;                           plots.
-;   model.transit_[i].txt - The model of the ith transit, detrended
-;                           and normalized to 1.
-;   residuals.transit_[i].txt -The residuals of the ith transit
-;   transit_[i].planet_[j].txt - The model of the ith transit of the
-;                                jth planet minus 1. Sum all
-;                                transit[i].planet_*.txt for the
-;                                combined model. Useful for
-;                                separating overlapping transits.
+;  residuals.telescope_[i].txt --
+;      A text file containing the residuals to the best-fit model RV
+;      for the ith telescope.
+;   model.telescope_[i].txt --
+;      A text file containing the best-fit model (with gamma, slope,
+;      and quad subtracted) RVs for each time given for telescope.
+;      One for each telescope is generated.
+;   model.transit_[i].txt - 
+;      The model of the ith transit at each input data point,
+;      including detrending.
+;   residuals.transit_[i].txt -- 
+;      The residuals of the ith transit file at each data point.
+;   detrendedmodel.transit_[i].planet_[j].txt -- 
+;      The detrended model of the ith transit of the jth planet minus
+;      1 at each input data point. Sum all transit[i].planet_*.txt and add
+;      one for the combined model. Useful for separating overlapping
+;      transits.
+;   prettymodel.transit_[i].planet_[j].txt -- 
+;      Same as detrendedmodel.transit_[i].planet_[j].txt, but sampled
+;      every minute from the first to the last data point. This is
+;      intended to make a pretty model plot if there are gaps in the
+;      data.
 ;
-;   NOTE: To extract a single page out of a multi-page PS file, use:
-;         psselect -p# input.ps output.ps where # is the page number
-;         to extract.
+;   NOTE 1: The detrended data can by derived by adding the residuals
+;      to the detrended model
+
+;   NOTE 2: To extract a single page out of a multi-page PS file, use:
+;
+;         psselect -p# input.ps output.ps 
+;
+;      where # is the page number to extract.
 ;
 ; COMMON BLOCKS:
 ;   CHI2_BLOCK:
