@@ -354,24 +354,24 @@
 ; OPTIONAL KEYWORDS:
 ;   FITSLOPE  - If set, it will fit a linear trend to the RV data.
 ;   FITQUAD   - If set, it will fit a quadratic trend to the RV data.
-;   MIST      - If set, use the MIST evolutionary tracks 
+;   NOMIST    - If set, do not use the MIST evolutionary tracks 
 ;               see http://waps.cfa.harvard.edu/MIST/
 ;               And please cite
 ;               http://adsabs.harvard.edu/abs/2016ApJS..222....8D
 ;               http://adsabs.harvard.edu/abs/2016ApJ...823..102C
 ;               *** Use with caution, not thoroughly tested ***
-;   NOYY      - If set, disable YY evolutionary tracks
-;               see
+;   YY        - If set, use the YY evolutionary tracks see
 ;               http://adsabs.harvard.edu/abs/2001ApJS..136..417Y
 ;               to constrain the mass/radius of the star. YY should
-;               not be used for low-mass stars (~< 0.5 msun).
+;               not be used for low-mass stars (~< 0.5 msun). This
+;               should be accompanied by the NOMIST keyword (but is
+;               not enforced).
 ;   TORRES    - If set, use the Torres relations to constrain the mass
 ;               and radius of the star. This may be useful to
-;               investigate potential systematics and should probably
-;               be accompanied by the NOYY keyword (but is not
-;               enforced). This is not a substitute for YY for low
-;               mass stars; the Torres relations are equally
-;               inapplicable.
+;               investigate potential systematics and should be
+;               accompanied by the NOMIST keyword (but is not
+;               enforced). The Torres relations are not applicable for
+;               low mass (< 0.6 msun) stars.
 ;   NOCLARET  - If set, ignore the Claret & Bloeman limb darkening
 ;               tables and just fit the limb darkening. This should be
 ;               specified for low-mass stars where these tables are
@@ -470,11 +470,11 @@
 ;   mist.eps   - A plot of the star with its MIST isochrone
 ;                overplotted. The black point is the best-fit value,
 ;                the red point is the corresponding model value. Only
-;                generated if the /MIST keyword is set.
+;                generated if the /NOMIST keyword is not set.
 ;   yy.eps     - A plot of the star with its YY isochrone
 ;                overplotted. The black point is the best-fit value,
 ;                the red point is the corresponding model value. Only
-;                generated if the /NOYY keyword is not set.
+;                generated if the /YY keyword is not set.
 ;   sed.eps    - A plot of the broadband photometry and best fit
 ;                SED. Only generated if FLUXFILE is given.
 ; 
@@ -530,7 +530,7 @@ pro exofastv2, priorfile=priorfile, $
                bestonly=bestonly, plotonly=plotonly,refinestar=refinestar,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                maxgr=maxgr, mintz=mintz, $
-               noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+               yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
                earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch
@@ -551,7 +551,7 @@ if numargs eq 1 then begin
                 bestonly=bestonly, plotonly=plotonly, refinestar=refinestar, $
                 longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                 maxgr=maxgr, mintz=mintz, $
-                noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+                yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                 fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
                 ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
                 earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch
@@ -591,7 +591,7 @@ file_delete, logname, /allow_nonexistent
 if nplanets ne 0 and keyword_set(refinestar) then begin
    printandlog, 'Refining stellar parameters'
    ss = mkss(fluxfile=fluxfile,nplanet=0,priorfile=priorfile, $
-             noyy=noyy, torres=torres, mist=mist, logname=logname, debug=stardebug, verbose=verbose)
+             yy=yy, torres=torres, nomist=nomist, logname=logname, debug=stardebug, verbose=verbose)
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
    staronlybest = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
    if staronlybest[0] eq -1 then message, 'best fit for stellar parameters failed'
@@ -604,7 +604,7 @@ ss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, np
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
           rossiter=rossiter,longcadence=longcadence, ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
           fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-          chen=chen, noyy=noyy, torres=torres, mist=mist, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname)
+          chen=chen, yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname)
 
 npars = 0L
 nfit = 0L
@@ -767,7 +767,7 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
               rossiter=rossiter,longcadence=longcadence, ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-              chen=chen,nvalues=nsteps*nchains,/silent,noyy=noyy,torres=torres,mist=mist,noclaret=noclaret,$
+              chen=chen,nvalues=nsteps*nchains,/silent,yy=yy,torres=torres,nomist=nomist,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing, logname=logname, best=best)
 mcmcss.nchains = nchains
 mcmcss.burnndx = burnndx
