@@ -155,7 +155,7 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                nvalues=nvalues, debug=debug, verbose=verbose, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, $
                longcadence=longcadence, ninterp=ninterp, exptime=exptime,$
-               earth=earth, silent=silent, noyy=noyy, torres=torres, mist=mist, $
+               earth=earth, silent=silent, yy=yy, torres=torres, nomist=nomist, $
                noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
                logname=logname, best=best, tides=tides
 
@@ -386,7 +386,7 @@ initfeh.description = 'Initial Metallicity'
 initfeh.latex = '[{\rm Fe/H}]_{0}'
 initfeh.label = 'initfeh'
 initfeh.scale = 0.5d0
-if keyword_set(mist) then begin
+if ~keyword_set(nomist) then begin
    initfeh.fit=1
    initfeh.derive=1
 endif else begin
@@ -490,11 +490,11 @@ age.latex = 'Age'
 age.label = 'age'
 age.cgs = 3600d0*24d0*365.242d0*1d9
 age.derive = 0
-if ~keyword_set(noyy) then begin
+if keyword_set(yy) then begin
    age.fit = 1
    age.derive = 1
 endif
-if keyword_set(mist) then age.derive=1
+if ~keyword_set(nomist) then age.derive=1
 
 age.scale = 3d0
 
@@ -505,7 +505,7 @@ eep.description = 'Equal Evolutionary Point'
 eep.latex = 'EEP'
 eep.label = 'eep'
 eep.scale = 300d0 
-if keyword_set(mist) then begin
+if ~keyword_set(nomist) then begin
    eep.fit = 1
    eep.derive = 1
 endif else begin
@@ -1447,8 +1447,8 @@ ss = create_struct('star',star,$
                    'nband',nband,$
                    'ndt',ndt,$
                    'nplanets',nplanets,$
-                   'mist', keyword_set(mist),$
-                   'yy', ~keyword_set(noyy),$
+                   'mist', ~keyword_set(nomist),$
+                   'yy', keyword_set(yy),$
                    'torres', keyword_set(torres),$
                    'claret', ~keyword_set(noclaret),$
                    'ttvs', keyword_set(ttvs),$
@@ -2013,7 +2013,7 @@ if arg_present(best) then pars2str, best, ss, /best
 if n_elements(ss.star.mstar.value) eq 1 then begin
    ;; derive all step parameters
    if not pars2step(ss) then begin
-      printandlog, 'Warning: YY isochrones are not applicable here; refine priors. Are you fitting a low mass star? Be sure to disable YY isochrones using the /NOYY, disable the limb darkening prior using /NOCLARET, and supply priors on mstar, rstar, and u1 and u2 for each band', logname
+      printandlog, 'Warning: The isochrones are not applicable here; refine your priors.', logname
       stop
    endif
 
