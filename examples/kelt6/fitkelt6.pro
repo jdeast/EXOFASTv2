@@ -10,6 +10,6 @@ exofastv2, nplanets=2, rvpath=path+'KELT-6b.*.rv',tranpath=path+'n20*.dat',$
            prefix=path+'KELT-6.',maxsteps=maxsteps,$
            nthin=nthin,fitrv=[1,1],fittran=[1,0],circular=[0,0], $
            debug=debug,verbose=verbose,$
-           /noyy, /mist,fluxfile='kelt6.sed',/skipstar;,/ttvs,/skipstar
+           fluxfile='kelt6.sed'
 
 end

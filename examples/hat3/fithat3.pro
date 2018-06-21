@@ -10,6 +10,6 @@ exofastv2, nplanets=1, tranpath=path+'n20070428.Sloani.KepCam.dat', $
            rvpath=path+'HAT-3b.*.rv',priorfile=path+'hat3.torres.priors', $
            prefix=path+'HAT-3b.Torres.', maxsteps=maxsteps, $
            nthin=nthin, circular=[1], fitrv=[1],fittran=[1], $
-           debug=debug, verbose=verbose, /noyy, /torres
+           debug=debug, verbose=verbose, /nomist, /torres
 
 end
