@@ -307,12 +307,24 @@ if rvpath ne '' and nrvfit eq 0 then begin
    ntel = 0
 endif
 
+if rvpath eq '' and nrvfit ne 0 then begin
+   printandlog, 'ERROR: a RVPATH was not specified, but RVs were requested to be fit (FITRV != 0).'
+   printandlog, 'Remove FITRV or specify a RVPATH'
+   stop
+endif
+
 ;; was tranpath specified but no planets are fit? (ignore it)
 junk = where(fittran,ntranfit)
 if tranpath ne '' and ntranfit eq 0 then begin
    printandlog, 'WARNING: a TRANPATH was specified, but no transits are fit. Ignoring the supplied transits'
    printandlog, 'Remove TRANPATH or set at least one planet in FITTRAN to 1 to remove this message.'
    ntran = 0
+endif
+
+if tranpath eq '' and ntranfit ne 0 then begin
+   printandlog, 'ERROR: a TRANPATH was not specified, but transits were requested to be fit (FITTRAN != 0).'
+   printandlog, 'Remove FITTRAN or specify a TRANPATH'
+   stop
 endif
 
 ;; each parameter is a structure, as defined here
