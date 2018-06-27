@@ -326,11 +326,22 @@
 ;             fitting a full phase curve. It will be modeled as a
 ;             sinusoid with the orbital period, a minimum at the
 ;             primary transit, and a fitted amplitude (in PPM).
-;  FITDILUTE-   A string array specifying which bands to fit a dilution
-;             term for. Set this if the star is blended with a
+;  FITDILUTE- A string array specifying which bands to fit a dilution
+;             term for. It will fit the fractional contribution from
+;             the companion. Set this if the star is blended with a
 ;             neighbor and you expect color-dependent depth
 ;             variations.
-;             Note: May be degenerate with F0 (transit normalization) 
+;
+;             Note: This is likely to be degenerate with F0 (transit
+;             normalization). You probably need to apply a prior
+;             (DILUTE_#, where # corresponds to the band index) from
+;             some external information to constrain it (e.g., an SED
+;             fit). If you just have the flux ratio, solve this system
+;             of equations for Flux_companion:
+;         
+;             Flux_companion/Flux_primary = 10^(-0.4*(M_primary-M_companion))
+;             Flux_companion + Flux_primary = 1
+;
 ;             Note: this only affects the transit model. It is not
 ;             accounted for in the SED fitting.
 ;             TODO: automatically model dilution based on multiple
@@ -533,11 +544,8 @@
 ;   CHI2_BLOCK:
 ;     SS      - A structure that describes the entire stellar system
 ;
-; EXAMPLES:  
-;   ;; fit EPXXXXXXX, a 4 planet system with only K2 data
-;   exofastv2, nplanets=4, tranpath='ep?????????.Kepler.K2.dat3',fluxfile='ep?????????.flux.txt',$
-;           priorfile='ep?????????.priors',debug=debug, prefix='epXXXXXXXXX.eeee.nopilogg.',$
-;           fittran=[1,1,1,1],fitrv=[0,0,0,0],circular=[0,0,0,0],/longcadence, /earth
+; EXAMPLES:
+;   See the $EXOFAST_PATH/examples directory for several full examples.
 ;
 ; MODIFICATION HISTORY
 ; 
@@ -593,7 +601,7 @@ chi2func = 'exofast_chi2v2'
 ;; compile all routines now to keep output legible 
 ;; resolve_all doesn't interpret execute; it's also broken prior to IDL v6.4(?)
 if double(!version.release) ge 6.4d0 and ~lmgr(/vm) then $
-   resolve_all, resolve_function=[chi2func,'exofast_random'],/cont,/quiet
+   resolve_all, resolve_function=[chi2func,'exofast_random'],skip_routines=['cggreek'],/cont,/quiet
 
 ;; default prefix for all output files (filename without extension)
 if n_elements(prefix) eq 0 then prefix = 'planet.'
