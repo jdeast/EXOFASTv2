@@ -83,8 +83,11 @@ if not keyword_set(a[0,0,0,ndx]) then begin
    if n_elements(method) eq 0 then method = 'L'
    if n_elements(vt) eq 0 then vt = 2L
    
-   filename = getenv('EXOFAST_PATH') + '/quadld/' + model + '.' + method + $
-              '.' + string(vt,format='(i1)') + '.' + bandname + '.linear.sav' 
+
+   filename = filepath(model + '.' + method + '.' + string(vt,format='(i1)') +$
+                       '.' + bandname + '.linear.sav',$
+                       root_dir=getenv('EXOFAST_PATH'),subdir='quadld')
+
    restore, filename
 
    ;; populate the array, only as needed

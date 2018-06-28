@@ -70,9 +70,11 @@ if match[0] eq -1 then begin
 endif
 mstarstr = string(round(mstar*100d0),format='(i05)')
 
-eepfile = getenv('EXOFAST_PATH') + 'mist/MIST_v1.0_tracks/feh_' + fehstr + $
-          '_afe_' + alphastr + '_vvcrit' + vvcritstr + '/eeps/' + $
-          mstarstr + 'M.track.eep.idl'
+eepfile = filepath(mstarstr + 'M.track.eep.idl',$
+                   root_dir=getenv('EXOFAST_PATH'),$
+                   subdir=['mist','MIST_v1.0_tracks','feh_' + fehstr + '_afe_' + alphastr + $
+                           '_vvcrit' + vvcritstr,'eeps'])
+
 restore, eepfile
 return, track
 

@@ -83,9 +83,12 @@ if not keyword_set(a[0,0,0,ndx]) or $
    if n_elements(model) eq 0 then model = 'ATLAS'
    if n_elements(method) eq 0 then method = 'L'
    if n_elements(vt) eq 0 then vt = 2L
+
+
+   filename = filepath(model + '.' + method + '.' + string(vt,format='(i1)') +$
+                       '.' + bandname + '.sav',$
+                       root_dir=getenv('EXOFAST_PATH'),subdir='quadld')
    
-   filename = getenv('EXOFAST_PATH') + '/quadld/' + model + '.' + method + $
-              '.' + string(vt,format='(i1)') + '.' + bandname + '.sav' 
    restore, filename
 
    ;; populate the array, only as needed

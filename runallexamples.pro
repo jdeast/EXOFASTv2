@@ -14,7 +14,13 @@ fithd106315, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitkelt6, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fithat3_comparestar, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 
-spawn, 'idl -arg $EXOFAST_PATH/examples/hat3_nolicense/hat3.args -vm=$EXOFAST_PATH/exofastv2.sav'
+argfile = filepath('hat3.args',$
+                   root_dir=getenv('EXOFAST_PATH'),$
+                   subdir=['examples','hat3_nolicense'])
+vmfile = filepath('exofastv2.sav',$
+                   root_dir=getenv('EXOFAST_PATH'))
+
+spawn, 'idl -arg ' + argfile + ' -vm=' + vmfile
 
 stop
 end
