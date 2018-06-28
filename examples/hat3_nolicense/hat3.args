@@ -1,5 +1,5 @@
 priorfile=$EXOFAST_PATH/examples/hat3_nolicense/hat3.priors
-prefix=$EXOFAST_PATH/examples/hat3_nolicense/HAT-P-3b.
+prefix=$EXOFAST_PATH/examples/hat3_nolicense/fitresults/HAT-P-3b.
 tranpath=$EXOFAST_PATH/examples/hat3_nolicense/n20070428.Sloani.KepCam.dat
 rvpath=$EXOFAST_PATH/examples/hat3_nolicense/hat3.rv
 nplanets=1

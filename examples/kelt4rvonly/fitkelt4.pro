@@ -7,7 +7,7 @@ path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','kelt4rvon
 
 exofastv2, nplanets=1, rvpath=path+'KELT-4b.*.rv',$
            priorfile=path+'kelt4.priors',$
-           prefix=path+'KELT-4.MIST.',maxsteps=maxsteps,$
+           prefix=path+'fitresults' + path_sep()+'KELT-4.MIST.',maxsteps=maxsteps,$
            nthin=nthin,fitrv=[1],circular=[0], $
            debug=debug,verbose=verbose
 

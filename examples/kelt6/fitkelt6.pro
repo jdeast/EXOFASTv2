@@ -7,7 +7,7 @@ path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','kelt6'])
 
 exofastv2, nplanets=2, rvpath=path+'KELT-6b.*.rv',tranpath=path+'n20*.dat',$
            priorfile=path+'kelt6.priors',$
-           prefix=path+'KELT-6.',maxsteps=maxsteps,$
+           prefix=path+'fitresults' + path_sep()+'KELT-6.',maxsteps=maxsteps,$
            nthin=nthin,fitrv=[1,1],fittran=[1,0],circular=[0,0], $
            debug=debug,verbose=verbose,$
            fluxfile='kelt6.sed'
