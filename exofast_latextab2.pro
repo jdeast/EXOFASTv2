@@ -216,7 +216,7 @@ printf, lun, '\enddata'
 if n_elements(label) ne 0 then printf, lun, '\label{' + label + '}'
 printf, lun, '\end{deluxetable*}'
 printf, lun, '\end{document}'
-printf, lun, ''
+truncate_lun, lun
 
 if n_elements(texfile) ne 0 then free_lun, lun
 
