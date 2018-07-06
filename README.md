@@ -66,21 +66,22 @@ correctly. From a terminal, type "echo $IDL_PATH" (it should include
 EXOFASTv2) and "echo $EXOFAST_PATH" (it should point to your
 installation) to check.
 
-2) You have missing dependencies (e.g., IDL astronomy library)
+2) You have missing dependencies (e.g., IDL astronomy library, coyote
+library)
 
 3) You have programs with the same name with a higher precedence in
 your IDL path. Renaming or moving your version will fix it, but please
 send me an email if the conflicting code is a library routine. I will
 rename the EXOFASTv2 version to avoid conflicts with others.
 
-4) You have an old version of IDL. EXOFASTv2 has been built and tested
-on linux with IDL 8.5. I am not aware of any incompatibility for any
-platform (Windows, Mac, Linux) other versions newer than 8.0 (please
-report it if you find any). I currently use empty arrays and negative
-indices, which is not supported for versions older than IDL v8.0. I
-plan to remove those dependencies to support older versions. If you
-can't run EXOFASTv2 because your version is too old, please send me an
-email to help me gauge user interest.
+4) You have an older version of IDL. EXOFASTv2 has been built and
+tested on linux with IDL 8.5. I am not aware of any incompatibility
+for any platform (Windows, Mac, Linux) other versions newer than 8.0
+(please report it if you find any). I currently use empty arrays and
+negative indices, which is not supported for versions older than IDL
+v8.0. I plan to remove those dependencies to support older
+versions. If you can't run EXOFASTv2 because your IDL version is too
+old, please send me an email to help me gauge user interest.
 
 Note 1: The latest IDL version can be installed for free and EXOFASTv2
 can be run within a virtual machine without a license.
@@ -88,13 +89,14 @@ can be run within a virtual machine without a license.
 Note 2: This code relies heavily on pointers and structures, so
 versions older than IDL 5.0 will never be supported.
 
-Note 3: EXOFASTv2 has been tried with GDL and does not work. If you're
-interested in making it work with GDL, please contact me.
+Note 3: EXOFASTv2 has been tried with GDL and does not work. Others
+have gotten close. If you're interested in making it work with GDL,
+please contact me.
 
 5) I have introduced a bug. Even if your problem is not a bug, if
-you've read the documentation, given it serious thought, and still
-can't figure it out, it's probably at least a failure in
-documentation. Send me an email.
+you've read the documentation, given it some thought, and still can't
+figure it out, it's probably at least a failure in documentation. Send
+me an email.
 
 # Tips, Warnings and Caveats #
 
