@@ -1,29 +1,26 @@
 # see $EXOFAST_PATH/parnames.README for a detailed description of each prior
 # Stellar parameter priors from spectra
 teff 4270 100
-feh -0.5 0.1 # with /NOYY and /NOCLARET set, this has no impact on the fit
+feh -0.5 0.1 # with /NOMIST and /NOCLARET set, this has no impact on the fit
 # because the star is low-mass, YY and Torres are questionable in this regime. 
 # Use direct priors on stellar mass and radius instead
 rstar 0.63 0.03
 mstar 0.61 0.03
 ### planet b
-period_0 1.2091286586
+period_0 1.2089819
 tc_0 2905.82592066402
-p_0 0.0228271753
-cosi_0 0.0067155520
-logk_0 0.3426109897
+p_0 0.02383
+cosi_0 0.035
 ### planet c
-period_1 3.6478461600
-tc_1 2909.5366997702
-p_1 0.0181367982
-cosi_1 0.0102336221
-logk_1 0.1902990074
+period_1 3.648086
+tc_1 2909.19940
+p_1 0.01872
+cosi_1 0.0127
 ### planet d
-period_2 6.2014874593
-tc_2 2913.1576205934
-p_2 0.0313209490
-cosi_2 0.0402051748
-logk_2 0.1823705529
+period_2 6.201472
+tc_2 2907.96107
+p_2 0.03017
+cosi_2 0.03975
 # limb darkening tables from Claret are questionable in this regime. 
 # Impose a generous uniform prior (based on Claret tables)
 u1 0.44 -1 0.34 0.54
@@ -32,6 +29,5 @@ u2 0.26	-1 0.16 0.36
 # upper limit on Extinction from Schelgel, Finkbeiner & Davis 
 # http://irsa.ipac.caltech.edu/applications/DUST/
 av 0.0 -1 0.0 0.0548
-# Hippoarcos Parallax
-parallax 32.98 1.76
-
+parallax 32.98 1.76 # Hipparcos Parallax
+#parallax 33.685488891437814 0.1 #0.06113433991768969 Gaia DR2
