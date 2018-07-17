@@ -4,7 +4,8 @@ feh -0.277 0.04
 mstar 1.085
 rstar 1.580
 av 0 -1 0 0.0077
-parallax 4.0884 0.2725
+#parallax 4.0884 0.2725
+parallax 4.125500429720086 0.1 #0.03375984809818444 # Gaia DR2
 gamma_0 1139.0366 # HARPS
 gamma_1 4.00035 # HIRES
 gamma_2 28.0579  # TRES
@@ -22,30 +23,36 @@ e_c 0.2002
 omegadeg_c -105.23
 # these were refined with individual fits and iterative fitting
 # getting these close helps converge faster
-#MOCDK UT 2013-02-24 (g)
-f0_0 0.97989990 # baseline (this had to be tweaked by hand first, guess and check with /DEBUG)
-c0_0 -9.2407779e-06 # sky (?)
-m0_0 -0.0399215370 # merdian (this had to be tweaked by hand first, guess and check with /DEBUG)
-m1_0 -0.0055246158 # airmass
-#SPOT UT 2013-02-24 (i')
-f0_1 1.0028592
-m0_1 -0.0047120097  
-m1_1 -0.0024912521
-#MORC UT 2013-02-24 (r')
-f0_2 1.0005227
-c0_2 0.00015048996
-m0_2 -0.00083963375
-#MORC UT 2013-04-20 (r')
-f0_3 0.99976747
-m0_3 -0.00015985166
-#SPOT UT 2013-04-20 (z')
-f0_4 0.99912164
-c0_4 -0.00081384436     
-c1_4 0.016210208
+# MOCDK UT 2013-02-24 (g')
+variance_0 0.00000122
+f0_0 0.97992034 # baseline (this had to be tweaked by hand first, guess and check with /DEBUG)
+C0_0 -0.0021799048
+M0_0 -0.049262593 # merdian (this had to be tweaked by hand first, guess and check with /DEBUG)
+M1_0 -0.0070188565 # airmass
+# SPOT UT 2013-02-24 (i')
+variance_1 0.00000208
+f0_1 1.00286738
+M0_1 -0.0052012543
+M1_1 -0.0024875780
+# MORC UT 2013-02-24 (r')
+variance_2 5.6485907e-07
+f0_2 1.00048504
+C0_2 0.00036411
+M0_2 -0.00028655618
+# MORC UT 2013-04-20 (r')
+variance_3 0.00000104
+f0_3 0.99988496
+M0_3 0.00007336
+# SPOT UT 2013-04-20 (z')
+variance_4 0.00000103
+f0_4 0.99872679
+C0_4 0.00039514
+C1_4 0.00267707
 # MORC UT 2014-02-12 (r')
-f0_5 1.0012705
-m0_5 0.0033831146
+variance_5 0.00000151
+f0_5 1.00034230
+M0_5 0.00081227
 # ULMT UT 2015-05-29 (g')
-f0_6 1.0005919
-m0_6 -0.00823474
-
+variance_6 0.00000141
+f0_6 1.00061556
+M0_6 -0.0045348525

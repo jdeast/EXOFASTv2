@@ -565,7 +565,7 @@ pro exofastv2, priorfile=priorfile, $
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                maxgr=maxgr, mintz=mintz, $
                yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-               fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
+               fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
                earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch
 
@@ -586,7 +586,7 @@ if numargs eq 1 then begin
                 longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                 maxgr=maxgr, mintz=mintz, $
                 yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-                fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
+                fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
                 ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
                 earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch
    endif
@@ -619,21 +619,28 @@ endif
 logname = prefix + 'log'
 file_delete, logname, /allow_nonexistent
 
+;; insert the commit id into the log
+spawn, 'git -C $EXOFAST_PATH rev-parse HEAD', output, stderr
+if stderr[0] eq '' then printandlog, "Using EXOFASTv2 commit " + output[0], logname
+
 ;; refine the stellar starting values based on the priors and SED (if supplied)
 ;; this can be really useful if you don't know the rough stellar
 ;; parameters, especially for the MIST models, but is a waste of time if you do
 if nplanets ne 0 and keyword_set(refinestar) then begin
-   printandlog, 'Refining stellar parameters'
+   printandlog, 'Refining stellar parameters', logname
    ss = mkss(fluxfile=fluxfile,nplanet=0,priorfile=priorfile, $
              yy=yy, torres=torres, nomist=nomist, logname=logname, debug=stardebug, verbose=verbose)
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
    staronlybest = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
-   if staronlybest[0] eq -1 then message, 'best fit for stellar parameters failed'
+   if staronlybest[0] eq -1 then begin
+      printandlog, 'best fit for stellar parameters failed', logname
+      stop
+   endif
 endif
 
 ;; create the master structure
 ss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
-          debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
+          debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,$
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
           rossiter=rossiter,longcadence=longcadence, ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
@@ -796,7 +803,7 @@ bestchi2 = call_function(chi2func,best,psname=modelfile, $
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
 mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
-              debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,$
+              debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
               circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
               rossiter=rossiter,longcadence=longcadence, ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
@@ -816,9 +823,13 @@ derivepars, mcmcss
 idlfile = prefix + 'mcmc.idl'
 save, mcmcss, filename=idlfile
 
+spawn, 'git -C $EXOFAST_PATH rev-parse --short HEAD', output, stderr
+if output[0] ne '' then versiontxt = ", created using EXOFASTv2 commit number " + output[0] $
+else versiontxt = ''
+
 ;; output filenames
 label = "tab:" + basename
-caption = "Median values and 68\% confidence interval for " + basename
+caption = "Median values and 68\% confidence interval for " + basename + versiontxt
 parfile = prefix + 'pdf.ps'
 covarfile = prefix + 'covar.ps'
 chainfile = prefix + 'chain.ps'

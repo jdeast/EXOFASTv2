@@ -17,7 +17,10 @@ ss.star.logg.value = alog10(ss.constants.gravitysun*ss.star.mstar.value/(ss.star
 ;; derive the distance from lstar
 ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*sigmaB    ;; L_sun
 ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
-;ss.star.fbol.value = (ss.star.lstar.value/ss.constants.lsun)/(4d0*!dpi*ss.star.distance.value/ss.constants.pc) ;; cgs
+;ss.star.fbol.value = (ss.star.lstar.value/ss.constants.lsun)/(4d0*!dpi*(ss.star.distance.value/ss.constants.pc)^2) ;; cgs
+
+;print, 'derived: ' + strtrim(ss.star.fbol.value,2)
+;stop
 
 for j=0, ss.ntel-1 do begin
    if ss.telescope[j].jittervar.value gt 0 then $
@@ -26,7 +29,8 @@ endfor
 
 for i=0, ss.nplanets-1 do begin
 
-   ss.planet[i].k.value = 10^ss.planet[i].logk.value
+   ;; derive K if logK is fit
+   if ss.planet[i].logk.fit then ss.planet[i].k.value = 10^ss.planet[i].logk.value
    ss.planet[i].i.value = acos(ss.planet[i].cosi.value)
    ss.planet[i].period.value = 10^ss.planet[i].logp.value
 
@@ -83,7 +87,7 @@ for i=0, ss.nplanets-1 do begin
       ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2
       ss.planet[i].omega.value = atan(ss.planet[i].qesinw.value,ss.planet[i].qecosw.value)
    endif
-      
+
 ;   ;; derive quantities we'll use later
 ;   if ss.planet[i].qecosw.fit then begin
 ;      ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2 

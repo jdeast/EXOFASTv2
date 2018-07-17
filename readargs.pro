@@ -12,7 +12,7 @@ pro readargs, argfile, priorfile=priorfile, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               maxgr=maxgr, mintz=mintz, $
               yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-              fitrv=fitrv, fittran=fittran,fitdt=fitdt,$
+              fitrv=fitrv, fittran=fittran,fitdt=fitdt,lineark=lineark,$
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
               earth=earth, i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
 
@@ -104,6 +104,8 @@ while not eof(lun) do begin
             fittran = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITDT' then begin
             fitdt = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'LINEARK' then begin
+            lineark = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'TTVS' then begin
             ttvs = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'TIVS' then begin

@@ -17,6 +17,9 @@ This package is best installed with git
   cd $HOME/idl
   git clone https://github.com/jdeast/EXOFASTv2.git
 
+NOTE: EXOFASTv2 logs the version number used for each fit if installed
+with git and git can be invoked via "git".
+
 define environment variables (bash shell, e.g., .bashrc)
 
   EXOFAST_PATH="$HOME/idl/EXOFASTv2/" ; export EXOFAST_PATH

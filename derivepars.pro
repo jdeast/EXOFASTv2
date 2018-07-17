@@ -4,7 +4,7 @@ ss.star.mstar.value = 10^ss.star.logmstar.value
 ss.star.rhostar.value = ss.star.mstar.value/(ss.star.rstar.value^3)*ss.constants.rhosun ;; rho_sun
 ss.star.logg.value = alog10(ss.star.mstar.value/(ss.star.rstar.value^2)*ss.constants.gravitysun) ;; cgs
 ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
-;ss.star.fbol.value = (ss.star.lstar.value/ss.constants.lsun)/(4d0*!dpi*ss.star.distance.value/ss.constants.pc) ;; cgs
+;ss.star.fbol.value = (ss.star.lstar.value/ss.constants.lsun)/(4d0*!dpi*(ss.star.distance.value/ss.constants.pc)^2) ;; cgs
 
 ;; derive the age
 if ss.mist and not ss.star.age.fit then begin
@@ -92,25 +92,36 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].qesinw.value = (ss.planet[i].e.value)^0.25d0*sin(ss.planet[i].omega.value)
    ss.planet[i].qecosw.value = (ss.planet[i].e.value)^0.25d0*cos(ss.planet[i].omega.value)
 
-   ss.planet[i].k.value = 10^ss.planet[i].logk.value
    ss.planet[i].i.value = acos(ss.planet[i].cosi.value)
    ss.planet[i].ideg.value = ss.planet[i].i.value*180d0/!dpi
    sini = sin(ss.planet[i].i.value)
 
    ss.planet[i].period.value = 10^ss.planet[i].logp.value
    
-   zero = where(ss.planet[i].logk.value le -6d0,complement=positive)
+   if ss.planet[i].logk.fit then ss.planet[i].k.value = 10^ss.planet[i].logk.value $
+   else ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
+
+   zero = where(ss.planet[i].k.value eq 0d0)
    if zero[0] ne -1 then begin
       ss.planet[i].mpsun.value[zero] = 0d0
-      ss.planet[i].k.value[zero] = 0d0
    endif
 
+   positive = where(ss.planet[i].k.value gt 0)
    if positive[0] ne -1 then $
       ss.planet[i].mpsun.value[positive] =  ktom2(ss.planet[i].K.value[positive],$
                                                   ss.planet[i].e.value[positive],$
                                                   ss.planet[i].i.value[positive],$
                                                   ss.planet[i].period.value[positive],$
                                                   ss.star.mstar.value[positive], GMsun=ss.constants.GMsun/1d6) ;; convert G to SI
+
+   ;; guard against the Lucy-Sweeney type bias by allowing negative K/masses
+   negative = where(ss.planet[i].k.value lt 0)
+   if negative[0] ne -1 then $
+      ss.planet[i].mpsun.value[negative] =  -ktom2(-ss.planet[i].K.value[negative],$
+                                                   ss.planet[i].e.value[negative],$
+                                                   ss.planet[i].i.value[negative],$
+                                                   ss.planet[i].period.value[negative],$
+                                                   ss.star.mstar.value[negative], GMsun=ss.constants.GMsun/1d6) ;; convert G to SI
 
    ss.planet[i].mp.value = ss.planet[i].mpsun.value/ss.constants.GMJupiter*ss.constants.GMSun    ;; m_jupiter
    ss.planet[i].msini.value = ss.planet[i].mp.value*sini                                         ;; m_jupiter

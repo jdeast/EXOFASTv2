@@ -154,6 +154,7 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                nvalues=nvalues, debug=debug, verbose=verbose, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, $
+               lineark=lineark,$
                longcadence=longcadence, ninterp=ninterp, exptime=exptime,$
                earth=earth, silent=silent, yy=yy, torres=torres, nomist=nomist, $
                noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
@@ -186,6 +187,10 @@ if n_elements(rossiter) ne nplanets and n_elements(rossiter) gt 1 then begin
 endif
 if n_elements(fitdt) ne nplanets and n_elements(fitdt) gt 1 then begin
    printandlog, "FITDT must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   stop
+endif
+if n_elements(lineark) ne nplanets and n_elements(lineark) gt 1 then begin
+   printandlog, "LINEARK must have 1 or NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    stop
 endif
 
@@ -278,6 +283,9 @@ if n_elements(fitrv) eq 0 then begin
    if ntel eq 0 then fitrv = bytarr(nplanets>1) $
    else fitrv = bytarr(nplanets>1)+1B
 endif
+
+if n_elements(lineark) eq 0 then lineark = bytarr(nplanets>1)
+
 
 if n_elements(chen) ne nplanets or nplanets eq 0 then chen = fittran xor fitrv
 if n_elements(i180) ne nplanets or nplanets eq 0 then i180 = bytarr(nplanets>1)
@@ -456,8 +464,8 @@ parallax.derive = 0
 
 gamma = parameter
 gamma.unit = 'm/s'
-gamma.description = 'Instrumental offset'
-gamma.latex = '\gamma'
+gamma.description = 'Relative RV Offset'
+gamma.latex = '\gamma_{\rm rel}'
 gamma.label = 'gamma'
 gamma.cgs = 100d0
 if ntel gt 0 and nplanets gt 0 then gamma.fit=1 $
@@ -532,12 +540,12 @@ lstar.latex = 'L_*'
 lstar.label = 'lstar'
 lstar.cgs = 3600d0*24d0*365.242d0*1d9
 
-;fbol = parameter
-;fbol.unit = 'cgs'
-;fbol.description = 'Bolometric Flux'
-;fbol.latex = 'F_{Bol}'
-;fbol.label = 'fbol'
-;fbol.cgs = 1d0
+fbol = parameter
+fbol.unit = 'cgs'
+fbol.description = 'Bolometric Flux'
+fbol.latex = 'F_{Bol}'
+fbol.label = 'fbol'
+fbol.cgs = 1d0
 
 rhostar = parameter
 rhostar.unit = 'cgs'
@@ -1603,6 +1611,10 @@ for i=0, nplanets-1 do begin
 
    if i180[i] then ss.planet[i].i180 = 1
 
+   if lineark[i] then begin
+      ss.planet[i].logk.fit = 0
+      ss.planet[i].k.fit = 1
+   endif
 
 endfor
 
@@ -1675,7 +1687,7 @@ if ntran gt 0 then begin
          if match[0] ne -1 then ninterp[match] = 10
       endelse
    endif else begin
-      printandlog, 'NINTERP and EXPTIME must be unspecified, a byte, or an NTRANSITS (' + strtrim(ntran,2) + ') byte array', logname
+      printandlog, 'NINTERP and EXPTIME must be unspecified or an NTRANSITS (' + strtrim(ntran,2) + ') array', logname
       stop
    endelse
 

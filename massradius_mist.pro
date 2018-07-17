@@ -247,6 +247,8 @@ percenterror = 0.03d0 -0.025d0*alog10(mstar) + 0.045d0*alog10(mstar)^2
 
 chi2 = ((mistrstar - rstar)/(percenterror*mistrstar))^2
 chi2 += ((mistteff - teff)/(percenterror*mistteff))^2
+;chi2 += ((mistteff - teff)/100d0^2)
+
 if keyword_set(fitage) then chi2 += ((mistage - age)/(percenterror*mistage))^2
 chi2 += ((mistfeh - feh)/(percenterror))^2
 

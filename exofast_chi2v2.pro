@@ -122,7 +122,7 @@ endif
 ;; conservative upper limit corresponds to ~thousand solar masses
 bad = where((ss.planet.logk.value lt -6d0 or ss.planet.logk.value gt 6d0) and ss.planet.logk.fit, nbad)
 if nbad gt 0 then begin
-   if ss.debug then printandlog, 'k is bad (' + strtrim(bad,2) + ')', ss.logname
+   if ss.debug then printandlog, 'logK is bad (' + strtrim(bad,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
@@ -440,9 +440,6 @@ for j=0, ss.ntran-1 do begin
                         e=ss.planet.e.value,omega=ss.planet.omega.value,$
                         q=ss.star.mstar.value/ss.planet.mpsun.value,$
                         x1=x1,y1=y1,z1=z1)
-   x1 = reform(x1,npoints,ninterp)
-   y1 = reform(y1,npoints,ninterp)
-   z1 = reform(z1,npoints,ninterp)
 
    for i=0, ss.nplanets-1 do begin
       if ss.planet[i].fittran then begin

@@ -42,7 +42,9 @@ extinct1 = exp(-taul1)
 
 flux = lamflam1*extinct1
 
-;fbol= total(flux)
+;fbol= total(flux)*(w1[1]-w1[0])
+;print, 'sed derived: ' + strtrim(fbol,2)
+;stop
 
 f=fltarr(n)
 for i=0,n-1 do begin

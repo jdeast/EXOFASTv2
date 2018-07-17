@@ -125,7 +125,7 @@ for j=0, ss.ntran-1 do begin
    band = ss.band[ss.transit[j].bandndx]
    
    minbjd = min(trandata.bjd,max=maxbjd)
-   minbjd -= 0.25 & maxbjd += 0.25d0
+   minbjd -= 0.25d0 & maxbjd += 0.25d0
    npretty = ceil((maxbjd-minbjd)*1440d0) ;; 1 per minute
    npoints = n_elements(trandata.bjd)
 
@@ -155,11 +155,8 @@ for j=0, ss.ntran-1 do begin
                         e=ss.planet.e.value,omega=ss.planet.omega.value,$
                         q=ss.star.mstar.value/ss.planet.mpsun.value,$
                         x1=x1pretty,y1=y1pretty,z1=z1pretty)
-   x1pretty = reform(x1pretty,npretty,ninterp)
-   y1pretty = reform(y1pretty,npretty,ninterp)
-   z1pretty = reform(z1pretty,npretty,ninterp)
 
-   ;; get the motion of the star due to the planet
+   ;; get the motion of the star due to the planets
    junk = exofast_getb2(transitbjd,inc=ss.planet.i.value,a=ss.planet.ar.value,$
                         tperiastron=ss.planet.tp.value,$
                         period=ss.planet.period.value,$
@@ -194,7 +191,7 @@ for j=0, ss.ntran-1 do begin
                                        c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0) 
          prettytmpflux = reform(prettytmpflux,npretty,ninterp)
          prettyflux += prettytmpflux
-         
+
          ;; calculate the model for this planet for each data point
          tmpflux = (exofast_tran(transitbjd, $
                                  ss.planet[i].i.value + ss.transit[j].tiv.value, $
@@ -219,11 +216,11 @@ for j=0, ss.ntran-1 do begin
          modelflux += tmpflux
 
          if ninterp gt 1 then begin
-            exofast_forprint, prettytmptime, total(prettytmpflux,2)/ninterp, format='(f0.8,x,f0.6)', textout=base + '.prettymodel.transit_' + strtrim(j,2) + '.planet_' + strtrim(i,2) + '.txt', /nocomment,/silent
-            exofast_forprint, trandata.bjd, total(tmpflux,2)/ninterp, format='(f0.8,x,f0.6)', textout=base + '.detrendedmodel.transit_' + strtrim(j,2) + '.planet_' + strtrim(i,2) + '.txt', /nocomment,/silent
+            exofast_forprint, prettytmptime, total(prettytmpflux,2)/ninterp, format='(f0.10,x,f0.10)', textout=base + '.prettymodel.transit_' + strtrim(j,2) + '.planet_' + strtrim(i,2) + '.txt', /nocomment,/silent
+            exofast_forprint, trandata.bjd, total(tmpflux,2)/ninterp, format='(f0.10,x,f0.10)', textout=base + '.detrendedmodel.transit_' + strtrim(j,2) + '.planet_' + strtrim(i,2) + '.txt', /nocomment,/silent
          endif else begin
-            exofast_forprint, prettytime, prettytmpflux, format='(f0.8,x,f0.6)', textout=base + '.prettymodel.transit_' + strtrim(j,2) + '.planet_' + strtrim(i,2) + '.txt', /nocomment,/silent
-            exofast_forprint, transitbjd, tmpflux, format='(f0.8,x,f0.6)', textout=base + '.detrendedmodel.transit_' + strtrim(j,2) + '.planet_' + strtrim(i,2) + '.txt', /nocomment,/silent
+            exofast_forprint, prettytime, prettytmpflux, format='(f0.10,x,f0.10)', textout=base + '.prettymodel.transit_' + strtrim(j,2) + '.planet_' + strtrim(i,2) + '.txt', /nocomment,/silent
+            exofast_forprint, transitbjd, tmpflux, format='(f0.10,x,f0.10)', textout=base + '.detrendedmodel.transit_' + strtrim(j,2) + '.planet_' + strtrim(i,2) + '.txt', /nocomment,/silent
          endelse
          
          minepoch = floor((minbjd-ss.planet[i].tc.value)/ss.planet[i].period.value)
@@ -232,6 +229,8 @@ for j=0, ss.ntran-1 do begin
          tcs = ss.planet[i].tc.value + epochs*ss.planet[i].period.value
          ;xyouts, tcs-t0, epochs*0d0+(ymax+1d0)/2d0, ss.planet[i].label, align=0.5d0
          
+;stop
+
       endif
    endfor
 
@@ -283,17 +282,23 @@ for i=0L, ss.nplanets-1 do begin
       ymax = 1d0 + 3*maxnoise ;+ spacing*((ss.ntran-1d0)>0)
 
       ;; read in the detrended models from above
+      prettyfiles = file_search(base + '.prettymodel.transit_*.planet_' + strtrim(i,2) + '.txt',count=nfiles)
       files = file_search(base + '.detrendedmodel.transit_*.planet_' + strtrim(i,2) + '.txt',count=nfiles)
       for j=0, nfiles-1 do begin
          readcol, files[j], thistime, thisflux, format='d,d', /silent
+         readcol, prettyfiles[j], thisprettytime, thisprettyflux, format='d,d', /silent
          if j eq 0 then begin
             time = thistime
             modelflux = thisflux+1d0
             residuals = (*(ss.transit[j].transitptrs)).residuals
+            prettytime = thisprettytime
+            prettymodelflux = thisprettyflux+1d0
          endif else begin
             time = [time,thistime]
             modelflux = [modelflux,thisflux+1d0]
             residuals = [residuals,(*(ss.transit[j].transitptrs)).residuals]
+            prettytime = [prettytime,thisprettytime]
+            prettymodelflux = [prettymodelflux,thisprettyflux+1d0]
          endelse
       endfor
       
@@ -305,11 +310,18 @@ for i=0L, ss.nplanets-1 do begin
       toolow = where(phasetime lt (-ss.planet[i].period.value/2d0*24d0))
       if toolow[0] ne -1 then phasetime[toolow] += ss.planet[i].period.value*24d0
       sorted = sort(phasetime)
-      
+
+      prettyphasetime = ((prettytime - ss.planet[i].tc.value) mod ss.planet[i].period.value)*24d0
+      toohigh = where(prettyphasetime gt (ss.planet[i].period.value/2d0*24d0))
+      if toohigh[0] ne -1 then prettyphasetime[toohigh] -= ss.planet[i].period.value*24d0
+      toolow = where(prettyphasetime lt (-ss.planet[i].period.value/2d0*24d0))
+      if toolow[0] ne -1 then prettyphasetime[toolow] += ss.planet[i].period.value*24d0
+      prettysorted = sort(prettyphasetime)
+
       sini = sin(acos(ss.planet[i].cosi.value))
       esinw = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
       bp = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+esinw)
-      t14 = (ss.planet[i].period.value/!dpi*asin(sqrt((1d0+ss.planet[i].p.value)^2 - bp^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+esinw))*24d0
+      t14 = ((ss.planet[i].period.value/!dpi*asin(sqrt((1d0+ss.planet[i].p.value)^2 - bp^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+esinw))*24d0) > (29.425d0/60d0)
 
       ;; plot the shell, phased model, and phased data
       ;; this plot may have some wiggles in it because of the
@@ -318,7 +330,9 @@ for i=0L, ss.nplanets-1 do begin
             ytitle='!3Normalized flux',yrange=[ymin,ymax],xrange=[-t14,t14],$
             xtitle='!3Time - Tc (Hrs)';,title=ss.planet[i].label
       oplot, phasetime, residuals + modelflux, psym=8, symsize=symsize
-      oplot, phasetime[sorted], modelflux[sorted], thick=2, color=red, linestyle=0
+      oplot, prettyphasetime[prettysorted], prettymodelflux[prettysorted], thick=2, color=red, linestyle=0
+
+;      stop
 
    endif
 endfor

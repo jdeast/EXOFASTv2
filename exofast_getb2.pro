@@ -5,8 +5,8 @@
 ; PURPOSE: 
 ;   This function returns the impact parameter as a function of BJD
 ;   given orbital elements of many planets, assuming keplerian orbits.
-;   Optionally, the 3-space barycentric coordinates of the planets
-;   (x1,y1,z1) and star (x2,y2,z2) or the stellar coordinates of the
+;   Optionally, the 3-space barycentric coordinates of the star
+;   (x1,y1,z1) and planets (x2,y2,z2) or the stellar coordinates of the
 ;   planets (x0,y0,z0) can be returned.
 ; 
 ; CALLING SEQUENCE:
@@ -55,26 +55,40 @@
 ; MODIFICATION HISTORY 
 ;  2009/05/01 -- Jason Eastman (Ohio State University)
 ;  2017/04/12 -- Add optional mass ratio keyword
+;  2018/07/06 -- Now properly handles 2D time array (for long cadence)
 ;-
 
 function exofast_getb2, bjd, inc=inc, a=a, tperiastron=tperiastron, Period=P, $
                        e=e, omega=omega, x0=x0, y0=y0, z0=z0, x1=x1,y1=y1,z1=z1,x2=x2,y2=y2,z2=z2,$
                        lonascnode=lonascnode, q=q
 
+sz = size(bjd)
+if sz[0] eq 1 then begin
+   ntimes = sz[1]
+   ninterp = 1
+endif else if sz[0] eq 2 then begin
+   ;; long cadence extra sampling
+   ninterp = sz[2]
+   ntimes = sz[1]
+endif else message, 'Incompatible dimensions on BJD'
+
 nplanets = n_elements(inc)
-ntimes = n_elements(bjd)
 
 if n_elements(q) ne nplanets then q = dblarr(nplanets) + !values.d_infinity
 if n_elements(e) ne nplanets then e = dblarr(nplanets)
 if n_elements(omega) ne nplanets then omega = dblarr(nplanets) + !dpi/2d0
 
-x1 = dblarr(ntimes)
-y1 = dblarr(ntimes)
-z1 = dblarr(ntimes)
+x1 = dblarr(ntimes,ninterp)
+y1 = dblarr(ntimes,ninterp)
+z1 = dblarr(ntimes,ninterp)
 
-x2 = dblarr(nplanets,ntimes)
-y2 = dblarr(nplanets,ntimes)
-z2 = dblarr(nplanets,ntimes)
+x2 = dblarr(nplanets,ntimes,ninterp)
+y2 = dblarr(nplanets,ntimes,ninterp)
+z2 = dblarr(nplanets,ntimes,ninterp)
+
+x0 = dblarr(nplanets,ntimes,ninterp)
+y0 = dblarr(nplanets,ntimes,ninterp)
+z0 = dblarr(nplanets,ntimes,ninterp)
 
 isinfinite = where(~finite(q),complement=isfinite)
 a2 = a*0d0
@@ -107,15 +121,15 @@ for i=0L, nplanets-1L do begin
    r2 = a2[i]*(1d0-e[i]^2)/(1d0+e[i]*cos(trueanom))
 
    ;; as seen from observer
-   x2[i,*] = -r2*cos(trueanom + omega[i])
+   x2[i,*,*] = -r2*cos(trueanom + omega[i])
    tmp = r2*sin(trueanom + omega[i])
-   y2[i,*] =  -tmp*cos(inc[i])
-   z2[i,*] =  tmp*sin(inc[i])
+   y2[i,*,*] =  -tmp*cos(inc[i])
+   z2[i,*,*] =  tmp*sin(inc[i])
 
    ;; Rotate by the Longitude of Ascending Node
    ;; For transits, it is not constrained, so we assume Omega=!dpi)
    if n_elements(lonascnode) eq nplanets then begin
-      xold = x2[i,*] & yold = y2[i,*]
+      xold = x2[i,*,*] & yold = y2[i,*,*]
       x2[i,*] = -xold*cos(lonascnode[i]) + yold*sin(lonascnode[i])
       y2[i,*] = -xold*sin(lonascnode[i]) - yold*cos(lonascnode[i])
    endif
@@ -126,8 +140,8 @@ for i=0L, nplanets-1L do begin
    ;; rotate to observer's plane of reference
    x1tmp = -r1*cos(trueanom + omega[i] + !dpi)
    tmp = r1*sin(trueanom + omega[i] + !dpi)
-   y1tmp =  -tmp*cos(inc[i])
-   z1tmp =  tmp*sin(inc[i])
+   y1tmp = -tmp*cos(inc[i])
+   z1 += tmp*sin(inc[i])
 
    ;; Rotate by the Longitude of Ascending Node
    ;; For transits, it is not constrained, so we assume Omega=!dpi)
@@ -142,9 +156,11 @@ for i=0L, nplanets-1L do begin
 endfor
 
 ;; now convert to stellar frame (which is relevant for transits)
-x0 = x2-replicate(1d0,nplanets)#x1
-y0 = y2-replicate(1d0,nplanets)#y1
-z0 = z2-replicate(1d0,nplanets)#z1
+for i=0L, nplanets-1L do begin
+   x0[i,*,*] = x2[i,*,*] - x1
+   y0[i,*,*] = y2[i,*,*] - y1
+   z0[i,*,*] = z2[i,*,*] - z1
+endfor
 
 b = sqrt(x0^2 + y0^2)
 

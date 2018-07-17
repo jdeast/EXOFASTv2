@@ -1,4 +1,4 @@
-pro summarizepar, pars, label=label, unit=unit, latex=latex, best=best, logname=logname, value=value, errlo=errlo, errhi=errhi, medianpars=medianpars, charsize=charsize
+pro summarizepar, pars, label=label, unit=unit, latex=latex, best=best, logname=logname, value=value, errlo=errlo, errhi=errhi, medianpars=medianpars, charsize=charsize, mode=mode
 
 if n_elements(unit) eq 0 then unit = ''
 if n_elements(label) eq 0 then label = ''
@@ -35,16 +35,27 @@ if unit eq 'DEGREES' or unit eq 'RADIANS' then begin
    if toolow[0] ne -1 then pars[good[toolow]] += 2.d0*halfrange
 endif                     
 
-;; 68% confidence interval
-medndx = nsteps/2d0
-halfsigma = erf(1d/sqrt(2d0))/2d
-lowsigndx = round(nsteps/2.d0 - nsteps*halfsigma)
-hisigndx = round(nsteps/2.d0 + nsteps*halfsigma)
-
 sorted = sort(pars[good])
-medvalue = pars[good[sorted[medndx]]]
-upper = pars[good[sorted[hisigndx]]] - medvalue
-lower = medvalue - pars[good[sorted[lowsigndx]]]
+halfsigma = erf(1d/sqrt(2d0))/2d
+
+if keyword_set(mode) then begin
+;   mode = kde(
+;   sigma = 2d0*halfsigma
+;
+;   repeat begin
+;      maxprob =    
+;   endrep until 1
+endif else begin
+   ;; median and 68% confidence interval
+   medndx = nsteps/2d0
+   lowsigndx = round(nsteps/2.d0 - nsteps*halfsigma)
+   hisigndx = round(nsteps/2.d0 + nsteps*halfsigma)
+   
+
+   medvalue = pars[good[sorted[medndx]]]
+   upper = pars[good[sorted[hisigndx]]] - medvalue
+   lower = medvalue - pars[good[sorted[lowsigndx]]]
+endelse
 
 if n_elements(medianpars) eq 0 then medianpars = [medvalue,upper,lower] $
 else medianpars = [[medianpars],[[medvalue,upper,lower]]]
