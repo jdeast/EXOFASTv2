@@ -1,0 +1,14 @@
+teff 6250 100
+feh 0.23 0.1
+rstar 1.73
+mstar 1.46
+#av 0 -1 0 0.2465 # Schlafly and Finkbeiner (2011)
+#parallax       2.2208000    0.1 # Gaia DR2
+p 0.107
+ideg 88
+k 119
+gamma -1100
+gamma_1 -1050
+period 1.809886
+tc 2456107.85507
+f0 0.994
