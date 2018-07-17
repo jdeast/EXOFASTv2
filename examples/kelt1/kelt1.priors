@@ -1,0 +1,17 @@
+period 1.217513 0.000015 # from KELT discovery LC
+teff 6512 50
+feh 0.06 0.08
+logg 4.229
+vsini 55200 2000
+tc 2455914.1628
+mstar 1.324
+rstar 1.462
+p 0.07801
+cosi 0.0384
+av 0 -1 0 0.0977
+parallax 4.295 0.85 # gaia
+k 4239
+gamma 4000
+f0_0 1.003
+f0_1 1.003
+f0_2 1.005
