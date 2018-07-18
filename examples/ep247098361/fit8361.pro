@@ -1,7 +1,7 @@
 pro fit8361, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin
 
 ;; default to a very short run (not well-mixed or publication quality)
-if n_elements(maxsteps) eq 0 then maxsteps=1000 ;; 50000
+if n_elements(maxsteps) eq 0 then maxsteps=600 ;; 50000
 if n_elements(nthin) eq 0 then nthin=1 ;; 50
 path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','ep247098361'])
 
