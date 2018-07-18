@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Thu Jun 28 16:46:05 2018.<P>
+<STRONG>Last modified: </STRONG>Wed Jul 18 00:32:07 2018.<P>
  
 <HR>
  
@@ -1977,8 +1977,8 @@ Function value:       1.33000
  PURPOSE: 
    This function returns the impact parameter as a function of BJD
    given orbital elements of many planets, assuming keplerian orbits.
-   Optionally, the 3-space barycentric coordinates of the planets
-   (x1,y1,z1) and star (x2,y2,z2) or the stellar coordinates of the
+   Optionally, the 3-space barycentric coordinates of the star
+   (x1,y1,z1) and planets (x2,y2,z2) or the stellar coordinates of the
    planets (x0,y0,z0) can be returned.
  
  CALLING SEQUENCE:
@@ -2027,6 +2027,7 @@ Function value:       1.33000
  MODIFICATION HISTORY 
   2009/05/01 -- Jason Eastman (Ohio State University)
   2017/04/12 -- Add optional mass ratio keyword
+  2018/07/06 -- Now properly handles 2D time array (for long cadence)
 </PRE><P>
 <STRONG>(See exofast_getb2.pro)</STRONG><P>
 <HR>

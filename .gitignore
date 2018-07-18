@@ -11,3 +11,4 @@
 *.csv
 examples/*/*.idl
 examples/*/*.txt
+examples/*/fitresults
