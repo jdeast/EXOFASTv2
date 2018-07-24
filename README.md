@@ -23,14 +23,27 @@ with git and git can be invoked via "git".
 define environment variables (bash shell, e.g., .bashrc)
 
   EXOFAST_PATH="$HOME/idl/EXOFASTv2/" ; export EXOFAST_PATH
-  IDL_PATH="$IDL_PATH:+$EXOFAST_PATH" ; export IDL_PATH
+  # if IDL_PATH is not defined, add EXOFAST_PATH and subdirectories to the default IDL path
+  if [ -z "$IDL_PATH" ]; then 
+     IDL_PATH="<IDL_DEFAULT>:+${EXOFAST_PATH}" ; export IDL_PATH
+  else 
+     # otherwise, append EXOFAST_PATH and all subdirectories to your IDL_PATH
+     IDL_PATH="${IDL_PATH}:+${EXOFAST_PATH}" ; export IDL_PATH
+  fi
 
 --- OR ---
 
 define environment variables (c shell, e.g., .tcshrc)
 
   setenv EXOFAST_PATH "${HOME}/idl/EXOFASTv2/"
-  setenv IDL_PATH "${IDL_PATH}:+${EXOFAST_PATH}"
+  # if IDL_PATH is not defined, add EXOFAST_PATH and subdirectories to the default IDL path
+  if ("$IDL_PATH" == "") then 
+     setenv IDL_PATH "<IDL_DEFAULT>:+${EXOFAST_PATH}"
+  else
+     # otherwise, append EXOFAST_PATH and all subdirectories to your IDL_PATH
+     setenv IDL_PATH "${IDL_PATH}:+${EXOFAST_PATH}"
+  endif
+
 
 NOTE: If you have used the old version of EXOFAST, you must remove it
 from your IDL_PATH to run correctly.

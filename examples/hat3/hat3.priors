@@ -16,7 +16,7 @@ gamma_0 -14.8
 jittervar 28 0
 variance 0.00000537 0
 eep 300
-age 1.4
+#age 1.4
 # parallax from Gaia
 # https://gea.esac.esa.int/archive/
 parallax 7.403106340174454 0.1
