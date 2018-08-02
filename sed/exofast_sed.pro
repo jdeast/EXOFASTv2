@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug
+function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug, redo=redo
 
 common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m, w1, kapp1
 
@@ -18,7 +18,7 @@ if n_elements(pc) eq 0 then pc=3.0857e18 ;; cm
 if n_elements(rsun) eq 0 then rsun=6.96e10 ;; cm
 
 ;; don't do this every time
-if n_elements(fp) eq 0 then begin
+if n_elements(fp) eq 0 or keyword_set(redo) then begin
    mag2fluxconv,fluxfile,wp,widthhm,fp,ep,teff=teff 
    n=n_elements(wp)
    m=where(ep gt 0)
