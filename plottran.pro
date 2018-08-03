@@ -38,7 +38,7 @@ plotsym, 0, /fill, color=black
 depth = max(ss.planet.p.value^2)
 
 noise = 0d0
-for i=0, ss.ntran-1 do if stddev((*(ss.transit[i].transitptrs)).residuals) gt noise then noise = stddev((*(ss.transit[i].transitptrs)).residuals)
+for j=0, ss.ntran-1 do if stddev((*(ss.transit[j].transitptrs)).residuals) gt noise then noise = stddev((*(ss.transit[j].transitptrs)).residuals)
 if keyword_set(noresiduals) then spacing = (depth+noise)*3d0 $
 else spacing = (depth+noise)*4d0
 
@@ -126,7 +126,7 @@ for j=0, ss.ntran-1 do begin
    
    minbjd = min(trandata.bjd,max=maxbjd)
    minbjd -= 0.25d0 & maxbjd += 0.25d0
-   npretty = ceil((maxbjd-minbjd)*1440d0) ;; 1 per minute
+   npretty = ceil((maxbjd-minbjd)*1440d0/5d0) ;; 1 per 5 minutes
    npoints = n_elements(trandata.bjd)
 
    ninterp = ss.transit[j].ninterp
@@ -148,7 +148,7 @@ for j=0, ss.ntran-1 do begin
       modelflux = dblarr(npoints) + 1d0
    endelse
 
-   ;; get the motion of the star due to the planet
+   ;; get the motion of the star due to the planet (pretty cadence)
    junk = exofast_getb2(prettytime,inc=ss.planet.i.value,a=ss.planet.ar.value,$
                         tperiastron=ss.planet.tp.value,$
                         period=ss.planet.period.value,$
@@ -156,7 +156,7 @@ for j=0, ss.ntran-1 do begin
                         q=ss.star.mstar.value/ss.planet.mpsun.value,$
                         x1=x1pretty,y1=y1pretty,z1=z1pretty)
 
-   ;; get the motion of the star due to the planets
+   ;; get the motion of the star due to the planets (data cadence)
    junk = exofast_getb2(transitbjd,inc=ss.planet.i.value,a=ss.planet.ar.value,$
                         tperiastron=ss.planet.tp.value,$
                         period=ss.planet.period.value,$
@@ -229,8 +229,6 @@ for j=0, ss.ntran-1 do begin
          tcs = ss.planet[i].tc.value + epochs*ss.planet[i].period.value
          ;xyouts, tcs-t0, epochs*0d0+(ymax+1d0)/2d0, ss.planet[i].label, align=0.5d0
          
-;stop
-
       endif
    endfor
 
@@ -288,20 +286,20 @@ for i=0L, ss.nplanets-1 do begin
          readcol, files[j], thistime, thisflux, format='d,d', /silent
          readcol, prettyfiles[j], thisprettytime, thisprettyflux, format='d,d', /silent
          if j eq 0 then begin
-            time = thistime
+            time = thistime-ss.transit[j].ttv.value
             modelflux = thisflux+1d0
             residuals = (*(ss.transit[j].transitptrs)).residuals
-            prettytime = thisprettytime
+            prettytime = thisprettytime-ss.transit[j].ttv.value
             prettymodelflux = thisprettyflux+1d0
          endif else begin
-            time = [time,thistime]
+            time = [time,thistime-ss.transit[j].ttv.value]
             modelflux = [modelflux,thisflux+1d0]
             residuals = [residuals,(*(ss.transit[j].transitptrs)).residuals]
-            prettytime = [prettytime,thisprettytime]
+            prettytime = [prettytime,thisprettytime-ss.transit[j].ttv.value]
             prettymodelflux = [prettymodelflux,thisprettyflux+1d0]
          endelse
       endfor
-      
+
       ymin = min(modelflux) - 3d0*minnoise
       
       phasetime = ((time - ss.planet[i].tc.value) mod ss.planet[i].period.value)*24d0
@@ -331,8 +329,6 @@ for i=0L, ss.nplanets-1 do begin
             xtitle='!3Time - Tc (Hrs)';,title=ss.planet[i].label
       oplot, phasetime, residuals + modelflux, psym=8, symsize=symsize
       oplot, prettyphasetime[prettysorted], prettymodelflux[prettysorted], thick=2, color=red, linestyle=0
-
-;      stop
 
    endif
 endfor
