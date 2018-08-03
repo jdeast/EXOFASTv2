@@ -116,6 +116,9 @@ me an email.
 
 # Tips, Warnings and Caveats #
 
+A tutorial with exercises can be found here:
+https://docs.google.com/document/d/1H-HMe1No5B4JE93V9kSEW91uSIQcG2eUVScf037biZw/edit
+
 Other examples are available for various use cases, which are intended
 to be templates for various types of fits, and includes an example of
 running EXOFASTv2 without an IDL license. See
