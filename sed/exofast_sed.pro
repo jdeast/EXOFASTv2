@@ -119,6 +119,10 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    endif
    set_plot, mydevice
 
+   ;; create a file of residuals of the SED
+   residualfilename = file_dirname(psname) + path_sep() + file_basename(psname,'.eps') + '.residuals.txt'
+   exofast_forprint, wp, f, fp, ep, f-ep, textout=residualfilename, comment='# Wavelength (um), model flux, flux, error, residuals (erg/s/cm^2)' 
+
 endif
 
 f0 = f
@@ -126,6 +130,7 @@ fp0 = fp
 ep0 = ep
 ;chi2 = total( (alog10(f[m]) - alog10(fp[m]))^2 / (ep[m]/fp[m]*alog(10)/2.5)^2)
 chi2 = total(((f[m]-fp[m])/ep[m])^2)
+
 
 return, chi2
 
