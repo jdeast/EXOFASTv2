@@ -59,7 +59,7 @@ function exofast_like, residuals, var_r, sigma_w0, chi2=chi2, truechi2=truechi2
   if keyword_set(truechi2) then return, chisq
 
   ;; Calculate the natural log of the likelihood
-  loglike = -0.5d0*(total(alog(sqrt(2d0*!dpi*(sigma_w[good]^2+var_r)))) + chisq)
+  loglike = -0.5d0*(total(alog(2d0*!dpi*(sigma_w[good]^2+var_r))) + chisq)
 
   if ~finite(loglike) then begin
      if keyword_set(chi2) then return, !values.d_infinity
