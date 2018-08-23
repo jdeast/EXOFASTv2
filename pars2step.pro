@@ -71,6 +71,12 @@ for i=0, nplanets-1 do begin
       if ss.planet[i].omegadeg.scale ne 0 then ss.planet[i].omega.scale = ss.planet[i].omegadeg.scale*!pi/180d0
    endif
 
+   ;; translate from bigomegadeg to bigomega
+   if ss.planet[i].bigomegadeg.value ne 0 then begin
+      ss.planet[i].bigomega.value = ss.planet[i].bigomegadeg.value*!pi/180d0
+      if ss.planet[i].bigomegadeg.scale ne 0 then ss.planet[i].bigomega.scale = ss.planet[i].bigomegadeg.scale*!pi/180d0
+   endif
+
    if ss.planet[i].qecosw.value eq 0d0 then ss.planet[i].qecosw.value = (ss.planet[i].e.value)^(0.25d0)*cos(ss.planet[i].omega.value)
    if ss.planet[i].qesinw.value eq 0d0 then ss.planet[i].qesinw.value = (ss.planet[i].e.value)^(0.25d0)*sin(ss.planet[i].omega.value)
    if ss.planet[i].secosw.value eq 0d0 then ss.planet[i].secosw.value = sqrt(ss.planet[i].e.value)*cos(ss.planet[i].omega.value)
