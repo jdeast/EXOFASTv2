@@ -1,7 +1,3 @@
-; Repacked into one routine - D. Finkbeiner 23 Feb 2000
-; Fixed () -> [] bugs here and there - Hogg 15 Jun 2000
-; Fixed one more () -> [] bug - Hogg 12 Jul 2000
-;
 ;+
 ; NAME:
 ;       TEXTOIDL_STRTRANS
@@ -40,6 +36,7 @@
 ; MODIFICATION HISTORY:
 ;       $Id: textoidl.pro,v 1.9 2007-08-28 17:04:45 blanton Exp $
 ;       $Log: not supported by cvs2svn $
+;
 ;       Revision 1.8  2004/07/19 16:48:04  schlegel
 ;       Replace calls to the obsolete function RSTRPOS() with STRPOS(/REVERSE_SEARCH).
 ;
@@ -1264,7 +1261,7 @@ END
 ;
 ;+
 ; NAME:
-;       TEXTOIDL
+;       EXOFAST_TEXTOIDL
 ; PURPOSE:
 ;       Convert a valid TeX string to a valid IDL string for plot labels.
 ; CATEGORY:
