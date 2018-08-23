@@ -43,8 +43,8 @@ if finite(parameter.priorwidth) then begin
    ;; if it's very small, keep scientific notation
    ;; otherwise, print 8 decimals
    if alog10(parameter.prior) gt -6 then begin 
-      value = strtrim(string(parameter.prior,format='(f0.8)'),2)
-   endif else value = strtrim(parameter.prior,2)
+      value = strtrim(string(parameter.prior,format='(f0.10)'),2)
+   endif else value = strtrim(string(parameter.prior,format='(f0.10)'),2)
 
    width = strtrim(parameter.priorwidth,2)
    if finite(parameter.upperbound) then upperbound = strtrim(parameter.upperbound,2) $
@@ -62,8 +62,8 @@ endif else if finite(parameter.upperbound) or finite(parameter.lowerbound) then 
    ;; if it's very small, keep scientific notation
    ;; otherwise, print 8 decimals
    if alog10(parameter.prior) gt -6 then begin 
-      value = strtrim(string(parameter.value[ndx],format='(f0.8)'),2)
-   endif else value = strtrim(parameter.value[ndx],2)
+      value = strtrim(string(parameter.value[ndx],format='(f0.10)'),2)
+   endif else value = strtrim(string(parameter.value[ndx],format='(f0.10)'),2)
    width = '-1'
    if finite(parameter.upperbound) then upperbound = strtrim(parameter.upperbound,2) $
    else upperbound = ''
@@ -76,8 +76,8 @@ endif else if finite(parameter.upperbound) or finite(parameter.lowerbound) then 
 endif else if parameter.fit then begin
    ;; otherwise, if it's a fitted parameter, start at the best value
    if alog10(parameter.value[ndx]) gt -6 then begin 
-      value = strtrim(string(parameter.value[ndx],format='(f0.8)'),2)
-   endif else value = strtrim(parameter.value[ndx],2)
+      value = strtrim(string(parameter.value[ndx],format='(f0.10)'),2)
+   endif else value = strtrim(string(parameter.value[ndx],format='(f0.10)'),2)
    line = label + ' ' + value
 endif else line = ''
 
@@ -114,6 +114,17 @@ for i=0L, mcmcss.ntel-1 do begin
    for j=0, n_tags(mcmcss.telescope[i])-1 do begin
       if (size(mcmcss.telescope[i].(j)))[2] eq 8 then begin        
          line = getpriorline(mcmcss.telescope[i].(j), ndx, num=i)
+         if line ne '' then printf, lun, line 
+      endif
+   endfor
+endfor
+
+;; astrometry
+for i=0L, mcmcss.nastrom-1 do begin
+   printf, lun, '# ' + mcmcss.astrom[i].label
+   for j=0, n_tags(mcmcss.astrom[i])-1 do begin
+      if (size(mcmcss.astrom[i].(j)))[2] eq 8 then begin        
+         line = getpriorline(mcmcss.astrom[i].(j), ndx, num=i)
          if line ne '' then printf, lun, line 
       endif
    endfor
