@@ -116,12 +116,13 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       !p.multi=0
       device, /close
       device, encapsulated=0
+
+      residualfilename = file_dirname(psname) + path_sep() + file_basename(psname,'.eps') + '.residuals.txt'
+      exofast_forprint, wp, f, fp, ep, f-ep, textout=residualfilename, comment='# Wavelength (um), model flux, flux, error, residuals (erg/s/cm^2)' 
+
    endif
    set_plot, mydevice
 
-   ;; create a file of residuals of the SED
-   residualfilename = file_dirname(psname) + path_sep() + file_basename(psname,'.eps') + '.residuals.txt'
-   exofast_forprint, wp, f, fp, ep, f-ep, textout=residualfilename, comment='# Wavelength (um), model flux, flux, error, residuals (erg/s/cm^2)' 
 
 endif
 
