@@ -16,7 +16,7 @@ chainfile = prefix + 'chain.ps'
 if keyword_set(covar) then nocovar = 0 $
 else nocovar = 1
 
-exofast_plotdist2, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar
+exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 exofast_plotchains, mcmcss, chainfile=chainfile
 
