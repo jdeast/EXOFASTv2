@@ -15,8 +15,10 @@ maxdist = dblarr(ss.nplanets>1)
 ss.star.mstar.value = 10^ss.star.logmstar.value
 ss.star.logg.value = alog10(ss.constants.gravitysun*ss.star.mstar.value/(ss.star.rstar.value^2)) ;; cgs
 ;; derive the distance from lstar
-ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*sigmaB    ;; L_sun
-ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
+ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*sigmaB ;; L_sun
+
+if ss.star.distance.fit then ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
+if ss.star.parallax.fit then ss.star.distance.value = 1d3/ss.star.parallax.value ;; mas
 ;ss.star.fbol.value = (ss.star.lstar.value/ss.constants.lsun)/(4d0*!dpi*(ss.star.distance.value/ss.constants.pc)^2) ;; cgs
 
 ;print, 'derived: ' + strtrim(ss.star.fbol.value,2)
@@ -88,6 +90,17 @@ for i=0, ss.nplanets-1 do begin
       ss.planet[i].omega.value = atan(ss.planet[i].qesinw.value,ss.planet[i].qecosw.value)
    endif
 
+   if ss.fitrv[i] or ss.fittran[i] then begin
+      ;; fitting transits or RVs mean we can resolve the discreet degeneracy
+      ;; between Omega and Omega + pi
+      if ss.planet[i].bigomega.value ge (2d0*!dpi) then ss.planet[i].bigomega.value -= 2d0*!dpi
+      if ss.planet[i].bigomega.value lt 0d0  then ss.planet[i].bigomega.value += 2d0*!dpi
+   endif else begin
+      if ss.planet[i].bigomega.value ge (!dpi) then ss.planet[i].bigomega.value -= !dpi
+      if ss.planet[i].bigomega.value lt 0d0  then ss.planet[i].bigomega.value += !dpi
+   endelse
+
+
 ;   ;; derive quantities we'll use later
 ;   if ss.planet[i].qecosw.fit then begin
 ;      ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2 
@@ -97,20 +110,28 @@ for i=0, ss.nplanets-1 do begin
 ;      ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
 ;   endelse
 
-   if ss.planet[i].k.value le 0d0 then ss.planet[i].mpsun.value = 0d0 $
-   else ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
-                                         ss.planet[i].i.value, ss.planet[i].period.value, $
-                                         ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
+   if ss.planet[i].k.value le 0d0 then begin
+      ss.planet[i].mpsun.value = -ktom2(-ss.planet[i].K.value, ss.planet[i].e.value,$
+                                        ss.planet[i].i.value, ss.planet[i].period.value, $
+                                        ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun      
+   endif else ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
+                                               ss.planet[i].i.value, ss.planet[i].period.value, $
+                                               ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
 
 ;   if ss.planet[i].mpsun.value gt 0.08d0 then begin
 ;      if keyword_set(verbose) then printandlog, 'Planet ' + strtrim(i,2) + ' mass (' + strtrim(ss.planet[i].mpsun.value/mjup,2) + ' M_J) above hydrogen burning limit',logname
 ;      return, -1 ;; planet above the hydrogen burning limit
 ;   endif
 
+   if ss.star.mstar.value + ss.planet[i].mpsun.value le 0d0 then begin
+      if keyword_set(verbose) then printandlog, 'Net mass (Mstar + Mp) must be positive; rejecting step', logname
+      return, -1
+   endif
+
    ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup ;; m_jupiter
    ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth ;; m_earth
    ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
-                       (4d0*!dpi^2))^(1d0/3d0)         ;; semi-major axis in r_sun
+                             (4d0*!dpi^2))^(1d0/3d0)                    ;; semi-major axis in r_sun
    ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value ;; a/rstar (unitless)
    ss.planet[i].a.value = ss.planet[i].arsun.value/AU ;; semi major axis in AU
 
@@ -127,8 +148,7 @@ for i=0, ss.nplanets-1 do begin
    ;; but this prevents numerical problems compared to the e < 1 constraint
    ;; the not/lt (instead of ge) robustly handles NaNs too
    ;; abs(p) because p is allowed to be negative to eliminate bias
-   if not (ss.planet[i].e.value lt (1d0-1d0/ss.planet[i].ar.value-abs(ss.planet[i].p.value)/$
-                              ss.planet[i].ar.value)) then begin
+   if not (ss.planet[i].e.value lt (1d0-1d0/ss.planet[i].ar.value-abs(ss.planet[i].p.value)/ss.planet[i].ar.value)) then begin
       if keyword_set(verbose) then printandlog, 'Planet ' + strtrim(i,2) + ' will collide with the star! e=' + strtrim(ss.planet[i].e.value,2) + '; a/Rstar=' + strtrim(ss.planet[i].ar.value,2) + '; Rp/Rstar=' + strtrim(ss.planet[i].p.value,2) + '; Rstar=' + strtrim(ss.star.rstar.value,2), logname
       if keyword_set(verbose) then printandlog, 'Rstar is derived from YY isochrones; adjust starting values for Age, Teff, [Fe/H], or Mstar to change it', logname
       return, -1
@@ -155,7 +175,7 @@ for i=0, ss.nplanets-1 do begin
    ;; if mp unknown, mp=0 => hill radius=0 => planets can't cross orbits
    ;; **** ignores mutual inclination; a priori excludes systems like Neptune and Pluto!! ****
    if ~ss.alloworbitcrossing then begin
-      hillradius = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value*(ss.planet[i].mpsun.value/(3d0*ss.star.mstar.value))^(1d0/3d0)
+      hillradius = ((1d0-ss.planet[i].e.value)*ss.planet[i].a.value*(ss.planet[i].mpsun.value/(3d0*ss.star.mstar.value))^(1d0/3d0)) > 0d0
       mindist[i] = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value - hillradius
       maxdist[i] = (1d0+ss.planet[i].e.value)*ss.planet[i].a.value + hillradius
       for j=i-1,0,-1 do begin
