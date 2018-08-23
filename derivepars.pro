@@ -18,7 +18,8 @@ if ss.mist and not ss.star.age.fit then begin
 endif
 
 ;; derive the absolute magnitude and distance
-ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
+if ss.star.distance.fit then ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
+if ss.star.parallax.fit then ss.star.distance.value = 1d3/ss.star.parallax.value ;; pc
 
 for j=0, ss.ntel-1 do begin
    positive = where(ss.telescope[j].jittervar.value gt 0d0)
@@ -35,6 +36,11 @@ for i=0, ss.ntel-1 do begin
 endfor
 for i=0, ss.ntran-1 do begin
    tmpminbjd = min((*ss.transit[i].transitptrs).bjd,max=tmpmaxbjd)
+   if tmpminbjd lt minbjd then minbjd = tmpminbjd
+   if tmpmaxbjd gt maxbjd then maxbjd = tmpmaxbjd
+endfor
+for i=0, ss.nastrom-1 do begin
+   tmpminbjd = min((*ss.astrom[i].astromptrs).bjdtdb,max=tmpmaxbjd)
    if tmpminbjd lt minbjd then minbjd = tmpminbjd
    if tmpmaxbjd gt maxbjd then maxbjd = tmpmaxbjd
 endfor
@@ -85,6 +91,7 @@ for i=0, ss.nplanets-1 do begin
 
    ss.planet[i].lambdadeg.value = ss.planet[i].lambda.value*180d0/!dpi
    ss.planet[i].omegadeg.value = ss.planet[i].omega.value*180d0/!dpi
+   ss.planet[i].bigomegadeg.value = ss.planet[i].bigomega.value*180d0/!dpi
    ss.planet[i].esinw.value = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
    ss.planet[i].ecosw.value = ss.planet[i].e.value*cos(ss.planet[i].omega.value)
    ss.planet[i].sesinw.value = sqrt(ss.planet[i].e.value)*sin(ss.planet[i].omega.value)
@@ -170,11 +177,11 @@ for i=0, ss.nplanets-1 do begin
    t23 = ss.planet[i].period.value/!dpi*asin(sqrt((1d0-ss.planet[i].p.value)^2 - ss.planet[i].b.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
 
    ;; no transit, transit duration equation is undefined -- set to zero
-   notransit = where(ss.planet[i].b.value gt 1d0+ss.planet[i].p.value)
+   notransit = where(abs(ss.planet[i].b.value) gt 1d0+abs(ss.planet[i].p.value))
    if notransit[0] ne -1 then ss.planet[i].t14.value[notransit] = 0d0
 
    ;; grazing transit, the flat part of transit is zero
-   grazing = where(ss.planet[i].b.value gt 1d0-ss.planet[i].p.value)
+   grazing = where(abs(ss.planet[i].b.value) gt 1d0-abs(ss.planet[i].p.value))
    if grazing[0] ne -1 then t23[grazing] = 0d0
 
    ss.planet[i].tau.value = (ss.planet[i].t14.value-t23)/2d0
@@ -191,7 +198,7 @@ for i=0, ss.nplanets-1 do begin
    t23s = ss.planet[i].period.value/!dpi*asin(sqrt((1d0-ss.planet[i].p.value)^2 - ss.planet[i].bs.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value)   
 
    ;; no transit => transit duration equation is undefined -- set to zero
-   notransit = where(ss.planet[i].bs.value gt 1d0+ss.planet[i].p.value)
+   notransit = where(abs(ss.planet[i].bs.value) gt 1d0+abs(ss.planet[i].p.value))
    if notransit[0] ne -1 then ss.planet[i].t14s.value[notransit] = 0d0
 
    ;; ****************** this is a hack!! *************************
@@ -201,7 +208,7 @@ for i=0, ss.nplanets-1 do begin
    ;; *************************************************************
 
    ;; grazing transit, the flat part of transit is zero
-   grazing = where(ss.planet[i].bs.value gt 1d0-ss.planet[i].p.value)
+   grazing = where(abs(ss.planet[i].bs.value) gt 1d0-abs(ss.planet[i].p.value))
    if grazing[0] ne -1 then t23s[grazing] = 0d0
 
    ss.planet[i].taus.value = (ss.planet[i].t14s.value-t23s)/2d0
@@ -220,7 +227,7 @@ for i=0, ss.nplanets-1 do begin
    ;; depth != delta if grazing (ignore limb darkening)
    ss.planet[i].delta.value = ss.planet[i].p.value^2
    for j=0L, ss.nsteps-1L do begin
-      exofast_occultquad, ss.planet[i].b.value[j], 0d0, 0d0, ss.planet[i].p.value[j],mu1
+      exofast_occultquad, abs(ss.planet[i].b.value[j]), 0d0, 0d0, ss.planet[i].p.value[j],mu1
       ss.planet[i].depth.value[j] = 1d0-mu1[0]
    endfor
 
