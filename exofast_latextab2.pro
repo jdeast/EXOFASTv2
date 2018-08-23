@@ -207,8 +207,9 @@ for i=0, n_tags(ss)-1 do begin
       endif
    endfor
    ;; if no parameters in this section, rewind the file to erase the header
-   if npars eq 0L then point_lun, lun, pos
-
+   if npars eq 0L then point_lun, lun, pos $
+   else point_lun, -lun, pos
+      
 endfor
 
 ; finish the table
