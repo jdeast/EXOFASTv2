@@ -1,7 +1,7 @@
 ;; Reads a file of input arguments to EXOFASTv2
 ;; Required for virtual machine (free) use
 pro readargs, argfile, priorfile=priorfile, $
-              rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile,$
+              rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,$
               prefix=prefix,$
               circular=circular,fitslope=fitslope, secondary=secondary, $
               rossiter=rossiter,chen=chen,$
@@ -34,6 +34,8 @@ while not eof(lun) do begin
             rvpath = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'TRANPATH' then begin
             tranpath = strtrim(entries[1],2)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'ASTROMPATH' then begin
+            astrompath = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'DTPATH' then begin
             dtpath = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FLUXFILE' then begin
