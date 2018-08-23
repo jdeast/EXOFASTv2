@@ -12,10 +12,10 @@ nchains = sz[2]
 ;bad = where(~finite(pars),complement=good)
 good = where(finite(pars),complement=bad,nsteps)
 if bad[0] ne -1 then printandlog, $
-   "ERROR: NaNs in " + label + " distribution",logname
+   "Warning: NaNs in " + label + " distribution; NaNs will be ignored in all summaries",logname
 
 if nsteps eq 0 then begin
-   printandlog,"ERROR: all NaNs in " + label + " distribution",logname
+   printandlog,"ERROR: all NaNs in " + label + " distribution; skipping parameter",logname
    return
 endif
 
@@ -60,8 +60,8 @@ endelse
 if n_elements(medianpars) eq 0 then medianpars = [medvalue,upper,lower] $
 else medianpars = [[medianpars],[[medvalue,upper,lower]]]
 
-xmax = (medvalue + 4*upper) < max(pars)
-xmin = (medvalue - 4*lower) > min(pars)
+xmax = (medvalue + 4*upper) < max(pars[good])
+xmin = (medvalue - 4*lower) > min(pars[good])
 
 if xmin eq xmax then begin
    printandlog, 'WARNING: ' + label + ' is singularly valued.',logname
@@ -71,17 +71,17 @@ endif else begin
    xtitle='!3' + exofast_textoidl(latex)
    ytitle='!3Probability'
               
-   hist = histogram(pars,nbins=100,locations=x,min=xmin,max=xmax)
+   hist = histogram(pars[good],nbins=100,locations=x,min=xmin,max=xmax,/nan)
    plot, x, hist/double(total(hist)), psym=10, xtitle=xtitle, ytitle=ytitle,$
          charsize=charsize,xstyle=1, xrange=[xmin,xmax], font=1
    
    for l=0L, nchains-1L do  begin
-      hist = histogram(pars[*,l],nbins=100,locations=x,min=xmin,max=xmax)
+      hist = histogram(pars[*,l],nbins=100,locations=x,min=xmin,max=xmax,/nan)
       if total(hist) gt 0 then $
          oplot, x, hist/double(total(hist)), psym=10,color=l*255d0/nchains
    endfor
 
-   hist = histogram(pars,nbins=100,locations=x,min=xmin,max=xmax)
+   hist = histogram(pars[good],nbins=100,locations=x,min=xmin,max=xmax,/nan)
    oplot, x, hist/double(total(hist)), psym=10, thick=3
    
    ;; if the best parameters are given, overplot them on the PDFs
