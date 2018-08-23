@@ -9,7 +9,7 @@
 ; DESCRIPTION:
 ;
 ; CALLING SEQUENCE:
-;   exofast_plotdist, pars [,MEDIANPARS, ANGULAR=, PARNAMES=, UNITS=,
+;   exofast_plotdist_corner, pars [,MEDIANPARS, ANGULAR=, PARNAMES=, UNITS=,
 ;                     /NOCOVAR, PDFNAME=, COVARNAME=, BESTPARS=, PROBS=, /DEGREES]
 ;
 ; INPUTS:
