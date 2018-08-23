@@ -1,4 +1,6 @@
 ;+
+; NAME:
+;   EXOFAST_BLACKBODY
 ; PURPOSE:
 ;  This function calculates the Planck function I_nu or
 ;  I_lambda.
@@ -31,6 +33,7 @@
 ;
 ; MODIFICATION HISTORY:
 ;  May 2009: Written by Chris Beaumont
+;  Aug 2018: JDE: Renamed to not conflict with IDLUTILS version.
 ;-
 function exofast_blackbody, temp, x, freq = freq, wave = wave, cgs = cgs, mks = mks
   compile_opt idl2
