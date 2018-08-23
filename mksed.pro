@@ -1,4 +1,14 @@
-;; translates stromgren color combinations from the catalog to individual uvby magnitudes
+;+
+; NAME:
+;   STROM_CONV
+; PURPOSE:
+;    Translates stromgren color combinations from the catalog to
+;    individual uvby magnitudes
+; Modification 
+;    2018-04-12: Jason Eastman, CfA
+;                Renamed, documented, and cleaned up for distribution with EXOFASTv2
+;
+;-
 function strom_conv,V,sigV,by,sigby,m1,sigm1,c1,sigc1,silent=silent
 
 if n_params() lt 8 then begin
@@ -26,7 +36,15 @@ return,[u,sigu,v,sigv,b,sigb,y,sigy]
 end
 
 ;+
-
+; NAME:
+;   CROSSREF
+; PURPOSE:
+;     Finds the closest match to refra and refdec from an array of RAs
+;     and Decs.
+; Modification 
+;    2018-04-12: Jason Eastman, CfA
+;                Renamed, documented, and cleaned up for distribution with EXOFASTv2
+;
 ;-
 function crossref, refra, refdec, raarr, decarr
 
@@ -39,6 +57,8 @@ return, match
 end
 
 ;+
+; NAME:
+;    MKSED
 ; PURPOSE:
 ;    Given an object name (resolved with simbad) or RA and DEC, return
 ;    available broad band photometry from a variety of catalogs in the
