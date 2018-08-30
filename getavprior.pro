@@ -44,7 +44,7 @@ spawn, cmd, output
 if strpos(output[2],'Invalid object name') ne -1 then message, 'Invalid object name (try using RA and Dec instead)'
 
 match = where(strtrim(output,2) eq '</maxValueSandF>')
-maxav = strtrim((strsplit(output[match-1],'(',/extract))[0],2)
+maxav = strtrim((strsplit(output[match-1]*3.1d0,'(',/extract))[0],2)
 line = 'av 0 -1 0 ' + maxav
 
 return, double(maxav)
