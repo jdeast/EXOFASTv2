@@ -8,7 +8,7 @@ mstar 1.324
 rstar 1.462
 p 0.07801
 cosi 0.0384
-av 0 -1 0 0.0977
+av 0 -1 0 0.30287 # max E(B-V)*3.1 = max A_V
 parallax 4.295 0.85 # gaia
 k 4239
 gamma 4000

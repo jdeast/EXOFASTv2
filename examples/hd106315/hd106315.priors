@@ -17,7 +17,7 @@ p_1 0.03 -1
 # These priors allow the SED to constrain the Stellar luminosity (Radius)
 # upper limit on Extinction from Schelgel, Finkbeiner & Davis 
 # http://irsa.ipac.caltech.edu/applications/DUST/
-av 0.005 -1 0 0.0174
+av 0.005 -1 0 0.05394 # max E(B-V)*3.1 = max A_V
 # prior on parallax from Gaia DR1
 # https://gea.esac.esa.int/archive/
 parallax 9.321065784688436 0.3417318136481927

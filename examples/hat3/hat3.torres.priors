@@ -32,5 +32,4 @@ variance 0.00000537 0
 #parallax 7.403106340174454 0.1
 # V-band extinction; upper limit from Schegel Dust maps
 # https://irsa.ipac.caltech.edu/applications/DUST/
-#av 0 -1 0 0.0239 
-
+# av 0 -1 0 0.07409 # max E(B-V)*3.1 = max A_V

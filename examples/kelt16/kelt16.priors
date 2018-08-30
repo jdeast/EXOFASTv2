@@ -2,7 +2,7 @@ teff 6227 55
 feh -0.01 0.08
 mstar 1.211
 rstar 1.360
-av 0 -1 0 0.2465 # Schlafly and Finkbeiner (2011)
+av 0 -1 0 0.76415 # max E(B-V)*3.1 = max A_V
 parallax       2.2208000    0.1 # Gaia DR2
 p 0.107
 ideg 84.4

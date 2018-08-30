@@ -28,6 +28,6 @@ u2 0.26	-1 0.16 0.36
 # These priors allow the SED to constrain the stellar luminosity (radius)
 # upper limit on Extinction from Schelgel, Finkbeiner & Davis 
 # http://irsa.ipac.caltech.edu/applications/DUST/
-av 0.0 -1 0.0 0.0548
+av 0.0 -1 0.0 0.16988 # max E(B-V)*3.1 = max A_V
 parallax 32.98 1.76 # Hipparcos Parallax
 #parallax 33.685488891437814 0.1 #0.06113433991768969 Gaia DR2

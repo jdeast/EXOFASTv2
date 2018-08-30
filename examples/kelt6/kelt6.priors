@@ -3,7 +3,7 @@ teff 6100 44
 feh -0.277 0.04
 mstar 1.085
 rstar 1.580
-av 0 -1 0 0.0077
+av 0 -1 0 0.02387 # max E(B-V)*3.1 = max A_V
 #parallax 4.0884 0.2725
 parallax 4.125500429720086 0.1 #0.03375984809818444 # Gaia DR2
 gamma_0 1139.0366 # HARPS
