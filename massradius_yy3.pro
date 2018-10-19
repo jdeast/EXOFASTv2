@@ -75,8 +75,6 @@ endif else begin
                tracks[i,j,k,*,0] = 10^logteff[sorted]
                tracks[i,j,k,*,1] = sqrt(10d0^loglstar[sorted]/(4d0*!dpi*tracks[i,j,k,*,0]^4d0*sigmaB))
                tracks[i,j,k,*,2] = age[sorted]
-;               plot, tracks[i,j,k,*,0], tracks[i,j,k,*,1]
-;               stop
             endif
 
 
@@ -201,6 +199,8 @@ if keyword_set(debug) or keyword_set(psname) then begin
 
 ;   xmin=max(teffplottrack,min=xmax) ;; plot range backwards
 
+;stop
+
    use = where(loggplottrack gt 3 and loggplottrack lt 5 and yytrack[2,*] gt 0.1d0 and yytrack[2,*] lt 13.82d0)
    xmin=max(teffplottrack[use],min=xmax) ;; plot range backwards
 
@@ -218,9 +218,7 @@ if keyword_set(debug) or keyword_set(psname) then begin
    xminor = spacing/100d0
  
    ymax = min([loggplottrack[use],3,5],max=ymin) ;; plot range backwards
-   ymax = min([loggplottrack[use]],max=ymin) ;; plot range backwards
-
-;stop
+;   ymax = min([loggplottrack[use]],max=ymin) ;; plot range backwards
 
    plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor
    plotsym,0,/fill
