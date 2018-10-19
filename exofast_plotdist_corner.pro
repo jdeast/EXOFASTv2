@@ -9,7 +9,7 @@
 ; DESCRIPTION:
 ;
 ; CALLING SEQUENCE:
-;   exofast_plotdist_corner, pars [,MEDIANPARS, ANGULAR=, PARNAMES=, UNITS=,
+;   exofast_plotdist_corner, pars [,MEDIANPARS, PARNAMES=, UNITS=,
 ;                     /NOCOVAR, PDFNAME=, COVARNAME=, BESTPARS=, PROBS=, /DEGREES]
 ;
 ; INPUTS:
@@ -17,10 +17,6 @@
 ;                with an array of values for each parameter
 ;
 ; OPTIONAL INPUTS:
-;   ANGULAR    - An array that indexes the parameters that are
-;                angular (radians unless /DEGREES is set). This will enable
-;                special ways to calculate the median and plots, which
-;                may otherwise fail. Default is none.
 ;   PDFNAME    - The filename of the output postscript plot of
 ;                PDFs. Default is pdf.ps
 ;   COVARNAME  - The filename of the output postscript plot of
@@ -46,10 +42,13 @@
 ;   2018/02/13 - Covariance plot now a corner plot inspired by
 ;                corner.py (much prettier)
 ;   2018/03/15 - Identify and discard bad chains before inference
+;   2018/10/18 - Remove misleading (and unused) ANGULAR parameter;
+;                functionality applied with unit property in
+;                summarizepar.
 ;-
 pro exofast_plotdist_corner, ss, nocovar=nocovar, $
                              pdfname=pdfname, covarname=covarname, $
-                             probs=probs,logname=logname, angular=angular,$
+                             probs=probs,logname=logname, $
                              useallpars=useallpars, csvfile=csvfile, mask=mask
 
 if n_elements(pdfname) eq 0 then pdfname = 'pdf.ps'
@@ -78,12 +77,11 @@ charsize=1.5
 loadct,39,/silent
 red = 254
 
-allpars = [] ;; a 2D array of all parameters for the covariance matrix
-allparndx = [] ;; an map from the median values of all parameters to the covariance parameters
-bestpars = [] ;; the best-fit (most likely) values to overplot on the PDF and covariance plots
-parnames = [] ;; parameter names for the axis labels
-medianpars = [] ;; median parameters and 68% confidence intervals
-alltitles=[]
+allpars = [-1] ;; a 2D array of all parameters for the covariance matrix
+allparndx = [-1] ;; an map from the median values of all parameters to the covariance parameters
+bestpars = [-1] ;; the best-fit (most likely) values to overplot on the PDF and covariance plots
+parnames = [''] ;; parameter names for the axis labels
+medianpars = [-1,-1,-1] ;; median parameters and 68% confidence intervals
 
 minchi2 = min(*ss.chi2,bestndx)
 
@@ -103,7 +101,7 @@ for i=0, n_tags(ss)-1 do begin
 
          ;; this captures the detrending variables
          if (size(ss.(i)[j].(k)))[1] eq 10 then begin ;; if it's a pointer
-            if ss.(i)[j].(k) ne !NULL then begin ;; if it's not empty
+            if ptr_valid(ss.(i)[j].(k)) then begin ;; if it's not empty
                for l=0L, n_tags(*(ss.(i)[j].(k)))-1 do begin ;; loop through each tag
                   if (size((*(ss.(i)[j].(k))).(l)))[2] eq 8 then begin ;; if it's an array of structures
                      for m=0L, n_elements((*(ss.(i)[j].(k))).(l))-1 do begin ;; loop through each structure
@@ -134,11 +132,12 @@ for i=0, n_tags(ss)-1 do begin
                               ;; store these for the covariance plot
                               if (*(ss.(i)[j].(k))).(l)[m].fit or keyword_set(useallpars) then begin
                                  sz = size(pars)
-                                 if n_elements(allpars) eq 0 then allpars = transpose(reform(pars,sz[1]*sz[2])) $
+                                 if n_elements(allpars) eq 1 then allpars = transpose(reform(pars,sz[1]*sz[2])) $
                                  else allpars = [allpars,transpose(reform(pars,sz[1]*sz[2]))]
                                  parnames = [parnames,(*(ss.(i)[j].(k))).(l)[m].latex]
-                                 if n_elements(allparndx) eq 0 then allparndx = [n_elements(medianpars[0,*])-1] $
-                                 else allparndx = [allparndx,n_elements(medianpars[0,*])-1]
+
+                                 if allparndx[0] eq -1 then allparndx = [n_elements(medianpars[0,*])-2] $
+                                 else allparndx = [allparndx,n_elements(medianpars[0,*])-2]
                                  bestpars = [bestpars,(*(ss.(i)[j].(k))).(l)[m].value[bestndx]]
                               endif
                      
@@ -178,11 +177,11 @@ for i=0, n_tags(ss)-1 do begin
                      ;; store these for the covariance plot
                      if ss.(i)[j].(k).fit or keyword_set(useallpars) then begin
                         sz = size(pars)
-                        if n_elements(allpars) eq 0 then allpars = transpose(reform(pars,sz[1]*sz[2])) $
+                        if n_elements(allpars) eq 1 then allpars = transpose(reform(pars,sz[1]*sz[2])) $
                         else allpars = [allpars,transpose(reform(pars,sz[1]*sz[2]))]
                         parnames = [parnames,ss.(i)[j].(k).latex]
-                        if n_elements(allparndx) eq 0 then allparndx = [n_elements(medianpars[0,*])-1] $
-                        else allparndx = [allparndx,n_elements(medianpars[0,*])-1]
+                        if allparndx[0] eq -1 then allparndx = [n_elements(medianpars[0,*])-2] $
+                        else allparndx = [allparndx,n_elements(medianpars[0,*])-2]
                         bestpars = [bestpars,ss.(i)[j].(k).value[bestndx]]
                      endif
 
@@ -193,11 +192,16 @@ for i=0, n_tags(ss)-1 do begin
       endfor
    endfor
 endfor
-
 device, /close
 
 if n_elements(csvfile) ne 0 then free_lun, csvlun
 
+bestpars = bestpars[1:n_elements(bestpars)-1] ;; the best-fit (most likely) values to overplot on the PDF and covariance plots
+parnames = parnames[1:n_elements(parnames)-1] ;; parameter names for the axis labels
+medianpars = medianpars[*,1:n_elements(medianpars[0,*])-1] ;; median parameters and 68% confidence intervals
+
+defsysv, '!GDL', exists=runninggdl
+if runninggdl then nocovar = 1
 
 ;; if covariance plots aren't wanted (they take a while), we're done
 if keyword_set(nocovar) then begin
@@ -256,8 +260,8 @@ for i=0, npars-1 do begin
       
       if xmin ne xmax and ymin ne ymax then begin
 
-         xpath = []
-         ypath = []
+         xpath = -1
+         ypath = -1
 
          ;; get the paths of the 68% and 95% contours
          exofast_errell, transpose(allpars[i,*]),transpose(allpars[j,*]),xpath=xpath,ypath=ypath,$
@@ -265,7 +269,7 @@ for i=0, npars-1 do begin
                          xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,logname=logname
          
          ;; plot the contours if it worked
-         if n_elements(xpath) gt 0 and n_elements(ypath) eq n_elements(xpath) then begin
+         if xpath[0] ne -1 and ypath[0] ne -1 then begin
 
             plot, xpath, ypath, xtitle=xtitle,ytitle=ytitle,charsize=charsize, $
                   xrange=[xmin,xmax],yrange=[ymin,ymax],/ystyle,/xstyle,xminor=1, yminor=1,$ 
