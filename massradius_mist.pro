@@ -63,7 +63,7 @@
 function massradius_mist, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvcrit, alpha=alpha, $
                           mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
                           epsname=epsname, debug=debug, gravitysun=gravitysun, fitage=fitage, $
-                          ageweight=ageweight, verbose=verbose, logname=logname, trackfile=trackfile
+                          ageweight=ageweight, verbose=verbose, logname=logname, trackfile=trackfile, allowold=allowold
 
 if n_elements(gravitysun) eq 0 then $                                           
    gravitysun = 27420.011d0 ;; cm/s^2                                           
@@ -237,7 +237,7 @@ endif else begin
 endelse
 
 ;; must be less than the age of the universe
-if mistage lt 0 or mistage gt 13.82d0 then begin
+if mistage lt 0 or (~keyword_set(allowold) and mistage gt 13.82d0) then begin
    if keyword_set(verbose) then printandlog, 'Age (' + strtrim(mistage,2) + ') is out of range',logname
    return, !values.d_infinity
 endif
@@ -246,8 +246,8 @@ endif
 percenterror = 0.03d0 -0.025d0*alog10(mstar) + 0.045d0*alog10(mstar)^2
 
 chi2 = ((mistrstar - rstar)/(percenterror*mistrstar))^2
-;chi2 += ((mistteff - teff)/(percenterror*mistteff))^2
-chi2 += ((mistteff - teff)/100d0^2)
+chi2 += ((mistteff - teff)/(percenterror*mistteff))^2
+;chi2 += ((mistteff - teff)/100d0^2)
 
 if keyword_set(fitage) then chi2 += ((mistage - age)/(percenterror*mistage))^2
 chi2 += ((mistfeh - feh)/(percenterror))^2
@@ -306,7 +306,7 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    loggplot =  alog10(mstar/(rstar^2)*gravitysun)
 
    use = where(loggplottrack gt 3 and loggplottrack lt 5 and eepplot ge min([202,eep]))
-   xmin=max(teffplottrack[use],min=xmax) ;; plot range backwards
+   xmin=max([teffplottrack[use],teff],min=xmax) ;; plot range backwards
 
    ;; increase xrange so there are 4 equally spaced ticks that land on 100s
    xticks = 3
@@ -321,7 +321,7 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    endrep until (xmin-xmax)/spacing eq xticks
    xminor = spacing/100d0
   
-   ymax = min([loggplot,3,5],max=ymin) ;; plot range backwards
+   ymax = min([loggplot,3,5,loggplottrack[use]],max=ymin) ;; plot range backwards
    
    plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor
    plotsym,0,/fill
