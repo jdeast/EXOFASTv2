@@ -95,7 +95,7 @@ if n_elements(q) ne 0 then begin
       if keyword_set(primary) then factor = 1d0/(1d0+q) $ ;; a*factor = a1
       else factor = q/(1d0+q)                             ;; a*factor = a2
    endif else factor = 1d0
-endif else factor = 1d0 ;; infinite mass ratio
+endif else factor = 1d0 ;; infinite mass ratio, a1=0, a2=a
 
 ;; distance from barycenter to target
 r = a*(1d0-e^2)/(1d0+e*cos(trueanom))*factor
