@@ -9,7 +9,6 @@ if n_elements(strsplit(basename,'.',/extract)) lt 3 then message, 'filename (' +
 ;; (with an arbitary number of detrending variables)
 band = (strsplit(basename,'.',/extract))(1)
 
-;; this means stromgren u can't be used -- remove
 if band eq 'Sloanu' then begin
    band = 'Sloanu'
    bandname = "u'"
@@ -39,8 +38,8 @@ openr, lun, filename, /get_lun
 readf, lun, line
 
 if strpos(line,'#') eq 0 then begin
-   mult = []
-   add = []
+   mult = [-1]
+   add = [-1]
    header = 1
    entries = strsplit(line,'# '+string(9B),/extract)
    ncol = n_elements(entries)
@@ -56,21 +55,21 @@ if strpos(line,'#') eq 0 then begin
    readf, lun, line ;; now read the first data line
 endif else begin
    header = 0
-   mult = []
+   mult = [-1]
 endelse
 
 entries = double(strsplit(line,/extract))
 ncol = n_elements(entries)
 ;; if no header, assume all additive
 if not header then begin
-   if ncol le 3 then add = [] $
+   if ncol le 3 then add = [-1] $
    else add = 3L + lindgen(ncol-3)
 endif
 
 if ncol lt 3 then message, 'Transit file (' + filename + ') must contain at least 3 white-space delimited columns (BJD_TDB flux err). Comments are not allowed. The first line is ' + line
 
-nadd = n_elements(add)
-nmult = n_elements(mult)
+nadd = n_elements(add)-1
+nmult = n_elements(mult)-1
 
 nrow = file_lines(filename) - header
 
