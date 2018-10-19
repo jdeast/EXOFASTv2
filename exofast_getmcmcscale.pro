@@ -169,7 +169,7 @@ for i=0, nfit-1 do begin
 
             ;; can't always sample fine enough to get exactly
             ;; deltachi2 = 1 because chi^2 surface not perfectly smooth
-            if abs(minstep - maxstep) lt 1d-14 or niter gt maxiter then begin
+            if abs(minstep - maxstep) lt 1d-12 or niter gt maxiter then begin
                testpars[tofit[i]] = bestpars[tofit[i]] - 2d0*mcmcscale[i,j]
                lowboundchi2 = call_function(chi2func, testpars)
                testpars[tofit[i]] = bestpars[tofit[i]] + 2d0*mcmcscale[i,j]
@@ -186,8 +186,8 @@ for i=0, nfit-1 do begin
                   if abs(bestdeltachi2 - 1.d0) lt 0.75 then begin
                      mcmcscale[i,j] = bestscale
                   endif else begin
-                     
-                     newscale = bestscale/bestdeltachi2/10d0 ;; better to err on the side of too small
+                     if bestdeltachi2 eq 0d0 then newscale = bestscale/100d0 $
+                     else newscale = bestscale/bestdeltachi2/10d0 ;; better to err on the side of too small
                      printandlog, 'Cannot find the value for which deltachi^2 = 1 for parameter ' +$
                                   strtrim(tofit[i],2) + '; assuming rough chi^2 surface. Using delta chi^2 = ' +$
                                   strtrim(bestdeltachi2,2) + ' and scaling step (' + strtrim(bestscale,2) +$
@@ -229,7 +229,7 @@ for i=0, nfit-1 do begin
                 else str = '(lo)'                
                 printandlog, string(tofit[i], str, minstep, maxstep, $
                   testpars[tofit[i]],chi2,bestchi2, $
-                  format='(i3,x,a4,x,f27.18,f27.18,f27.18,f27.18,f27.18)'),logname
+                  format='(i3,x,a4,x,f0.18,x,f0.18,x,f0.18,x,f0.18,x,f0.18)'),logname
              endif
             next:
 
