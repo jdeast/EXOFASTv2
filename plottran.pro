@@ -240,7 +240,7 @@ for j=0, ss.ntran-1 do begin
 
    period = ss.planet[ss.transit[j].pndx].period.value
 
-   if maxbjd - minbjd lt 1 then begin
+   if maxbjd - minbjd lt period then begin
       time = (trandata.bjd - ss.planet[ss.transit[j].pndx].tc.value - ss.transit[j].epoch[ss.transit[j].pndx]*ss.planet[ss.transit[j].pndx].period.value + ss.transit[j].ttv.value)*24.d0
 
       good = where(time ge xrange[0] and time le xrange[1], ngood)
