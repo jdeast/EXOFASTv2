@@ -153,11 +153,36 @@ for i=0,n_elements(band)-1 do begin
              lamflamzp = 3631. * 3e-9 / 0.9038^2 * 0.9038
              flux(i)=lamflamzp*10^(-0.4*(mag(i)+0.02))  ; assuming Pogson mags instead of asinh
            end
+     'gPS' : begin
+             lameff(i)=4775.62 / 1.e4
+             weff(i)=1166.47 / 1.e4
+             lamflamzp = 3631. * 4.773e-9 / lameff(i)^2 * lameff(i)
+             flux(i)=lamflamzp*10^(-0.4*(mag(i)))
+           end
+     'rPS' : begin
+             lameff(i)=6129.53 / 1.e4
+             weff(i)=1318.07 / 1.e4
+             lamflamzp = 3631. * 2.897e-9 / lameff(i)^2 * lameff(i)
+             flux(i)=lamflamzp*10^(-0.4*(mag(i)))
+           end
+
+     'iPS' : begin
+             lameff(i)=7484.60 / 1.e4
+             weff(i)=1242.60 / 1.e4
+             lamflamzp = 3631. * 1.943e-9 / lameff(i)^2 * lameff(i)
+             flux(i)=lamflamzp*10^(-0.4*(mag(i)))
+           end
      'zPS' : begin
              lameff(i)=8660. / 1.e4
              weff(i)=720. / 1.e4
              lamflamzp = 3631. * 3e-9 / lameff(i)^2 * lameff(i)
              flux(i)=lamflamzp*10^(-0.4*(mag(i)))  ; assuming Pogson mags instead of asinh
+           end
+     'yPS' : begin
+             lameff(i)=9603.06 / 1.e4
+             weff(i)=614.92 / 1.e4
+             lamflamzp = 3631. * 1.180e-9 / lameff(i)^2 * lameff(i)
+             flux(i)=lamflamzp*10^(-0.4*(mag(i)))
            end
      'gKIS': begin
              lameff(i)=poly(theta,[4647.,312.,241.,-173.]) / 1.e4
@@ -231,7 +256,9 @@ for i=0,n_elements(band)-1 do begin
              endelse
           end
 
-;; JDE: 2018-07-13 -- I don't trust these...
+;; JDE: 2018-07-13 -- I don't trust these; the bands are too
+;;                    wide to be approximated by tophats -- a full
+;;                    integration should be done (too expensive)
      ;; Table 1 of Jordi et al, 2010
      ;; with DR2 Vega to AB mag offsets from
      ;; https://www.cosmos.esa.int/web/gaia/iow_20180316
