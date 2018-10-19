@@ -63,7 +63,7 @@ function exofast_getb2, bjd, inc=inc, a=a, tperiastron=tperiastron, Period=P, $
                        lonascnode=lonascnode, q=q
 
 sz = size(bjd)
-if sz[0] eq 1 then begin
+if sz[0] le 1 then begin
    ntimes = sz[1]
    ninterp = 1
 endif else if sz[0] eq 2 then begin
