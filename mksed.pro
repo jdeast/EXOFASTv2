@@ -113,7 +113,7 @@ fmt = '(a-6,x,f7.3,x,f5.3,x,f5.3)'
 
 ;; get GALEX -- by default, skip; models are unreliable here
 if keyword_set(galax) then begin
-   qgalex=QueryVizier('II/312/ais',star,galdist/60d0,/silent,/all,cfa=cfa)
+   qgalex=Exofast_Queryvizier('II/312/ais',star,galdist/60d0,/silent,/all,cfa=cfa)
    if long(tag_exist(qgalex,'fuv',/quiet)) ne 0L then begin
       printf, lun, '# Galex DR5, Bianchi+ 2011'
       printf, lun, '# http://adsabs.harvard.edu/abs/2011Ap%26SS.335..161B'
@@ -133,7 +133,7 @@ endif
 
 ; get Mermilliod 1991 UBV ;; by default skip (Gaia better)
 if keyword_set(merm) then begin
-   qmermilliod91=QueryVizier('II/168/ubvmeans',star,dist/60.,/silent,/all,cfa=cfa) 
+   qmermilliod91=Exofast_Queryvizier('II/168/ubvmeans',star,dist/60.,/silent,/all,cfa=cfa) 
    if long(tag_exist(qmermilliod91,'vmag',/quiet)) ne 0L then begin
       if n_elements(qmermilliod91) gt 1 then begin
          print,'Warning: More than 1 Mermilliod source found; using nearest one only.'
@@ -158,7 +158,7 @@ if keyword_set(merm) then begin
 endif
 
 ; Tycho-2
-qtyc2=QueryVizier('I/259/TYC2',star,dist/60.,/silent,/all,cfa=cfa)
+qtyc2=Exofast_Queryvizier('I/259/TYC2',star,dist/60.,/silent,/all,cfa=cfa)
 if long(tag_exist(qtyc2,'BTMAG',/quiet)) ne 0L then begin
    printf, lun, '# Tycho catalog, Hoeg+ 2000'
    printf, lun, '# http://adsabs.harvard.edu/abs/2000A%26A...355L..27H'
@@ -174,7 +174,7 @@ endif else qtyc2={btmag:-99.,vtmag:-99.}
 
 ; Paunzen, 2015 Stromgren
 if keyword_set(stromgren) then begin
-   qpaunzen15=QueryVizier('J/A+A/580/A23/catalog',star,dist/60.,/silent,/all,cfa=cfa)
+   qpaunzen15=Exofast_Queryvizier('J/A+A/580/A23/catalog',star,dist/60.,/silent,/all,cfa=cfa)
    if long(tag_exist(qpaunzen15,'vmag',/quiet)) ne 0L then begin
       if n_elements(qpaunzen15) gt 1 then begin
          print,'Warning: More than 1 Paunzen source found; using nearest one only.'
@@ -196,7 +196,7 @@ if keyword_set(stromgren) then begin
 endif
 
 ; UCAC4 - check if APASS BV is actually just TYC2 BV, and adjust errors from integer to centimag
-qucac4=QueryVizier('UCAC4',star,dist/60.,/silent,/all,cfa=cfa)
+qucac4=Exofast_Queryvizier('UCAC4',star,dist/60.,/silent,/all,cfa=cfa)
 if long(tag_exist(qucac4,'bmag',/quiet)) ne 0L then begin
    printf, lun,'# UCAC4, Zacharias+, 2012'
    printf, lun,'# http://adsabs.harvard.edu/abs/2012yCat.1322....0Z'
@@ -225,7 +225,7 @@ if long(tag_exist(qucac4,'bmag',/quiet)) ne 0L then begin
 endif else qucac4={Jmag:-99.}
 
 ;; ALLWISE
-qwise=QueryVizier('II/328/allwise',star,dist/60.,/silent,cfa=cfa)
+qwise=Exofast_Queryvizier('II/328/allwise',star,dist/60.,/silent,cfa=cfa)
 if not keyword_set(nowise) and long(tag_exist(qwise,'w1mag',/quiet)) ne 0L then begin
    printf, lun, '# AllWISE, Cutri+, 2013'
    printf, lun, '# http://adsabs.harvard.edu/abs/2013yCat.2328....0C'
@@ -252,7 +252,7 @@ endif else qwise={Jmag:-99.}
 if (qucac4.jmag lt -90 or ~finite(qucac4.jmag)) and (qwise.Jmag lt -90 or ~finite(qwise.Jmag)) then begin
    printf, lun, '# 2MASS, Cutri+ 2003'
    printf, lun, '# http://adsabs.harvard.edu/abs/2003yCat.2246....0C'
-   q2mass=QueryVizier('II/246/out',star,dist/60.,/silent,cfa=cfa)
+   q2mass=Exofast_Queryvizier('II/246/out',star,dist/60.,/silent,cfa=cfa)
    if long(tag_exist(q2mass,'Jmag',/quiet)) ne 0L then begin
       if n_elements(q2mass) gt 1 then begin
          print,'Warning: More than 1 2mass source found; using nearest one only.'
@@ -268,7 +268,7 @@ endif
 
 ;; Gaia DR2
 if not keyword_set(nogaia) then begin
-   qgaia=QueryVizier('I/345/gaia2',star,dist/60.,/silent,cfa=cfa,/all)
+   qgaia=Exofast_Queryvizier('I/345/gaia2',star,dist/60.,/silent,cfa=cfa,/all)
    if long(tag_exist(qgaia,'gmag',/quiet)) ne 0L then begin
       printf, lun, '# Gaia DR2, Gaia Collaboration, 2018'
       printf, lun, '# http://adsabs.harvard.edu/abs/2016A%26A...595A...2G'
@@ -279,8 +279,8 @@ if not keyword_set(nogaia) then begin
          qgaia = qgaia[match]
       endif
 
-      print, name
-      print, 'parallax',qgaia.plx, qgaia.e_plx, ' # Gaia DR2'
+;      print, name
+;      print, 'parallax',qgaia.plx, qgaia.e_plx, ' # Gaia DR2'
       parallax = qgaia.plx
       uparallax = qgaia.e_plx
 
@@ -293,7 +293,7 @@ endif
 
 ; KIS DR2
 if keyword_set(kepler) then begin
-   qkis=QueryVizier('J/AJ/144/24/kisdr2',star,dist/60.,/silent,cfa=cfa,/all)
+   qkis=Exofast_Queryvizier('J/AJ/144/24/kisdr2',star,dist/60.,/silent,cfa=cfa,/all)
    if long(tag_exist(qkis,'KIS',/quiet)) ne 0L then begin
       printf, lun, '# KIS DR2, Greiss+ 2012'
       printf, lun, '# http://adsabs.harvard.edu/abs/2012AJ....144...24G'
