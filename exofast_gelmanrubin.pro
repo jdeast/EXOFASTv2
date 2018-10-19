@@ -73,7 +73,6 @@ nangular = n_elements(angular)
 if nangular ne 0 then begin
     if angular[0] ne -1 then begin
         for i=0, nangular-1 do begin
-        
             hist = histogram(pars[angular[i],*,*],nbins=100,locations=x)
             max = max(hist,modendx)
             mode = x[modendx]
