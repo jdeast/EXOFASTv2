@@ -111,7 +111,7 @@ for i=0, n_tags(ss)-1 do begin
 
       ;; this captures the detrending variables
       if (size(ss.(i)[0].(k)))[1] eq 10 then begin ;; if it's a pointer
-         if ss.(i)[0].(k) ne !NULL then begin ;; if it's not empty
+         if ptr_valid(ss.(i)[0].(k)) then begin ;; if it's not empty
             for l=0L, n_tags(*(ss.(i)[0].(k)))-1 do begin ;; loop through each tag
                if (size((*(ss.(i)[0].(k))).(l)))[2] eq 8 then begin ;; if it's an array of structures
                   maxm = 0
@@ -217,7 +217,8 @@ printf, lun, '\enddata'
 if n_elements(label) ne 0 then printf, lun, '\label{' + label + '}'
 printf, lun, '\end{deluxetable*}'
 printf, lun, '\end{document}'
-truncate_lun, lun
+defsysv, '!GDL', exists=runninggdl
+if not runninggdl then truncate_lun, lun
 
 if n_elements(texfile) ne 0 then free_lun, lun
 
