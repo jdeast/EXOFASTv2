@@ -20,18 +20,18 @@ if nsteps eq 0 then begin
 endif
 
 ;; if angular, center distribution about the mode first
-if unit eq 'DEGREES' then halfrange = 180d0 $
-else if unit eq 'RADIANS' then halfrange = !dpi
-if unit eq 'DEGREES' or unit eq 'RADIANS' then begin
+if strupcase(unit) eq 'DEGREES' then halfrange = 180d0 $
+else if strupcase(unit) eq 'RADIANS' then halfrange = !dpi
+if strupcase(unit) eq 'DEGREES' or strupcase(unit) eq 'RADIANS' then begin
    ;; find the mode
    hist = histogram(pars[good],nbins=100,locations=x,/nan)
    max = max(hist,modendx)
-   mode = x[modendx]
+   modepar = x[modendx]
    
-   toohigh = where(pars[good] gt (mode + halfrange))
+   toohigh = where(pars[good] gt (modepar + halfrange))
    if toohigh[0] ne -1 then pars[good[toohigh]] -= 2.d0*halfrange
    
-   toolow = where(pars[good] lt (mode - halfrange))
+   toolow = where(pars[good] lt (modepar - halfrange))
    if toolow[0] ne -1 then pars[good[toolow]] += 2.d0*halfrange
 endif                     
 
@@ -57,7 +57,7 @@ endif else begin
    lower = medvalue - pars[good[sorted[lowsigndx]]]
 endelse
 
-if n_elements(medianpars) eq 0 then medianpars = [medvalue,upper,lower] $
+if n_elements(medianpars) eq 1 then medianpars = [medvalue,upper,lower] $
 else medianpars = [[medianpars],[[medvalue,upper,lower]]]
 
 xmax = (medvalue + 4*upper) < max(pars[good])
