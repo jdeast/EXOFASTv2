@@ -34,7 +34,7 @@ endif
 
 ;; select the nearest models
 allowedz = [-4d0,-3.5d0,-3d0,-2.5d0,-2d0,-1.5d0,-1d0,-0.5d0,0d0,0.3d0,0.5d0]
-if feh lt allowedz[0] or feh gt allowedz[-1] then begin
+if feh lt allowedz[0] or feh gt allowedz[n_elements(allowedz)-1] then begin
    if keyword_set(verbose) then printandlog, errmsg, logname
    lamflam = !values.d_nan
    return
@@ -49,7 +49,7 @@ alphastr = ['+0.0','+0.2','-0.2','+0.4','+0.6']
 nalpha = n_elements(allowedalpha)
 
 allowedlogg = [-0.5d, 0d0, 0.5d0, 1d0, 1.5d0,  2d0, 2.5d0, 3d0, 3.5d0, 4d0, 4.5d0, 5d0, 5.5d0, 6d0]
-if logg lt allowedlogg[0] or logg gt allowedlogg[-1] then begin
+if logg lt allowedlogg[0] or logg gt allowedlogg[n_elements(allowedlogg)-1] then begin
    if keyword_set(verbose) then printandlog, errmsg, logname
    lamflam = !values.d_nan
    return
