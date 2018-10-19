@@ -55,12 +55,20 @@ if sz[0] ne 2 then message, 'CHI2 must be an NSTEPS x NCHAINS (2D) array'
 if nsteps lt 5 then message, 'CHI2 must have at least 5 steps'
 if nchains lt 3 then message, 'CHI2 must have at least 3 chains'
 
-burnndx = round(0.1*nsteps) ;; discard at least the first 10% of the chains
+;; the preliminary burnndx is the index of the best chi2 among all chains
+bestchi2 = !values.d_infinity
+for i=0L, nchains-1 do begin
+   tmpchi2 = min(chi2[*,i], ndx)
+   if tmpchi2 lt bestchi2 then begin
+      bestchi2 = tmpchi2
+      bestchain = i
+      burnndx = ndx
+   endif
+endfor
+burnndx = (burnndx > round(0.1*nsteps)) < round(0.75*nsteps)
 
-;; the minimum chi2 of each chain
-minchi2 = min(chi2[burnndx:nsteps-1,*],dimension=1)
-
-;; the median chi2 of the best chain
+;; now find the median chi2 of that chain after the minimum 
+;; or 90% of the steps, whichever is smaller
 medchi2 = min(median(chi2[burnndx:nsteps-1,*],dimension=1))
 
 ;; the burnndx is the first link where all good chains have been below
@@ -96,6 +104,7 @@ if ngood ne nchains then begin
    badchains = badchains[sort(badchains)]
 endif else badchains = [-1L]
 
+;; never use less than the last 10% of steps
 return, burnndx < round(nsteps*0.9)
 
 end
