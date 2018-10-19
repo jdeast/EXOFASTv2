@@ -97,6 +97,14 @@ if not keyword_set(a[0,0,0,ndx]) or $
 
 endif
 
+;; GDL's version of interpol can't extrapolate
+defsysv, '!GDL', exists=runninggdl
+if runninggdl and n_elements(logg) eq 1 then begin
+   if logg lt loggs[0] or logg gt loggs[n_elements(loggs)-1] or $
+      teff lt teffs[0] or teff gt teffs[n_elements(teffs)-1] or $
+      feh lt fehs[0] or feh gt fehs[n_elements(fehs)-1] then return, [!values.d_nan,!values.d_nan]
+endif
+
 ;; where to interpolate in the axis
 loggx = interpol(indgen(n_elements(loggs)),loggs,logg)
 teffx = interpol(indgen(n_elements(teffs)),teffs,teff)
