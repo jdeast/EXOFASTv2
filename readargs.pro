@@ -6,10 +6,12 @@ pro readargs, argfile, priorfile=priorfile, $
               circular=circular,fitslope=fitslope, secondary=secondary, $
               rossiter=rossiter,chen=chen,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-              nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
+              nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
+              ntemps=ntemps,tf=tf,keephot=keephot,$
               debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
               bestonly=bestonly, plotonly=plotonly, refinestar=refinestar, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
+              rejectflatmodel=rejectflatmodel,$
               maxgr=maxgr, mintz=mintz, $
               yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
               fitrv=fitrv, fittran=fittran,fitdt=fitdt,lineark=lineark,$
@@ -62,8 +64,16 @@ while not eof(lun) do begin
             nthin = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MAXSTEPS' then begin
             maxsteps = long(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'MAXTIME' then begin
+            maxtime = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'DONTSTOP' then begin
             dontstop = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'NTEMPS' then begin
+            ntemps = long(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'TF' then begin
+            tf = long(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'KEEPHOT' then begin
+            keephot = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'DEBUG' then begin
             debug = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'STARDEBUG' then begin
@@ -84,6 +94,8 @@ while not eof(lun) do begin
             exptime = double(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NINTERP' then begin
             ninterp = long(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'REJECTFLATMODEL' then begin
+            rejectflatmodel = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MAXGR' then begin
             maxgr = double(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MINTZ' then begin
