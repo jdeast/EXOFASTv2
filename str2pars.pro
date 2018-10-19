@@ -1,7 +1,7 @@
 ;; returns the fitted parameters (do I care?)
 function str2pars, str, scale=scale, name=name, angular=angular
 
-  angular = []
+  angular = [-1]
   tofit = *(str.tofit)
 
   ;; slow way?
@@ -41,6 +41,7 @@ function str2pars, str, scale=scale, name=name, angular=angular
      endfor
   endif
 
+  if n_elements(angular) gt 1 then angular = angular[1:*]
   return, pars
 
 end
