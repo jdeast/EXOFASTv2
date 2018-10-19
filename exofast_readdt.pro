@@ -35,7 +35,7 @@ if planetndx eq -1 then planetndx = 0
 
 ;; ~100x faster
 stepsize = shift(vel,-1)-vel
-stepsize[-1] = mean(stepsize[0:-2])
+stepsize[n_elements(stepsize)-1] = mean(stepsize[0:n_elements(stepsize)-2])
 
 ;; determine rough uncertainties for the observations
 rms0 = stddev(ccf2d)
