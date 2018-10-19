@@ -271,6 +271,7 @@ tz0 = 0d0 ;;
 tzsteps = 0L
 alreadywarned = 0L
 t0 = systime(/seconds)
+defsysv, '!GDL', exists=runninggdl
 
 ;; start MCMC chain
 for i=resumendx,maxsteps-1L do begin
@@ -338,7 +339,10 @@ for i=resumendx,maxsteps-1L do begin
    endfor
 
    ;; this allows the user to break at any point
-   if !STOPNOW NE !NULL AND !STOPNOW EQ 1 then break
+   defsysv, '!STOPNOW', exists=stopnowdefined
+   if stopnowdefined then begin
+      if !STOPNOW EQ 1 then break
+   endif
 
    ;; Test for convergence as outlined in Ford 2006
    ;; must be converged for 6 consecutive passes
@@ -425,13 +429,12 @@ for i=resumendx,maxsteps-1L do begin
       print, 100.d0*(i+1)/maxsteps,acceptancerate,lasttz,strtrim(fix(mintz),2),lastgr,maxgr,timeleft,units, format=format
 
       ;; print this message to the log every 5% of the way
-      if i eq resumendx or (i+1) mod round(maxsteps/20) eq 0 then $
+      if i eq resumendx or (i+1) mod round(maxsteps/20) eq 0 then begin
+         format='("EXOFAST_DEMC: ",f0.2,"% done; acceptance rate = ",a,"%; ' + $ 
+                'tz = ",f0.2," (>", a,"); GelmanRubin = ",f0.4," (<",f0.2,"); time left: ",f0.2,a)'         
          printandlog, string(100.d0*(i+1)/maxsteps,acceptancerate,lasttz,strtrim(fix(mintz),2),lastgr,maxgr,timeleft,units,format=format), logname
+      endif
 
-;      format='("EXOFAST_DEMC:",f6.2,"% done; acceptance rate = ",a,"%; ' + $ 
-;             'time left: ",f0.2,a,$,%"\r")'
-;      print, 100.d0*(i+1)/maxsteps,acceptancerate,timeleft,units, format=format
-;      if i eq resumendx then printandlog, string(100.d0*(i+1)/maxsteps,acceptancerate,timeleft,units, format=format), logname
    endif
 
 endfor
