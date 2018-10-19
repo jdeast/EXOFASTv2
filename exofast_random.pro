@@ -64,7 +64,7 @@ Ds = 1L
 NP   = N_PARAMS()
 
 SWITCH NP of
-    9    : Ds*=long(D8)
+;    9    : Ds*=long(D8)
     8    : Ds*=long(D7)
     7    : Ds*=long(D6)
     6    : Ds*=long(D5)
@@ -73,7 +73,7 @@ SWITCH NP of
     3    : Ds*=long(D2)
     2    : Ds*=long(D1)
     1    : break
-    else : message,'Must have 1-9 parameters, Seed [, D1,... D8]'
+    else : message,'Must have 1-8 parameters, Seed [, D1,... D7]'
 ENDSWITCH
 
 ;; initialize the seed
@@ -111,7 +111,7 @@ CASE NP of
     6    : return, reform(r,D1,D2,D3,D4,D5)
     7    : return, reform(r,D1,D2,D3,D4,D5,D6)
     8    : return, reform(r,D1,D2,D3,D4,D5,D6,D7)
-    9    : return, reform(r,D1,D2,D3,D4,D5,D6,D7,D8)
+;    9    : return, reform(r,D1,D2,D3,D4,D5,D6,D7,D8)
 ENDCASE
 
 end
