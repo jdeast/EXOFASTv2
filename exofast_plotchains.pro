@@ -101,7 +101,7 @@ for i=0, n_tags(ss)-1 do begin
          m=-1
          ;; this captures the detrending variables
          if (size(ss.(i)[j].(k)))[1] eq 10 then begin
-            if ss.(i)[j].(k) ne !NULL then begin
+            if ptr_valid(ss.(i)[j].(k)) then begin
                for l=0L, n_tags(*(ss.(i)[j].(k)))-1 do begin
                   if (size((*(ss.(i)[j].(k))).(l)))[2] eq 8 then begin 
                      for m=0L, n_elements((*(ss.(i)[j].(k))).(l))-1 do begin
