@@ -60,9 +60,9 @@
 # teff     # effective temperature (K); fitted parameter
 # feh      # Current metalicity, [Fe/H]; fitted parameter
 # initfeh  # initial metalicty (at age=0), [Fe/H]_0; fitted for MIST models only
-# age      # Age of star; fitted parameter
+# age      # Age of star (Gyr); fitted parameter
 # eep      # equivalent evolutionary point; fitted for MIST models only (see http://waps.cfa.harvard.edu/MIST/README_tables.pdf)
-# av       # V-band extinction; fitted for SED models only
+# av       # V-band extinction (mag); fitted for SED models only
 # errscale # Error scaling for the SED model; fitted parameter if SED fit
 # Only necessary when SED model is fit. Use an upper limit for your RA/dec from Schegel dust maps
 # https://irsa.ipac.caltech.edu/applications/DUST/
