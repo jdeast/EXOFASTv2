@@ -35,6 +35,14 @@
 ;                   1) Time (BJD_TDB -- See Eastman et al., 2010)
 ;                   2) RV (m/s)
 ;                   3) err (m/s)
+;
+;                 The names of the files describing the RVs
+;                 *should* adhere to a certain format:
+;                 planet_name.telescope.whateveryouwant. 
+;
+;                 The telescope is used for labeling the figures and
+;                 tables.
+;
 ;                 NOTE 1: The units must be as specified, or the fit
 ;                 will be wrong or fail. 
 ;                 NOTE 2: Other input time stamps will likely not
@@ -134,6 +142,42 @@
 ;                 http://adsabs.harvard.edu/abs/2010PASP..122..935E
 ;                 for an explanation of times
 ;                 NOTE 4: If omitted, just the RV data will bit fit
+;
+;   *** Astrometry is not currently suppported or thoroughly tested. Future updates are likely to change the expected formats ***
+;   ASTROMPATH  - A string specifying the path to the astrometry data
+;                 file(s). Wildcards are allowed for multiple files
+;                 (e.g., '*.dat'). Each file must have 5 or 8
+;                 columns:
+;
+;                   1) Time (BJD_TDB -- See Eastman et al., 2010)
+;                   2) RA (ICRS deg)
+;                   3) DEC (ICRS deg)
+;                   4) ra uncertainty (mas)
+;                   5) dec uncertainty (mas)
+;                   6) X position of observatory (AU from Solar System Barycenter)
+;                   7) Y position of observatory (AU from Solar System Barycenter)
+;                   8) Z position of observatory (AU from Solar System Barycenter)
+;
+;                 The filename must adhere to a certain format:
+;                 epoch.location.whateveryouwant                
+; 
+;                 epoch -- the reference epoch of the
+;                 observations in BJD_TDB (e.g., J2000 is
+;                 2451545).
+;                 location -- the location of the observatory. Only
+;                 "Earth" (geocenter), "Gaia" and "Hipparcos" are
+;                 understood, in which case the observatory position
+;                 (columns 6-8) will be calculated if not supplied.
+;                 whateveryouwant -- any string you want to include
+;                 for it to make sense to you. This is not used by the
+;                 code.
+;
+;                 If supplied, EXOFASTv2 will fit the following
+;                 additional parameters: RA, Dec, PMRA, PMDEC, and
+;                 parallax, plus Omega for each planet. The
+;                 inclination will span the range from 0 to 180 (-1 <
+;                 cosi < 1).
+;
 ;   DTPATH      - The (optional) path to the Doppler Tomography fits
 ;                 file(s). If supplied, the code will fit a vsini and
 ;                 macro turbulence of the star, as well as a
@@ -251,11 +295,28 @@
 ;                 strongly discouraged. Increase NTHIN if the chains
 ;                 are not well-mixed. For complex fits with many
 ;                 parameters, users may wish to revise this downward.
-
+;
 ;                 NOTE: If the MCMC chains run to MAXSTEPS,
 ;                 doubling this value will double the runtime. Short
 ;                 test runs (MAXSTEPS=100) are strongly encouraged
 ;                 before running week-long fits.
+;   MAXTIME     - The maximum runtime for the DEMC portion of the
+;                 code, in seconds. If set, the fit will wrap up after
+;                 MAXTIME seconds. This is intended for
+;                 non-interactive use with a time constraint (e.g.,
+;                 running on a super computer). Note this only applies
+;                 to the MCMC portion of the code, and it finishes the
+;                 loops over NTEMPS and NTHIN before it will check the
+;                 time. The time AMOEBA takes or the time to
+;                 synthesize the results is not counted, therefore, it
+;                 would be wise to set this to 1800 seconds (30
+;                 minutes) less than any hard limit.
+;
+;                 NOTE: For interactive terminals, dynamic stopping, use
+;                 !STOPNOW. During a run that you want to stop, type:
+;                     control + c
+;                     !stopnow=1
+;                     .con  
 ;   NTHIN       - If set, only every NTHINth element will be
 ;                 kept. Values as high as 1/acceptance rate typically
 ;                 don't degrade the resultant fit because there is a
@@ -265,6 +326,26 @@
 ;                 NOTE: Only kept links in the chain count toward
 ;                 MAXSTEPS, so if the MCMC chains run to MAXSTEPS,
 ;                 doubling this value will double the runtime.
+;   NTEMPS      - The number of chains to run at different
+;                 temperatures, uniformly distributed between 1 and
+;                 TF. The more temperatures, the easier it is to make
+;                 swaps between temperatures, but the longer it can
+;                 take. The default is 1 (no parallel tempering). 8 is
+;                 a good value. Note that only the T=1 chain is kept
+;                 by default. Parallel tempering is better at finding
+;                 the global minimum in a rough likelihood surface and
+;                 sampling widely spaced, multi-modal distributions
+;                 (often the case for MIST models). Nominally, NTEMPS
+;                 more steps are taken, requiring NTEMPS times longer
+;                 to run. However, it may lead to better mixing and
+;                 therefore faster convergence, so the effect on
+;                 runtime is system dependent and not obvious.
+;   TF          - The temperature of the hottest chain, when NTEMPS >
+;                 1. The higher the temperature, the more parameter
+;                 space it will probe, but the chains will be less
+;                 likely to swap. Default is 200, which can robustly
+;                 find minima separated by 50 sigma. A value of 1 will
+;                 result in no temperature difference between chains.
 ;   RANDOMFUNC  - A string specifying the name of the random number
 ;                 generator to use. This generator must be able to
 ;                 return 1,2 or 3 dimensional uniform or normal random
@@ -328,22 +409,33 @@
 ;             primary transit, and a fitted amplitude (in PPM).
 ;  FITDILUTE- A string array specifying which bands to fit a dilution
 ;             term for. It will fit the fractional contribution from
-;             the companion. Set this if the star is blended with a
-;             neighbor and you expect color-dependent depth
-;             variations.
+;             the companion. This should be set if the star is blended
+;             with a neighbor and you expect color-dependent depth
+;             variations in the transit or photocenter variations in
+;             the astrometry.
 ;
-;             Note: This is likely to be degenerate with F0 (transit
-;             normalization). You probably need to apply a prior
-;             (DILUTE_#, where # corresponds to the band index) from
-;             some external information to constrain it (e.g., an SED
-;             fit). If you just have the flux ratio, solve this system
-;             of equations for Flux_companion:
+;             If you just have the flux ratio, X, solve this system of
+;             equations for Flux_companion:
 ;         
-;             Flux_companion/Flux_primary = 10^(-0.4*(M_primary-M_companion))
+;             Flux_companion/Flux_primary = X
 ;             Flux_companion + Flux_primary = 1
+;             Flux_companion = X/(X+1)
 ;
-;             Note: this only affects the transit model. It is not
-;             accounted for in the SED fitting.
+;             Note 1: For transits, this is likely to be degenerate
+;             with F0 (transit normalization). You probably need to
+;             apply a prior (DILUTE_#, where # corresponds to the band
+;             index) from some external information to constrain it
+;             (e.g., an SED fit). 
+; 
+;             Note 2: For astrometry, this is degenerate with the
+;             semi-major axis/mass. You must supply a prior on the
+;             dilution (e.g., from AO) in at least one band if one of
+;             those is not independently determined.
+;
+;             Note 3: This dilution does not impact the SED fit. The
+;             SED broadband photometry is assumed to be for the
+;             single, primary component.
+;
 ;             TODO: automatically model dilution based on multiple
 ;             SEDs
 ;   CHEN        - An NPLANET boolean array that specifies which
@@ -390,6 +482,23 @@
 ;   LONGCADENCE - If set, EXPTIME=29.425 and NINTERP=10 are set to handle
 ;               long cadence data from Kepler. This overwrites
 ;               NINTERP and EXPTIME inputs.
+;
+;   REJECTFLATMODEL - An NTRANSITS byte array specifying which
+;                     transits must have a signal. If model without a
+;                     signal is generated and REJECTFLATMODEL=1B, the
+;                     model will be rejected a priori. If a flat model
+;                     is accepted when a transit is expected, there is
+;                     an infinite volume of parameter space with equal
+;                     likelihood, which breaks the Markov condition,
+;                     and it will never converge. Note the default
+;                     allows flat models because 1) the user may wish
+;                     to model out of transit constraints on the
+;                     ephemeris and 2) rejecting flat models a priori
+;                     may give the user an undue confidence in the
+;                     signficance of the signal. This is likely
+;                     required for low SNR transits or when using
+;                     parallel tempering (see NTEMP and TF).
+;
 ;   TIDES     - If set, when (1-Rstar/a-rp/a) < e < (1-3*Rstar/a), we
 ;               set the eccentricity to zero, presuming that the tidal
 ;               circularization timescale is much much smaller than
@@ -427,6 +536,18 @@
 ;               constrained.
 ;   STARDEBUG - Same as DEBUG, but applied to the stellar parameter
 ;               refinement at the beginning of the fit.
+
+;   KEEPHOT   - By default, the hot chains (and their corresponding
+;               chi^2) from parallel tempering (see NTEMPS and TF) are
+;               dynamically discarded to save memory. If this keyword
+;               is set and NTEMPS > 1, the steps from the hot chains
+;               (HOTPARS) and the corresponding chi2 (HOTCHI2) will be
+;               stored in memory during the fit and saved in the
+;               output IDL file. This is not useful to determine the
+;               posterior, and should only be used for debugging
+;               (e.g., determining the extent of parameter space
+;               explored), as it significantly increases the memory
+;               footprint.
 ;
 ; OUTPUTS:
 ;
@@ -554,15 +675,17 @@
 ;             offsets). Now easily extensible.
 ;-
 pro exofastv2, priorfile=priorfile, $
-               rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile,$
+               rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,$
                prefix=prefix,$
                circular=circular,fitslope=fitslope, secondary=secondary, $
                rossiter=rossiter,chen=chen,$
                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-               nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
+               nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
+               ntemps=ntemps, tf=tf, keephot=keephot, $
                debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
                bestonly=bestonly, plotonly=plotonly,refinestar=refinestar,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
+               rejectflatmodel=rejectflatmodel,$
                maxgr=maxgr, mintz=mintz, $
                yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
@@ -575,15 +698,16 @@ if numargs eq 1 then begin
    argfile = par[0]
    if file_exist(argfile) then begin
       readargs, argfile, priorfile=priorfile, $
-                rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile,$
+                rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,$
                 prefix=prefix,$
                 circular=circular,fitslope=fitslope, secondary=secondary, $
                 rossiter=rossiter,chen=chen,$
                 fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-                nthin=nthin, maxsteps=maxsteps, dontstop=dontstop, $
+                nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, ntemps=ntemps, tf=tf, dontstop=dontstop, $
                 debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
                 bestonly=bestonly, plotonly=plotonly, refinestar=refinestar, $
                 longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
+                rejectflatmodel=rejectflatmodel,$
                 maxgr=maxgr, mintz=mintz, $
                 yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                 fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
@@ -639,11 +763,12 @@ if nplanets ne 0 and keyword_set(refinestar) then begin
 endif
 
 ;; create the master structure
-ss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
+ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
           debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,$
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
-          rossiter=rossiter,longcadence=longcadence, ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
+          rossiter=rossiter,longcadence=longcadence,rejectflatmodel=rejectflatmodel,$
+          ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
           fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
           chen=chen, yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname)
 
@@ -761,11 +886,15 @@ bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psna
 
 ;; do the MCMC fit
 if not keyword_set(bestonly) then begin
-   exofast_demc, best, chi2func, pars, chi2=chi2,$
-                 nthin=nthin,maxsteps=maxsteps, dontstop=dontstop, $
-                 burnndx=burnndx, seed=seed, randomfunc=randomfunc, $
-                 gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
-                 stretch=stretch, logname=logname, angular=angular
+
+   exofast_demcpt, best, chi2func, pars, chi2=chi2,$
+                   nthin=nthin,maxsteps=maxsteps, maxtime=maxtime, $
+                   ntemps=ntemps, tf=tf, dontstop=dontstop, $
+                   burnndx=burnndx, seed=seed, randomfunc=randomfunc, $
+                   gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
+                   stretch=stretch, logname=logname, angular=angular, $
+                   keephot=keephot, hotpars=hotpars, hotchi2=hotchi2
+
    if pars[0] eq -1 then begin
       printandlog, 'MCMC Failed to find a stepping scale. This usually means one or more parameters are unconstrained by the data or priors.', logname
    endif
@@ -787,6 +916,10 @@ if not keyword_set(bestonly) then begin
    pars = reform(pars,npars,nsteps*nchains)
    chi2 = reform(chi2,nsteps*nchains)
    minchi2 = min(chi2,bestndx)
+   
+   printandlog, 'The best "chi^2" found was ' + strtrim(minchi2,2), logname
+   printandlog, 'Note: "chi^2" is actually a normalized form of log-like.', logname
+   printandlog, 'It should only be compared against the "chi^2" of the same model with different starting points', logname
 endif else begin
    pars = reform(best[tofit],n_elements(tofit),1)
    bestndx = 0
@@ -802,11 +935,12 @@ bestchi2 = call_function(chi2func,best,psname=modelfile, $
 ;; make a new stellar system structure with only fitted and derived
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
-mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
+mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
               debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
               circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
-              rossiter=rossiter,longcadence=longcadence, ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
+              rossiter=rossiter,longcadence=longcadence, rejectflatmodel=rejectflatmodel,$
+              ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
               chen=chen,nvalues=nsteps*nchains,/silent,yy=yy,torres=torres,nomist=nomist,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing, logname=logname, best=best)
@@ -821,7 +955,8 @@ derivepars, mcmcss
 
 ;; save the chains for additional analysis
 idlfile = prefix + 'mcmc.idl'
-save, mcmcss, filename=idlfile
+if keyword_set(keephot) and ntemps gt 1 then save, mcmcss, hotpars, hotchi2, filename=idlfile $
+else save, mcmcss, filename=idlfile
 
 spawn, 'git -C $EXOFAST_PATH rev-parse --short HEAD', output, stderr
 if output[0] ne '' then versiontxt = ", created using EXOFASTv2 commit number " + output[0] $
@@ -836,7 +971,7 @@ chainfile = prefix + 'chain.ps'
 texfile = prefix + 'median.tex'
 csvfile = prefix + 'median.csv'
 
-exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, angular=angular,csvfile=csvfile
+exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, csvfile=csvfile
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 exofast_plotchains, mcmcss, chainfile=chainfile, logname=logname
 
