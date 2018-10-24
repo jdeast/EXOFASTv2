@@ -41,6 +41,28 @@ endif else if ss.yy then begin
    ss.star.rstar.value = rstar
 endif
 
+;; if not specified, refine the starting value for eep (max out at 808)
+;; for high mass stars, the default age (4.6 Gyr) will select stars at
+;; the end of their lifetimes (capped at carbon burning)
+if ss.mist and ss.star.eep.value eq 355.65d0 then begin  
+   maxeep = 808d0
+   mineep = 0d0
+   repeat begin
+      eep = (mineep + maxeep)/2d0
+      chi2 = massradius_mist(eep,ss.star.mstar.value,ss.star.initfeh.value,$
+                             ss.star.age.value,ss.star.teff.value,$
+                             ss.star.rstar.value,ss.star.feh.value,mistage=mistage,/allowold)
+      if ~finite(chi2) then begin
+         maxeep -= 1
+      endif else begin
+         if mistage gt ss.star.age.value then maxeep = eep $
+         else mineep = eep
+      endelse
+   endrep until abs(maxeep - mineep) lt 0.01
+   if ~finite(chi2) then return, 0 
+   ss.star.eep.value = eep
+endif
+
 G = 2942.71377d0 ;; R_sun^3/(m_sun*day^2), Torres 2010
 
 nplanets = n_elements(ss.planet)
@@ -71,16 +93,36 @@ for i=0, nplanets-1 do begin
       if ss.planet[i].omegadeg.scale ne 0 then ss.planet[i].omega.scale = ss.planet[i].omegadeg.scale*!pi/180d0
    endif
 
+   ;; translate from various e/omega parameterizations to e and omega
+   if ss.planet[i].e.value ne 0d0 or ss.planet[i].omega.value ne 0d0 then begin
+      ;; do nothing
+   endif else if ss.planet[i].secosw.value ne 0d0 or ss.planet[i].qecosw.value ne 0d0 then begin
+      ss.planet[i].e.value = ss.planet[i].secosw.value^2 + ss.planet[i].sesinw.value^2
+      ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
+   endif else if ss.planet[i].qecosw.value ne 0d0 or ss.planet[i].qesinw.value ne 0d0 then begin
+      ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2
+      ss.planet[i].omega.value = atan(ss.planet[i].qesinw.value,ss.planet[i].qecosw.value)      
+   endif else if ss.planet[i].ecosw.value ne 0d0 or ss.planet[i].esinw.value ne 0d0 then begin
+      ss.planet[i].e.value = sqrt(ss.planet[i].ecosw.value^2 + ss.planet[i].esinw.value^2)
+      ss.planet[i].omega.value = atan(ss.planet[i].esinw.value,ss.planet[i].ecosw.value)
+   endif
+
+   if ss.planet[i].e.value ge 1d0 or ss.planet[i].e.value lt 0d0 then return, 0
+   if ~finite(ss.planet[i].omega.value) then return, 0
+
+   ;; populate eccentricity/omega parameterizations
+   if ss.planet[i].qecosw.value eq 0d0 then ss.planet[i].qecosw.value = (ss.planet[i].e.value)^(0.25d0)*cos(ss.planet[i].omega.value)
+   if ss.planet[i].qesinw.value eq 0d0 then ss.planet[i].qesinw.value = (ss.planet[i].e.value)^(0.25d0)*sin(ss.planet[i].omega.value)
+   if ss.planet[i].secosw.value eq 0d0 then ss.planet[i].secosw.value = sqrt(ss.planet[i].e.value)*cos(ss.planet[i].omega.value)
+   if ss.planet[i].sesinw.value eq 0d0 then ss.planet[i].sesinw.value = sqrt(ss.planet[i].e.value)*sin(ss.planet[i].omega.value)
+   if ss.planet[i].ecosw.value eq 0d0 then ss.planet[i].ecosw.value = ss.planet[i].e.value*cos(ss.planet[i].omega.value)
+   if ss.planet[i].esinw.value eq 0d0 then ss.planet[i].esinw.value = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
+
    ;; translate from bigomegadeg to bigomega
    if ss.planet[i].bigomegadeg.value ne 0 then begin
       ss.planet[i].bigomega.value = ss.planet[i].bigomegadeg.value*!pi/180d0
       if ss.planet[i].bigomegadeg.scale ne 0 then ss.planet[i].bigomega.scale = ss.planet[i].bigomegadeg.scale*!pi/180d0
    endif
-
-   if ss.planet[i].qecosw.value eq 0d0 then ss.planet[i].qecosw.value = (ss.planet[i].e.value)^(0.25d0)*cos(ss.planet[i].omega.value)
-   if ss.planet[i].qesinw.value eq 0d0 then ss.planet[i].qesinw.value = (ss.planet[i].e.value)^(0.25d0)*sin(ss.planet[i].omega.value)
-   if ss.planet[i].secosw.value eq 0d0 then ss.planet[i].secosw.value = sqrt(ss.planet[i].e.value)*cos(ss.planet[i].omega.value)
-   if ss.planet[i].sesinw.value eq 0d0 then ss.planet[i].sesinw.value = sqrt(ss.planet[i].e.value)*sin(ss.planet[i].omega.value)
 
    ;; overwrite default cosi with starting value for i or ideg
    if ss.planet[i].cosi.value eq 0d0 then begin
