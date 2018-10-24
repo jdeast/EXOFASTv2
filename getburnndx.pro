@@ -45,7 +45,7 @@
 ;   2018/04 - Modified goodchains to maximize the total number of
 ;             saved links
 ;-
-function getburnndx, chi2, goodchains=goodchains, badchains=badchains, medchi2=medchi2
+function getburnndx, chi2, goodchains=goodchains, badchains=badchains, medchi2=medchi2, logname=logname
 
 sz = size(chi2)
 nsteps = sz[1]
@@ -94,6 +94,9 @@ ngood = ndx+1
 ;; if less than 3 chains are good, use all chains
 ;; this isn't going to go well...
 if ngood lt 3 then begin
+   printandlog, "WARNING: there are insufficient 'good' chains; using them all", logname
+   printandlog, "***DO NOT TRUST THESE RESULTS***", logname
+   printandlog, "Restart fit at the best-fit found here, refine your starting values, and/or run it much longer", logname
    goodchains = lindgen(nchains)
    ngood = nchains
 endif 
