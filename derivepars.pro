@@ -50,37 +50,15 @@ starbb45 = exofast_blackbody(ss.star.teff.value,replicate(4493d0/1d9,ss.nsteps),
 
 for i=0, ss.nplanets-1 do begin
 
-   ;; eccentricity and argument of periastron
+   ;; derive eccentricity and argument of periastron based on the parameterization
    if ss.planet[i].secosw.fit and ss.planet[i].sesinw.fit then begin
       ss.planet[i].e.value = ss.planet[i].secosw.value^2 + ss.planet[i].sesinw.value^2
       ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
-   endif else if ss.planet[i].omega.fit and ss.planet[i].vvcirc.fit then begin
-      a = ss.planet[i].vvcirc.value^2*sin(ss.planet[i].omega.value)^2 + 1d0
-      b = 2d0*ss.planet[i].vvcirc.value^2*sin(ss.planet[i].omega.value)
-      c = ss.planet[i].vvcirc.value^2-1d0
-
-      e1 = (-b + sqrt(b^2 - 4d0*a*c))/(2d0*a)
-      e2 = (-b + sqrt(b^2 - 4d0*a*c))/(2d0*a)
-
-      for j=0L, n_elements(a)-1 do begin
-         
-
-         if ~finite(e1[j]) or e1[j] lt 0 then begin
-            ss.planet[i].e.value[j] = e2[j] ;; e1 bad, e2 good; use e2
-         endif else begin
-            if ~finite(e2[j]) or e2[j] lt 0 then begin
-               ss.planet[i].e.value[j] = e1[j] ;; e2 bad, e1 good, use e1
-            endif else begin
-               ;; both e1 and e2 are good
-               ;; use a reproduceable seed to get a 50/50 chance 
-               ;; to recreate this choice later
-               ;; sort of an abuse of RNG seeds, but not bad...
-               random = exofast_random((ss.planet[i].vvcirc.value[j]-floor(ss.planet[i].vvcirc.value[j]))*(2ULL^64-1))
-               if random ge 0.5 then ss.planet[i].e.value[j] = e1[j] $
-               else ss.planet[i].e.value[j] = e2[j]
-            endelse
-         endelse
-      endfor
+   endif else if ss.planet[i].e.fit and ss.planet[i].omega.fit then begin
+      ;; do nothing
+   endif else if ss.planet[i].ecosw.fit and ss.planet[i].esinw.fit then begin
+      ss.planet[i].e.value = sqrt(ss.planet[i].ecosw.value^2 + ss.planet[i].esinw.value^2)
+      ss.planet[i].omega.value = atan(ss.planet[i].esinw.value,ss.planet[i].ecosw.value)
    endif else if ss.planet[i].qecosw.fit and ss.planet[i].qesinw.fit then begin
       ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2
       ss.planet[i].omega.value = atan(ss.planet[i].qesinw.value,ss.planet[i].qecosw.value)
@@ -260,6 +238,12 @@ for i=0, ss.nplanets-1 do begin
 ;   endif
 
 
+endfor
+
+for i=0L, ss.nband-1 do begin  
+   massfraction = ss.planet[0].mpsun.value/(ss.star.mstar.value + ss.planet[0].mpsun.value)
+   fluxfraction = ss.band[i].dilute.value
+   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
 endfor
 
 end
