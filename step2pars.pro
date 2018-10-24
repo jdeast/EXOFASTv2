@@ -24,6 +24,14 @@ if ss.star.parallax.fit then ss.star.distance.value = 1d3/ss.star.parallax.value
 ;print, 'derived: ' + strtrim(ss.star.fbol.value,2)
 ;stop
 
+;; require planets to stay in the same order as they start
+if ss.nplanets gt 0 then begin
+   if max(abs(ss.planetorder - sort(ss.planet.logp.value))) ne 0 then begin
+      if keyword_set(verbose) then printandlog, 'Planets must remain in the original order! Rejecting step', logname
+      return, -1
+   endif
+endif
+
 for j=0, ss.ntel-1 do begin
    if ss.telescope[j].jittervar.value gt 0 then $
       ss.telescope[j].jitter.value = sqrt(ss.telescope[j].jittervar.value)
@@ -46,45 +54,18 @@ for i=0, ss.nplanets-1 do begin
    if ss.planet[i].secosw.fit and ss.planet[i].sesinw.fit then begin
       ss.planet[i].e.value = ss.planet[i].secosw.value^2 + ss.planet[i].sesinw.value^2
       ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
-   endif else if ss.planet[i].omega.fit and ss.planet[i].vvcirc.fit then begin
-      if ss.planet[i].vvcirc.value le 0 then begin
-         if keyword_set(verbose) then printandlog, 'vvcirc is not in range', logname
+   endif else if ss.planet[i].ecosw.fit and ss.planet[i].esinw.fit then begin
+      ss.planet[i].e.value = sqrt(ss.planet[i].ecosw.value^2 + ss.planet[i].esinw.value^2)
+      ss.planet[i].omega.value = atan(ss.planet[i].esinw.value,ss.planet[i].ecosw.value)
+   endif else if ss.planet[i].e.fit and ss.planet[i].omega.fit then begin
+      if ss.planet[i].e.value lt 0d0 then begin
+         if keyword_set(verbose) then printandlog, 'Eccentricity not allowed'
          return, -1
       endif
-
-      ;; scale from -pi to pi
+      ;; scale omega from -pi to pi
       ss.planet[i].omega.value = (ss.planet[i].omega.value mod (2d0*!dpi)) 
       if ss.planet[i].omega.value gt !dpi then ss.planet[i].omega.value -= 2d0*!dpi
       if ss.planet[i].omega.value le -!dpi then ss.planet[i].omega.value += 2d0*!dpi
-
-
-      a = ss.planet[i].vvcirc.value^2*sin(ss.planet[i].omega.value)^2 + 1d0
-      b = 2d0*ss.planet[i].vvcirc.value^2*sin(ss.planet[i].omega.value)
-      c = ss.planet[i].vvcirc.value^2-1d0
-
-      e1 = (-b + sqrt(b^2 - 4d0*a*c))/(2d0*a)
-      e2 = (-b + sqrt(b^2 - 4d0*a*c))/(2d0*a)
-
-      if ~finite(e1) or e1 lt 0 then begin
-         if ~finite(e2) or e2 lt 0 then begin
-            ;; e1 and e2 are bad, return
-            if keyword_set(verbose) then printandlog, 'e is not in range', logname
-            return, -1   
-         endif else ss.planet[i].e.value = e2 ;; e1 bad, e2 good; use e2
-      endif else begin
-         if ~finite(e2) or e2 lt 0 then begin
-            ss.planet[i].e.value = e1 ;; e2 bad, e1 good, use e1
-         endif else begin
-            ;; both e1 and e2 are good
-            ;; use a reproduceable seed to get a 50/50 chance 
-            ;; to recreate this choice later
-            ;; sort of an abuse of RNG seeds, but not bad...
-            random = exofast_random((ss.planet[i].vvcirc.value-floor(ss.planet[i].vvcirc.value))*(2ULL^64-1))
-            if random ge 0.5 then ss.planet[i].e.value = e1 $
-            else ss.planet[i].e.value = e2
-         endelse
-      endelse
-
    endif else if ss.planet[i].qecosw.fit and ss.planet[i].qesinw.fit then begin
       ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2
       ss.planet[i].omega.value = atan(ss.planet[i].qesinw.value,ss.planet[i].qecosw.value)
@@ -99,16 +80,6 @@ for i=0, ss.nplanets-1 do begin
       if ss.planet[i].bigomega.value ge (!dpi) then ss.planet[i].bigomega.value -= !dpi
       if ss.planet[i].bigomega.value lt 0d0  then ss.planet[i].bigomega.value += !dpi
    endelse
-
-
-;   ;; derive quantities we'll use later
-;   if ss.planet[i].qecosw.fit then begin
-;      ss.planet[i].e.value = (ss.planet[i].qecosw.value^2 + ss.planet[i].qesinw.value^2)^2 
-;      ss.planet[i].omega.value = atan(ss.planet[i].qecosw.value,ss.planet[i].qesinw.value)
-;   endif else begin
-;      ss.planet[i].e.value = ss.planet[i].secosw.value^2 + ss.planet[i].sesinw.value^2
-;      ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
-;   endelse
 
    if ss.planet[i].k.value le 0d0 then begin
       ss.planet[i].mpsun.value = -ktom2(-ss.planet[i].K.value, ss.planet[i].e.value,$
@@ -134,7 +105,6 @@ for i=0, ss.nplanets-1 do begin
                              (4d0*!dpi^2))^(1d0/3d0)                    ;; semi-major axis in r_sun
    ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value ;; a/rstar (unitless)
    ss.planet[i].a.value = ss.planet[i].arsun.value/AU ;; semi major axis in AU
-
 
    ;; tighter (empirical) constraint on eccentricity (see Eastman 2013)
    if ss.tides and ss.planet[i].e.value gt (1d0-3d0/ss.planet[i].ar.value) then begin
@@ -215,6 +185,12 @@ for i=0, ss.nplanets-1 do begin
       endif
    endif
 
+endfor
+
+for i=0L, ss.nband-1 do begin  
+   massfraction = ss.planet[0].mpsun.value/(ss.star.mstar.value + ss.planet[0].mpsun.value)
+   fluxfraction = ss.band[i].dilute.value
+   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
 endfor
 
 return, 1
