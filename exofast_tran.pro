@@ -111,6 +111,7 @@ if reflect ne 0d0 then begin
       tc0 = tp - phase*period
    endif else tc0 = tc
    modelflux+=1d-6*reflect*cos(2d0*!dpi*(transitbjd-tc0)/period)*planetvisible
+endif
 
 ;; normalization and dilution due to neighboring star
 if dilute ne 0d0 then modelflux = f0*(modelflux*(1d0-dilute)+dilute) $
