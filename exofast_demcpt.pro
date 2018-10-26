@@ -419,7 +419,7 @@ for i=resumendx,maxsteps-1L do begin
    ;; tz > 1000 and Gelman-Rubin < 1.01 => converged 
    if i eq nextrecalc then begin
       ;; discard the burn-in
-      burnndx = getburnndx(chi2[0:i,*],goodchains=goodchains)
+      burnndx = getburnndx(chi2[0:i,*],goodchains=goodchains,/silent)
 
       ;; calculate the Gelman-Rubin statistic (remove burn-in)
       converged = exofast_gelmanrubin(pars[0:nfit-1,burnndx:i,goodchains],$
@@ -528,7 +528,7 @@ printandlog, '', logname ;; now just add a space
 ;; it doesn't necessarily stop at MAXSTEPS if it was interrupted or converged early
 nstop = i-1L
 
-burnndx = getburnndx(chi2[0:nstop,*],goodchains=goodchains)
+burnndx = getburnndx(chi2[0:nstop,*],goodchains=goodchains, /silent)
 ngood = n_elements(goodchains)
 
 ;; if there are bad chains, is it better without them?

@@ -1925,7 +1925,7 @@ if ntel gt 0 then begin
       ss.telescope[i].gamma.value = mean((*(ss.telescope[i].rvptrs)).rv)
       if n_elements((*(ss.telescope[i].rvptrs)).rv) gt maxpoints then begin
          maxpoints = n_elements((*(ss.telescope[i].rvptrs)).rv) 
-         ss.planet[*].k.value = sqrt(2d0)*stdev((*(ss.telescope[i].rvptrs)).rv)
+         ss.planet[*].k.value = sqrt(2d0)*stddev((*(ss.telescope[i].rvptrs)).rv)
       endif
    endfor
    printandlog, '', logname
