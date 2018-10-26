@@ -401,8 +401,10 @@ for i=resumendx,maxsteps-1L do begin
    endfor ;; each chain
 
    ;; stop the fit if it has exceeded the maximum allowed runtime
-   if systime(/seconds)-t0 gt maxtime then begin
-      printandlog, 'Time limit reached, stopping the run'
+   tnow = systime(/seconds)
+   if tnow-t0 gt maxtime then begin
+      printandlog, '', logname
+      printandlog, 'Time limit reached, stopping the run', logname
       !stopnow=1
    endif
 
@@ -475,7 +477,7 @@ for i=resumendx,maxsteps-1L do begin
    swaprate = strtrim(string(nswap/double(nswapattempt)*100,$
                              format='(f6.2)'),2)
 
-   timeleft = (systime(/seconds)-t0)*(maxsteps/(i+1d)-1d)
+   timeleft = ((tnow-t0)*(maxsteps/(i+1d)-1d)) < (maxtime - (tnow-t0))
    units = ' seconds '
    if timeleft gt 60 then begin
       timeleft /= 60
