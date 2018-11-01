@@ -120,15 +120,17 @@ for i=0L, mcmcss.ntel-1 do begin
 endfor
 
 ;; astrometry
-for i=0L, mcmcss.nastrom-1 do begin
-   printf, lun, '# ' + mcmcss.astrom[i].label
-   for j=0, n_tags(mcmcss.astrom[i])-1 do begin
-      if (size(mcmcss.astrom[i].(j)))[2] eq 8 then begin        
-         line = getpriorline(mcmcss.astrom[i].(j), ndx, num=i)
-         if line ne '' then printf, lun, line 
-      endif
+if tag_exist(mcmcss,'nastrom') then begin
+   for i=0L, mcmcss.nastrom-1 do begin
+      printf, lun, '# ' + mcmcss.astrom[i].label
+      for j=0, n_tags(mcmcss.astrom[i])-1 do begin
+         if (size(mcmcss.astrom[i].(j)))[2] eq 8 then begin        
+            line = getpriorline(mcmcss.astrom[i].(j), ndx, num=i)
+            if line ne '' then printf, lun, line 
+         endif
+      endfor
    endfor
-endfor
+endif
 
 ;; planets
 for i=0L, mcmcss.nplanets-1 do begin
