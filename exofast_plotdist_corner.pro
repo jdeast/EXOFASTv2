@@ -70,9 +70,9 @@ aspect_ratio=1.5
 xsize = 18
 ysize=xsize/aspect_ratio
 !p.font=0
-device, filename=pdfname
-device, set_font='Times',/tt_font
-device, xsize=xsize,ysize=ysize,/color,bits=24
+
+defsysv, '!GDL', exists=runninggdl  
+if ~runninggdl then device, filename=pdfname, set_font='Times',/tt_font, xsize=xsize,ysize=ysize,/color,bits=24
 charsize=1.5
 loadct,39,/silent
 red = 254
@@ -91,6 +91,7 @@ if n_elements(csvfile) ne 0 then begin
 endif
 
 !p.multi=[0,2,4] ;; 8 to a page
+page = 1
 for i=0, n_tags(ss)-1 do begin
    for j=0, n_elements(ss.(i))-1 do begin
       for k=0, n_tags(ss.(i)[j])-1 do begin
@@ -112,6 +113,14 @@ for i=0, n_tags(ss)-1 do begin
                               pars0 = (*(ss.(i)[j].(k))).(l)[m].value
                               if n_elements(mask) ne 0 then pars0[mask] = !values.d_nan
                               pars = (reform(pars0,nsteps,ss.nchains))[burnndx:*,goodchains]
+
+                              ;; GDL doesn't support multi-page PS files
+                              if runninggdl and !p.multi[0] eq 0 then begin
+                                 device, /close
+                                 pdfname0 = file_dirname(pdfname) + path_sep() + file_basename(pdfname,'.ps') + '.' + string(page,format='(i03)') + '.ps'
+                                 device, filename=pdfname0, set_font='Times',/tt_font, xsize=xsize,ysize=ysize,/color,bits=24
+                                 page += 1
+                              endif
 
                               ;; plot the histogram, get the median and 68% confidence interval
                               summarizepar, pars, label= (*(ss.(i)[j].(k))).(l)[m].label,$
@@ -158,6 +167,14 @@ for i=0, n_tags(ss)-1 do begin
                      if n_elements(mask) ne 0 then pars0[mask] = !values.d_nan
                      pars = (reform(pars0,nsteps,ss.nchains))[burnndx:*,goodchains]
 
+                     ;; GDL doesn't support multi-page PS files
+                     if runninggdl and !p.multi[0] eq 0 then begin
+                        device, /close
+                        pdfname0 = file_dirname(pdfname) + path_sep() + file_basename(pdfname,'.ps') + '.' + string(page,format='(i03)') + '.ps'
+                        device, filename=pdfname0, set_font='Times',/tt_font, xsize=xsize,ysize=ysize,/color,bits=24
+                        page += 1
+                     endif
+
                      ;; plot the histogram, get the median and 68% confidence interval
                      summarizepar, pars, label=ss.(i)[j].(k).label,$ 
                                    unit=ss.(i)[j].(k).unit,$
@@ -200,7 +217,6 @@ bestpars = bestpars[1:n_elements(bestpars)-1] ;; the best-fit (most likely) valu
 parnames = parnames[1:n_elements(parnames)-1] ;; parameter names for the axis labels
 medianpars = medianpars[*,1:n_elements(medianpars[0,*])-1] ;; median parameters and 68% confidence intervals
 
-defsysv, '!GDL', exists=runninggdl
 if runninggdl then nocovar = 1
 
 ;; if covariance plots aren't wanted (they take a while), we're done

@@ -1458,7 +1458,7 @@ star = create_struct(mstar.label,mstar,$
                      distance.label,distance,$
                      slope.label,slope,$
                      quad.label,quad,$
-                     'fluxfile','',$
+                     'fluxfile',' ',$
                      'rootlabel','Stellar Parameters:',$
                      'columnlabels',columnlabels,$
                      'label','')

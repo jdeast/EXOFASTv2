@@ -80,9 +80,12 @@ aspect_ratio=1.5
 xsize = 18
 ysize=xsize/aspect_ratio
 !p.font=0
-device, filename=chainfile
-device, set_font='Times',/tt_font
-device, xsize=xsize,ysize=ysize,/color,bits=24
+
+defsysv, '!GDL', exists=runninggdl  
+if runninggdl then chainfile0 = file_dirname(chainfile) + path_sep() +  file_basename(chainfile,'.ps') + '.001.ps' $
+else chainfile0 = chainfile
+
+device, filename=chainfile0, set_font='Times',/tt_font, xsize=xsize,ysize=ysize,/color,bits=24
 loadct,39,/silent
 red = 254
 
@@ -92,6 +95,7 @@ ymin = min(chi2,max=ymax)
 if ymin lt 0 then sign = ' + ' else sign = ' - '
 latex = '\chi^2' + sign + strtrim(abs(ymin),2)
 plotchain, chi2[*,goodchains]-ymin, latex=latex, unit='', label='chi2', logname=logname, burnndx=burnndx
+page = 2
 
 for i=0, n_tags(ss)-1 do begin
    for j=0, n_elements(ss.(i))-1 do begin
@@ -107,6 +111,13 @@ for i=0, n_tags(ss)-1 do begin
                      for m=0L, n_elements((*(ss.(i)[j].(k))).(l))-1 do begin
                         if tag_exist((*(ss.(i)[j].(k))).(l)[m],'derive') then begin
                            if (*(ss.(i)[j].(k))).(l)[m].derive or (*(ss.(i)[j].(k))).(l)[m].fit then begin
+                              ;; GDL can't do multi-page plots
+                              if runninggdl and !p.multi[0] eq 0 then begin
+                                 device, /close
+                                 chainfile0 = file_dirname(chainfile) + path_sep() + file_basename(chainfile,'.ps') + '.' + string(page,format='(i03)') + '.ps'
+                                 device, filename=chainfile0, set_font='Times',/tt_font, xsize=xsize,ysize=ysize,/color,bits=24
+                                 page += 1
+                              endif
                               pars = (reform((*(ss.(i)[j].(k))).(l)[m].value,ss.nsteps/ss.nchains,ss.nchains))[*,goodchains]
                               plotchain, pars, label=(*(ss.(i)[j].(k))).(l)[m].label,$
                                          unit = (*(ss.(i)[j].(k))).(l)[m].unit,$
@@ -122,6 +133,13 @@ for i=0, n_tags(ss)-1 do begin
             if n_tags(ss.(i)[j].(k)) ne 0 then begin
                if tag_exist(ss.(i)[j].(k),'derive') then begin
                   if ss.(i)[j].(k).derive then begin
+                     ;; GDL can't do multi-page plots
+                     if runninggdl and !p.multi[0] eq 0 then begin
+                        device, /close
+                        chainfile0 = file_dirname(chainfile) + path_sep() + file_basename(chainfile,'.ps') + '.' + string(page,format='(i03)') + '.ps'
+                        device, filename=chainfile0, set_font='Times',/tt_font, xsize=xsize,ysize=ysize,/color,bits=24
+                        page += 1
+                     endif
                      pars = (reform(ss.(i)[j].(k).value,ss.nsteps/ss.nchains,ss.nchains))[*,goodchains]
                      plotchain, pars, label=ss.(i)[j].(k).label,$ 
                                 unit = ss.(i)[j].(k).unit,$

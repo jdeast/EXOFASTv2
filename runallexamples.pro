@@ -20,7 +20,7 @@ fithd106315, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fithat3_comparestar, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 
 ;; test license free uses
-spawn, 'gdl -e fithat3'
+spawn, 'gdl -e "fithat3, maxsteps=' + strtrim(maxsteps,2) + '"'
 
 argfile = filepath('hat3.args',$
                    root_dir=getenv('EXOFAST_PATH'),$

@@ -12,7 +12,12 @@ if keyword_set(psname) then begin
    xsize=10.5
    ysize=xsize/aspect_ratio
    !p.font=0
-   device, filename=psname, /color, bits=24
+
+   defsysv, '!GDL', exists=runninggdl  
+   if runninggdl then psname0 = file_dirname(psname) + path_sep() + file_basename(psname,'.ps') + '.1.ps' $
+   else psname0 = psname
+
+   device, filename=psname0, /color, bits=24
    device, xsize=xsize,ysize=ysize
    loadct, 39, /silent
    colors = [0,159,95,254,223,31,207,111,191,47]
@@ -195,7 +200,13 @@ for i=0, ss.nplanets-1 do begin
       plotsym, symbols[j mod nsymbols], symsize, fill=fills[j mod nfills], color=colors[j mod ncolors]
       oploterr, time, rv.residuals, err, 8
    endfor
-   
+
+   ;; GDL can't do multi-page plots
+   if runninggdl then begin
+      device, /close
+      psname0 = file_dirname(psname) + path_sep() + file_basename(psname,'.ps') + '.' + strtrim(i+2,2) + '.ps'
+      device, filename=psname0, /color, bits=24, xsize=xsize,ysize=ysize
+   endif
 endfor
 
 !p.multi=0

@@ -12,7 +12,12 @@ if keyword_set(psname) then begin
    ysize = xsize/aspect_ratio + (ss.ntran-1)*0.6
 ;   ysize=(xsize/aspect_ratio + (ss.ntran)*0.2) < screen[1]
    !p.font=0
-   device, filename=psname, /color, bits=24, encapsulated=0
+
+   defsysv, '!GDL', exists=runninggdl  
+   if runninggdl then psname0 = file_dirname(psname) + path_sep() + file_basename(psname,'.ps') + '.1.ps' $
+   else psname0 = psname
+
+   device, filename=psname0, /color, bits=24, encapsulated=0
    device, xsize=xsize,ysize=ysize
    loadct, 39, /silent
    red = 254
@@ -267,7 +272,11 @@ ny = ceil(ntranfit/double(nx))
 !p.multi = [0,nx,ny]
 ysize = xsize/aspect_ratio
 if keyword_set(psname) then begin
-   device, xsize=xsize,ysize=ysize
+   if runninggdl then begin
+      device, /close
+      psname0 = file_dirname(psname) + path_sep() + file_basename(psname,'.ps') + '.2.ps'
+      device, filename=psname0, /color, bits=24, xsize=xsize,ysize=ysize
+   endif else device, xsize=xsize,ysize=ysize
 endif else begin
    if win_state[31] then wset, 31 $
    else window, 31, xsize=xsize, ysize=ysize, xpos=screen[0]/3d0, ypos=0, retain=2

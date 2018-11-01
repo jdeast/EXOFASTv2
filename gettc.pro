@@ -109,7 +109,7 @@ for j=0L, mcmcss.nplanets-1 do begin
    for k=0L, mcmcss.ntran-1 do begin
       bad = where(tcs[j,k,*] eq 0d0)
       if bad[0] eq -1 then begin
-         print, planetname[j], epochs[j,k], mean(tcs[j,k,*]), stddev(tcs[j,k,*]), format='(a1,x,i3,x,f0.5,x,f0.5)'
+         print, planetname[j], epochs[j,k], mean(tcs[j,k,*]), stddev(tcs[j,k,*]),mcmcss.transit[k].label, format='(a1,x,i3,x,f0.5,x,f0.5,x,a)'
       endif
    endfor
 endfor

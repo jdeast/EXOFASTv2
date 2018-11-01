@@ -724,7 +724,9 @@ chi2func = 'exofast_chi2v2'
 
 ;; compile all routines now to keep output legible 
 ;; resolve_all doesn't interpret execute; it's also broken prior to IDL v6.4(?)
-if double(!version.release) ge 6.4d0 and ~lmgr(/vm) then $
+defsysv, '!GDL', exists=runninggdl  
+
+if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~runninggdl then $
    resolve_all, resolve_function=[chi2func,'exofast_random'],skip_routines=['cggreek'],/cont,/quiet
 
 ;; default prefix for all output files (filename without extension)
@@ -955,8 +957,15 @@ derivepars, mcmcss
 
 ;; save the chains for additional analysis
 idlfile = prefix + 'mcmc.idl'
-if keyword_set(keephot) and ntemps gt 1 then save, mcmcss, hotpars, hotchi2, filename=idlfile $
-else save, mcmcss, filename=idlfile
+;; GDL compatibility
+if runninggdl then begin
+   if keyword_set(keephot) and ntemps gt 1 then cmsave, mcmcss, hotpars, hotchi2, filename=idlfile $
+   else cmsave, mcmcss, filename=idlfile
+endif else begin
+   if keyword_set(keephot) and ntemps gt 1 then save, mcmcss, hotpars, hotchi2, filename=idlfile $
+   else save, mcmcss, filename=idlfile
+endelse
+
 
 spawn, 'git -C $EXOFAST_PATH rev-parse --short HEAD', output, stderr
 if output[0] ne '' then versiontxt = ", created using EXOFASTv2 commit number " + output[0] $
