@@ -5,6 +5,7 @@ if n_elements(ndx) eq 0 then begin
    else minchi2 = min(*ss.chi2,ndx)
 endif
 
+defsysv, '!GDL', exists=runninggdl
 mydevice=!d.name
 if keyword_set(psname) then begin
    set_plot, 'PS'
@@ -13,7 +14,6 @@ if keyword_set(psname) then begin
    ysize=xsize/aspect_ratio
    !p.font=0
 
-   defsysv, '!GDL', exists=runninggdl  
    if runninggdl then psname0 = file_dirname(psname) + path_sep() + file_basename(psname,'.ps') + '.1.ps' $
    else psname0 = psname
 
