@@ -60,7 +60,7 @@ teffs = [3.5d3 + dindgen(39)*2.5d2,1.4d4 + dindgen(24)*1d3,3.75d4,$
          4.8d4+dindgen(3)*1d3]
 bands = ['U','B','V','R','I','J','H','K',$
          'Sloanu','Sloang','Sloanr','Sloani','Sloanz',$
-         'Kepler','CoRoT','Spit36','Spit45','Spit58','Spit80',$
+         'Kepler','TESS','CoRoT','Spit36','Spit45','Spit58','Spit80',$
          'u','b','v','y']
 nbands = n_elements(bands)
 ndx = where(bands eq band)
