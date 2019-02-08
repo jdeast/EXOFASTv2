@@ -69,14 +69,14 @@ end
 ;    mkpriors.pro), as well as a prior on Teff.
 ;
 ; INPUTS:
-;
-;    
 ; 
 ;    References included in the output file -- please cite the appropriate catalogs.
 ; Modification 
 ;    20??-??-??: Written: Keivan Stassun, Vanderbilt
 ;    2018-04-12: Jason Eastman, CfA
-;                Renamed, documented, and cleaned up for distribution with EXOFASTv2
+;                Renamed, documented, and cleaned up for distribution
+;                with EXOFASTv2
+;    2019-01-18: Now can be run without a license (use mksed.sav)
 ;
 ;-
 pro mksed,name,outfile,dist=dist,galdist=galdist,$
@@ -84,19 +84,46 @@ pro mksed,name,outfile,dist=dist,galdist=galdist,$
           nogaia=nogaia,nowise=nowise,over=over,cfa=cfa,$
           ra=ra,dec=dec,silent=silent, parallax=parallax, uparallax=uparallax
 
-parallax = 0d0
-uparallax = -1d0
+;; for use without a license
+if lmgr(/vm) or lmgr(/runtime) then begin
+   par = command_line_args(count=numargs)
+   
+   name = par[0]
+   if numargs gt 1 then outfile = par[1]
 
-if n_params() lt 1 then begin
-  print,'syntax: get_eb_phot_data,name,outfile,dist=dist,galdist=galdist,/noapass,/nogaia,/nowise,/over,/cfa,/kepler,ra=ra,dec=dec'
-  print,'        use ra and dec to perform vizier searches via coords instead of star name'
-  retall
+   ;; set keywords
+   if (where(strupcase(par) eq 'APASS'))[0] ne -1 then apass = 1
+   if (where(strupcase(par) eq 'MERM'))[0] ne -1 then merm = 1
+   if (where(strupcase(par) eq 'STROMGREN'))[0] ne -1 then stromgren = 1
+   if (where(strupcase(par) eq 'KEPLER'))[0] ne -1 then kepler = 1
+   if (where(strupcase(par) eq 'GALEX'))[0] ne -1 then galex = 1
+   if (where(strupcase(par) eq 'NOGAIA'))[0] ne -1 then nogaia = 1
+   if (where(strupcase(par) eq 'NOWISE'))[0] ne -1 then nowise = 1
+   if (where(strupcase(par) eq 'OVER'))[0] ne -1 then over = 1
+   if (where(strupcase(par) eq 'CFA'))[0] ne -1 then cfa = 1
+   if (where(strupcase(par) eq 'SILENT'))[0] ne -1 then silent = 1
+
+   for i=0L, numargs-1 do begin
+      if strpos(par[i],'=') ne -1 then begin
+         entries = strsplit(par[i],'=',/extract)
+         if strupcase(entries[0]) eq 'DIST' then dist = double(entries[1])
+         if strupcase(entries[0]) eq 'GALDIST' then galdist = double(entries[1])
+         if strupcase(entries[0]) eq 'RA' then ra = double(entries[1])
+         if strupcase(entries[0]) eq 'DEC' then dec = double(entries[1])
+         if strupcase(entries[0]) eq 'PARALLAX' then parallax = double(entries[1])
+         if strupcase(entries[0]) eq 'UPARALLAX' then uparallax = double(entries[1])
+      endif
+   endfor
+
 endif
 
+if n_elements(parallax) eq 0 then parallax = 0d0
+if n_elements(uparallax) eq 0 then uparallax = -1d0
+
 star=name
-if not keyword_set(dist) then dist=2d0
-if not keyword_set(galdist) then galdist=dist
-if not keyword_set(ra) then querysimbad,star,ra,dec,cfa=cfa else star=[ra,dec]
+if n_elements(dist) eq 0 then dist=2d0
+if n_elements(galdist) eq 0 then galdist=dist
+if n_elements(ra) eq 0 or n_elements(dec) eq 0 then querysimbad,star,ra,dec,cfa=cfa else star=[ra,dec]
 
 ;; if outfile not specified, print results to the screen
 if n_elements(outfile) eq 0 then lun = -1 $
