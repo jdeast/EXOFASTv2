@@ -94,9 +94,9 @@ while not eof(lun) do begin
          endif else if strupcase(strtrim(entries[0],2)) eq 'LONGCADENCE' then begin
             longcadence = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'EXPTIME' then begin
-            exptime = double(entries[1])
+            exptime = double(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'NINTERP' then begin
-            ninterp = long(entries[1])
+            ninterp = long(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'REJECTFLATMODEL' then begin
             rejectflatmodel = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MAXGR' then begin
