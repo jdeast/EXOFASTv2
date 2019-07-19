@@ -3,11 +3,12 @@
 ;   EXOFAST_GETB2
 ;
 ; PURPOSE: 
-;   This function returns the impact parameter as a function of BJD
-;   given orbital elements of many planets, assuming keplerian orbits.
-;   Optionally, the 3-space barycentric coordinates of the star
-;   (x1,y1,z1) and planets (x2,y2,z2) or the stellar coordinates of the
-;   planets (x0,y0,z0) can be returned.
+;   This function returns the impact parameter as a function of BJD in
+;   the target barycentric frame, given orbital elements of many
+;   planets, assuming keplerian orbits.  Optionally, the 3-space
+;   barycentric coordinates of the star (x1,y1,z1) and planets
+;   (x2,y2,z2) or the stellar coordinates of the planets (x0,y0,z0)
+;   can be returned.
 ; 
 ; CALLING SEQUENCE:
 ;   result = getb(jds, i=i,a=a,tperiastron=tperiastron,period=p,$
@@ -56,6 +57,8 @@
 ;  2009/05/01 -- Jason Eastman (Ohio State University)
 ;  2017/04/12 -- Add optional mass ratio keyword
 ;  2018/07/06 -- Now properly handles 2D time array (for long cadence)
+;  2018/11/13 -- Now properly handles a scalar time
+;  2019/02/05 -- Fix sign conventions
 ;-
 
 function exofast_getb2, bjd, inc=inc, a=a, tperiastron=tperiastron, Period=P, $
@@ -63,14 +66,18 @@ function exofast_getb2, bjd, inc=inc, a=a, tperiastron=tperiastron, Period=P, $
                        lonascnode=lonascnode, q=q
 
 sz = size(bjd)
-if sz[0] le 1 then begin
+if sz[0] eq 1 then begin
    ntimes = sz[1]
    ninterp = 1
 endif else if sz[0] eq 2 then begin
    ;; long cadence extra sampling
    ninterp = sz[2]
    ntimes = sz[1]
-endif else message, 'Incompatible dimensions on BJD'
+endif else if sz[0] eq 0 then begin
+   ;; scalar time
+   ntimes = 1
+   ninterp = 1
+endif else message, 'Incompatible dimensions of BJD'
 
 nplanets = n_elements(inc)
 
@@ -118,36 +125,37 @@ for i=0L, nplanets-1L do begin
 
    ;; calculate the corresponding (x,y) coordinates of planet in
    ;; barycentric coordinates
-   r2 = a2[i]*(1d0-e[i]^2)/(1d0+e[i]*cos(trueanom))
+   ;; note sign flip to account for using omega_* instead of omega_P
+   r2 = -a2[i]*(1d0-e[i]^2)/(1d0+e[i]*cos(trueanom))
 
-   ;; as seen from observer
-   x2[i,*,*] = -r2*cos(trueanom + omega[i])
+   ;; planet path as seen from observer
+   x2[i,*,*] = r2*cos(trueanom + omega[i])
    tmp = r2*sin(trueanom + omega[i])
-   y2[i,*,*] =  -tmp*cos(inc[i])
-   z2[i,*,*] =  tmp*sin(inc[i])
+   y2[i,*,*] = tmp*cos(inc[i])
+   z2[i,*,*] = tmp*sin(inc[i])
 
    ;; Rotate by the Longitude of Ascending Node
-   ;; For transits, it is not constrained, so we assume Omega=!dpi)
+   ;; For transits, it is not constrained, so we assume Omega=0)
    if n_elements(lonascnode) eq nplanets then begin
       xold = x2[i,*,*] & yold = y2[i,*,*]
-      x2[i,*] = -xold*cos(lonascnode[i]) + yold*sin(lonascnode[i])
-      y2[i,*] = -xold*sin(lonascnode[i]) - yold*cos(lonascnode[i])
+      x2[i,*] = xold*cos(lonascnode[i]) - yold*sin(lonascnode[i])
+      y2[i,*] = xold*sin(lonascnode[i]) + yold*cos(lonascnode[i])
    endif
 
    ;; calculate the star position in the barycentric frame
    r1 = a1[i]*(1d0-e[i]^2)/(1d0+e[i]*cos(trueanom))
 
-   ;; rotate to observer's plane of reference
-   x1tmp = -r1*cos(trueanom + omega[i] + !dpi)
-   tmp = r1*sin(trueanom + omega[i] + !dpi)
-   y1tmp = -tmp*cos(inc[i])
+   ;; stellar path as seen by observer
+   x1tmp = r1*cos(trueanom + omega[i])
+   tmp = r1*sin(trueanom + omega[i])
+   y1tmp = tmp*cos(inc[i])
    z1 += tmp*sin(inc[i])
 
    ;; Rotate by the Longitude of Ascending Node
    ;; For transits, it is not constrained, so we assume Omega=!dpi)
    if n_elements(lonascnode) eq nplanets then begin
-      x1 += -x1tmp*cos(lonascnode[i]) + y1tmp*sin(lonascnode[i])
-      y1 += -x1tmp*sin(lonascnode[i]) - y1tmp*cos(lonascnode[i])
+      x1 += x1tmp*cos(lonascnode[i]) - y1tmp*sin(lonascnode[i])
+      y1 += x1tmp*sin(lonascnode[i]) + y1tmp*cos(lonascnode[i])
    endif else begin
       x1 += x1tmp
       y1 += y1tmp
