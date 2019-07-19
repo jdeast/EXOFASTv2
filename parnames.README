@@ -69,8 +69,8 @@
 # alpha    # Alpha Element Enhancement -- Currently not used but will be in future updates
 # distance # distance to the star (pc); fitted parameter
 # parallax # Parallax (mas) # Use value from Gaia to precisely constrain Rstar (https://gea.esac.esa.int/archive/)
-# slope    # A linear trend added to RVs; only fitted when /SLOPE keyword set
-# quad     # A quadratic trend added to RVs; only fitted when /QUAD keyword set
+# slope    # A linear trend added to RVs; only fitted when /FITSLOPE keyword set
+# quad     # A quadratic trend added to RVs; only fitted when /FITQUAD keyword set
 #
 #### Instrument parameters ####
 #
