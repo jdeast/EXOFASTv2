@@ -1,0 +1,310 @@
+\newcommand{\specialcell}[2][c]{%
+  \begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
+
+\startlongtable
+\begin{deluxetable*}{llcc}
+\tablecaption{Explanation of \exofasttwo \ output parameters.}
+\label{tab:explain}
+\tablehead{\colhead{~~~Parameter} & \colhead{Units} & \colhead{Variable} & \colhead{Bounds}}
+\startdata
+\smallskip\\\multicolumn{2}{l}{Stellar Parameters:}&\smallskip\\
+\hline
+~~~~$\log{ \left(M_*/M_{\sun}\right) }$\dotfill & Mass\dotfill & logmstar & $0.001 <  M_* \leq 500$ \\
+\multicolumn{4}{p{17cm}}{The log of the stellar mass in solar  units. The MIST grid spans $0.1 \leq M_* \leq 300$, beyond which models are rejected (not extrapolated). Known systematic errors exist for stars on the low mass end of their range. The YY grid spans $0.4 < M_* < 5$. The span of the Torres data are $0.2 < M_* < 30$, though it is sparsely populated at the extremes. All stellar models should be disabled and replaced with direct priors for extreme stars.}\\
+\hline
+~~~~$M_*$\dotfill & Mass (\msun)\dotfill & mstar & $0.001 <  M_* \leq 500$  \\
+\multicolumn{4}{p{17cm}}{Same as above, but in linear solar units.} \\
+\hline
+~~~~$R_*$\dotfill & Radius (\rsun)\dotfill & rstar & $10^{-6} < R_* < 2000$ \\
+\multicolumn{4}{p{17cm}}{The stellar radius in solar units. The span of the MIST models is $ 0.008 < R_* < 1432$. The span of the YY models is ??. The span of the Torres relation is $0.2 < R_* < 30$.}\\
+\hline
+~~~~$L_*$\dotfill & Luminosity (\lsun)\dotfill &lstar & None \\
+\multicolumn{4}{p{17cm}}{The stellar luminosity, $\left(\frac{R_*}{R_\sun}\right)^2\left(\frac{T_{\rm eff}}{T_{\sun}}\right)^4$, in solar units. There are no explicit limits on this derived parameter, but the bounds on $T_{\rm eff}$ and $R_*$ limit its range.}\\
+\hline
+~~~~$\rho_*$\dotfill & Density (cgs)\dotfill & rhostar & None \\
+\multicolumn{4}{p{17cm}}{The stellar density, $\frac{3M_*}{4\pi R_*^3}$, in g~cm$^{-3}$. There are no explicit limits on this derived parameter, but the bounds on $M_*$ and $R_*$ limit its range.}\\
+\hline
+~~~~$\log{g}$\dotfill & Surface gravity (cgs)\dotfill & logg & None \\
+\multicolumn{4}{p{17cm}}{The log$_{10}$ of the stellar surface gravity, $\log_{10}\left({\frac{GM_*}{R_*^2}}\right)$, in cgs units. The span of MIST is $-1 \lesssim \log{g} \lesssim 10$. The span of the NextGen models is ??. The span of the ATLAS models is ??}\\
+\hline
+~~~~$T_{\rm eff}$\dotfill & Effective Temperature (K)\dotfill & teff & $100 < T_{\rm eff} < 250000$ \\
+\multicolumn{4}{p{17cm}}{The stellar effective temperature in Kelvin. Note that the stellar evolution and stellar atmosphere grids are not applicable in this entire range. The span of the MIST models is $2200 < T_{\rm eff} < 400000$, and we would advise caution fitting stars cooler than 3500 K or hotter than 10000 K. The span of the YY models is ??. The span of the Torres relation is $3000 < T_{\rm eff} < 40000$. The span of the NextGen models is ?? The span of the ATLAS models is ??} \\
+\hline
+~~~~$[{\rm Fe/H}]$\dotfill & Metallicity (dex)\dotfill & feh & $-10 < [{\rm Fe/H}] < 2$ \\
+\multicolumn{4}{p{17cm}}{The stellar surface iron abundance. The MIST-derived surface iron abundances are $[{\rm Fe/H}] \gtrsim -5$, though for most stars, it tracks $[{\rm Fe/H}]_{0}$ relatively closely, which spans $-5 < [{\rm Fe/H}]_{0} \leq 0.5$. The YY grid spans from $-3.29 < [{\rm Fe/H}] < 0.78$. The metalicity of only 21 stars in the Torres sample was known, and span a relatively narrow range around solar metalicity: $-0.6 < [{\rm Fe/H}] < 0.4$. The ATLAS grid spans?? NextGen??}\\
+\hline
+~~~~$[{\rm Fe/H}]_{0}$\dotfill & Initial Metallicity \dotfill & initfeh & $-5 \leq [{\rm Fe/H}]_{0} \leq 0.5$ \\
+\multicolumn{4}{p{17cm}}{The initial stellar surface iron abundance at Age=0. See \citet{Dotter:2016}. Only displayed for MIST fits. The MIST grid spans $-5 < [{\rm Fe/H}]_{0} \leq 0.5$.} \\
+\hline
+~~~~$Age$\dotfill & Age (Gyr)\dotfill & age & $0 < Age < 13.82$ \\
+\multicolumn{4}{p{17cm}}{The stellar age, in billions of years. Only displayed for YY or MIST fits. While the MIST grid spans much higher ages, we excludes stars older than the age of the universe. It is fit when an age prior is supplied or for YY fits. The Torres relation does not constrain the age.}\\
+\hline
+~~~~$EEP$\dotfill & Equal Evolutionary Phase \dotfill & eep & $0 \leq EEP \leq 1709$ \\
+\multicolumn{4}{p{17cm}}{The ``Equal Evolutionary Phase'', which indexes common evolutionary phases (e.g., the turn off = 454), which is essentially a proxy for age. See \citet{Dotter:2016} and \S \ref{sec:mist} for a detailed explanation. Only displayed for MIST fits.}\\
+\hline
+~~~~$vsinI_*$\dotfill & Projected rotational velocity (m/s)  \dotfill& vsini & None \\
+\multicolumn{4}{p{17cm}}{The projected rotational velocity of the star, in m/s. Only displayed for DT or RM fits.}\\
+\hline
+~~~~$V_{\rm line}$\dotfill & Unbroadened line width (m/s)  \dotfill& vline & None \\
+\multicolumn{4}{p{17 cm}}{The average line-width for the star without any rotational broadening, in units of m/s. It includes effects from macroturbulence, thermal, and pressure broadening and is typically 2000 to 10,000 m/s. Only displayed for DT fits. ??FWHM vs sigma??}\\
+\hline
+~~~~$A_V$\dotfill & V-band extinction (mag)\dotfill & av & $0 \leq A_V \leq 100$ \\
+\multicolumn{4}{p{17cm}}{The V-band extinction for the SED model. Only displayed for SED fits.}\\
+\hline
+~~~~$\sigma_{SED}$\dotfill & SED photometry error scaling \dotfill & errscale & $0.01 < \sigma_{SED} < 100$ \\
+\multicolumn{4}{p{17cm}}{The multiplicative factor to scale the supplied broadband SED photometric errors to ensure they are consistent with the model. If these bounds are encountered, the error bars should be checked and scaled manually.}\\
+\hline
+~~~~$\alpha_{\rm ICRS}$\dotfill & Right Ascension (deg)  \dotfill & ra & $0 \leq \alpha_{\rm ICRS} \leq 360$ \\
+\multicolumn{4}{p{17cm}}{The ICRS right ascension, in degrees. Only displayed for astrometry fits.}\\
+\hline
+~~~~$\delta_{\rm ICRS}$\dotfill & Declination (deg) \dotfill & dec & $-90 \leq \delta_{\rm ICRS} \leq 90$ \\
+\multicolumn{4}{p{17cm}}{The ICRS right ascension, in degrees. Only displayed for astrometry fits.}\\
+\hline
+~~~~$\mu_{\alpha}$\dotfill & RA Proper Motion (mas/yr)  \dotfill& pmra & $-20000 < \mu_{\alpha} < 20000$ \\
+\multicolumn{4}{p{17cm}}{The proper motion in Right Ascension, in milli arcseconds per year. Includes the $\cos{\delta}$ term (i.e., what \gaia \ reports). Only displayed for astrometry fits. The bound is twice Barnard's star, the fastest known star.}\\
+\hline
+~~~~$\mu_{\delta}$\dotfill & Dec Proper Motion (mas/yr) \dotfill & pmdec & $-20000 < \mu_{\delta} < 20000$ \\
+\multicolumn{4}{p{17cm}}{The proper motion in Declination, in milli arcseconds per year (i.e., what \gaia \ reports). Only displayed for astrometry fits. The bound is twice Barnard's star, the fastest known star.}\\
+\hline
+~~~~$\gamma_{\rm abs}$\dotfill & Absolute RV (m/s)  \dotfill & rvabs & $-c < \gamma_{\rm abs} < c$ \\
+\multicolumn{4}{p{17cm}}{The Absolute RV zero point, in m/s. Only displayed for astrometry fits. It is bounded by the speed of light.}\\
+\hline
+~~~~$\varpi$\dotfill & Parallax (mas)\dotfill & parallax & None \\
+\multicolumn{4}{p{17cm}}{The parallax in milli arcseconds. Only displayed for SED fits. There are no explicit bounds, but the bound on distance limits its range.}\\
+\hline
+~~~~$d$\dotfill & Distance (pc)\dotfill & distance & $0.9 AU < d < 3\times10^{10}$ \\
+\multicolumn{4}{p{17cm}}{The distance in parsecs. Only displayed for SED fits. The bounds include the Sun to the size of the observable universe.}\\
+\hline
+~~~~$\dot{\gamma}$\dotfill & RV slope (m/s/day) \dotfill& slope & $\mid \dot{\gamma} \mid < 10000$ \\
+\multicolumn{4}{p{17cm}}{A linear trend in RV, in m/s/day, referenced to the midpoint of all supplied RV data from all instruments ($RV += \dot{\gamma}(t-t_m)$, where $t_m = max(t) + min(t)/2$). Intended for long period planets where the data are insufficient to constrain a full Keplerian orbit. Only displayed if {\tt FITSLOPE} flag set.}\\
+\hline
+~~~~$\ddot{\gamma}$\dotfill & RV quadratic term (m/s/day$^2$)\dotfill & quad & $\mid \ddot{\gamma} \mid < 10000$ \\
+\multicolumn{4}{p{17cm}}{A quadratic trend in RV, in m/s/day$^2$, referenced to the midpoint of all supplied RV data from all instruments ($RV += \ddot{\gamma}(t-t_m)^2$, where $t_m = max(t) + min(t)/2$).  Intended for long period planets where the data are insufficient to constrain a full Keplerian orbit. Only displayed if {\tt FITQUAD} flag set.}\\
+\smallskip\\\multicolumn{2}{l}{Planetary Parameters:}\smallskip\\
+\hline
+~~~~$P$\dotfill &Period (days)\dotfill & period & $0.1 < P < 10^{13}$ \\
+\multicolumn{4}{p{17cm}}{The period of the planet, in days. Note this period is in the solar system barycentric frame and does not account for the small (but often statistically significant) difference due to the absolute radial velocity of the planet. A tighter, user-supplied uniform bound is highly recommended, especially when using parallel tempering. The upper bound is roughly a Hubble time.}\\
+\hline
+~~~~$R_P$\dotfill &Radius (\rj)\dotfill & rp & None \\
+\multicolumn{4}{p{17cm}}{The radius of the planet, in Jupiter radii. Note that for RV-only fits, this quantity is derived from the \citet{Chen:2017} exoplanet mass-radius relations. There is no internal bound on this quantity and it may be negative. Negative values produce a bump in the transit lightcurve instead of a dip. When \citet{Chen:2017} is used, it must be positive.} \\
+\hline
+~~~~$R_P$\dotfill &Radius (\re)\dotfill & rpearth & None \\
+\multicolumn{4}{p{17cm}}{Same as above, but in Earth radii. Only displayed when {\tt EARTH} flag is set.}\\
+\hline
+~~~~$T_C$\dotfill &Time of conjunction (\bjdtdb)\dotfill & tc & $\mid T_C-T_{C,0} \mid < P/2$ \\
+\multicolumn{4}{p{17cm}}{The time of conjunction that is closest to the starting value supplied in the prior file, which is typically a good proxy for the time of transit. See \S \ref{sec:ttvs} for a more detailed explanation. This value is not allowed to stray more than $\pm P/2$ from its starting value, though note that the period used for this bound is from the current step and may be much larger than the initial period.} \\
+\hline
+~~~~$T_0$\dotfill &Optimal conjunction Time (\bjdtdb)\dotfill & t0 & None \\
+\multicolumn{4}{p{17cm}}{The time of conjunction that minimimzes the covariance with Period and therefore has the smallest uncertainty. Practically, it will never be more than 1 period outside of the span of the input data.}\\
+\hline
+~~~~$T_T$\dotfill &Transit time (\bjdtdb)\dotfill & tt & N/A \\
+\multicolumn{4}{p{17cm}}{The time of minimum projected separation between the star and planet, as seen by the observer, including any modeled TTVs. This is the often assumed, but rarely used, meaning of ``transit time''. This value is reported in a separate table, never in the primary output table, but is described here for reference only. This quantity is not computed during the MCMC, and no bounds can be applied based on it.}\\
+\hline
+~~~~$a$\dotfill &Semi-major axis (AU)\dotfill & a & None \\
+\multicolumn{4}{p{17cm}}{The semi-major axis of the planetary orbit in AU. There are no explicit limits, but it is bounded by the stellar and planetary masses, and planetary period through Kepler's law.}\\
+\hline
+~~~~$i$\dotfill &Inclination (Degrees)\dotfill & ideg & $0 \leq i \leq 180$ \\
+\multicolumn{4}{p{17cm}}{The inclination of the orbit in degrees. When only transits and/or RVs are fit, $i \leq 90^\circ$. When only RVs are fit, there is no constraint and we marginalize over $0 \leq \cos{i} \leq 1$.}\\
+\hline
+~~~~$i$\dotfill &Inclination (Radians)\dotfill & i & $0 \leq i \leq \pi$ \\
+\multicolumn{4}{p{17cm}}{Same as above, but in radians.}\\
+\hline
+~~~~$\cos{i}$\dotfill & Cos of Inclination \dotfill & cosi & $-1 \leq \cos{i} \leq 1$ \\
+\multicolumn{4}{p{17cm}}{The cosine of the inclination. When only transits and/or RVs are fit, $\cos{i} \geq 0$. When only RVs are fit, there is no constraint and we marginalize over $0 \leq \cos{i} \leq 1$. This fitted parameter is never displayed in the output table.} \\
+\hline
+~~~~$e$\dotfill &Eccentricity \dotfill & e & $0 \leq e \leq 1-\frac{a+R_p}{R_*}$ \\
+\multicolumn{4}{p{17cm}}{The eccentricity of the planet, with a uniform eccentricity prior. The upper bound rejects models where the star and planet would collide during periastron. For multi-planet systems, orbits that cross into each other's hill spheres are also excluded. If {\tt TIDES} flag is set, $e$ is set to zero when $1-3a/R_* < e < 1-\frac{a+R_p}{R_*}$, which is an empirical limit on eccentricity justified by tidal circularization. Because of the Lucy-Sweeney bias due to hard boundary at 0, eccentricities that are non-zero with significance of 2.3 $\sigma$ or less should be considered consistent with circular.}\\
+\hline
+~~~~$\omega_*$\dotfill &Argument of Periastron (Degrees)\dotfill & omegadeg & $-180 \leq \omega_* < 180$ \\
+\multicolumn{4}{p{17cm}}{The argument of periastron of the star's orbit due to the planet, in degrees, as measured in the standard, left-handed coordinate system. This is the standard value to report because that is the measured quantity for RV orbits. It differs from $\omega_P$ by 180 degrees. Its reported confidence interval may cross the stated bounds since the distribution is re-centered around the mode.}\\
+\hline
+~~~~$\omega_*$\dotfill &Argument of Periastron (Radians)\dotfill & omega & $-\pi \leq \omega_* < \pi$ \\
+\multicolumn{4}{p{17cm}}{Same as above, but in radians. This fitted parameter is never displayed in the output table.} \\
+\hline
+~~~~$\Omega_*$\dotfill &Longitude of ascending node (Deg)\dotfill & bigomegadeg & $0 \leq \Omega \leq 360$ \\
+\multicolumn{4}{p{17cm}}{The longitude of the ascending node, as measured in the standard, left-handed coordinate system. Only displayed for astrometry fits. If only astrometry is fit, this value is restricted from 0 to 180 and it is the longitude of an unknown node. Adding transits or RV break this degeneracy, and we report the longitude of ascending node from 0 to 360 degrees. Its reported confidence interval may cross the stated bounds since the distribution is re-centered around the mode.}\\
+\hline
+~~~~$\Omega_*$\dotfill &Longitude of ascending node (Rad)\dotfill & bigomega & $0 \leq \Omega \leq 2\pi$ \\
+\multicolumn{4}{p{17cm}}{Same as above, but in radians. This fitted parameter is never displayed in the output table.} \\
+\hline
+~~~~$T_{eq}$\dotfill &Equilibrium temperature (K)\dotfill & teq & None \\ 
+\multicolumn{4}{p{17cm}}{The equilibrium temperature of the planet, in Kelvin, calculated according to Eq. 1 of Hansen \& Barman, 2007, $T_{eq} = T_{\rm eff}\sqrt{\frac{R_*}{2a}}$, which assumes no albedo and perfect redistribution. The quoted statistical error is likely severely underestimated relative to the systematic error inherent in this assumption. There are no explicit limits on this derived parameter, but it is bounded by the limits on $T_{\rm eff}$, $R_*$, and $a$.}\\
+\hline
+~~~~$\tau_{\rm circ}$\dotfill &Tidal circularization timescale (Gyr)\dotfill & tcirc & $\tau_{\rm circ}$ > 0 \\
+\multicolumn{4}{p{17cm}}{The tidal circularization timescale, using Equation 3 from \citet{Adams:2006} and assuming Q=10$^6$. The quoted uncertainty only propagates the uncertainty in the stellar mass and the planetary mass, radius, and semi-major axis. However, it will typically be dominated by the orders of magnitude uncertainty in Q. Because the timescale is linearly dependent on Q, the uncertainty should be at least an order of magnitude in either direction.}\\
+\hline
+~~~~$M_P$\dotfill &Mass (\mj)\dotfill & mp & $\mid M_P \mid \lesssim 100 M_\sun$ \\
+\multicolumn{4}{p{17cm}}{The mass of the planet, in Jupiter masses. Note that for transit-only fits, this quantity is derived from the \citet{Chen:2017} exoplanet mass-radius relations. This value may be negative if the {\tt LINEARK} flag is set, which flips the RV curve. That introduces a degeneracy for RV-only fits. In RV-only fits, this is the true mass with large uncertainties to reflect the marginalization over $\cos{i}$. The upper bound is derived from a conservative limit on $\log{K} < 5$. Also note the boundary $M_P + M_* > 0$.} \\
+\hline
+~~~~$M_P$\dotfill &Mass (\me)\dotfill & mpearth & $\mid M_P\mid \lesssim 100 M_\sun$ \\
+\multicolumn{4}{p{17cm}}{Same as above, but in Earth masses. Only displayed when {\tt EARTH} flag is set.} \\
+\hline
+~~~~$K$\dotfill &RV semi-amplitude (m/s)\dotfill & k & $\mid K \mid < 10^5$ \\
+\multicolumn{4}{p{17cm}}{The semi-amplitude of the RV signal in m/s. Note that for transit-only fits, this quantity is derived from the \citet{Chen:2017} exoplanet mass-radius relations. This value may be negative if the {\tt LINEARK} flag is set and \citet{Chen:2017} not used, which flips the RV curve.}\\
+\hline
+~~~~$\log{K}$\dotfill &Log of RV semi-amplitude \dotfill & logk & $\mid \log{K} \mid < 5$ \\
+\multicolumn{4}{p{17cm}}{The log$_{10}$ of the RV-semi-amplitude in m/s. If {\tt LINEARK} flag is set, it will exclude all negative values of $K$ before deriving this quantity and there is no lower limit.}\\
+\hline
+~~~~$R_P/R_*$\dotfill &Radius of planet in stellar radii \dotfill & p & None \\
+\multicolumn{4}{p{17cm}}{The radius of the planet in stellar radii. Negative values produce a bump in the transit lightcurve instead of a dip. When \citet{Chen:2017} is used, it must be positive.}\\
+\hline
+~~~~$a/R_*$\dotfill &Semi-major axis in stellar radii \dotfill & ar & $a/R_* > 0$ \\
+\multicolumn{4}{p{17cm}}{The semi-major axis of the planetary orbit in stellar radii.}\\
+\hline
+~~~~$\delta$\dotfill &Transit depth (fraction)\dotfill & delta & None \\
+\multicolumn{4}{p{17cm}}{$ \left(  R_P / R_* \right) ^{2}$, which is the transit depth for non-grazing transits in the absence of limb darkening.}\\
+\hline
+~~~~$Depth$\dotfill &Flux decrement at mid transit \dotfill & depth & None \\
+\multicolumn{4}{p{17cm}}{The depth of the primary transit at $T_T$, including grazing geometries, band-specific limb darkening, and any modeled $T \delta V$s. This value is reported in a separate table, never in the primary output table, but is described here for reference only. Prior to 201?-??-??, this was reported in the primary output table as the depth of the primary transit at $T_C$, not including limb darkening.}\\
+\hline
+~~~~$\tau$\dotfill &Ingress/egress transit duration (days)\dotfill & tau & $\tau \geq 0$ \\
+\multicolumn{4}{p{17cm}}{The ingress/egress primary transit duration (first to second or third to fourth contact), in days, approximated with \citet{Winn:2010}, Eqs 14-16.} \\
+\hline
+~~~~$T_{14}$\dotfill &Total transit duration (days)\dotfill & t14 & $T_{14} \geq 0$ \\
+\multicolumn{4}{p{17cm}}{The total primary transit duration (first to fourth contact), in days, approximated with \citet{Winn:2010}, Eqs 14 \& 16.} \\
+\hline
+~~~~$T_{FWHM}$\dotfill &FWHM transit duration (days)\dotfill & tfwhm & $T_{FWHM} \geq 0$ \\
+\multicolumn{4}{p{17cm}}{The full width at half maximum primary transit duration (1.5 to 3.5 contact), in days, approximated with \citet{Winn:2010}, Eqs 14-16.} \\
+\hline
+~~~~$b$\dotfill &Transit Impact parameter \dotfill & b & None \\
+\multicolumn{4}{p{17cm}}{The approximate minimum projected separation at the time of transit, in stellar radii, $\frac{a\cos{i}}{R_*}\frac{1-e^2}{1+e\sin{\omega_*}}$, from Eq 7 of \citet{Winn:2010}. See \S \ref{sec:ttvs}. For RV only fits, $b \geq 0$. When astrometry is fit, $b$ may be negative. When a transit model is fit, a bound $\mid b \mid < 1+R_P/R_*$ is imposed to prevent the fit from exploring the infinite volume of non-transiting transit models (flat lines). This bound may artificially increase the significance of marginal transit detections.} \\
+\hline
+~~~~$b_S$\dotfill &Eclipse impact parameter \dotfill & bs & None \\
+\multicolumn{4}{p{17cm}}{The approximate minimum projected separation at the time of secondary occultation, in stellar radii, $\frac{a\cos{i}}{R_*}\frac{1-e^2}{1-e\sin{\omega_*}}$, from Eq 8 of \citet{Winn:2010}. See \S \ref{sec:ttvs}. Note that while values $b_S > 1+R_P/R_*$ show no secondary occultation, we only a priori exclude values based on the primary impact parameter when a transit model is computed. This will be a problem if fitting eccentric systems where there is a secondary occultation but not a primary transit.}\\
+\hline
+~~~~$\tau_S$\dotfill &Ingress/egress eclipse duration (days)\dotfill & taus & $\tau_S \geq 0$ \\
+\multicolumn{4}{p{17cm}}{The ingress/egress secondary eclipse duration (first to second or third to fourth contact), in days, approximated with \citet{Winn:2010}, Eqs 14-16.} \\
+\hline
+~~~~$T_{S,14}$\dotfill &Total eclipse duration (days)\dotfill & t14s & $T_{S,14} \geq 0$ \\
+\multicolumn{4}{p{17cm}}{The total secondary eclipse duration (first to fourth contact), in days, approximated with \citet{Winn:2010}, Eqs 14 \& 16.}\\
+\hline
+~~~~$T_{S,FWHM}$\dotfill &FWHM eclipse duration (days)\dotfill & tfwhms & $T_{S,FWHM} \geq 0$ \\
+\multicolumn{4}{p{17cm}}{The full width at half maximum primary transit duration (1.5 to 3.5 contact), in days, approximated with \citet{Winn:2010}, Eqs 14-16.}\\
+\hline
+~~~~$\delta_{S,3.6\mu m}$\dotfill &BB eclipse depth at 3.6$\mu$m (ppm)\dotfill & eclipsedepth36\dotfill & None \\
+\multicolumn{4}{p{17cm}}{The predicted secondary occultation depth at 3.6$\mu$m using a black-body approximation of the stellar flux, $F_{*}$, at \teff, and of the planetary flux, $F_{P}$, at T$_{\rm eq}$. Equal to $\frac{(R_P/R_*)^2}{(R_P/R_*)^2 + F_*/F_P}$.}\\
+\hline
+~~~~$\delta_{S,4.5\mu m}$\dotfill &BB eclipse depth at 4.5$\mu$m (ppm)\dotfill & eclipsedepth45 & None \\
+\multicolumn{4}{p{17cm}}{Same as above for 4.5$\mu$m.} \\
+\hline
+~~~~$\rho_P$\dotfill &Density (cgs)\dotfill & rhop & None \\
+\multicolumn{4}{p{17cm}}{The density of the planet, $\frac{3M_P}{4\pi R_P^3}$, in g~cm$^{-3}$.}\\
+\hline
+~~~~$logg_P$\dotfill &Surface gravity (cgs) \dotfill & loggp & None \\
+\multicolumn{4}{p{17cm}}{The log$_{10}$ of the planetary surface gravity, $\log_{10}\left({\frac{GM_*}{R_*^2}}\right)$, in cgs units.}\\
+\hline
+~~~~$\lambda$\dotfill &Projected Spin-orbit alignment (deg)  \dotfill & lambdadeg & $-180 < \lambda < 180$ \\
+\multicolumn{4}{p{17cm}}{The projected alignment between the spin axis of the star and the orbital axis of the planet, in degrees. Only displayed for DT or RM fits. Its reported confidence interval may cross the stated bounds since the distribution is re-centered around the mode.}\\
+\hline
+~~~~$\lambda$\dotfill &Projected Spin-orbit alignment (Rad)  \dotfill & lambda & $-\pi < \lambda < \pi$ \\
+\multicolumn{4}{p{17cm}}{Same as above, but in radians. This fitted parameter is never displayed in the output table.} \\
+\hline
+~~~~$\Theta$\dotfill &Safronov Number \dotfill & safronov & None \\
+\multicolumn{4}{p{17cm}}{The Safronov Number is calculated using Eq 2 from \citet{Hansen:2007}. $\Theta = \frac{1}{2}\left(\frac{V_{esc}}{V_{orb}}\right)^2 = \frac{a}{R_P}\frac{M_P}{M_*}$.}\\
+\hline
+~~~~$\fave$\dotfill &Incident Flux (\fluxcgs)\dotfill & fave & None \\
+\multicolumn{4}{p{17cm}}{The orbit-averaged flux incident on the planet, in 10$^9$ erg~s~cm$^{-2}$. $\fave = \sigma_B\teff^4\left(\frac{R_*}{a}(1-e^2/2)\right)^2.$ While there are no explicit bounds on this derived quantity, it is limited by the bounds on \teff, $R_*$, $a$, and $e$.}\\
+\hline
+~~~~$T_P$\dotfill &Time of Periastron (\bjdtdb)\dotfill & tp & None \\
+\multicolumn{4}{p{17cm}}{The time of periastron of the orbit, in \bjdtdb. While there are no explicit bounds on this derived quantity, it should be within one period of $T_C$.} \\
+\hline
+~~~~$T_S$\dotfill &Time of superior conjunction (\bjdtdb)\dotfill & ts & None \\
+\multicolumn{4}{p{17cm}}{The time of superior conjunction, in \bjdtdb. $T_S$ is analagous to $T_C$ for the secondary occultation. The caveats about the difference between $T_T$ and $T_C$ detailed in \S \ref{sec:tc} apply to the difference between $T_E$ and $T_S$. While there are no explicit bounds on this derived quantity, it should be within one period of $T_C$.} \\
+\hline
+~~~~$T_E$\dotfill &Time of eclipse (\bjdtdb)\dotfill & ts & None \\
+\multicolumn{4}{p{17cm}}{The time of the minimum projected separation during the secondary occultation. $T_E$ is analagous to $T_T$ for the secondary occultation. The caveats about the difference between $T_T$ and $T_C$ detailed in \S \ref{sec:tc} apply to the difference between $T_E$ and $T_S$. While there are no explicit bounds on this derived quantity, it should be within one period of $T_C$.} \\
+\hline
+~~~~$T_A$\dotfill &Time of Ascending Node (\bjdtdb)\dotfill & ta & None \\
+\multicolumn{4}{p{17cm}}{The time of the Ascending node (RV maximum) in \bjdtdb. While there are no explicit bounds on this derived quantity, it should be within one period of $T_C$.}\\
+\hline
+~~~~$T_D$\dotfill &Time of Descending Node (\bjdtdb)\dotfill & td & None \\
+\multicolumn{4}{p{17cm}}{The time of the Descending node (RV minimum) in \bjdtdb. While there are no explicit bounds on this derived quantity, it should be within one period of $T_C$.}\\
+\hline
+~~~~$ecos{\omega_*}$\dotfill & \dotfill & ecosw & $-1 \lesssim e\cos{\omega_*} \lesssim 1$ \\
+\multicolumn{4}{p{17cm}}{The eccentricity times the cosine of the argument of periastron of the stellar orbit due to the planet. The true bounds are somewhat stricter based on the derived $e$.}\\
+\hline
+~~~~$esin{\omega_*}$\dotfill & \dotfill & esinw & $-1 \lesssim e\sin{\omega_*} \lesssim 1$ \\
+\multicolumn{4}{p{17cm}}{The eccentricity times the sine of the argument of periastron of the stellar orbit due to the planet. The true bounds are somewhat stricter based on the derived $e$.}\\
+\hline
+~~~~$M_P\sin i$\dotfill &Minimum mass (\mj)\dotfill & msini & None \\
+\multicolumn{4}{p{17cm}}{The minimum mass of the planet, typically quoted for RV-only fits, in Jupiter masses.  Note that for transit-only fits, this quantity is derived from the \citet{Chen:2017} exoplanet mass-radius relations. This value may be negative if the {\tt LINEARK} flag is set.}\\ 
+\hline
+~~~~$M_P\sin i$\dotfill &Minimum mass (\me)\dotfill & msiniearth & None \\
+\multicolumn{4}{p{17cm}}{Same as above, but in Earth masses. Only displayed when {\tt EARTH} flag is set.}\\
+\hline
+~~~~$M_P/M_*$\dotfill &Mass ratio \dotfill & q & None \\
+\multicolumn{4}{p{17cm}}{The mass of the planet divided by the mass of the star. Note that for transit-only fits, this quantity is derived from the \citet{Chen:2017} exoplanet mass-radius relations. This value may be negative if the {\tt LINEARK} flag is set.}\\
+\hline
+~~~~$d/R_*$\dotfill &Separation at mid transit \dotfill & dr & $d/R_* > 0$ \\
+\multicolumn{4}{p{17cm}}{The separation between the star and planet at the time of inferior conjunction.}\\
+\hline
+~~~~$P_T$\dotfill &A priori non-grazing transit prob \dotfill & pt & $P_T > 0$ \\
+\multicolumn{4}{p{17cm}}{The a priori probability that the transit would be seen as non-grazing ($b \leq 1-R_P/R_*$). This is useful in searching for transits of RV planets or for correcting for the observational bias of transiting planets. The reciprocal of this number is the number of similar planets that would go undetected in a transit survey for each planet like this detected. Note: to estimate the a posteriori transit probability, see if $b \leq 1-R_P/R_*$.} \\
+\hline
+~~~~$P_{T,G}$\dotfill &A priori transit prob \dotfill & ptg & $P_{T,G} > 0$ \\
+\multicolumn{4}{p{17cm}}{Same as above, but allowing for grazing transits ($b \leq 1+R_P/R_*$). Note: for the a posteriori transit probability, see if $b \leq 1+R_P/R_*$.} \\
+\hline
+~~~~$P_S$\dotfill &A priori non-grazing eclipse prob \dotfill & ps & $P_S > 0$ \\
+\multicolumn{4}{p{17cm}}{The a priori probability that the secondary eclispe would be seen as non-grazing ($b \leq 1-R_P/R_*$). This is useful in searching for eclipses of RV-only planets or for correcting for the observational bias of transiting planets. The reciprocal of this number is the number of similar planets that would go undetected in an eclipse survey for each planet like this detected. Note: to estimate the a posteriori eclipse probability, see if $b_s \leq 1-R_P/R_*$.} \\
+\hline
+~~~~$P_{S,G}$\dotfill &A priori eclipse prob \dotfill & psg & $P_{S,G} > 0$ \\
+\multicolumn{4}{p{17cm}}{Same as above, but allowing for grazing eclipses. Note: for the a posteriori eclipse probability, see if $b_s \leq 1+R_P/R_*$.}\\
+\smallskip\\\multicolumn{2}{l}{Wavelength Parameters:}\smallskip\\
+\hline
+~~~~$u_{1}$\dotfill &linear limb-darkening coeff \dotfill & u1 & $0 \lesssim u_1 \lesssim 2$ \\
+\multicolumn{4}{p{17cm}}{The linear limb darkening coefficient for the quandratic limb darkening law. The bounds are actually on combinations of $u_1$ and $u_2$ from \citet{Kipping:2013}. $u_1 + u_2 < 1$, $u_1 > 0$, and $u_1 + 2u_2 > 0$.}\\
+\hline
+~~~~$u_{2}$\dotfill &quadratic limb-darkening coeff \dotfill & u2 & $-1 \lesssim u_2 \lesssim 1$ \\
+\multicolumn{4}{p{17cm}}{The quadratic limb darkening coefficient for the quadratic limb darkening law. The bounds are actually on combinations of $u_1$ and $u_2$ from \citet{Kipping:2013}. $u_1 + u_2 < 1$, $u_1 > 0$, and $u_1 + 2u_2 > 0$.}\\
+\hline
+~~~~$A_T$\dotfill & Planetary Thermal emission (ppm) \dotfill & thermal & None \\
+\multicolumn{4}{p{17cm}}{The amount of thermal emission from the planet, in ppm, modeled as an offset that disappears during secondary eclipse. Only displayed when {\tt FITTHERMAL} includes the corresponding band.}\\
+\hline
+~~~~$A_D$\dotfill &Dilution from neighboring stars \dotfill & dilute & $-1 < A_D < 1$ \\
+\multicolumn{4}{p{17cm}}{The fractional dilution, $F_2/(F_{1}+F_{2})$, where $F_1$ is the flux of the host star and $F_2$ is the combined flux of all blended stars. Only displayed when {\tt FITDILUTE} includes the corresponding band. Allowed to be negative to account for over-corrected dilution.}\\
+\hline
+~~~~$A_R$\dotfill & Reflection from the planet (ppm)\dotfill & reflect & None \\
+\multicolumn{4}{p{17cm}}{The amount of reflected light from the planet, in ppm, modeled as a phase curve added to the baseline transit model that disappears during secondary eclipse. Only displayed when {\tt FITREFLECT} includes the corresponding band.}\\
+\smallskip\\\multicolumn{2}{l}{Telescope Parameters:}\smallskip\\
+\hline
+~~~~$\gamma_{\rm rel}$\dotfill &Relative RV Offset (m/s)\dotfill & gamma & $-c < \gamma_{\rm rel} < c$ \\
+\multicolumn{4}{p{17cm}}{The arbitrary instrumental zero point offset in the radial velocities, in m/s. It is bounded by the speed of light, though no relativistic effects are included.}\\
+\hline
+~~~~$\sigma_J$\dotfill &RV Jitter (m/s)\dotfill & jitter & $0 \leq \sigma_J < c$ \\
+\multicolumn{4}{p{17cm}}{The RV jitter, in m/s. If jitter variance is negative, the values are set to zero here. Thus, the reported value for this parameter may be biased if jittervar is negative.}\\
+\hline
+~~~~$\sigma_J^2$\dotfill &RV Jitter Variance \dotfill & jittervar & $-c^2 < \sigma_J^2 < c^2$ \\
+\multicolumn{4}{p{17cm}}{The RV jitter variance, in (m/s)$^2$. This fitted quantity can be negative to correct for over-estimated RV errors.} \\
+\smallskip\\\multicolumn{2}{l}{Transit Parameters:}\smallskip\\
+\hline
+~~~~$\sigma^{2}$\dotfill &Added Variance \dotfill & variance & None \\
+\multicolumn{4}{p{17cm}}{The added variance for the lightcurve. This quantity can be negative to correct for over-estimated photometric errors, but can never be more negative than the smallest user-supplied error squared.}\\
+\hline
+~~~~$TTV$\dotfill & Transit Timing Variation (days)\dotfill & ttv & $-P/2 < TTV < P/2$ \\
+\multicolumn{4}{p{17cm}}{The difference between the modeled time of conjunction and the best-fit time of conjunction for this transit, in days. For a TTV analysis, the user is likely to prefer the ancillary TTV table.} \\
+\hline
+~~~~$TiV$\dotfill & Transit Inclination Variation (Radians)\dotfill & tiv & None \\
+\multicolumn{4}{p{17cm}}{The difference between the modeled inclination and the best-fit inclination for this transit, in radians. This cannot make the total inclination violate the bounds stated above.}\\
+\hline
+~~~~$T\delta V$\dotfill & Transit Depth Variation \dotfill & tdeltav & None \\
+\multicolumn{4}{p{17cm}}{The difference between the modeled $\left(R_P/R_*\right)^2$ and the best-fit $\left(R_P/R_*\right)^2$ for this transit.}\\
+\hline
+~~~~$F_0$\dotfill & Baseline flux \dotfill & f0 & None \\
+\multicolumn{4}{p{17cm}}{The baseline flux of the transit. When secondary eclipses are fit, this is the baseline contribution from just the star and should be normalized to 1.}\\
+\smallskip\\\multicolumn{2}{l}{Doppler Tomography Parameters:}\smallskip\\
+\hline
+~~~~$\sigma_{DT}$\dotfill & Doppler Tomography Error scaling  \dotfill & dtscale & $\sigma_{DT} > 0$ \\
+\multicolumn{4}{p{17cm}}{The multiplicative factor to scale the supplied DT errors to ensure they are consistent with the model. Only displayed for DT fits.}\\
+\smallskip\\\multicolumn{2}{l}{Astrometry Parameters:}\smallskip\\
+\hline
+~~~~$\sigma_{Astrom}$\dotfill & Astrometric Error Scaling \dotfill & astromscale & $\sigma_{Astrom} > 0$ \\
+\multicolumn{4}{p{17cm}}{The multiplicative factor to scale the supplied astrometric errors to ensure they are consistent with the model. Only displayed for astrometric fits.}\\
+\hline
+~~~~$\Delta \alpha$\dotfill & RA offset (degrees) \dotfill & raoffset & None \\
+\multicolumn{4}{p{17cm}}{The offset in RA for each data set, designed for zero point offsets for multiple data sets. At least one should be fixed. Only displayed for astrometric fits.}\\
+\hline
+~~~~$\Delta \delta$\dotfill & Dec offset (degrees) \dotfill & decoffset & None \\
+\multicolumn{4}{p{17cm}}{Same as above, but for Declination.}\\
+\enddata
+\end{deluxetable*}
+
