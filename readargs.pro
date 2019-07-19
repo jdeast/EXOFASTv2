@@ -1,9 +1,10 @@
 ;; Reads a file of input arguments to EXOFASTv2
 ;; Required for virtual machine (free) use
 pro readargs, argfile, priorfile=priorfile, $
-              rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,$
+              rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
+              fluxfile=fluxfile,mistsedfile=mistsedfile,$
               prefix=prefix,$
-              circular=circular,fitslope=fitslope, secondary=secondary, $
+              circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
               rossiter=rossiter,chen=chen,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
               nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
@@ -16,7 +17,9 @@ pro readargs, argfile, priorfile=priorfile, $
               yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
               fitrv=fitrv, fittran=fittran,fitdt=fitdt,lineark=lineark,$
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
-              earth=earth, i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch
+              earth=earth, i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch,$
+              fitspline=fitspline, splinespace=splinespace, skiptt=skiptt
+
 
 line = ''
 openr, lun, argfile, /get_lun
@@ -28,7 +31,7 @@ while not eof(lun) do begin
       if n_elements(entries) eq 2 then begin
 
          ;; replace '$EXOFAST_PATH' with its value
-         entries[1] = strjoin(strsplit(entries[1],'$EXOFAST_PATH',/regex,/extract,/preserve_null),getenv('EXOFAST_PATH'))
+         entries[1] = strjoin(strsplit(entries[1],'\$EXOFAST_PATH',/regex,/extract,/preserve_null),getenv('EXOFAST_PATH'))
 
          if strupcase(strtrim(entries[0],2)) eq 'PRIORFILE' then begin
             priorfile = strtrim(entries[1],2)
@@ -48,6 +51,8 @@ while not eof(lun) do begin
             circular = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITSLOPE' then begin
             fitslope = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITQUAD' then begin
+            fitquad = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'SECONDARY' then begin
             secondary = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'ROSSITER' then begin
@@ -59,7 +64,7 @@ while not eof(lun) do begin
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITREFLECT' then begin
             fitreflect = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITDILUTE' then begin
-            fitdilute = boolean(json_parse(entries[1],/toarray))
+            fitdilute = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'NTHIN' then begin
             nthin = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MAXSTEPS' then begin
@@ -91,9 +96,9 @@ while not eof(lun) do begin
          endif else if strupcase(strtrim(entries[0],2)) eq 'LONGCADENCE' then begin
             longcadence = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'EXPTIME' then begin
-            exptime = double(entries[1])
+            exptime = double(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'NINTERP' then begin
-            ninterp = long(entries[1])
+            ninterp = long(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'REJECTFLATMODEL' then begin
             rejectflatmodel = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MAXGR' then begin
@@ -136,6 +141,12 @@ while not eof(lun) do begin
             alloworbitcrossing = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'STRETCH' then begin
             stretch = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITSPLINE' then begin
+            fitspline = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'SPLINESPACE' then begin
+            splinespace = double(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'SKIPTT' then begin
+            skiptt = boolean(entries[1])
          endif else begin
             print, entries[0] + ' argument not recognized'
          endelse
