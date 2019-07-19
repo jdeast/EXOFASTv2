@@ -1,17 +1,18 @@
 ;; Calculate the Doppler Tomography model
 ;; Written 2015 (?) by Thomas G. Beatty
 ;; Modified to integrate into EXOFASTv2 2017/06/27, JDE
+;; note vsini and vline are in km/s here!
 
-function dopptom_chi2, doptom, tc, period, e, omega, cosi, p, ar, lambda, logg, teff, feh, vsini, macturb, errscale, debug=debug,like=like,psname=psname
+function dopptom_chi2, doptom, tc, period, e, omega, cosi, p, ar, lambda, logg, teff, feh, vsini, vline, errscale, debug=debug,like=like,psname=psname
 
-if macturb lt 0d0 then return, !values.d_infinity ; invalid line width
+if vline lt 0d0 then return, !values.d_infinity ; invalid line width
 if vsini le 0d0 then return, !values.d_infinity ; invalid vsini
 
 chisqr = 0.0d0;
 convolve_limit = 5. ;; The gaussian broadening has to be less than this factor larger than vsini for it to try and include the rotation kernel. E.g., gaussian broadening ('GaussTerm') = 10km/s, vsini needs to be at least 2km/s. Otherwise just use a gaussian for the shadow.
 
 inc = acos(cosi)
-b = ar * cosi
+;b = ar * cosi
 
 velsini = doptom.vel/vsini
 stepsize = doptom.stepsize / vsini
@@ -23,103 +24,83 @@ rvel = c/doptom.rspec ;; spectrograph resolution in velocity
 ;; convert form FWHM to sigma
 fwhm2sigma = 2d0*sqrt(2d0*alog(2d0))
 
-relevantVels = where((velsini gt -1.5) and (velsini lt 1.5))  ; we only care about these, to speed things up
+;relevantVels = where((velsini gt -1.5) and (velsini lt 1.5))  ; we only care about these, to speed things up
+relevantVels = where(abs(velsini) le 2d0)  ; we only care about these, to speed things up
+;relevantVels = lindgen(n_elements(velsini))
+
 IndepVels = (rvel/fwhm2sigma) / (meanstepsize*vsini)     ; accounts for the fact that we're supersampling within the actual spectral res. of the spectrograph, to adjust chi^2 later
 
-GaussTerm = sqrt(macturb^2. + rvel^2.)/fwhm2sigma ; so we can add in both the broadening from the instrument's spectral resolution, and the macturb parameter
+GaussTerm = sqrt(vline^2. + rvel^2.)/fwhm2sigma ; so we can add in both the broadening from the instrument's spectral resolution, and the vline parameter
 
 GaussRel = GaussTerm/vsini
-
-nper = round((mean(doptom.bjd)-tc) / period)
-localtc = tc + Period*nper
-phase = (doptom.bjd-localtc) / Period
 
 ;; init for planet shadow model
 velwidth = p
 c1 = 2d0 / (!dpi*velwidth)
 
-xp = ar * sin(phase*2d0*!dpi)
-zp = ar * cos(phase*2d0*!dpi) * cosi
-up = xp*cos(lambda) + zp*sin(lambda)
+;xp = ar * sin(phase*2d0*!dpi)
+;zp = ar * cos(phase*2d0*!dpi) * cosi
+;up = xp*cos(lambda) + zp*sin(lambda)
+
+sz = size(doptom.ccf2d)
+nvels = sz[1]
+ntimes = sz[2]
 
 ;; Calculate Collier-Cameron's "beta" as the actual transit LC in V
 ;; This presumes we're using an ~optical spectrograph for the observations
-beta = phase*0.0d0
+beta = dblarr(ntimes)
     
 ldcoeffs = quadld(logg, teff, feh, 'V')
 u1 = ldcoeffs[0]
 u2 = ldcoeffs[1]
 if ((not finite(u1)) or (not finite(u2))) then  return, !values.d_infinity
 
-z = exofast_getb(doptom.bjd, i=inc, a=ar, tperiastron=localtc, period=Period, e=e,omega=omega,z=depth)
+tp = tc - period*exofast_getphase(e,omega,/pri)
+z = exofast_getb2(doptom.bjd, i=inc, a=ar, tperiastron=tp, period=Period, e=e,omega=omega,z=depth, x=xp,y=yp)
+up = xp*cos(lambda) - yp*sin(lambda)
 
-primary = where(depth gt 0,complement=secondary)     
+primary = where(depth lt 0,complement=secondary)     
 if primary[0] ne -1 then begin
-   exofast_occultquad, z[primary], u1, u2, p, mu1
+   exofast_occultquad_cel, z[primary], u1, u2, p, mu1
    beta[primary] = mu1
 endif
 
-beta = 1-beta                   ; to just get the amount of light blocked, rather than the ligthcurve
+beta = 1d0-beta                   ; to just get the amount of light blocked, rather than the ligthcurve
 
-sz = size(doptom.ccf2d)
-nvels = sz[1]
-ntimes = sz[2]
 doptom.model = dblarr(nvels,ntimes) + median(doptom.ccf2d)
 nrelvel = n_elements(relevantVels)
 
-nphase = n_elements(phase)
-for i = 0, nphase-1 do begin
+for i = 0, ntimes-1 do begin
    if beta[i] gt 0.0d0 then begin                                ; only do this if the planet is on the star
-      if up[i] lt 1.0d0 then begin                               ; also only if the DT thinks it's on the star
-         if GaussRel lt convolve_limit then begin                ; rotation is significant
-            c2 = ((velsini[relevantVels]-up[i])/velwidth)^2.
-            validlocs = where(c2 lt 1.0d0)
-            ;; Need to check if we have any valid locations
-            if validlocs[0] ne -1 then begin
-               rotprofile = dblarr(nrelvel)
-               rotprofile[validlocs] = c1*sqrt(1d0-c2[validlocs])
-               unnormalized = gaus_convol(velsini[relevantVels], rotprofile, GaussRel)
-               normalization = 1d0 / total(unnormalized*stepsize)
-               doptom.model[relevantVels,i] += (beta[i] * normalization * unnormalized)
-            endif
-         endif else begin ;; gaussian line width dominates
-            expterm = -1d0*(velsini[relevantVels]-up[i])^2./(2*GaussRel^2.)
-            unnormalized = exp(expterm)
-            normalization = 1d0 / total(unnormalized*stepsize)
-            doptom.model[relevantVels,i] += (beta[i] * normalization * unnormalized)
-         endelse
+      c2 = ((velsini[relevantVels]-up[i])/velwidth)^2.
+      validlocs = where(c2 lt 1.0d0)
+      ;; Need to check if we have any valid locations
+      if validlocs[0] ne -1 then begin
+         rotprofile = dblarr(nrelvel)
+         rotprofile[validlocs] = c1*sqrt(1d0-c2[validlocs])
+         unnormalized = gaus_convol(velsini[relevantVels], rotprofile, GaussRel)
+         normalization = 1d0 / total(unnormalized*stepsize)
+         doptom.model[relevantVels,i] += (beta[i] * normalization * unnormalized)
       endif
    endif
 endfor
 model = doptom.model
 
 if 0 then begin
-stop
-good = where(beta gt 0d0 and up lt 1d0,ngood)
-if GaussRel lt convolve_limit then begin
-   c2 = ((velsini[relevantVels]#replicate(1d0,ngood) - up[good]##replicate(1d0,nrelvel))/velwidth)^2
-   validlocs = where(c2 lt 1d0)
-   G = dblarr(nvels,ntimes)
-   if validlocs[0] ne -1 then G[validlocs] = c1*sqrt(1d0-c2[validlocs])
+good = where(beta gt 0d0,ngood)
+c2 = ((velsini[relevantVels]#replicate(1d0,ngood) - up[good]##replicate(1d0,nrelvel))/velwidth)^2
+validlocs = where(c2 lt 1d0)
+G = dblarr(nvels,ntimes)
+if validlocs[0] ne -1 then G[validlocs] = c1*sqrt(1d0-c2[validlocs])
 
-   unnormalized = dblarr(nrelvel,ngood)
-   for i=0, ngood-1 do unnormalized[*,good[i]] = gaus_convol(velsini[relevantVels],G[*,good[i]],GaussRel)
-   normalization = 1d0/total(unnormalized*(stepsize#replicate(1d0,ntimes)),1)
-   doptom.model[relevantvels,good] = ((beta*normalization)##replicate(1d0,nrelvel))*unnormalized
-
-;   normG = 1d0/total(G*(stepsize[relevantVels]#replicate(1d0,nrelvel),1))
-
-endif else begin
-;   expterm = -1d0*(velsini[relevantVels]#replicate(1d0,ngood)-up[good]##replicate(1d0,nrelvels))^2./(2*GaussRel^2.)
-endelse
-
-
-;G = 
+unnormalized = dblarr(nrelvel,ngood)
+for i=0, ngood-1 do unnormalized[*,good[i]] = gaus_convol(velsini[relevantVels],G[*,good[i]],GaussRel)
+normalization = 1d0/total(unnormalized*(stepsize#replicate(1d0,ntimes)),1)
+doptom.model[relevantvels,good] = ((beta*normalization)##replicate(1d0,nrelvel))*unnormalized
 stop
 endif
 
-;; divide chi^2 by the number of independent velocities to account for
-;; correlated errors
+;; divide chi^2 by the number of independent velocities to account for correlated errors
 doptom.resid = doptom.ccf2d - doptom.model
 if n_elements(errscale) eq 1 then $
    chi2 = exofast_like(doptom.resid,0d0,doptom.rms*errscale,/chi2)/IndepVels $
@@ -161,7 +142,11 @@ endelse
 sigma = stddev(doptom.resid)
 dtrange = [-5d0*sigma,5d0*sigma]
 velplotmax = max(abs(doptom.vel))
+
+nper = round((mean(doptom.bjd)-tc) / period)
+localtc = tc + Period*nper
 phase = (doptom.bjd-localtc) / period
+
 phaseplotmax = max(abs(phase))
 minvel = min(doptom.vel,max=maxvel)
 minphase = min(phase,max=maxphase)
