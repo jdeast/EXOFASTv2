@@ -3,7 +3,7 @@
 ;   EXOFAST_LATEXTAB
 ;
 ; PURPOSE:
-;   Prints the latex source to create a delux table of parameter values and
+;   Prints the latex source to create a deluxe table of parameter values and
 ;   their errors. The errors are automatically rounded to two
 ;   significant digits and the values are rounded to the last
 ;   significant digit of the error.
@@ -48,7 +48,7 @@
 ;  2011/03/10 - Written by Jason Eastman (OSU)
 ;-
 
-pro exofast_latextab2, ss, title=title, label=label, caption=caption, texfile=texfile
+pro exofast_latextab2, ss, title=title, label=label, caption=caption, texfile=texfile, emulateapj=emulateapj
 
 ;; open the texfile (or print to screen instead)
 if n_elements(texfile) ne 0 then begin
@@ -56,7 +56,9 @@ if n_elements(texfile) ne 0 then begin
 endif else lun = -1 ;; print to screen
 
 ; preamble stuff makes it an "includable" file in your tex document
-printf, lun, '\documentclass{emulateapj}'
+if keyword_set(emulateapj) then printf, lun, '\documentclass{emulateapj}' $
+else printf, lun, '\documentclass{aastex62}'
+
 printf, lun, '\providecommand{\bjdtdb}{\ensuremath{\rm {BJD_{TDB}}}}'
 printf, lun, '\providecommand{\feh}{\ensuremath{\left[{\rm Fe}/{\rm H}\right]}}'
 printf, lun, '\providecommand{\teff}{\ensuremath{T_{\rm eff}}}'
@@ -73,7 +75,8 @@ printf, lun, '\providecommand{\fave}{\langle F \rangle}'
 printf, lun, '\providecommand{\fluxcgs}{10$^9$ erg s$^{-1}$ cm$^{-2}$}'
 printf, lun, '\usepackage{apjfonts}'
 printf, lun, '\begin{document}'
-printf, lun, '\LongTables'
+if keyword_set(emulateapj) then printf, lun, '\LongTables' $
+else printf, lun, '\startlongtable'
 
 ;; number of columns
 maxvalues = 0
