@@ -62,7 +62,10 @@ pro exofast_occultquad,z0,u1,u2,p0,muo1,mu0,d=d
 ;    more efficient case handling
 ;    combined ellk and ellec into ellke for speed
 ;    200x speed improvement over previous IDL code in typical case
-;    allow negative values of p (anti-transit) to avoid Lucy-Sweeney like bias
+;    allow negative values of p (anti-transit) to avoid Lucy-Sweeney
+;    like bias
+; 2018/12/12 -- Catch rare bug that hangs the code when planet and
+;               stellar limb are within 10^-13 of one another.
 ;-
 
 nz=n_elements(z0)
@@ -111,7 +114,7 @@ if p ge 1.d0 then begin
 endif
 
 ;; Case 2, 7, 8 - ingress/egress (uniform disk only)
-inegressuni = where(z[notusedyet] ge abs(1.d0-p) and z[notusedyet] lt 1.d0+p)
+inegressuni = where(z[notusedyet] ge abs(1.d0-p) and z[notusedyet] lt 1.d0+p, complement=notused6)
 if inegressuni[0] ne -1 then begin
     ndxuse = notusedyet[inegressuni]
 
@@ -159,16 +162,14 @@ if notused3[0] eq -1 then goto, final
 notusedyet = notusedyet[notused3]
 
 ;; Case 2, Case 8 - ingress/egress (with limb darkening)
-inegress = where((z[notusedyet] gt 0.5d0+abs(p-0.5d0) and $
-                 z[notusedyet] lt 1.d0+p) or $
-                (p gt 0.5d0 and z[notusedyet] gt abs(1.d0-p) and $
-                 z[notusedyet] lt p), complement=notused4)
+q=sqrt((1.d0-x1[notusedyet])/(x2[notusedyet]-x1[notusedyet]))
+inegress = where((z[notusedyet] gt 0.5d0+abs(p-0.5d0) and z[notusedyet] lt 1.d0+p) or $
+                 (p gt 0.5d0 and z[notusedyet] gt abs(1.d0-p) and z[notusedyet] lt p) and (q ne 1d0), complement=notused4)
 if inegress[0] ne - 1 then begin
     ndxuse = notusedyet[inegress]
     q=sqrt((1.d0-x1[ndxuse])/(x2[ndxuse]-x1[ndxuse]))
     ellke, q, Ek, Kk
     n=1.d0/x1[ndxuse]-1.d0
-
     ;; lambda_1: 
     lambdad[ndxuse]=2.d0/9.d0/!dpi/sqrt(x2[ndxuse]-x1[ndxuse])*$
       (((1.d0-x2[ndxuse])*(2.d0*x2[ndxuse]+x1[ndxuse]-3.d0)-3.d0*$
@@ -192,7 +193,8 @@ if inside[0] ne -1 then begin
     lambdae[ndxuse] = p^2
 
     ;; Case 4 - edge of planet hits edge of star
-    edge = where(z[ndxuse] eq 1.d0-p, complement=notused6)
+    q = sqrt((x2[ndxuse]-x1[ndxuse])/(1.d0-x1[ndxuse]))
+    edge = where(z[ndxuse] eq 1.d0-p or q eq 1d0, complement=notused6)
     if edge[0] ne -1 then begin
         ;; lambda_5
         lambdad[ndxuse[edge]] = 2.d0/3.d0/!dpi*acos(1.d0-2.d0*p)-$
@@ -203,7 +205,7 @@ if inside[0] ne -1 then begin
     endif
 
     ;; Case 10 - origin of planet hits origin of star
-    origin = where(z[ndxuse] eq 0, complement=notused7)
+    origin = where(z[ndxuse] eq 0d0, complement=notused7)
     if origin[0] ne -1 then begin
         ;; lambda_6
         lambdad[ndxuse[origin]] = -2.d0/3.d0*(1.d0-p^2)^1.5d0
@@ -221,11 +223,11 @@ if inside[0] ne -1 then begin
       ((1.d0-5.d0*z[ndxuse]^2+p^2+x3[ndxuse]^2)*Kk+(1.d0-x1[ndxuse])*$
        (z[ndxuse]^2+7.d0*p^2-4.d0)*Ek-3.d0*x3[ndxuse]/x1[ndxuse]*$
        ellpic_bulirsch(n,q))
-endif
+ endif
 ;; if there are still unused elements, there's a bug in the code
 ;; (please report it)
 if notused5[0] ne -1 then begin
-    print, 'Undefined case -- please report to jeastman@lcogt.net'
+    print, 'Undefined case -- please report to jason.eastman@cfa.harvard.edu'
     message, "ERROR: the following values of z didn't fit into a case:" +$
       strtrim(z[notusedyet[notused5]],2)
 endif
