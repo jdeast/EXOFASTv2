@@ -158,7 +158,8 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                longcadence=longcadence, rejectflatmodel=rejectflatmodel,ninterp=ninterp, exptime=exptime,$
                earth=earth, silent=silent, yy=yy, torres=torres, nomist=nomist, $
                noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
-               logname=logname, best=best, tides=tides
+               logname=logname, best=best, tides=tides, mistsedfile=mistsedfile,$
+               fitspline=fitspline, splinespace=splinespace
 
 if n_elements(nplanets) eq 0 then nplanets = 1
 if n_elements(circular) ne nplanets and n_elements(circular) gt 1 then begin
@@ -250,7 +251,7 @@ if tranpath ne '' or astrompath ne '' then begin
       endif else if bands[i] eq 'z' then begin
          bands[i] = 'Sloanz'
       endif
-      if (where(bands eq bands[i]))[0] eq -1 then begin
+      if (where(allowedbands eq bands[i]))[0] eq -1 then begin
          printandlog, 'ERROR: band (' + bands[i] + ') not recognized; please select one of the following:'
          printandlog, string(allowedbands)
          stop
@@ -273,8 +274,19 @@ if n_elements(rejectflatmodel) ne ntran and n_elements(rejectflatmodel) ne 0 the
    printandlog, 'REJECTFLATMODEL must be an NTRANSITS element array', logname
    stop
 end
-
 if n_elements(rejectflatmodel) eq 0 and ntran gt 0 then rejectflatmodel = bytarr(ntran)
+
+if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 then begin
+   printandlog, 'FITSPLINE must be an NTRANSITS element array', logname
+   stop
+end
+if n_elements(fitspline) eq 0 and ntran gt 0 then fitspline = bytarr(ntran)
+
+if n_elements(splinespace) ne ntran and n_elements(splinespace) ne 0 then begin
+   printandlog, 'SPLINESPACE must be an NTRANSITS element array', logname
+   stop
+end
+if n_elements(splinespace) eq 0 and ntran gt 0 then splinespace = dblarr(ntran) + 0.75d0
 
 ;; if RVPATH not specified or empty, don't use any telescope
 if n_elements(rvpath) eq 0 then begin
@@ -482,6 +494,10 @@ distance.scale = 100
 distance.value = 10
 distance.fit = 0B
 distance.derive = 0B
+if nastrom gt 0 then begin
+   distance.fit = 1d0
+   distance.derive = 1B
+endif
 
 ra = parameter
 ra.value = 0d0
@@ -491,10 +507,7 @@ ra.description = 'Right Ascension'
 ra.latex = '\alpha_{ICRS}'
 ra.label = 'ra'
 ra.cgs = 3600d0*180d0/!dpi ;; rad/deg
-if nastrom gt 0 then begin
-   ra.fit = 1B
-   ra.derive=1B
-endif else ra.derive = 0B
+ra.derive = 0B
 
 dec = parameter
 dec.value = 0d0
@@ -504,10 +517,7 @@ dec.description = 'Declination'
 dec.latex = '\delta_{ICRS}'
 dec.label = 'dec'
 dec.cgs = 3600d0*180d0/!dpi ;; rad/deg
-if nastrom gt 0 then begin
-   dec.fit = 1B
-   dec.derive=1B
-endif else dec.derive = 0B
+dec.derive = 0B
 
 pmra = parameter
 pmra.value = 0d0
@@ -517,10 +527,7 @@ pmra.description = 'RA Proper Motion'
 pmra.latex = '\mu_{\alpha*}'
 pmra.label = 'pmra'
 pmra.cgs = 3600d3*180d0/!dpi*86400d0*365.25d0 ;; rad/deg
-if nastrom gt 0 then begin
-   pmra.fit = 1B
-   pmra.derive=1B
-endif else pmra.derive = 0B
+pmra.derive = 0B
 
 pmdec = parameter
 pmdec.value = 0d0
@@ -530,10 +537,7 @@ pmdec.description = 'Dec Proper Motion'
 pmdec.latex = '\mu_{\delta}'
 pmdec.label = 'pmdec'
 pmdec.cgs = 3600d3*180d0/!dpi*86400d0*365.25d0 ;; rad/deg
-if nastrom gt 0 then begin
-   pmdec.fit = 1B
-   pmdec.derive=1B
-endif else pmdec.derive = 0B
+pmdec.derive = 0B
 
 rvabs = parameter
 rvabs.value = 0d0
@@ -543,10 +547,7 @@ rvabs.description = 'Absolute RV'
 rvabs.latex = '\gamma_{\rm abs}'
 rvabs.label = 'rvabs'
 rvabs.cgs = 100d0 ;; m/s
-if nastrom gt 0 then begin
-   rvabs.fit = 1B
-   rvabs.derive=1B
-endif else rvabs.derive = 0B
+rvabs.derive = 0B
 
 astromscale = parameter
 astromscale.value = 1d0
@@ -569,10 +570,7 @@ raoffset.description = 'RA offset'
 raoffset.latex = '\Delta\alpha'
 raoffset.label = 'raoffset'
 raoffset.cgs = 0 ;;
-if nastrom gt 0 then begin
-   raoffset.fit = 1B
-   raoffset.derive=1B
-endif else raoffset.derive = 0B
+raoffset.derive = 0B
 
 decoffset = parameter
 decoffset.value = 0d0
@@ -582,10 +580,7 @@ decoffset.description = 'Dec offset'
 decoffset.latex = '\Delta\delta'
 decoffset.label = 'decoffset'
 decoffset.cgs = 1d0 ;;
-if nastrom gt 0 then begin
-   decoffset.fit = 1B
-   decoffset.derive=1B
-endif else decoffset.derive = 0B
+decoffset.derive = 0B
 
 phottobary = parameter
 phottobary.value = 1d0
@@ -595,7 +590,7 @@ phottobary.description = 'Photocenter/Barycenter'
 phottobary.latex = 'p/\rho'
 phottobary.label = 'phottobary'
 phottobary.cgs = 1d0
-if nastrom eq 0 then phottobary.derive = 0B
+phottobary.derive = 0B
 
 parallax = parameter
 parallax.value = 0d0
@@ -605,13 +600,11 @@ parallax.description = 'Parallax'
 parallax.latex = '\varpi'
 parallax.label = 'parallax'
 parallax.cgs = 3600d3*180d0/!dpi ;; rad/mas
+parallax.derive=0B
+parallax.fit = 0B
 if nastrom gt 0 then begin
-   parallax.fit = 1B
    parallax.derive=1B
-endif else begin
-   parallax.derive=0B
-   parallax.fit = 0B
-endelse
+endif
 
 gamma = parameter
 gamma.unit = 'm/s'
@@ -672,7 +665,7 @@ age.scale = 3d0
 eep = parameter
 eep.value = 354.1661d0 ;; solar EEP
 eep.unit = ''
-eep.description = 'Equal Evolutionary Point'
+eep.description = 'Equal Evolutionary Phase'
 eep.latex = 'EEP'
 eep.label = 'eep'
 eep.scale = 50d0
@@ -725,7 +718,7 @@ if nplanets eq 0 then t0.derive=0
 logp = parameter
 logp.unit = ''
 logp.description = 'Log of Period'
-logp.latex = 'log P'
+logp.latex = '\log{P}'
 logp.label = 'logp'
 logp.cgs = !values.d_nan
 if nplanets ne 0 then logp.fit = 1
@@ -735,7 +728,7 @@ logp.scale = 0.01d0
 qesinw = parameter
 qesinw.unit = ''
 qesinw.description = ''
-qesinw.latex = 'e^{1/4} sin{\omega_*}'
+qesinw.latex = 'e^{1/4}\sin{\omega_*}'
 qesinw.label = 'qesinw'
 qesinw.cgs = !values.d_nan
 qesinw.scale = 0.1d0
@@ -744,7 +737,7 @@ qesinw.derive = 0
 qecosw = parameter
 qecosw.unit = ''
 qecosw.description = ''
-qecosw.latex = 'e^{1/4} cos{\omega_*}'
+qecosw.latex = 'e^{1/4}\cos{\omega_*}'
 qecosw.label = 'qecosw'
 qecosw.cgs = !values.d_nan
 qecosw.scale = 0.1d0
@@ -753,7 +746,7 @@ qecosw.derive = 0
 sesinw = parameter
 sesinw.unit = ''
 sesinw.description = ''
-sesinw.latex = '\sqrt{e} sin{\omega_*}'
+sesinw.latex = '\sqrt{e}\sin{\omega_*}'
 sesinw.label = 'sesinw'
 sesinw.cgs = !values.d_nan
 sesinw.scale = 0.1d0
@@ -762,7 +755,7 @@ sesinw.derive = 0
 secosw = parameter
 secosw.unit = ''
 secosw.description = ''
-secosw.latex = '\sqrt{e} cos{\omega_*}'
+secosw.latex = '\sqrt{e}\cos{\omega_*}'
 secosw.label = 'secosw'
 secosw.cgs = !values.d_nan
 secosw.scale = 0.1d0
@@ -783,7 +776,7 @@ endelse
 esinw = parameter
 esinw.unit = ''
 esinw.description = ''
-esinw.latex = 'esin{\omega_*}'
+esinw.latex = 'e\sin{\omega_*}'
 esinw.label = 'esinw'
 esinw.cgs = !values.d_nan
 if nplanets eq 0 then esinw.derive=0
@@ -791,7 +784,7 @@ if nplanets eq 0 then esinw.derive=0
 ecosw = parameter
 ecosw.unit = ''
 ecosw.description = ''
-ecosw.latex = 'ecos{\omega_*}'
+ecosw.latex = 'e\cos{\omega_*}'
 ecosw.label = 'ecosw'
 ecosw.cgs = !values.d_nan
 if nplanets eq 0 then ecosw.derive=0
@@ -835,12 +828,11 @@ bigomegadeg.value = 180d0
 bigomegadeg.scale = 180d0
 bigomegadeg.unit = 'Degrees'
 bigomegadeg.description = 'Longitude of ascending node'
-bigomegadeg.latex = '\Omega_*'
+bigomegadeg.latex = '\Omega'
 bigomegadeg.label = 'bigomegadeg'
 bigomegadeg.cgs = !dpi/180d0
 bigomegadeg.derive=0B
 bigomegadeg.fit=0B
-
 if nastrom gt 0 then begin
    bigomega.fit=1B
    bigomegadeg.derive=1B
@@ -869,7 +861,7 @@ cosi = parameter
 cosi.value = 0d0
 cosi.unit = ''
 cosi.description = 'Cos of inclination'
-cosi.latex = 'cos i'
+cosi.latex = '\cos{i}'
 cosi.label = 'cosi'
 if nplanets ne 0 then cosi.fit = 1
 cosi.scale = 0.1
@@ -1051,15 +1043,15 @@ vsini.cgs = 100d0
 vsini.derive = 0
 vsini.scale = 5d3
 
-macturb = parameter
-macturb.unit = 'm/s'
-macturb.description = 'Macroturbulence'
-macturb.latex = 'macturb'
-macturb.label = 'macturb'
-macturb.cgs = 1000d0
-macturb.derive = 0
-macturb.value = 4d3
-macturb.scale = 2d3
+vline = parameter
+vline.unit = 'm/s'
+vline.description = 'Unbroadened line width'
+vline.latex = 'V_{\rm line}'
+vline.label = 'vline'
+vline.cgs = 1000d0
+vline.derive = 0
+vline.value = 4d3
+vline.scale = 2d3
 
 dtscale = parameter
 dtscale.description = 'Doppler Tomography Error scaling'
@@ -1071,7 +1063,7 @@ dtscale.value = 1d0
 
 logk = parameter
 logk.description = 'Log of RV semi-amplitude'
-logk.latex = 'logK'
+logk.latex = '\log{K}'
 logk.label = 'logk'
 if nplanets eq 0 then logk.derive=0 $
 else logk.fit = 1
@@ -1272,6 +1264,13 @@ teq.latex = 'T_{eq}'
 teq.label = 'teq'
 if nplanets eq 0 then teq.derive = 0
 
+tcirc = parameter
+tcirc.unit = 'Gyr'
+tcirc.description = 'Tidal circularization timescale'
+tcirc.latex = '\tau_{\rm circ}'
+tcirc.label = 'tcirc'
+if nplanets eq 0 then tcirc.derive = 0
+
 safronov = parameter
 safronov.description = 'Safronov Number'
 safronov.latex = '\Theta'
@@ -1363,7 +1362,7 @@ endif else ttv.derive=0
 
 tiv = parameter
 tiv.description = 'Transit Inclination Variation'
-tiv.latex = 'TIV'
+tiv.latex = 'TiV'
 tiv.label = 'tiv'
 tiv.unit = 'Radians'
 tiv.scale = 0.01*!dpi/180d0
@@ -1442,7 +1441,7 @@ star = create_struct(mstar.label,mstar,$
                      eep.label,eep,$
                      logmstar.label,logmstar,$
                      vsini.label,vsini,$
-                     macturb.label,macturb,$
+                     vline.label,vline,$                    
                      Av.label,Av,$
                      alpha.label,alpha,$
 ;                     Ma.label,Ma,$
@@ -1459,6 +1458,7 @@ star = create_struct(mstar.label,mstar,$
                      slope.label,slope,$
                      quad.label,quad,$
                      'fluxfile',' ',$
+                     'mistsedfile',' ',$
                      'rootlabel','Stellar Parameters:',$
                      'columnlabels',columnlabels,$
                      'label','')
@@ -1486,14 +1486,34 @@ if n_elements(fluxfile) ne 0 then begin
       ;; before then updated
       ;; the chi2 doesn't matter here, use solar values
       sedchi2 = exofast_sed(fluxfile, 6000d0,1d0,0d0,10d0,logg=4.41d0,met=0d0,alpha=0d0,/redo)
-
    endif else printandlog, 'Could not find ' + fluxfile, logname
+endif
+
+if n_elements(mistsedfile) ne 0 then begin
+   if file_test(mistsedfile) then begin
+      star.mistsedfile = mistsedfile
+      star.errscale.fit = 1
+      star.errscale.derive = 1
+      star.distance.derive = 1
+      star.distance.fit = 1
+      star.parallax.derive = 1
+      star.av.fit = 1
+      star.av.derive = 1
+
+      ;; overwrite the common block, in case it's been called
+      ;; before then updated (without exiting IDL)
+      ;; the chi2 doesn't matter here, use solar values
+      sedchi2 = mistsed(6000d0, 4.41d0, 0d0, 0d0, 10d0, 1d0, 1d0, mistsedfile, /redo)
+   endif else printandlog, 'Could not find ' + mistsedfile, logname
 endif
 
 planet = create_struct($
          period.label,period,$    ;; fundamental (most interesting) parameters
          rp.label,rp,$
          rpearth.label,rpearth,$
+         mp.label,mp,$
+         mpsun.label,mpsun,$
+         mpearth.label,mpearth,$
          tc.label,tc,$
          t0.label,t0,$
          a.label,a,$              
@@ -1505,9 +1525,7 @@ planet = create_struct($
          bigomega.label,bigomega,$ ;; for astrometry
          bigomegadeg.label,bigomegadeg,$
          teq.label,teq,$
-         mp.label,mp,$
-         mpsun.label,mpsun,$
-         mpearth.label,mpearth,$
+         tcirc.label, tcirc,$
          K.label,k,$              ;; RV parameters
          logK.label,logk,$
          p.label,p,$              ;; Primary Transit parameters
@@ -1611,10 +1629,13 @@ transit = create_struct(variance.label,variance,$ ;; Red noise
                         'chi2',0L,$
                         'rootlabel','Transit Parameters:',$
                         'rejectflatmodel',0B,$
+                        'fitspline',0B,$
+                        'splinespace',0.75d0,$
                         'label','') 
 
 if n_elements(dtpath) ne 0 then begin
    dtfiles = file_search(dtpath,count=ndt)
+   if ndt eq 0 then message, 'DTPATH specified (' + dtpath + ') but no files found'
 endif else begin
    dtfiles = ['']
    ndt = 0
@@ -1735,7 +1756,7 @@ for i=0, nplanets-1 do begin
    endif
    
    ;; if rossiter is done, fit lambda (for each planet) and vsini (for the star)
-   ;; if DT is done, fit lambda (for each planet) and vsini and macturb (for the star)
+   ;; if DT is done, fit lambda (for each planet) and vsini and vline (for the star)
    if rossiter[i] or fitdt[i] then begin
       ss.star.vsini.fit = 1
       ss.star.vsini.derive = 1
@@ -1743,8 +1764,8 @@ for i=0, nplanets-1 do begin
       ss.planet[i].lambdadeg.derive = 1
       if fitdt[i] then begin
          ss.planet[i].fitdt = 1B
-         ss.star.macturb.fit = 1
-         ss.star.macturb.derive = 1
+         ss.star.vline.fit = 1
+         ss.star.vline.derive = 1
          ss.doptom[i].dtscale.fit = 1
          ss.doptom[i].dtscale.derive = 1
       endif
@@ -1902,6 +1923,9 @@ if ntran gt 0 then begin
       ss.transit[i].bandndx = where(ss.band[*].name eq band)
       ss.transit[i].label = (*(ss.transit[i].transitptrs)).label
       ss.transit[i].rejectflatmodel = rejectflatmodel[i]
+      ss.transit[i].fitspline = fitspline[i]
+      ss.transit[i].splinespace = splinespace[i]
+      
    endfor
    printandlog, '',logname
 endif else begin
@@ -1921,25 +1945,52 @@ if ntel gt 0 then begin
       *(ss.telescope[i].rvptrs) = readrv(rvfiles[i])
       ss.telescope[i].label = (*(ss.telescope[i].rvptrs)).label
 
-      ;; take a rough stab at gamma = mean(RVs) and K = sqrt(2)*stdev(RVs)     
-      ss.telescope[i].gamma.value = mean((*(ss.telescope[i].rvptrs)).rv)
-      if n_elements((*(ss.telescope[i].rvptrs)).rv) gt maxpoints then begin
-         maxpoints = n_elements((*(ss.telescope[i].rvptrs)).rv) 
-         ss.planet[*].k.value = sqrt(2d0)*stddev((*(ss.telescope[i].rvptrs)).rv)
-      endif
+      ;; = mean(RVs) and K = sqrt(2)*stdev(RVs)     
+;      if ss.star.quad.fit then begin
+;         coeffs = poly_fit((*(ss.telescope[i].rvptrs)).rv
+
+
+;      ss.telescope[i].gamma.value = mean((*(ss.telescope[i].rvptrs)).rv)
+;      if n_elements((*(ss.telescope[i].rvptrs)).rv) gt maxpoints then begin
+;         maxpoints = n_elements((*(ss.telescope[i].rvptrs)).rv) 
+;         ss.planet[*].k.value = sqrt(2d0)*stddev((*(ss.telescope[i].rvptrs)).rv)
+;      endif
    endfor
    printandlog, '', logname
 endif else begin
    ss.telescope[*].rvptrs = ptr_new(/allocate_heap)
 endelse
 
+for i=0, ss.ntel-1 do begin
+   rv = *(ss.telescope[i].rvptrs)
+   ss.telescope[i].gamma.value = mean(rv.rv)
+   if i eq 0 then begin     
+      alltime = rv.bjd
+      allrv = rv.rv-ss.telescope[i].gamma.value
+   endif else begin
+      alltime = [alltime,rv.bjd]
+      allrv = [allrv,rv.rv-ss.telescope[i].gamma.value]
+   endelse
+endfor
+
+;; take a rough stab at gamma, slope, quad, and K
+if ss.ntel gt 0 then t0 = (min(alltime) + max(alltime))/2d0
+if ss.star.quad.fit then begin
+   coeffs = poly_fit(alltime-t0, allrv, 2, yfit=yfit)
+   allrv -= yfit
+   ss.star.quad.value = coeffs[2]
+   ss.star.slope.value = coeffs[1]
+   ss.telescope[*].gamma.value += coeffs[0]
+endif else if ss.star.slope.fit then begin
+   coeffs = poly_fit(alltime-t0, allrv, 1, yfit=yfit)
+   allrv -= yfit
+   ss.star.slope.value = coeffs[1]
+   ss.telescope[*].gamma.value += coeffs[0]
+endif   
+if ss.ntel gt 0 then ss.planet[*].k.value = sqrt(2d0)*stddev(allrv)
+
 ;; read in astrometry files
 if nastrom gt 0 then begin
-;   ss.astrom[0].raoffset.fit = 0
-;   ss.astrom[0].raoffset.derive = 0
-;   ss.astrom[0].decoffset.fit = 0
-;   ss.astrom[0].decoffset.derive = 0
-   
    ss.astrom[*].astromptrs = ptrarr(nastrom,/allocate_heap)
    for i=0L, nastrom-1 do begin
       *(ss.astrom[i].astromptrs) = readastrom(astromfiles[i])
@@ -1947,6 +1998,33 @@ if nastrom gt 0 then begin
       ss.astrom[i].bandndx = where(ss.band[*].name eq band)
    endfor
 endif
+
+for i=0L, nastrom-1 do begin
+
+   astrom = *(ss.astrom[i].astromptrs)
+   if ~keyword_set(astrom.userhopa) then begin
+      ss.star.parallax.fit = 1B
+      ss.star.parallax.derive=1B
+      ss.star.ra.fit = 1B
+      ss.star.ra.derive=1B
+      ss.star.dec.fit = 1B
+      ss.star.dec.derive=1B
+      ss.star.pmra.fit = 1B
+      ss.star.pmra.derive=1B
+      ss.star.pmdec.fit = 1B
+      ss.star.pmdec.derive=1B
+      ss.star.rvabs.fit = 1B
+      ss.star.rvabs.derive=1B
+
+      ss.astrom[i].raoffset.fit = 1B
+      ss.astrom[i].raoffset.derive=1B
+      ss.astrom[i].decoffset.fit = 1B
+      ss.astrom[i].decoffset.derive=1B
+      ;ss.astrom[i].phottobary.derive = 1B
+      ss.astrom[i].astromscale.fit = 1B
+      ss.astrom[i].astromscale.derive=1B
+   endif
+endfor
 
 ;; make the prior array
 priors = [-1,-1,-1,-1,-1]
@@ -2067,7 +2145,7 @@ while not eof(lun) do begin
                                     if priorwidth gt 0 and finite(priorwidth) then begin
                                        (*(ss.(i)[priornum].(k))).(l)[detrendnum].scale = priorwidth*3d0
                                        (*(ss.(i)[priornum].(k))).(l)[detrendnum].priorwidth = priorwidth
-                                    endif                  
+                                    endif
                                     
                                     if ~keyword_set(silent) then begin
                                        if priorwidth lt 0 then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname $
@@ -2096,7 +2174,16 @@ while not eof(lun) do begin
                ;; and this captures everything else
                if tag_exist(ss.(i)[priornum],priorlabel,index=ndx) then begin
                   
-                  if not ss.(i)[priornum].(ndx).fit and not ss.(i)[priornum].(ndx).derive then begin
+                  circ = 0
+                  if tag_exist(ss.(i),'e') then if circular[priornum] then circ = 1
+                  
+                  ;; if circular flag set, ignore priors on any eccentricity-derived parameter
+                  if ss.(i)[priornum].(ndx).label eq 'e' or ss.(i)[priornum].(ndx).label eq 'omega' or $
+                     ss.(i)[priornum].(ndx).label eq 'omegadeg' or $
+                     ss.(i)[priornum].(ndx).label eq 'secosw' or ss.(i)[priornum].(ndx).label eq 'sesinw' or $
+                     ss.(i)[priornum].(ndx).label eq 'ecosw' or ss.(i)[priornum].(ndx).label eq 'esinw' and circ then begin                        printandlog, "WARNING: Prior supplied on '" + $
+                     priorname + "' but planet is specified to be circular; not applying prior", logname
+                  endif else if not ss.(i)[priornum].(ndx).fit and not ss.(i)[priornum].(ndx).derive then begin
                      if nplanets ne 0 then $
                         printandlog, "WARNING: Prior supplied on '" + $
                                      priorname + "' but it is neither fitted or derived; not applying prior", logname
@@ -2133,6 +2220,7 @@ while not eof(lun) do begin
                         if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
                      endelse
                   endelse
+
                   found=1
                   i = n_tags(ss)-1L
                   break
@@ -2250,13 +2338,17 @@ if arg_present(best) then pars2str, best, ss, /best
 ;; don't do these when creating the MCMC structure
 if n_elements(ss.star.mstar.value) eq 1 then begin
 
-   ;; use this to require planets to stay in the same order as they start
-   if ss.nplanets gt 0 then ss.planetorder = sort(ss.planet.period.value)
-
    ;; derive all step parameters
    if not pars2step(ss) then begin
       printandlog, 'Warning: The isochrones are not applicable here; refine your priors.', logname
       stop
+   endif
+
+   ;; use this to require planets to stay in the same order as they start
+   if ss.nplanets gt 0 then begin
+      priorsupplied = where(ss.planet.period.value ne 0d0)
+      if priorsupplied[0] ne -1 then ss.planet[priorsupplied].logp.value = alog10(ss.planet[priorsupplied].period.value)
+      ss.planetorder = sort(ss.planet.logp.value)
    endif
 
    ;; return an error if the starting stellar system is not allowed
@@ -2264,6 +2356,7 @@ if n_elements(ss.star.mstar.value) eq 1 then begin
       printandlog, 'Warning: starting values for stellar system not allowed; refine priors', logname
       stop
    endif
+
 
    ;; calculate the right period stepping scale for AMOEBA based on the
    ;; input data
