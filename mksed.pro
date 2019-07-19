@@ -98,6 +98,9 @@ if not keyword_set(dist) then dist=2d0
 if not keyword_set(galdist) then galdist=dist
 if not keyword_set(ra) then querysimbad,star,ra,dec,cfa=cfa else star=[ra,dec]
 
+if n_elements(ra) eq 0 or n_elements(dec) eq 0 then $
+   message, 'Star name not resolved by SIMBAD. Sometimes their server is down and trying again helps. Otherwise, you must supply the RA and Dec directly.'
+
 ;; if outfile not specified, print results to the screen
 if n_elements(outfile) eq 0 then lun = -1 $
 else begin
@@ -285,8 +288,8 @@ if not keyword_set(nogaia) then begin
       uparallax = qgaia.e_plx
 
       if qgaia.gmag gt -9 and finite(qgaia.e_gmag) then printf, lun,'Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
-      if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) then printf, lun,'GBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
-      if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag) then printf, lun,'GRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt
+      if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) then printf, lun,'GaiaBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
+      if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag) then printf, lun,'GaiaRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt
 
    endif
 endif
