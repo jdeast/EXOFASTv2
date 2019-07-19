@@ -60,11 +60,14 @@ for i=0, ss.ntel-1 do begin
    if mindate lt allmindate then allmindate = mindate
    if maxdate gt allmaxdate then allmaxdate = maxdate
 endfor
+t0 = (allmindate+allmaxdate)/2d0
+
 roundto = 10L^(strlen(strtrim(floor(allmaxdate-allmindate),2)));+1L) 
 bjd0 = floor(allmindate/roundto)*roundto
 
 allmindate = (allmindate-bjd0)*0.95 + bjd0
 allmaxdate = (allmaxdate-bjd0)*1.05 + bjd0
+
 
 nsteps = 1000
 prettytime = allmindate + (allmaxdate-allmindate)*dindgen(nsteps)/(nsteps-1.d0)
@@ -84,8 +87,9 @@ endif
 for j=0, ss.ntel-1 do begin
    rv = *(ss.telescope[j].rvptrs)
    mintime = min(rv.bjd,max=maxtime)
-   t0 = (maxtime+mintime)/2.d0
-   rv.residuals = rv.rv - (ss.telescope[j].gamma.value[ndx] + (rv.bjd-t0)*ss.star.slope.value[ndx])
+
+   ;; subtract gamma, slope, and quadratic terms
+   rv.residuals = rv.rv - (ss.telescope[j].gamma.value[ndx] + ss.star.slope.value[ndx]*(rv.bjd-t0) + ss.star.quad.value[ndx]*(rv.bjd-t0)^2)
 
    for i=0, ss.nplanets-1 do begin
 
@@ -97,7 +101,7 @@ for j=0, ss.ntel-1 do begin
                               rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
                               p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star.vsini.value[ndx],$
                               lambda=ss.planet[i].lambda.value[ndx],$
-                              u1=0d0, t0=0d0,deltarv=deltarv)
+                              u1=0d0,deltarv=deltarv)
          ;; re-populate the residual array
          rv.residuals -= modelrv
          *(ss.telescope[j].rvptrs) = rv
@@ -117,7 +121,7 @@ for i=0, ss.nplanets-1 do begin
                             rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
                             p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star.vsini.value[ndx],$
                             lambda=ss.planet[i].lambda.value[ndx],$
-                            u1=0d0, t0=0d0,deltarv=deltarv)
+                            u1=0d0, deltarv=deltarv)
    allprettymodel += prettymodel
 
    ;; phase so primary is at 0.25
@@ -140,8 +144,6 @@ for i=0, ss.nplanets-1 do begin
                            u1=0d0, t0=0d0,deltarv=deltarv)
       
       mintime = min(rv.bjd,max=maxtime)
-      t0 = (maxtime+mintime)/2.d0
-
       minrv = min(rv.residuals-err+modelrv)
       maxrv = max(rv.residuals+err+modelrv)
 
@@ -211,17 +213,19 @@ endfor
 
 !p.multi=0
 
-;; now plot all planets, unphased (slope and gamma subtracted)
+;; now plot all planets, unphased, including the slope and quadratic terms
 if not keyword_set(psname) then begin
    if win_state[21] eq 1 then wset, 21 $
    else window, 21, retain=2
 endif
 
+allprettymodel += (prettytime-t0)*ss.star.slope.value[ndx] + (prettytime-t0)^2*ss.star.quad.value[ndx]
+allminrv = min(allprettymodel,max=allmaxrv)
+
 xtitle2='!3' + exofast_textoidl('BJD_{TDB} - ' + string(bjd0,format='(i7)'),font=font)
 plot, [0], [0], xrange=[allmindate,allmaxdate]-bjd0,/xstyle,$
       yrange=[allminrv,allmaxrv], $
       ytitle='!3RV (m/s)', position=position1,xtickformat='(A1)'
-
 oplot, prettytime-bjd0, allprettymodel, color=red
 
 for j=0, ss.ntel-1 do begin 
