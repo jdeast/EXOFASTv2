@@ -1,0 +1,45 @@
+#!/usr/bin/expect -f
+#An expect script to get the horizons ephemeris. 
+#Intended to interface with IDL get_eph.pro
+
+#Thanks to bbutler for posting his very similar script online, 
+#from which this was based
+
+#long timeout required to generate large requests
+set timeout 300
+
+#read in the command line arguments
+set naifid [lindex $argv 0]
+set starttime [lindex $argv 1]
+set endtime [lindex $argv 2]
+set stepsize [lindex $argv 3]
+set center [lindex $argv 4]
+set filename [lindex $argv 5]
+
+set env(TERM) no-resize-vt100
+spawn telnet ssd.jpl.nasa.gov 6775
+expect "Horizons> " { send "load vla-1\r" }
+expect "Horizons> " { send page\r }
+expect "Horizons> " { send $naifid\r }
+expect -re ".*Select.*: $" { send e\r }
+expect -re ".*Observe.*: $" { send v\r }
+expect -re ".*Coordinate.*: $" { send @$center\r }
+expect -re ".*Reference.*: $" { send frame\r }
+expect -re ".*Starting.*: $" { send $starttime\r }
+expect -re ".*Ending.*: $" { send $endtime\r }
+expect -re ".*interval.*: $" { send $stepsize\r }
+expect -re ".*Accept.*: $" { send n\r }
+expect -re ".*reference.*: $" { send J2000\r }
+expect -re ".*Corrections.*: $" { send 1\r }
+expect -re ".*units.*: $" { send 2\r }
+expect -re ".*CSV.*: $" { send yes\r }
+expect -re ".*delta-T.*: $" { send no\r }
+expect -re ".*Select.*: $" { send 1\r }
+
+set outf $filename
+log_file -noappend "$outf"
+expect -re ".*>>> Select.*:" { send "q\r" }
+send_user "\n"
+log_file
+
+exit 0
