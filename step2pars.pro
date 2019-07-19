@@ -27,8 +27,9 @@ if ss.star.parallax.fit then ss.star.distance.value = 1d3/ss.star.parallax.value
 ;; require planets to stay in the same order as they start
 if ss.nplanets gt 0 then begin
    if max(abs(ss.planetorder - sort(ss.planet.logp.value))) ne 0 then begin
-      if keyword_set(verbose) then printandlog, 'Planets must remain in the original order! Rejecting step', logname
-      return, -1
+;      if keyword_set(verbose) then printandlog, 'Planets must remain in the original order! Rejecting step', logname
+;      stop
+;      return, -1
    endif
 endif
 
@@ -71,12 +72,19 @@ for i=0, ss.nplanets-1 do begin
       ss.planet[i].omega.value = atan(ss.planet[i].qesinw.value,ss.planet[i].qecosw.value)
    endif
 
-   if ss.fitrv[i] or ss.fittran[i] then begin
-      ;; fitting transits or RVs mean we can resolve the discreet degeneracy
+   ;; bound lambda to be between -pi and pi
+   ss.planet[i].lambda.value = ss.planet[i].lambda.value mod (2d0*!dpi)
+   if ss.planet[i].lambda.value gt !dpi then ss.planet[i].lambda.value -= (2d0*!dpi)
+   if ss.planet[i].lambda.value lt -!dpi then ss.planet[i].lambda.value += (2d0*!dpi)
+
+   if ss.fitrv[i] or ss.fittran[i] or i gt 1 then begin
+      ;; fitting transits, RVs, or multiple planets mean we can resolve the discreet degeneracy
       ;; between Omega and Omega + pi
       if ss.planet[i].bigomega.value ge (2d0*!dpi) then ss.planet[i].bigomega.value -= 2d0*!dpi
       if ss.planet[i].bigomega.value lt 0d0  then ss.planet[i].bigomega.value += 2d0*!dpi
    endif else begin
+      ;; otherwise, we can only measure the longitude of the Node 
+      ;; (0 < Omega < 180)
       if ss.planet[i].bigomega.value ge (!dpi) then ss.planet[i].bigomega.value -= !dpi
       if ss.planet[i].bigomega.value lt 0d0  then ss.planet[i].bigomega.value += !dpi
    endelse
@@ -99,6 +107,11 @@ for i=0, ss.nplanets-1 do begin
       return, -1
    endif
 
+   if ~finite(ss.planet[i].mpsun.value) then begin
+      if keyword_set(verbose) then printandlog, 'Planet mass must be finite; rejecting step', logname
+      return, -1
+   endif
+
    ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup ;; m_jupiter
    ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth ;; m_earth
    ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
@@ -108,9 +121,8 @@ for i=0, ss.nplanets-1 do begin
 
    ;; tighter (empirical) constraint on eccentricity (see Eastman 2013)
    if ss.tides and ss.planet[i].e.value gt (1d0-3d0/ss.planet[i].ar.value) then begin
-      ss.planet[i].e.value = 0d0
-      ss.planet[i].qesinw.value = 0d0
-      ss.planet[i].qecosw.value = 0d0
+      if keyword_set(verbose) then printandlog, 'TIDES flag set and eccentricity (' + strtrim(ss.planet[i].e.value,2) + ') exceeds empirical limit (' + strtrim((1d0-3d0/ss.planet[i].ar.value),2) + ')', logname
+      return, -1
    endif ;else if ss.planet[i].e.value gt (1d0-1d0/ss.planet[i].ar.value)
 
    ;; limit eccentricity to avoid collision with star during periastron
@@ -139,24 +151,6 @@ for i=0, ss.nplanets-1 do begin
    if ss.planet[i].fittran and (ss.planet[i].b.value gt (1d0+ss.planet[i].p.value)) then begin
        if keyword_set(verbose) then printandlog, 'Planet does not transit!', logname
       return, -1
-   endif
-
-   ;; for multi-planet systems, make sure they don't enter each other's hill spheres
-   ;; if mp unknown, mp=0 => hill radius=0 => planets can't cross orbits
-   ;; **** ignores mutual inclination; a priori excludes systems like Neptune and Pluto!! ****
-   if ~ss.alloworbitcrossing then begin
-      hillradius = ((1d0-ss.planet[i].e.value)*ss.planet[i].a.value*(ss.planet[i].mpsun.value/(3d0*ss.star.mstar.value))^(1d0/3d0)) > 0d0
-      mindist[i] = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value - hillradius
-      maxdist[i] = (1d0+ss.planet[i].e.value)*ss.planet[i].a.value + hillradius
-      for j=i-1,0,-1 do begin
-         if ((mindist[i] ge mindist[j]) and (mindist[i] le maxdist[j])) or $
-            ((maxdist[i] ge mindist[j]) and (maxdist[i] le maxdist[j])) or $
-            ((mindist[j] ge mindist[i]) and (mindist[j] le maxdist[i])) or $
-            ((maxdist[j] ge mindist[i]) and (maxdist[j] le maxdist[i])) then begin
-            if keyword_set(verbose) then printandlog, 'Planets ' + strtrim(j,2) + ' (' + strtrim(mindist[j],2) + ',' + strtrim(maxdist[j],2) + ') and ' + strtrim(i,2) + ' (' + strtrim(mindist[i],2) + ',' + strtrim(maxdist[i],2) + ') cross paths', logname
-            return, -1
-         endif
-      endfor
    endif
 
    ;; time of periastron
@@ -192,6 +186,26 @@ for i=0L, ss.nband-1 do begin
    fluxfraction = ss.band[i].dilute.value
    ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
 endfor
+
+if ~ss.alloworbitcrossing then begin
+   for i=0L, ss.nplanets-1 do begin
+      ;; for multi-planet systems, make sure they don't enter each other's hill spheres
+      ;; if mp unknown, mp=0 => hill radius=0 => planets can't cross orbits
+      ;; **** ignores mutual inclination; a priori excludes systems like Neptune and Pluto!! ****
+      hillradius = ((1d0-ss.planet[i].e.value)*ss.planet[i].a.value*(ss.planet[i].mpsun.value/(3d0*ss.star.mstar.value))^(1d0/3d0)) > 0d0
+      mindist[i] = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value - hillradius
+      maxdist[i] = (1d0+ss.planet[i].e.value)*ss.planet[i].a.value + hillradius
+      for j=i-1,0,-1 do begin
+         if ((mindist[i] ge mindist[j]) and (mindist[i] le maxdist[j])) or $
+            ((maxdist[i] ge mindist[j]) and (maxdist[i] le maxdist[j])) or $
+            ((mindist[j] ge mindist[i]) and (mindist[j] le maxdist[i])) or $
+            ((maxdist[j] ge mindist[i]) and (maxdist[j] le maxdist[i])) then begin
+            if keyword_set(verbose) then printandlog, 'Planets ' + strtrim(j,2) + ' (' + strtrim(mindist[j],2) + ',' + strtrim(maxdist[j],2) + ') and ' + strtrim(i,2) + ' (' + strtrim(mindist[i],2) + ',' + strtrim(maxdist[i],2) + ') cross paths', logname
+            return, -1
+         endif
+      endfor
+   endfor
+endif
 
 return, 1
 end
