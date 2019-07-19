@@ -153,21 +153,21 @@ for j=0, ss.ntran-1 do begin
       modelflux = dblarr(npoints) + 1d0
    endelse
 
-   ;; get the motion of the star due to the planet (pretty cadence)
-   junk = exofast_getb2(prettytime,inc=ss.planet.i.value,a=ss.planet.ar.value,$
-                        tperiastron=ss.planet.tp.value,$
-                        period=ss.planet.period.value,$
-                        e=ss.planet.e.value,omega=ss.planet.omega.value,$
-                        q=ss.star.mstar.value/ss.planet.mpsun.value,$
-                        x1=x1pretty,y1=y1pretty,z1=z1pretty)
-
-   ;; get the motion of the star due to the planets (data cadence)
-   junk = exofast_getb2(transitbjd,inc=ss.planet.i.value,a=ss.planet.ar.value,$
-                        tperiastron=ss.planet.tp.value,$
-                        period=ss.planet.period.value,$
-                        e=ss.planet.e.value,omega=ss.planet.omega.value,$
-                        q=ss.star.mstar.value/ss.planet.mpsun.value,$
-                        x1=x1,y1=y1,z1=z1)
+;   ;; get the motion of the star due to the planet (pretty cadence)
+;   junk = exofast_getb2(prettytime,inc=ss.planet.i.value,a=ss.planet.ar.value,$
+;                        tperiastron=ss.planet.tp.value,$
+;                        period=ss.planet.period.value,$
+;                        e=ss.planet.e.value,omega=ss.planet.omega.value,$
+;                        q=ss.star.mstar.value/ss.planet.mpsun.value,$
+;                        x1=x1pretty,y1=y1pretty,z1=z1pretty)
+;
+;   ;; get the motion of the star due to the planets (data cadence)
+;   junk = exofast_getb2(transitbjd,inc=ss.planet.i.value,a=ss.planet.ar.value,$
+;                        tperiastron=ss.planet.tp.value,$
+;                        period=ss.planet.period.value,$
+;                        e=ss.planet.e.value,omega=ss.planet.omega.value,$
+;                        q=ss.star.mstar.value/ss.planet.mpsun.value,$
+;                        x1=x1,y1=y1,z1=z1)
 
    for i=0, ss.nplanets-1 do begin
 
@@ -192,7 +192,8 @@ for j=0, ss.ntran-1 do begin
                                        dilute=band.dilute.value,$
                                        tc=ss.planet[i].tc.value,$
                                        rstar=ss.star.rstar.value/AU,$
-                                       x1=x1pretty,y1=y1pretty,z1=z1pretty,au=au,$
+                                       ;x1=x1pretty,y1=y1pretty,z1=z1pretty,$
+                                       au=au,$
                                        c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0) 
          prettytmpflux = reform(prettytmpflux,npretty,ninterp)
          prettyflux += prettytmpflux
@@ -215,7 +216,8 @@ for j=0, ss.ntran-1 do begin
                                  dilute=band.dilute.value,$
                                  tc=ss.planet[i].tc.value,$
                                  rstar=ss.star.rstar.value/AU,$
-                                 x1=x1,y1=y1,z1=z1,au=au,$
+                                 ;x1=x1,y1=y1,z1=z1,$
+                                 au=au,$
                                  c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0) 
          tmpflux = reform(tmpflux,n_elements(trandata.bjd),ninterp)
          modelflux += tmpflux
