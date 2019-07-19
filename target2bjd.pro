@@ -28,7 +28,7 @@
 ;   TP          - The time of periastron of the orbit (BJD_TARGET)
 ;   PERIOD      - The period of the orbit (days)
 ;   E           - Eccentricity of the orbit
-;   OMEGA       - Argument of Periastron of the orbit (radians)
+;   OMEGA       - Argument of Periastron of the stellar orbit (radians)
 ;   
 ; OPTIONAL INPUTS:
 ;   Q          - The mass ratio of the targets (M1/M2). If not
@@ -99,16 +99,12 @@ endif else factor = 1d0 ;; infinite mass ratio, a1=0, a2=a
 
 ;; distance from barycenter to target
 r = a*(1d0-e^2)/(1d0+e*cos(trueanom))*factor
-x = r*cos(trueanom)
-y = r*sin(trueanom)
 
 ;; rotate orbit by omega
-if keyword_set(primary) then om = omega + !dpi $
+if ~keyword_set(primary) then om = omega + !dpi $
 else om = omega
-y =  x*sin(om) + y*cos(om)
 
-;; incline the orbit by i
-z = y*sin(inclination) 
+z = r*sin(trueanom+om)*sin(inclination)
 
 return, bjd_target - z/c
 
