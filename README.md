@@ -12,16 +12,28 @@ License-free use still requires a (free) IDL installation and runs a
 pre-compiled version with the virtual machine. You still must follow
 the installation instructions below.
 
+To install a free version of IDL:
+
+   Create an Harris Geospatial account here:
+   https://www.harrisgeospatial.com/Company/Create-Account
+
+   When logged in, download the latest version of IDL for your
+   platform from here:
+   http://www.harrisgeospatial.com/MyAccount/Downloads.aspx
+
 Note the IDL Astronomy library is required. If you don't already have
 it, install it from here: https://github.com/wlandsman/IDLAstro
 
-This package is best installed with git
+You also need the Coyote library. If you don't already have it, install it here:
+http://www.idlcoyote.com/documents/programs.php#COYOTE_LIBRARY_DOWNLOAD
+
+EXOFASTv2 is best installed with git
 
   cd $HOME/idl
   git clone https://github.com/jdeast/EXOFASTv2.git
 
 NOTE: EXOFASTv2 logs the version number used for each fit if installed
-with git and git can be invoked via "git".
+with git and git is in your path (i.e., it can be invoked via "git").
 
 define environment variables (bash shell, e.g., .bashrc)
 
