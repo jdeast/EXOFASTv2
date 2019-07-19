@@ -129,6 +129,8 @@ for i=0L, nbad-1 do begin
    fehs2  = fehs[max([0,fehx[bad[i]]-3]):min([fehx[bad[i]]+3,18])]
    
    sz = size(a2)
+   if sz[0] ne 3 then return, [!values.d_nan, !values.d_nan]
+
 ;   for l=0, sz[1]-1 do begin
       for j=0, sz[2]-1 do begin
          for k=0, sz[3]-1 do begin
