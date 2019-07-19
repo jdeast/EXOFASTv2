@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug, redo=redo
+function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug, redo=redo, flux=flux
 
 common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m, w1, kapp1
 
@@ -49,8 +49,8 @@ flux = lamflam1*extinct1
 f=fltarr(n)
 for i=0,n-1 do begin
    ;; find the indices of the FWHM
-   dummy = min((abs(w1-(wp[i]-widthhm[i]/2))),l)
-   dummy = min((abs(w1-(wp[i]+widthhm[i]/2))),u)   
+   dummy = min((abs(w1-(wp[i]-widthhm[i]/2d0))),l)
+   dummy = min((abs(w1-(wp[i]+widthhm[i]/2d0))),u)   
    f[i]=mean(flux[l:u])
 endfor
 
@@ -88,16 +88,18 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    xmin = 0.1
    ymin = min([f[m],fp[m]-ep[m]])
    ymax = max([f[m],fp[m]+ep[m],smooth(flux,10)])
+
+   ;; overplot the model atmosphere
    plot, w1, smooth(flux,10),/xlog,/ylog,xtitle=xtitle,ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs;,/ys
    oplot, wp[m], f[m], psym=8  
 
    ;; oploterror has too many dependencies
    for i=0, n_elements(m)-1 do begin
       ;; x error bar
-      oplot, [wp[m[i]]-widthhm[m[i]],wp[m[i]]+widthhm[m[i]]], [fp[m[i]],fp[m[i]]], color=colors[1]
+      oplot, [wp[m[i]]-widthhm[m[i]]/2d0,wp[m[i]]+widthhm[m[i]]/2d0], [fp[m[i]],fp[m[i]]], color=colors[1]
       ebw = !d.y_vsize/100d0 ;; error bar width = 1% of device size
-      xy1 = convert_coord(wp[m[i]]-widthhm[m[i]],fp[m[i]],/to_device)
-      xy2 = convert_coord(wp[m[i]]+widthhm[m[i]],fp[m[i]],/to_device)
+      xy1 = convert_coord(wp[m[i]]-widthhm[m[i]]/2d0,fp[m[i]],/to_device)
+      xy2 = convert_coord(wp[m[i]]+widthhm[m[i]]/2d0,fp[m[i]],/to_device)
       plots, [xy1[0],xy1[0]], [xy1[1]-ebw,xy1[1]+ebw], color=colors[1],/device
       plots, [xy2[0],xy2[0]], [xy2[1]-ebw,xy2[1]+ebw], color=colors[1],/device
 
