@@ -1,4 +1,4 @@
-pro summarizepar, pars, label=label, unit=unit, latex=latex, best=best, logname=logname, value=value, errlo=errlo, errhi=errhi, medianpars=medianpars, charsize=charsize, mode=mode
+pro summarizepar, pars, label=label, unit=unit, latex=latex, best=best, logname=logname, value=value, errlo=errlo, errhi=errhi, medianpars=medianpars, charsize=charsize, mode=mode, noplot=noplot
 
 if n_elements(unit) eq 0 then unit = ''
 if n_elements(label) eq 0 then label = ''
@@ -65,12 +65,12 @@ xmin = (medvalue - 4*lower) > min(pars[good])
 
 if xmin eq xmax then begin
    printandlog, 'WARNING: ' + label + ' is singularly valued.',logname
-endif else begin
+endif else if ~keyword_set(noplot) then begin
                
    ;; plot labels
    xtitle='!3' + exofast_textoidl(latex)
    ytitle='!3Probability'
-              
+
    hist = histogram(pars[good],nbins=100,locations=x,min=xmin,max=xmax,/nan)
    plot, x, hist/double(total(hist)), psym=10, xtitle=xtitle, ytitle=ytitle,$
          charsize=charsize,xstyle=1, xrange=[xmin,xmax], font=1
@@ -87,7 +87,8 @@ endif else begin
    ;; if the best parameters are given, overplot them on the PDFs
    if finite(best) then $
       oplot, [best,best],[-9d9,9d9]
-endelse
+
+endif
 
 ;; format values for table (rounded appropriately)
 ;; round the high error to 2 sig figs
