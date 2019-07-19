@@ -143,6 +143,7 @@ for i=0, ss.nplanets-1 do begin
 
    ss.planet[i].teq.value = ss.star.teff.value*sqrt(1d0/(2d0*ss.planet[i].ar.value)) ;(f*(1d0-Ab))^(0.25d0)
    ss.planet[i].dr.value = ss.planet[i].ar.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value) ;; d/rstar = star-planet separation at transit
+   ss.planet[i].tcirc.value = 1.6d0*ss.planet[i].mp.value*ss.star.mstar.value^(-3d0/2d0)*ss.planet[i].rp.value^(-5d0)*(ss.planet[i].a.value/0.05d0)^(13d0/2d0) ;; Adams & Laughlin, 2006, eq 3
 
    ss.planet[i].fave.value = ss.constants.sigmab*ss.star.teff.value^4/(ss.planet[i].ar.value*(1d0+ss.planet[i].e.value^2/2d0))^2/1d9    ;; 10^9 erg/s/cm^2
 
@@ -150,9 +151,9 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].bs.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value)  ;; eq 8, Winn 2010
 
    ;; approximate durations taken from Winn 2010 (close enough; these should only be used to schedule observations anyway)
-   ss.planet[i].t14.value = ss.planet[i].period.value/!dpi*asin(sqrt((1d0+ss.planet[i].p.value)^2 - ss.planet[i].b.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
+   ss.planet[i].t14.value = ss.planet[i].period.value/!dpi*asin(sqrt((1d0+abs(ss.planet[i].p.value))^2 - ss.planet[i].b.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
    ;; eqs 14, 16, Winn 2010
-   t23 = ss.planet[i].period.value/!dpi*asin(sqrt((1d0-ss.planet[i].p.value)^2 - ss.planet[i].b.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
+   t23 = ss.planet[i].period.value/!dpi*asin(sqrt((1d0-abs(ss.planet[i].p.value))^2 - ss.planet[i].b.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
 
    ;; no transit, transit duration equation is undefined -- set to zero
    notransit = where(abs(ss.planet[i].b.value) gt 1d0+abs(ss.planet[i].p.value))
@@ -165,25 +166,16 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].tau.value = (ss.planet[i].t14.value-t23)/2d0
    ss.planet[i].tfwhm.value = ss.planet[i].t14.value-ss.planet[i].tau.value
 
- ;  ;; hack....
- ;  if (where(~finite(ss.planet[i].tfwhm.value)))[0] ne -1 then stop
-
    ss.planet[i].ptg.value = (ss.star.rstar.value+ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 + ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2) ;; eq 9, Winn 2010
    ss.planet[i].pt.value = (ss.star.rstar.value-ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 + ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2)  ;; eq 9, Winn 2010
 
    ;; approximate durations taken from Winn 2010 (close enough; these should only be used to schedule observations anyway)
-   ss.planet[i].t14s.value = ss.planet[i].period.value/!dpi*asin(sqrt((1d0+ss.planet[i].p.value)^2 - ss.planet[i].bs.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value) ;; eqs 14, 16, Winn 2010
-   t23s = ss.planet[i].period.value/!dpi*asin(sqrt((1d0-ss.planet[i].p.value)^2 - ss.planet[i].bs.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value)   
+   ss.planet[i].t14s.value = ss.planet[i].period.value/!dpi*asin(sqrt((1d0+abs(ss.planet[i].p.value))^2 - ss.planet[i].bs.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value) ;; eqs 14, 16, Winn 2010
+   t23s = ss.planet[i].period.value/!dpi*asin(sqrt((1d0-abs(ss.planet[i].p.value))^2 - ss.planet[i].bs.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value)   
 
    ;; no transit => transit duration equation is undefined -- set to zero
    notransit = where(abs(ss.planet[i].bs.value) gt 1d0+abs(ss.planet[i].p.value))
    if notransit[0] ne -1 then ss.planet[i].t14s.value[notransit] = 0d0
-
-   ;; ****************** this is a hack!! *************************
-   ;; The above statement should get rid of NaNs, but it doesn't!!
-;   bad = where(~finite(ss.planet[i].t14s.value))
-;   if bad[0] ne -1 then ss.planet[i].t14s.value[bad] = 0d0
-   ;; *************************************************************
 
    ;; grazing transit, the flat part of transit is zero
    grazing = where(abs(ss.planet[i].bs.value) gt 1d0-abs(ss.planet[i].p.value))
@@ -192,8 +184,14 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].taus.value = (ss.planet[i].t14s.value-t23s)/2d0
    ss.planet[i].tfwhms.value = ss.planet[i].t14s.value-ss.planet[i].taus.value
 
-   if ss.planet[i].tfwhms.derive and (where(~finite(ss.planet[i].tfwhms.value)))[0] ne -1 then stop
-   if ss.planet[i].taus.derive and (where(~finite(ss.planet[i].taus.value)))[0] ne -1 then stop
+   ;; check for NaNs in the distributions -- this is a problem
+   if (ss.planet[i].tfwhms.derive and (where(~finite(ss.planet[i].tfwhms.value)))[0] ne -1) or $
+      (ss.planet[i].taus.derive and (where(~finite(ss.planet[i].taus.value)))[0] ne -1) or $
+      (ss.planet[i].tfwhm.derive and (where(~finite(ss.planet[i].tfwhm.value)))[0] ne -1) or $
+      (ss.planet[i].tau.derive and (where(~finite(ss.planet[i].tau.value)))[0] ne -1) then begin
+      print, 'There are NaNs in the derived transit/eclipse duration distributions. This is a bug. Please contact jason.eastman@cfa.harvard.edu ***and do not exit IDL***. It is likely we can recover your run and fix the bug. Exiting IDL will cause you to lose all results and make it far more difficult to diagnose the problem.', logname
+      stop
+   endif
 
    ss.planet[i].psg.value = (ss.star.rstar.value+ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2) ;; eq 9, Winn 2010
    ss.planet[i].ps.value = (ss.star.rstar.value-ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2)  ;; eq 9, Winn 2010
@@ -205,7 +203,7 @@ for i=0, ss.nplanets-1 do begin
    ;; depth != delta if grazing (ignore limb darkening)
    ss.planet[i].delta.value = ss.planet[i].p.value^2
    for j=0L, ss.nsteps-1L do begin
-      exofast_occultquad, abs(ss.planet[i].b.value[j]), 0d0, 0d0, ss.planet[i].p.value[j],mu1
+      exofast_occultquad_cel, abs(ss.planet[i].b.value[j]), 0d0, 0d0, ss.planet[i].p.value[j],mu1
       ss.planet[i].depth.value[j] = 1d0-mu1[0]
    endfor
 
