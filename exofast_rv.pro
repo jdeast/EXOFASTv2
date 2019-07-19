@@ -27,6 +27,8 @@ function exofast_rv, bjd, TPeriastron, period, V0, K, e0, omega0, $
 ;   omega       - orbit's argument of periastron (radians) 
 ;                 - required if e is specified
 ;                 - assumed to be pi/2 if e not specified
+;                 - omega of the orbit being measured (for exoplanets, omega_*)
+;       
 ;   slope       - the slope of the RV signal
 ;   t0          - the time at which V0 is referenced, if a slope is
 ;                 given. If not given, (maxtime + mintime)/2 is
