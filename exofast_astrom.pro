@@ -76,8 +76,8 @@ decout = asin(u[2,*])*180d0/!dpi
 
 ;; this can't be right in detail....
 if n_elements(starpos) ne 1 then begin
-   raout += starposrad[0,*]*180d0/!dpi*cos(dec*!dpi/180d0)
-   decout += starposrad[1,*]*180d0/!dpi
+   raout += starposrad[1,*]*180d0/!dpi*cos(dec*!dpi/180d0)
+   decout += starposrad[0,*]*180d0/!dpi
 endif
 
 neg = where(raout lt 0d0)
