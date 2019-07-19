@@ -58,6 +58,9 @@ M = eccenanom - eccen*sin(eccenanom)
 
 phase = M/(2d0*!dpi)
 
+neg = where(phase lt 0d0)
+if neg[0] ne -1 then phase[neg] += 1d0
+
 return, phase
 
 end
