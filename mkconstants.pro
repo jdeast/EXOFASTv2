@@ -16,7 +16,7 @@ function mkconstants
 
 constants = create_struct('G', 6.67408d-8,$           ;; Gravitational Constant (cm^3/g/s^2)
                           'c', 2.99792458d10,$        ;; speed of light in vacuum (cm/s)
-                          'sigmab', 5.670367d-5,$     ;; steffan boltzman constant (erg/cm^2/K^4)
+                          'sigmab', 5.670367d-5,$     ;; steffan boltzman constant (erg/s/cm^2/K^4)
                           'RSun', 6.957d10,$          ;; Solar radius (cm)
                           'LSun',3.828d33,$           ;; Solar Luminosity (erg)
                           'GMsun', 1.3271244d26,$     ;; cm^3/s^2
