@@ -11,7 +11,7 @@ fithat3notran, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitkelt1, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitkelt4, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitkelt6, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
-fitkelt1, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
+fitkelt12, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitkelt16, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitwasp76, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fit8361, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
