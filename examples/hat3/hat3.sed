@@ -7,11 +7,11 @@ VT      11.932 0.147 0.147
 # http://adsabs.harvard.edu/abs/2012yCat.1322....0Z
 # APASS DR6 (via UCAC4), Henden+ 2016
 # http://adsabs.harvard.edu/abs/2016yCat.2336....0H
-B       12.287 0.060 0.060
-V       11.470 0.040 0.040
-gSDSS   11.745 0.080 0.080
-rSDSS   11.183 0.050 0.050
-iSDSS   10.994 0.040 0.040
+#B       12.287 0.060 0.060
+#V       11.470 0.040 0.040
+#gSDSS   11.745 0.080 0.080
+#rSDSS   11.183 0.050 0.050
+#iSDSS   10.994 0.040 0.040
 # 2MASS (via UCAC4), Cutri+ 2003
 # http://adsabs.harvard.edu/abs/2003yCat.2246....0C
 J2M      9.936 0.020 0.020
