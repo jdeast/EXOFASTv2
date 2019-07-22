@@ -76,18 +76,25 @@ if (where(ss.planet.fittran))[0] ne -1 then begin
    endif
 endif
 
-;; prevent runaways
-bad = where(ss.planet.logp.value gt 7d0 or ss.planet.logp.value lt -1d0,nbad)
+;; 0.1 < Period < 10^13 (~age of the universe)
+bad = where(ss.planet.logp.value gt 13d0 or ss.planet.logp.value lt -1d0,nbad)
 if nbad gt 0 then begin
    if ss.debug then printandlog, 'logP is bad (' + strtrim(bad,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
-;; prevent runaways
-bad = where(ss.planet.tc.value lt ss.planet.tc.prior - 10^ss.planet.logp.value or $
-            ss.planet.tc.value gt ss.planet.tc.prior + 10^ss.planet.logp.value,nbad)
+;; tc-period/2 < tc < tc+period/2
+ss.planet.period.value = 10^ss.planet.logp.value
+bad = where(abs(ss.planet.tc.value - ss.planet.tc.prior) gt ss.planet.period.value/2d0,nbad)
 if nbad gt 0 then begin
-   if ss.debug then printandlog, 'tc is bad (' + strtrim(bad,2) + ')', ss.logname
+   if ss.debug then printandlog, 'tc is bad (' + strtrim(ss.planet[bad].tc.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; -max(period)/2 < ttv < max(period)/2
+bad = where(abs(ss.transit.ttv.value) gt max(ss.planet.period.value)/2d0,nbad)
+if nbad gt 0 then begin
+   if ss.debug then printandlog, 'ttv is bad (' + strtrim(ss.transit[bad].ttv.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
@@ -105,7 +112,7 @@ if ss.star.age.value gt 13.82d0 or ss.star.age.value lt 0d0 then begin
 endif
 
 ;; positive extinction
-if ss.star.av.value lt 0 then begin
+if ss.star.av.value lt 0 or ss.star.av.value gt 1d3 then begin
    if ss.debug then printandlog, 'extinction is bad (' + strtrim(ss.star.av.value,2) + ')',ss.logname
    return, !values.d_infinity
 endif
@@ -117,46 +124,129 @@ if nbad gt 0 then begin
    return, !values.d_infinity
 endif
 
-;; positive distance
-if ss.star.distance.value lt 0 then begin
+;; 0.9 AU to the size of the universe
+if ss.star.distance.value lt 4d-6 or ss.star.distance.value gt 3d10 then begin
    if ss.debug then printandlog, 'distance is bad (' + strtrim(ss.star.distance.value,2) + ')',ss.logname
    return, !values.d_infinity
 endif
 
 ;; bound marginally detected planets to limit (infinite) parameter space at low logK
-;; conservative lower limit of 0.1 Ceres in 1 year orbit around sun = 1 um/s
-;; conservative upper limit corresponds to ~thousand solar masses
-bad = where((ss.planet.logk.value lt -6d0 or ss.planet.logk.value gt 6d0) and ss.planet.logk.fit, nbad)
+;; conservative lower limit of 1 Ceres in 1 year orbit around sun = 10 um/s
+;; conservative upper limit corresponds to 500 solar masses (larger
+;; than the largest known star)
+bad = where((ss.planet.logk.value lt -5d0 or ss.planet.logk.value gt 5d0) and ss.planet.logk.fit, nbad)
 if nbad gt 0 then begin
    if ss.debug  or ss.verbose then printandlog, 'logK is bad (' + strtrim(ss.planet[bad].logk.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
-if ss.star.errscale.value le 0 then begin
+;; -c < gamma < c
+bad = where(abs(ss.telescope.gamma.value) gt ss.constants.c/ss.constants.meter,nbad)
+if nbad gt 0 then begin
+   if ss.debug  or ss.verbose then printandlog, 'gamma is bad (' + strtrim(ss.telescope[bad].gamma.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+bad = where(abs(ss.telescope.jittervar.value) gt (ss.constants.c/ss.constants.meter)^2,nbad)
+if nbad gt 0 then begin
+   if ss.debug  or ss.verbose then printandlog, 'jittervar is bad (' + strtrim(ss.telescope[bad].jittervar.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+if abs(ss.star.slope.value) gt 1d5 then begin
+   if ss.debug  or ss.verbose then printandlog, 'slope is bad (' + strtrim(ss.star.slope.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+if abs(ss.star.quad.value) gt 1d5 then begin
+   if ss.debug  or ss.verbose then printandlog, 'quad is bad (' + strtrim(ss.star.quad.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; 0.01 < SED error scaling < 100
+if ss.star.errscale.value lt 1d-2 or ss.star.errscale.value gt 1d2 then begin
    if ss.debug or ss.verbose then printandlog, 'error scale is bad (' + strtrim(ss.star.errscale.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
-if ss.star.teff.value le 0 or ss.star.teff.value gt 50000 then begin
+;; -10 < [Fe/H] < 2 
+if ss.star.feh.value lt -10d0 or ss.star.feh.value gt 2d0 then begin
    if ss.debug or ss.verbose then printandlog, 'teff is bad (' + strtrim(ss.star.teff.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
-if (where(ss.astrom.astromscale.value le 0))[0] ne -1 then begin
-   if ss.debug or ss.verbose then printandlog, 'astrometry error scale is bad (' + strtrim(ss.astrom.errscale.value,2) + ')', ss.logname
+;; 100 < Teff < 50000 
+if ss.star.teff.value lt 100 or ss.star.teff.value gt 250000 then begin
+   if ss.debug or ss.verbose then printandlog, 'teff is bad (' + strtrim(ss.star.teff.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
-bad = where(ss.doptom.dtscale.value le 0, nbad)
+;; 10^-6 < rstar < 2000
+if ss.star.rstar.value lt 1d-6 or ss.star.rstar.value gt 2000d0 then begin
+   if ss.debug or ss.verbose then printandlog, 'rstar is bad (' + strtrim(ss.star.rstar.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; 10^-3 < mstar < 500
+if ss.star.logmstar.value lt -3 or ss.star.logmstar.value gt 2.6989700d0 then begin
+   if ss.debug or ss.verbose then printandlog, 'mstar is bad (' + strtrim(ss.star.mstar.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+if ss.nastrom gt 0 then begin
+   ;; 0.01 < astrometric error scaling < 100
+   bad = where(ss.astrom.astromscale.value lt 1d-2 or ss.astrom.astromscale.value  gt 1d2, nbad)
+   if nbad gt 0 then begin
+      if ss.debug or ss.verbose then printandlog, 'astrometry error scale is bad (' + strtrim(ss.astrom[bad].errscale.value,2) + ')', ss.logname
+      return, !values.d_infinity
+   endif
+   
+   ;; 0 <= ra+raoffset <= 360
+   bad = where(ss.star.ra.value + ss.astrom.raoffset.value lt 0 or ss.star.ra.value + ss.astrom.raoffset.value gt 360,nbad)
+   if nbad gt 0 then begin
+      if ss.debug or ss.verbose then printandlog, 'ra is bad (' + strtrim(ss.star.ra.value,2) + ')', ss.logname
+      return, !values.d_infinity
+   endif
+
+   ;; -90 <= dec+decoffset <= 90
+   bad = where(abs(ss.star.dec.value + ss.astrom.decoffset.value) gt 90,nbad)
+   if nbad gt 0 then begin
+      if ss.debug or ss.verbose then printandlog, 'dec is bad (' + strtrim(ss.star.dec.value +ss.astrom[bad].decoffset.value,2) + ')', ss.logname
+      return, !values.d_infinity
+   endif
+
+   ;; -20000 <= pmra <= 20000 (2x barnard's star)
+   if abs(ss.star.pmra.value) gt 2d4 then begin
+      if ss.debug or ss.verbose then printandlog, 'pmra is bad (' + strtrim(ss.star.pmra.value,2) + ')', ss.logname
+      return, !values.d_infinity
+   endif
+
+   ;; -20000 <= pmdec <= 20000 (2x barnard's star)
+   if abs(ss.star.pmdec.value) gt 2d4 then begin
+      if ss.debug or ss.verbose then printandlog, 'pmdec is bad (' + strtrim(ss.star.pmdec.value,2) + ')', ss.logname
+      return, !values.d_infinity
+   endif
+
+   ;; -c <= rvabs <= c 
+   if abs(ss.star.rvabs.value) gt ss.constants.c/ss.constants.meter then begin
+      if ss.debug or ss.verbose then printandlog, 'pmdec is bad (' + strtrim(ss.star.pmdec.value,2) + ')', ss.logname
+      return, !values.d_infinity
+   endif
+
+endif
+
+;; 0.01 < DT error scaling < 100
+bad = where(ss.doptom.dtscale.value le 1d-2 or ss.doptom.dtscale.value gt 1d2, nbad)
 if nbad gt 0 then begin
    if ss.debug or ss.verbose then printandlog, 'dtscale is bad (' + strtrim(ss.doptom[bad].dtscale.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
-if ss.star.alpha.value lt -0.3d0 or ss.star.alpha.value gt 0.7d0 then begin
-   if ss.debug or ss.verbose then printandlog, 'alpha is bad (' + strtrim(ss.star.alpha.value,2) + ')', ss.logname
-   return, !values.d_infinity
-endif
+;; limit range of alpha abundance (not used yet)
+;if ss.star.alpha.value lt -0.3d0 or ss.star.alpha.value gt 0.7d0 then begin
+;   if ss.debug or ss.verbose then printandlog, 'alpha is bad (' + strtrim(ss.star.alpha.value,2) + ')', ss.logname
+;   return, !values.d_infinity
+;endif
 
 ;; derive the model parameters from the stepping parameters (return if
 ;; unphysical)
@@ -212,8 +302,8 @@ endif
 ;; use the Torres relation to guide the stellar parameters
 if ss.torres then begin
    massradius_torres, ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, mstar_prior, rstar_prior
-   umstar = 0.027d0;*100d0 ;; why the factor of 100?!
-   urstar = 0.014d0;*100d0
+   umstar = 0.027d0
+   urstar = 0.014d0
    if mstar_prior lt 0.6d0 then printandlog, $
       'WARNING: Torres not applicable (mstar = ' + $
       strtrim(mstar_prior,2) + '); ignore at beginning. Otherwise, ' + $
@@ -254,7 +344,7 @@ for i=0, n_elements(priors[0,*])-1 do begin
    ;; apply the bounds
    if value gt upperbound or value lt lowerbound then begin
       if ss.debug then $
-         printandlog, label + '( ' + strtrim(value,2) + ') is out of bounds (' +$
+         printandlog, label + '( ' + strtrim(value,2) + ') is out of user-defined bounds (' +$
                       strtrim(lowerbound,2) + ',' + strtrim(upperbound,2) + ')',ss.logname
       return, !values.d_infinity
    endif
@@ -307,7 +397,20 @@ for j=0, ss.nplanets-1 do begin
    endif
 endfor
 
-;; fit the SED
+;; fit the SED with MIST BC tables
+;t0 = systime(/seconds)
+if file_test(ss.star.mistsedfile) then begin
+   if keyword_set(psname) then epsname = psname+'.sed.eps'
+   sedchi2 = mistsed(ss.star.teff.value, ss.star.logg.value,ss.star.feh.value, ss.star.av.value, ss.star.distance.value, ss.star.lstar.value, ss.star.errscale.value, ss.star.mistsedfile, debug=ss.debug, psname=epsname)
+
+   chi2 += sedchi2
+   if ss.verbose then printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
+
+endif
+;print, 'MIST SED: ' + strtrim(systime(/seconds)-t0,2)
+
+;; fit the SED (Keivan's)
+;t0 = systime(/seconds)
 if file_test(ss.star.fluxfile) then begin
    if keyword_set(psname) then epsname = psname+'.sed.eps'
    sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, $
@@ -332,6 +435,7 @@ if file_test(ss.star.fluxfile) then begin
    chi2 += sedchi2
    if ss.verbose then printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
 endif
+;print, 'Keivan SED: ' + strtrim(systime(/seconds)-t0,2)
 
 ;; this should never be encountered, just a waste of time
 ;for i=0, ss.nplanets-1 do begin
@@ -339,6 +443,19 @@ endif
 ;      determinant *= ss.planet[i].e.value
 ;   endif
 ;endfor
+
+
+if ss.star.slope.fit then begin
+   allmindate = !values.d_infinity
+   allmaxdate = -!values.d_infinity
+   for i=0, ss.ntel-1 do begin
+      rv = *(ss.telescope[i].rvptrs)
+      mindate = min(rv.bjd,max=maxdate)
+      if mindate lt allmindate then allmindate = mindate
+      if maxdate gt allmaxdate then allmaxdate = maxdate
+   endfor
+   t0 = (allmindate+allmaxdate)/2d0
+endif else t0 = 0d0
 
 ;; RV model (non-interacting planets)
 for j=0, ss.ntel-1 do begin
@@ -367,11 +484,11 @@ for j=0, ss.ntel-1 do begin
          modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
                                0d0,ss.planet[i].K.value,$
                                ss.planet[i].e.value,ss.planet[i].omega.value,$
-                               slope=0, $
+                               slope=0d0, $
                                rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
                                p=abs(ss.planet[i].p.value),vsini=ss.star.vsini.value,$
                                lambda=ss.planet[i].lambda.value,$
-                               u1=u1,t0=t0,deltarv=deltarv)
+                               u1=u1,deltarv=deltarv)
 
       endif
 
@@ -415,8 +532,25 @@ for i=0, ss.ndt-1 do begin
                          ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].ar.value,$
                          ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].lambda.value, $
                          ss.star.logg.value, ss.star.teff.value, ss.star.feh.value,$
-                         ss.star.vsini.value/1d3,ss.star.macturb.value/1d3,$
+                         ss.star.vsini.value/1d3,ss.star.vline.value/1d3,$
                          ss.doptom[i].dtscale.value, debug=ss.debug,/like,psname=epsname)
+
+   if 0 then begin
+   stop
+   npoints = 1000
+   vsini = 17000d0 + dindgen(npoints)/(npoints-1)*4000d0
+   vline = 500d0 + dindgen(npoints)/(npoints-1)*10000d0
+;   vsini = 19000d0 + dindgen(npoints)/(npoints-1)*2000d0
+   dtchi2 = dblarr(npoints)
+   for ii=0, npoints-1 do dtchi2[ii] = dopptom_chi2(*(ss.doptom[i].dtptrs),ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].tc.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].period.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].e.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].omega.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].cosi.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].p.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].ar.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].lambda.value,ss.star.logg.value, ss.star.teff.value, ss.star.feh.value,vsini[ii]/1d3,ss.star.vline.value/1d3,ss.doptom[i].dtscale.value, debug=ss.debug,/like,psname=epsname)   
+   plot, vsini, dtchi2
+
+   dtchi22 = dblarr(npoints)
+   for ii=0, npoints-1 do dtchi22[ii] = dopptom_chi2(*(ss.doptom[i].dtptrs),ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].tc.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].period.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].e.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].omega.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].cosi.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].p.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].ar.value,ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].lambda.value,ss.star.logg.value, ss.star.teff.value, ss.star.feh.value,ss.star.vsini.value/1d3,vline[ii]/1d3,ss.doptom[i].dtscale.value, debug=ss.debug,/like,psname=epsname)
+   plot, vline, dtchi22
+   endif
+   
+
 
    if ~finite(dtchi2) then return, !values.d_infinity
    chi2 += dtchi2
@@ -460,13 +594,13 @@ for j=0, ss.ntran-1 do begin
       modelflux = dblarr(npoints) + 1d0
    endelse
 
-   ;; get the motion of the star due to all planets
-   junk = exofast_getb2(transitbjd,inc=ss.planet.i.value,a=ss.planet.ar.value,$
-                        tperiastron=ss.planet.tp.value,$
-                        period=ss.planet.period.value,$
-                        e=ss.planet.e.value,omega=ss.planet.omega.value,$
-                        q=ss.star.mstar.value/ss.planet.mpsun.value,$
-                        x1=x1,y1=y1,z1=z1)
+;   ;; get the motion of the star due to all planets
+;   junk = exofast_getb2(transitbjd,inc=ss.planet.i.value,a=ss.planet.ar.value,$
+;                        tperiastron=ss.planet.tp.value,$
+;                        period=ss.planet.period.value,$
+;                        e=ss.planet.e.value,omega=ss.planet.omega.value,$
+;                        q=ss.star.mstar.value/ss.planet.mpsun.value,$
+;                        x1=x1,y1=y1,z1=z1)
 
    for i=0, ss.nplanets-1 do begin
       if ss.planet[i].fittran then begin
@@ -488,7 +622,8 @@ for j=0, ss.ntran-1 do begin
                                     dilute=band.dilute.value,$
                                     tc=ss.planet[i].tc.value,$
                                     rstar=ss.star.rstar.value/AU,$
-                                    x1=x1,y1=y1,z1=z1,au=au,$
+                                    ;x1=x1,y1=y1,z1=z1,$
+                                    au=au,$
                                     c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0)
 
       endif
@@ -521,6 +656,13 @@ for j=0, ss.ntran-1 do begin
    modelflux *= (ss.transit[j].f0.value + $
                  total(transit.detrendmult*(replicate(1d0,n_elements(transit.bjd))##transit.detrendmultpars.value),1))
 
+   ;; fit Andrew Vanderburg's keplerspline to the residuals to detrend the lightcurve
+   if ss.transit[j].fitspline then begin
+      if transit.breakpts[0] eq -1 then $
+         norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, ndays=ss.transit[j].splinespace) $
+      else norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, breakp=transit.breakpts, ndays=ss.transit[j].splinespace)
+      modelflux *= norm
+   endif
 
    ;; chi^2
    transitchi2 = exofast_like(transit.flux - modelflux,ss.transit[j].variance.value,transit.err,/chi2)
@@ -685,15 +827,25 @@ for i=0L, ss.nastrom-1 do begin
       if ss.verbose and ss.nplanets gt 1 then printandlog, 'WARNING: multiple bright companions not supported!', ss.logname
    endelse
 
-   ;; get the stellar coordinates (angles) relative to ICRS
-   radec = exofast_astrom(astrom.bjdtdb, ss.star.ra.value+ss.astrom[i].raoffset.value,$
-                          ss.star.dec.value+ss.astrom[i].decoffset.value, $
-                          ss.star.pmra.value, ss.star.pmdec.value, $
-                          px=ss.star.parallax.value, $
-                          rv=ss.star.rvabs.value, $
-                          epoch=astrom.epoch,obspos=astrom.obspos, $
-                          au=ss.constants.au/ss.constants.meter, starpos=starpos)
-   astromchi2 = exofast_like(radec-astrom.radec,0d0,ss.astrom[i].astromscale.value*astrom.err,/chi2)
+   if ~keyword_set(astrom.userhopa) then begin
+      ;; get the stellar coordinates (angles) relative to ICRS
+      radec = exofast_astrom(astrom.bjdtdb, ss.star.ra.value+ss.astrom[i].raoffset.value,$
+                             ss.star.dec.value+ss.astrom[i].decoffset.value, $
+                             ss.star.pmra.value, ss.star.pmdec.value, $
+                             px=ss.star.parallax.value, $
+                             rv=ss.star.rvabs.value, $
+                             epoch=astrom.epoch,obspos=astrom.obspos, $
+                             au=ss.constants.au/ss.constants.meter, starpos=starpos)
+      astromchi2 = exofast_like(radec-astrom.radec,0d0,ss.astrom[i].astromscale.value*astrom.err,/chi2)
+   endif else begin
+
+      ;; scale factor to convert units of rstar to mas
+      ascale = ss.star.rstar.value*ss.constants.rsun/ss.constants.pc/ss.star.distance.value*3600d3*180/!dpi
+
+
+      rhopa = transpose([[sqrt(x1^2 + y1^2)*ascale],[atan(y1,x1)]])
+      astromchi2 = exofast_like(rhopa-astrom.rhopa,0d0,ss.astrom[i].astromscale.value*astrom.rhopaerr,/chi2)
+   endelse
 
    if ss.verbose then printandlog, ss.astrom[i].label + ' astrometry penalty: ' + strtrim(astromchi2,2),ss.logname
    if ~finite(astromchi2) then begin
@@ -736,14 +888,6 @@ for i=0L, ss.nastrom-1 do begin
       fill = [1,1,1,1,0,0,0,0]
       nsyms = n_elements(syms)
 
-      radecnocompanion = exofast_astrom(astrom.bjdtdb, ss.star.ra.value+ss.astrom[i].raoffset.value,$
-                                        ss.star.dec.value+ss.astrom[i].decoffset.value, $
-                                        ss.star.pmra.value, ss.star.pmdec.value, $
-                                        px=ss.star.parallax.value, $
-                                        rv=ss.star.rvabs.value, $
-                                        epoch=astrom.epoch,obspos=astrom.obspos, $
-                                        au=ss.constants.au/ss.constants.meter, starpos=0d0)
-
       ;; get the motion of the star due to all planets relative to its barycenter 
       ;; in units of rstar
       junk = exofast_getb2(astrom.prettytime,inc=ss.planet.i.value,a=ss.planet.ar.value,$
@@ -752,74 +896,94 @@ for i=0L, ss.nastrom-1 do begin
                            e=ss.planet.e.value,omega=ss.planet.omega.value,$
                            lonascnode=ss.planet.bigomega.value,$
                            q=ss.star.mstar.value/ss.planet.mpsun.value,$
-                           x1=prettyx1,y1=prettyy1,z1=prettyz1, x0=prettyx0,y0=prettyy0,z0=prettyz0)
+                           x1=prettyx1,y1=prettyy1,z1=prettyz1, x0=prettyx0,y0=prettyy0,z0=prettyz0)        
       
-      ;; Photocenter in AU about the system barycenter
-      if ss.band[ss.astrom[i].bandndx].dilute.value eq 0d0 then begin
-         ;; If not diluted, it simplifies to the stellar position
-         prettystarpos = transpose([[prettyx1],[prettyy1],[prettyz1]])*ss.star.rstar.value*ss.constants.rsun/ss.constants.au 
+      if ~keyword_set(astrom.userhopa) then begin
+         radecnocompanion = exofast_astrom(astrom.bjdtdb, ss.star.ra.value+ss.astrom[i].raoffset.value,$
+                                           ss.star.dec.value+ss.astrom[i].decoffset.value, $
+                                           ss.star.pmra.value, ss.star.pmdec.value, $
+                                           px=ss.star.parallax.value, $
+                                           rv=ss.star.rvabs.value, $
+                                           epoch=astrom.epoch,obspos=astrom.obspos, $
+                                           au=ss.constants.au/ss.constants.meter, starpos=0d0)
+         
+         ;; Photocenter in AU about the system barycenter
+         if ss.band[ss.astrom[i].bandndx].dilute.value eq 0d0 then begin
+            ;; If not diluted, it simplifies to the stellar position
+            prettystarpos = transpose([[prettyx1],[prettyy1],[prettyz1]])*ss.star.rstar.value*ss.constants.rsun/ss.constants.au 
+         endif else begin
+            ;; Otherwise, must account for blending
+            ;; See https://arxiv.org/pdf/1807.09880.pdf, Appendix B
+            ;; ****check sign returned by exofast_getb2!!!****
+            prettystarpos = -[prettyx0[0,*],prettyy0[0,*],prettyz0[0,*]]*ss.star.rstar.value*ss.constants.rsun/ss.constants.au/phottobary        
+            ;; this breaks for multiple, bright planets (triple stars?)!!!
+            if ss.verbose and ss.nplanets gt 1 then printandlog, 'WARNING: multiple bright companions not supported!', ss.logname
+         endelse
+         
+         prettyradec = exofast_astrom(astrom.prettytime, ss.star.ra.value+ss.astrom[i].raoffset.value,$
+                                      ss.star.dec.value+ss.astrom[i].decoffset.value, $
+                                      ss.star.pmra.value, ss.star.pmdec.value, $
+                                      px=ss.star.parallax.value, $
+                                      rv=ss.star.rvabs.value, $
+                                      epoch=astrom.epoch,obspos=astrom.prettyobspos, $
+                                      au=ss.constants.au/ss.constants.meter, starpos=prettystarpos)
+         
+         prettyradecnocompanion = exofast_astrom(astrom.prettytime, ss.star.ra.value+ss.astrom[i].raoffset.value,$
+                                                 ss.star.dec.value+ss.astrom[i].decoffset.value, $
+                                                 ss.star.pmra.value, ss.star.pmdec.value, $
+                                                 px=ss.star.parallax.value, $
+                                                 rv=ss.star.rvabs.value, $
+                                                 epoch=astrom.epoch,obspos=astrom.prettyobspos, $
+                                                 au=ss.constants.au/ss.constants.meter, starpos=0d0)
+         
+         
+         xmin = min(astrom.bjdtdb-astrom.epoch,max=xmax)
+         ymin = min([[radec[0,*],astrom.radec[0,*]]-ss.star.ra.value,[radec[1,*],astrom.radec[1,*]]-ss.star.dec.value],max=ymax)
+         
+         if ~keyword_set(psname) then begin
+            if win_state[i*nastromplots] eq 1 then wset, i*nastromplots $
+            else window, i*nastromplots, retain=2
+         endif
+         plot, astrom.prettytime-astrom.epoch, (prettyradec[0,*]-ss.star.ra.value)*3600d6, xtitle='Time - ' + strtrim(astrom.epoch,2) + ' (days)', xrange=[xmin,xmax], yrange=[ymin,ymax]*3600d6,ytitle=exofast_textoidl('Motion (\muas)')
+         oplot, astrom.prettytime-astrom.epoch, (prettyradec[1,*]-ss.star.dec.value)*3600d6,color=colors[1]
+         oplot, astrom.bjdtdb-astrom.epoch, (astrom.radec[0,*]-ss.star.ra.value)*3600d6, psym=1
+         oplot, astrom.bjdtdb-astrom.epoch, (astrom.radec[1,*]-ss.star.dec.value)*3600d6,psym=1,color=colors[1]
+         
+         if ~keyword_set(psname) then begin
+            if win_state[i*nastromplots+1] eq 1 then wset, i*nastromplots+1 $
+            else window, i*nastromplots+1, retain=2
+         endif
+         plot, (prettyradec[0,*]-ss.star.ra.value)*3600d6,(prettyradec[1,*]-ss.star.dec.value)*3600d6, xtitle=exofast_textoidl('\alpha - \alpha_0 (\muas)'), ytitle=exofast_textoidl('\delta-\delta_0 (\muas)'),/iso, xrange=[ymin,ymax]*3600d6,yrange=[ymin,ymax]*3600d6
+         oplot, (astrom.radec[0,*]-ss.star.ra.value)*3600d6,(astrom.radec[1,*]-ss.star.dec.value)*3600d6, psym=1
+         
+         if ~keyword_set(psname) then begin
+            if win_state[i*nastromplots+2] eq 1 then wset, i*nastromplots+2 $
+            else window, i*nastromplots+2, retain=2
+         endif
+         ymin = min([radec[0,*]-radecnocompanion[0,*],astrom.radec[0,*]-radecnocompanion[0,*],radec[1,*]-radecnocompanion[1,*],astrom.radec[1,*]-radecnocompanion[1,*]],max=ymax)
+         plot, (prettyradec[0,*]-prettyradecnocompanion[0,*])*3600d6, (prettyradec[1,*]-prettyradecnocompanion[1,*])*3600d6, xtitle=exofast_textoidl('\alpha - \alpha_0 (\muas)'), ytitle=exofast_textoidl('\delta-\delta_0 (\muas)'),/iso, yrange=[ymin,ymax]*3600d6,xrange=[ymax,ymin]*3600d6
+         oplot, (astrom.radec[0,*]-radecnocompanion[0,*])*3600d6, (astrom.radec[1,*]-radecnocompanion[1,*])*3600d6, psym=1
+         
+         if ~keyword_set(psname) then begin
+            if win_state[i*nastromplots+3] eq 1 then wset, i*nastromplots+3 $
+            else window, i*nastromplots+3, retain=2
+         endif
+         plot, astrom.prettytime-astrom.epoch, (prettyradec[0,*]-prettyradecnocompanion[0,*])*3600d6, xtitle='Time - ' + strtrim(astrom.epoch,2) + ' (days)', ytitle=exofast_textoidl('Residuals (\muas)'), yrange=[ymin,ymax]*3600d6,xrange=[xmin,xmax]
+         oplot, astrom.bjdtdb-astrom.epoch, (astrom.radec[0,*]-radecnocompanion[0,*])*3600d6, psym=1
+         oplot, astrom.prettytime-astrom.epoch, (prettyradec[1,*]-prettyradecnocompanion[1,*])*3600d6, color=colors[1]
+         oplot, astrom.bjdtdb-astrom.epoch, (astrom.radec[1,*]-radecnocompanion[1,*])*3600d6, color=colors[1], psym=1
       endif else begin
-         ;; Otherwise, must account for blending
-         ;; See https://arxiv.org/pdf/1807.09880.pdf, Appendix B
-         ;; ****check sign returned by exofast_getb2!!!****
-         prettystarpos = -[prettyx0[0,*],prettyy0[0,*],prettyz0[0,*]]*ss.star.rstar.value*ss.constants.rsun/ss.constants.au/phottobary        
-         ;; this breaks for multiple, bright planets (triple stars?)!!!
-         if ss.verbose and ss.nplanets gt 1 then printandlog, 'WARNING: multiple bright companions not supported!', ss.logname
+         ascale*=5
+         xmin=max(prettyy1*ascale,min=xmax)
+         ymin=min(prettyx1*ascale,max=ymax)
+         plot, prettyy1*ascale, prettyx1*ascale, xtitle='East (mas)',ytitle='North (mas)',/iso, xrange=[xmin,xmax],yrange=[ymin,ymax]
+         oplot, [0],[0], psym=2
+         eastdata = astrom.rhopa[0,*]*cos(astrom.rhopa[1,*])
+         northdata = astrom.rhopa[0,*]*sin(astrom.rhopa[1,*])
+         oplot, eastdata, northdata, psym=1
+stop
       endelse
-      
-      prettyradec = exofast_astrom(astrom.prettytime, ss.star.ra.value+ss.astrom[i].raoffset.value,$
-                                   ss.star.dec.value+ss.astrom[i].decoffset.value, $
-                                   ss.star.pmra.value, ss.star.pmdec.value, $
-                                   px=ss.star.parallax.value, $
-                                   rv=ss.star.rvabs.value, $
-                                   epoch=astrom.epoch,obspos=astrom.prettyobspos, $
-                                   au=ss.constants.au/ss.constants.meter, starpos=prettystarpos)
 
-      prettyradecnocompanion = exofast_astrom(astrom.prettytime, ss.star.ra.value+ss.astrom[i].raoffset.value,$
-                                              ss.star.dec.value+ss.astrom[i].decoffset.value, $
-                                              ss.star.pmra.value, ss.star.pmdec.value, $
-                                              px=ss.star.parallax.value, $
-                                              rv=ss.star.rvabs.value, $
-                                              epoch=astrom.epoch,obspos=astrom.prettyobspos, $
-                                              au=ss.constants.au/ss.constants.meter, starpos=0d0)
-
-
-      xmin = min(astrom.bjdtdb-astrom.epoch,max=xmax)
-      ymin = min([[radec[0,*],astrom.radec[0,*]]-ss.star.ra.value,[radec[1,*],astrom.radec[1,*]]-ss.star.dec.value],max=ymax)
-
-      if ~keyword_set(psname) then begin
-         if win_state[i*nastromplots] eq 1 then wset, i*nastromplots $
-         else window, i*nastromplots, retain=2
-      endif
-      plot, astrom.prettytime-astrom.epoch, (prettyradec[0,*]-ss.star.ra.value)*3600d6, xtitle='Time - ' + strtrim(astrom.epoch,2) + ' (days)', xrange=[xmin,xmax], yrange=[ymin,ymax]*3600d6,ytitle=exofast_textoidl('Motion (\muas)')
-      oplot, astrom.prettytime-astrom.epoch, (prettyradec[1,*]-ss.star.dec.value)*3600d6,color=colors[1]
-      oplot, astrom.bjdtdb-astrom.epoch, (astrom.radec[0,*]-ss.star.ra.value)*3600d6, psym=1
-      oplot, astrom.bjdtdb-astrom.epoch, (astrom.radec[1,*]-ss.star.dec.value)*3600d6,psym=1,color=colors[1]
-
-      if ~keyword_set(psname) then begin
-         if win_state[i*nastromplots+1] eq 1 then wset, i*nastromplots+1 $
-         else window, i*nastromplots+1, retain=2
-      endif
-      plot, (prettyradec[0,*]-ss.star.ra.value)*3600d6,(prettyradec[1,*]-ss.star.dec.value)*3600d6, xtitle=exofast_textoidl('\alpha - \alpha_0 (\muas)'), ytitle=exofast_textoidl('\delta-\delta_0 (\muas)'),/iso, xrange=[ymin,ymax]*3600d6,yrange=[ymin,ymax]*3600d6
-      oplot, (astrom.radec[0,*]-ss.star.ra.value)*3600d6,(astrom.radec[1,*]-ss.star.dec.value)*3600d6, psym=1
-
-      if ~keyword_set(psname) then begin
-         if win_state[i*nastromplots+2] eq 1 then wset, i*nastromplots+2 $
-         else window, i*nastromplots+2, retain=2
-      endif
-      ymin = min([radec[0,*]-radecnocompanion[0,*],astrom.radec[0,*]-radecnocompanion[0,*],radec[1,*]-radecnocompanion[1,*],astrom.radec[1,*]-radecnocompanion[1,*]],max=ymax)
-      plot, (prettyradec[0,*]-prettyradecnocompanion[0,*])*3600d6, (prettyradec[1,*]-prettyradecnocompanion[1,*])*3600d6, xtitle=exofast_textoidl('\alpha - \alpha_0 (\muas)'), ytitle=exofast_textoidl('\delta-\delta_0 (\muas)'),/iso, yrange=[ymin,ymax]*3600d6,xrange=[ymin,ymax]*3600d6
-      oplot, (astrom.radec[0,*]-radecnocompanion[0,*])*3600d6, (astrom.radec[1,*]-radecnocompanion[1,*])*3600d6, psym=1
-
-
-      if ~keyword_set(psname) then begin
-         if win_state[i*nastromplots+3] eq 1 then wset, i*nastromplots+3 $
-         else window, i*nastromplots+3, retain=2
-      endif
-      plot, astrom.prettytime-astrom.epoch, (prettyradec[0,*]-prettyradecnocompanion[0,*])*3600d6, xtitle='Time - ' + strtrim(astrom.epoch,2) + ' (days)', ytitle=exofast_textoidl('Residuals (\muas)'), yrange=[ymin,ymax]*3600d6,xrange=[xmin,xmax]
-      oplot, astrom.bjdtdb-astrom.epoch, (astrom.radec[0,*]-radecnocompanion[0,*])*3600d6, psym=1
-      oplot, astrom.prettytime-astrom.epoch, (prettyradec[1,*]-prettyradecnocompanion[1,*])*3600d6, color=colors[1]
-      oplot, astrom.bjdtdb-astrom.epoch, (astrom.radec[1,*]-radecnocompanion[1,*])*3600d6, color=colors[1], psym=1
 
       if keyword_set(psname) then begin
          !p.font=-1
