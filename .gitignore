@@ -12,3 +12,5 @@
 examples/*/*.idl
 examples/*/*.txt
 examples/*/fitresults
+sed/mist/feh*
+sed/mist/*.txz

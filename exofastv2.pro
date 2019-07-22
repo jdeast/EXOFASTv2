@@ -10,7 +10,7 @@
 ;   to jason.eastman@cfa.harvard.edu
 ;
 ; CALLING SEQUENCE:
-;   exofast, [RVPATH=, TRANPATH=, PRIORFILE=, FLUXFILE=, PREFIX=, /CIRCULAR,
+;   exofastv2, [RVPATH=, TRANPATH=, PRIORFILE=, FLUXFILE=, PREFIX=, /CIRCULAR,
 ;             /NOSLOPE, /SECONDARY, /UPDATE, PNAME=, SIGCLIP=, NTHIN=,
 ;             MAXSTEPS=, MINPERIOD=, MAXPERIOD=, NMIN=, /DISPLAY,
 ;             /DEBUG, RANDOMFUNC=, SEED=, /SPECPRIORS, /BESTONLY,
@@ -200,16 +200,19 @@
 ;                 fractional flux decrements (DT), a time array
 ;                 (BJD_TDB) and a velocity array (VEL) like this:
 ; 
-;                 writefits,'nYYYYMMDD.instrument.resolution.fits',DT
-;                 writefits,'nYYYYMMDD.instrument.resolution.fits',BJD_TDB, /append
-;                 writefits,'nYYYYMMDD.instrument.resolution.fits',VEL, /append
+;                 writefits,'nYYYYMMDD.pname.instrument.resolution.fits',DT
+;                 writefits,'nYYYYMMDD.pname.instrument.resolution.fits',BJD_TDB, /append
+;                 writefits,'nYYYYMMDD.pname.instrument.resolution.fits',VEL, /append
 ;
 ;                 The names of these files *must* adhere to a certain format:
-;                 nYYYYMMDD.instrument.resolution.whateveryouwant.fits 
+;                 nYYYYMMDD.pname.instrument.resolution.whateveryouwant.fits 
 ;
 ;                 nYYYYMMDD -- The UTC date of mid transit. This is
 ;                 used to label the transits in the output plot.
 ; 
+;                 pname -- The name of the planet, including the
+;                          letter for the planet order (e.g., KELT-24b)
+;
 ;                 instrument -- the name of the instrument used for
 ;                 the observations. Anything is allowed, but all
 ;                 observations observed with the same telescope should
@@ -483,7 +486,7 @@
 ;               long cadence data from Kepler. This overwrites
 ;               NINTERP and EXPTIME inputs.
 ;
-;   REJECTFLATMODEL - An NTRANSITS byte array specifying which
+;   REJECTFLATMODEL - An NTRANSITFILES byte array specifying which
 ;                     transits must have a signal. If model without a
 ;                     signal is generated and REJECTFLATMODEL=1B, the
 ;                     model will be rejected a priori. If a flat model
@@ -507,16 +510,17 @@
 ;               periastron as e^(1/4)*sin(omega) and
 ;               e^(1/4)*cos(omega) to more closely match the observed
 ;               eccentricity distribution
-;   TTVS      - If set, non-periodic transit times are allowed. The
-;               period is constrained by a linear fit to all transit
-;               times at each step. Otherwise, a linear ephemeris is
-;               assumed.
-;   TDELTAVS  - If set, a new transit depth is fit for each
-;               transit. Otherwise, all transits of the same planet
-;               are modeled with the same same depth.
-;   TIVS      - If set, a new inclination is fit for each
-;               transit. Otherwise, all transits of the same planet
-;               are modeled with the same same depth.
+;   TTVS      - If set, a new (non-periodic) transit time is fit for
+;               each transit file. The period is constrained by a
+;               linear fit to all transit times at each
+;               step. Otherwise, a linear ephemeris is assumed.
+;   TDELTAVS  - If set, a new transit depth is fit for each transit
+;               file. Otherwise, all transits of the same planet are
+;               modeled with the same same depth.
+;   TIVS      - If set, a new inclination is fit for each transit
+;               file. Otherwise, all transits of the same planet are
+;               modeled with the same same depth.
+
 ;   BESTONLY  - If set, only the best fit (using AMOEBA) will be
 ;               performed.
 ;               ***NOT YET IMPLEMENTED***
@@ -675,9 +679,9 @@
 ;             offsets). Now easily extensible.
 ;-
 pro exofastv2, priorfile=priorfile, $
-               rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,$
+               rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,mistsedfile=mistsedfile,$
                prefix=prefix,$
-               circular=circular,fitslope=fitslope, secondary=secondary, $
+               circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
                rossiter=rossiter,chen=chen,$
                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
                nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
@@ -690,30 +694,35 @@ pro exofastv2, priorfile=priorfile, $
                yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
                fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
-               earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch
+               earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
+               fitspline=fitspline, splinespace=splinespace, skiptt=skiptt
 
-;; this is required for virtual machines
-par = command_line_args(count=numargs)
-if numargs eq 1 then begin
-   argfile = par[0]
-   if file_exist(argfile) then begin
-      readargs, argfile, priorfile=priorfile, $
-                rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,$
-                prefix=prefix,$
-                circular=circular,fitslope=fitslope, secondary=secondary, $
-                rossiter=rossiter,chen=chen,$
-                fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-                nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, ntemps=ntemps, tf=tf, dontstop=dontstop, $
-                debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
-                bestonly=bestonly, plotonly=plotonly, refinestar=refinestar, $
-                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
-                rejectflatmodel=rejectflatmodel,$
-                maxgr=maxgr, mintz=mintz, $
-                yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-                fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
-                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
-                earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch
-   endif
+;; if a virtual machine or runtime license, read the arguments from args.txt
+if lmgr(/vm) or lmgr(/runtime) then begin
+   par = command_line_args(count=numargs)
+   if numargs eq 1 then begin
+      argfile = par[0]
+   endif else argfile = 'args.txt'
+
+   if not file_test(argfile) then message, argfile + ', containing desired arguments to EXOFASTv2, does not exist'
+   readargs, argfile, priorfile=priorfile, $
+             rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, mistsedfile=mistsedfile, $
+             prefix=prefix,$
+             circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
+             rossiter=rossiter,chen=chen,$
+             fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
+             nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, ntemps=ntemps, tf=tf, dontstop=dontstop, $
+             debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
+             bestonly=bestonly, plotonly=plotonly, refinestar=refinestar, $
+             longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
+             rejectflatmodel=rejectflatmodel,$
+             maxgr=maxgr, mintz=mintz, $
+             yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+             fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
+             ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
+             earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
+             fitspline=fitspline, splinespace=splinespace, skiptt=skiptt
+
 endif
 
 ;; this is the stellar system structure
@@ -726,7 +735,7 @@ chi2func = 'exofast_chi2v2'
 ;; resolve_all doesn't interpret execute; it's also broken prior to IDL v6.4(?)
 defsysv, '!GDL', exists=runninggdl  
 
-if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~runninggdl then $
+if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
    resolve_all, resolve_function=[chi2func,'exofast_random'],skip_routines=['cggreek'],/cont,/quiet
 
 ;; default prefix for all output files (filename without extension)
@@ -754,7 +763,7 @@ if stderr[0] eq '' then printandlog, "Using EXOFASTv2 commit " + output[0], logn
 ;; parameters, especially for the MIST models, but is a waste of time if you do
 if nplanets ne 0 and keyword_set(refinestar) then begin
    printandlog, 'Refining stellar parameters', logname
-   ss = mkss(fluxfile=fluxfile,nplanet=0,priorfile=priorfile, $
+   ss = mkss(fluxfile=fluxfile,mistsedfile=mistsedfile,nplanet=0,priorfile=priorfile, $
              yy=yy, torres=torres, nomist=nomist, logname=logname, debug=stardebug, verbose=verbose)
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
    staronlybest = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
@@ -765,14 +774,15 @@ if nplanets ne 0 and keyword_set(refinestar) then begin
 endif
 
 ;; create the master structure
-ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
+ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, mistsedfile=mistsedfile,nplanets=nplanets, $
           debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,$
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
           rossiter=rossiter,longcadence=longcadence,rejectflatmodel=rejectflatmodel,$
           ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
           fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-          chen=chen, yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname)
+          chen=chen, yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,$
+          fitspline=fitspline, splinespace=splinespace)
 
 npars = 0L
 nfit = 0L
@@ -937,7 +947,7 @@ bestchi2 = call_function(chi2func,best,psname=modelfile, $
 ;; make a new stellar system structure with only fitted and derived
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
-mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, nplanets=nplanets, $
+mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, mistsedfile=mistsedfile, nplanets=nplanets, $
               debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
               circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
@@ -945,7 +955,9 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dt
               ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
               chen=chen,nvalues=nsteps*nchains,/silent,yy=yy,torres=torres,nomist=nomist,noclaret=noclaret,$
-              alloworbitcrossing=alloworbitcrossing, logname=logname, best=best)
+              alloworbitcrossing=alloworbitcrossing, logname=logname, best=best,$
+              fitspline=fitspline, splinespace=splinespace)
+
 mcmcss.nchains = nchains
 mcmcss.burnndx = burnndx
 *(mcmcss.chi2) = chi2
@@ -983,6 +995,32 @@ csvfile = prefix + 'median.csv'
 exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, csvfile=csvfile
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 exofast_plotchains, mcmcss, chainfile=chainfile, logname=logname
+
+if (keyword_set(mcmcss.ttvs) or ~keyword_set(skiptt)) and mcmcss.ntran ne 0 then begin
+   printandlog, 'The fit is done and can be interrupted without losing any results', logname
+   printandlog, 'Now generating a table of the numerically solved times of ', logname
+   printandlog, 'minimum projected separation, depth, and impact parameters for',logname
+   printandlog, 'each transit file. This may take a while, but can be done at any',logname
+   printandlog, 'point with the idl file and exofast_gettt', logname
+   junk = exofast_gettt(mcmcss, filebase=prefix)
+
+   if keyword_set(mcmcss.ttvs) then begin
+      ;; generate an O-C diagram for each planet
+      readcol, prefix + 'transits.csv',label,planet,epoch,time,hierr,loerr, format='a,a,l,d,d,d', delimiter=',', comment='#',/silent
+      err = (double(hierr) + double(loerr))/2d0
+      telescope = label
+      for i=0L, n_elements(label)-1 do telescope[i] = (strsplit(label[i],' UT ',/regex,/extract))[0]
+
+      sorted = sort(planet)
+      uniqplanets = planet[sorted[uniq(planet[sorted])]]
+      for i=0L, n_elements(uniqplanets)-1 do begin
+         match = where(planet eq uniqplanets[i])
+         omc, time[match], err[match], telescope=telescope[match], epsname=prefix + uniqplanets[i] + '.ttv.eps', $
+              period=median(mcmcss.planet[i].period.value), t0=median(mcmcss.planet[i].tc.value)
+      endfor
+   endif
+
+endif
 
 ;; display all the plots, if desired
 if keyword_set(display) then begin
