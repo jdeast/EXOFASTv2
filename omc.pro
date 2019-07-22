@@ -53,16 +53,16 @@
 pro omc, time, err, telescope=telescope, chi2=chi2, period=period, t0=t0, ps=ps, epsname=epsname
 
 ;; read in the times
-openr, lun, filename, /get_lun
-line = ""
-readf, lun, line
-ncols = n_elements(strsplit(line))
-free_lun, lun
-if ncols eq 2 then begin
-    readcol, filename, time, err, format='d,d', comment='#',/silent 
-endif else if ncols eq 3 then begin
-    readcol, filename, time,err,telescope, format='d,d,a', comment='#',/silent
-endif else message, 'FILENAME must have 2 or three columns'
+;openr, lun, filename, /get_lun
+;line = ""
+;readf, lun, line
+;ncols = n_elements(strsplit(line))
+;free_lun, lun
+;if ncols eq 2 then begin
+;    readcol, filename, time, err, format='d,d', comment='#',/silent 
+;endif else if ncols eq 3 then begin
+;    readcol, filename, time,err,telescope, format='d,d,a', comment='#',/silent
+;endif else message, 'FILENAME must have 2 or three columns'
 
 ;; Determine the lowest common multiple of transit times 
 ;; this is either the period or an integer multiple of it
@@ -115,8 +115,19 @@ if keyword_set(ps) or n_elements(epsname) ne 0 then begin
     LOADCT, 39,/silent
     colors = [0,254,159,95,223,31,207,111,191,47]
     charsizelegend = 0.09
-    xlegend = 0.45
-    ylegend = 0.50
+    ;; left
+    xlegend = 0.1
+
+    ;; top
+    ylegend = 0.90
+
+    ;; right
+;    xlegend = 0.80
+
+    ;; bottom
+;    ylegend = 0.60
+
+
     charsize = 0.5
 endif else begin
     colors= ['ffffff'x,'0000ff'x,'00ff00'x,'ff0000'x,'0080ff'x,$
@@ -130,10 +141,10 @@ ncolors = n_elements(colors)
 
 ;; plot the times, errors, and 0 line
 ymin = min(omc-err) & ymax = max(omc+err)
-xmin = min(epoch)-1 & xmax = max(epoch)+1
-xmin = -75 & xmax = 75
+xmin = min(epoch)-5 & xmax = max(epoch)+5
+;xmin = -75 & xmax = 75
 plot, fix(epoch), omc,psym=3, yrange=[ymin,ymax],xrange=[xmin,xmax],$
-  xtitle='Epoch',ytitle='O-C (min)', /xstyle;,xticks=4
+  xtitle='Epoch',ytitle='O-C (min)';, /xstyle;,xticks=4
 oploterr, epoch, omc, err, 3
 oplot, [-9d9,9d9],[0,0],linestyle=1
 
@@ -146,7 +157,7 @@ if n_elements(telescope) ge 1 then begin
    sorted = sort(telescope)
    tnames = telescope[sorted[uniq(telescope[sorted])]]
    for i=0, n_elements(tnames)-1 do begin
-      observed = where(telescopes eq tnames[i])
+      observed = where(telescope eq tnames[i])
       if observed[0] ne -1 then begin
          plotsym, syms[i mod nsyms], color=colors[i mod ncolors],fill=fill[i mod nsyms]
          oplot, epoch[observed],omc[observed],psym=8
@@ -169,9 +180,9 @@ print, 'chi^2/dof = ' + strtrim(total(((omc)/err)^2)/(n_elements(time)-2),2)
 print, ''
 
 ;; print the epochs, times, errors, etc.
-print, 'Epoch      T_C      ERR    O-C (O-C)/err'
-exofast_forprint, epoch, time, err*60, omc*60d0, omc/err,/t, $
-  format='(i4,x,f14.6,x,i4,x,f7.2,x,f5.2)'
+;print, 'Epoch      T_C      ERR    O-C (O-C)/err'
+;exofast_forprint, epoch, time, err*60, omc*60d0, omc/err,/t, $
+;  format='(i4,x,f14.6,x,i4,x,f7.2,x,f5.2)'
 
 ;; close the postscript device
 if keyword_set(ps) or n_elements(epsname) ne 0 then begin
