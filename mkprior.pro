@@ -87,6 +87,22 @@ end
 
 pro mkprior, filename=filename, mcmcss=mcmcss, priorfilename=priorfilename
 
+;; for use without a license
+if lmgr(/vm) or lmgr(/runtime) then begin
+   par = command_line_args(count=numargs)
+   
+   if numargs ne 2 then message, 'Must specify FILENAME and PRIORFILENAME'
+
+   for i=0L, numargs-1 do begin
+      if strpos(par[i],'=') ne -1 then begin
+         entries = strsplit(par[i],'=',/extract)
+         if strupcase(entries[0]) eq 'FILENAME' then filename = entries[1]
+         if strupcase(entries[0]) eq 'PRIORFILENAME' then priorfilename = entries[1]
+      endif
+   endfor
+
+endif
+
 
 if n_elements(priorfilename) eq 1 then openw, lun, priorfilename, /get_lun $
 else lun = -1   
