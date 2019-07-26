@@ -1,12 +1,16 @@
 EXOFASTv2 -- Jason Eastman (jason.eastman@cfa.harvard.edu) An
 exoplanet transit and radial velocity fitting software package in IDL
-If you use this in a publication, please cite:
-http://adsabs.harvard.edu/abs/2017ascl.soft10003E
+If you use this in a publication cite:
+https://arxiv.org/abs/1907.09480
+and see acknowledgements.tex within this distribution.
 
 A tutorial with exercises can be found here:
-https://docs.google.com/document/d/1H-HMe1No5B4JE93V9kSEW91uSIQcG2eUVScf037biZw/edit
+https://docs.google.com/document/d/1kcm7_mgfoCdDx6lUeqUJdDkpxtejyTNQf3sIveq3lkk/edit
 
-# Installation instructions #
+For detailed installation directions (and directions for Windows), see
+https://docs.google.com/document/d/1kcm7_mgfoCdDx6lUeqUJdDkpxtejyTNQf3sIveq3lkk/edit
+
+# Installation instructions (linux/mac)#
 
 License-free use still requires a (free) IDL installation and runs a
 pre-compiled version with the virtual machine. You still must follow
