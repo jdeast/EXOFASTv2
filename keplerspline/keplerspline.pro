@@ -21,7 +21,7 @@ function keplerspline2, t, f, ndays=ndays, maxiter = maxiter, rms = rms, yplot =
 ;    endif
     
     junk = robust_mean(f - bg, 3, goodind = good)
-    rms = stdev(bg(good) - f(good))
+    rms = stddev(bg(good) - f(good))
     if keyword_set(yplot) then begin
     
       if i le yplot then begin

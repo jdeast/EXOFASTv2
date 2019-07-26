@@ -4,8 +4,8 @@
 ;
 ; PURPOSE: 
 ;   Simultaneously fits RV and/or transit data for multiple
-;   planets, transits, RV sources. Please cite Eastman et al., 2013
-;   (http://adsabs.harvard.edu/abs/2013PASP..125...83E) if you make
+;   planets, transits, RV sources. Please cite Eastman et al., 2019
+;   (https://arxiv.org/abs/1907.09480) if you make
 ;   use of this routine in your research. Please report errors or bugs
 ;   to jason.eastman@cfa.harvard.edu
 ;
