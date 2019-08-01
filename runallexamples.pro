@@ -13,6 +13,7 @@ fitkelt4, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitkelt6, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitkelt12, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitkelt16, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
+fitkelt17, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitwasp76, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fit8361, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose
 fitgj9827, maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbos

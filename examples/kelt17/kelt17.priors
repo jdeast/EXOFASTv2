@@ -1,0 +1,17 @@
+# Stellar values
+mstar 1.635
+rstar 1.645
+teff 7452
+#teff 7452 50
+#feh 0.25 0.08
+# SED parameters
+parallax 4.4688 0.0582
+av 0 -1 0 0.11687
+# DT parameters
+lambda -2.0228366
+vsini 44200 1.4
+vline 5490 480
+# Planet parameters
+period_0 3.0801716
+tc_0 2457287.74564
+p 0.096
