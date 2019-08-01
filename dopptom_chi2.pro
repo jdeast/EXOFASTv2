@@ -56,7 +56,7 @@ u2 = ldcoeffs[1]
 if ((not finite(u1)) or (not finite(u2))) then  return, !values.d_infinity
 
 tp = tc - period*exofast_getphase(e,omega,/pri)
-z = exofast_getb2(doptom.bjd, i=inc, a=ar, tperiastron=tp, period=Period, e=e,omega=omega,z=depth, x=xp,y=yp)
+z = exofast_getb2(doptom.bjd, i=inc, a=ar, tperiastron=tp, period=Period, e=e,omega=omega,z2=depth, x2=xp,y2=yp)
 up = xp*cos(lambda) - yp*sin(lambda)
 
 primary = where(depth lt 0,complement=secondary)     
