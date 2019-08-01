@@ -1766,8 +1766,8 @@ for i=0, nplanets-1 do begin
          ss.planet[i].fitdt = 1B
          ss.star.vline.fit = 1
          ss.star.vline.derive = 1
-         ss.doptom[i].dtscale.fit = 1
-         ss.doptom[i].dtscale.derive = 1
+         ss.doptom[*].dtscale.fit = 1
+         ss.doptom[*].dtscale.derive = 1
       endif
       if rossiter[i] then ss.planet[i].rossiter = 1B
 
