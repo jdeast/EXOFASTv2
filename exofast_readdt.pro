@@ -3,6 +3,8 @@
 
 function exofast_readdt, filename, lambdaRange
 
+basename = file_basename(filename)
+
 ;; First index is velocity, second index is BJD
 ccf2d = readfits(filename, /silent)
 bjd = readfits(filename, exten_no=1, /silent)
@@ -13,14 +15,14 @@ if n_elements(lambdarange) eq 0 then lambdarange=0
 model = ccf2d * 0.0 + median(ccf2d)
 resid = ccf2d - model
 
-telescope = (strsplit(filename,'.',/extract))(2)
-rspec = (strsplit(filename,'.',/extract))(3)
+telescope = (strsplit(basename,'.',/extract))(2)
+rspec = (strsplit(basename,'.',/extract))(3)
 if rspec eq 0d0 then message, 'ERROR: the DT filename does not properly encode the instrument resolution. See documentation for DTPATH in exofastv2.pro for details.'
 
-night = strmid(filename,1,4)+'-'+strmid(filename,5,2)+'-'+strmid(filename,7,2)
+night = strmid(basename,1,4)+'-'+strmid(basename,5,2)+'-'+strmid(basename,7,2)
 label = 'UT ' + night + ' ' + telescope
 pletters = ['b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
-pname = (strsplit(filename,'.',/extract))(1)
+pname = (strsplit(basename,'.',/extract))(1)
 pletter = strmid(pname,strlen(pname)-1,1)
 planetndx = (where(pletters eq pletter))[0] 
 if planetndx eq -1 then planetndx = 0
