@@ -5,7 +5,7 @@ https://arxiv.org/abs/1907.09480
 and see acknowledgements.tex within this distribution.
 
 A tutorial with exercises can be found here:
-https://docs.google.com/document/d/1kcm7_mgfoCdDx6lUeqUJdDkpxtejyTNQf3sIveq3lkk/edit
+https://docs.google.com/document/d/1H-HMe1No5B4JE93V9kSEW91uSIQcG2eUVScf037biZw/edit
 
 For detailed installation directions (and directions for Windows), see
 https://docs.google.com/document/d/1kcm7_mgfoCdDx6lUeqUJdDkpxtejyTNQf3sIveq3lkk/edit
@@ -82,7 +82,7 @@ installation in ~5 seconds instead of ~10 minutes.
 It will generate many output files
 ($EXOFAST_PATH/examples/hat3/HAT-P-3b.Torres.*) (see
 $EXOFAST_PATH/exofastv2.pro for an explanation of outputs). The last
-file it generates is HAT-3b.Torres.chain.ps. If that is generated
+file it generates is HAT-3b.transits.tex. If that is generated
 without error, you're good to go!
 
 To get future updates, simply type
