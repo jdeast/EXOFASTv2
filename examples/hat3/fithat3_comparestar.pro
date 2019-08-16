@@ -18,7 +18,7 @@ exofastv2, nplanets=1, tranpath=path+'n20070428.Sloani.KepCam.dat', rvpath=path+
 exofastv2, nplanets=1, tranpath=path+'n20070428.Sloani.KepCam.dat', rvpath=path+'HAT-3b.HIRES.rv',priorfile=path+'hat3.priors', prefix=path+'fitresults' + path_sep()+'HAT-3b.YY+Transit.', maxsteps=maxsteps, nthin=nthin, circular=[1], fitrv=[1],fittran=[1], debug=debug, verbose=verbose, dontstop=dontstop, /yy, /nomist
 
 ;; Fit using MIST isochrones with the transit
-exofastv2, nplanets=1, tranpath=path+'n20070428.Sloani.KepCam.dat', rvpath=path+'HAT-3b.HIRES.rv',priorfile=path+'hat3.priors', prefix=path+'fitresults' + path_sep()+'HAT-3b.MIST+Transit.', maxsteps=maxsteps, nthin=nthin, circular=[1], fitrv=[1],fittran=[1], debug=debug, verbose=verbose, dontstop=dontstop, fluxfile=path+'hat3.flux'
+exofastv2, nplanets=1, tranpath=path+'n20070428.Sloani.KepCam.dat', rvpath=path+'HAT-3b.HIRES.rv',priorfile=path+'hat3.priors', prefix=path+'fitresults' + path_sep()+'HAT-3b.MIST+Transit.', maxsteps=maxsteps, nthin=nthin, circular=[1], fitrv=[1],fittran=[1], debug=debug, verbose=verbose, dontstop=dontstop, fluxfile=path+'hat3.sed'
 
 ;; Fit using SED with the transit
 exofastv2, nplanets=1, tranpath=path+'n20070428.Sloani.KepCam.dat', rvpath=path+'HAT-3b.HIRES.rv',priorfile=path+'hat3.priors', prefix=path+'fitresults' + path_sep()+'HAT-3b.SED+Transit.', maxsteps=maxsteps, nthin=nthin, circular=[1], fitrv=[1],fittran=[1], debug=debug, verbose=verbose, fluxfile=path+'hat3.sed', /nomist, dontstop=dontstop
