@@ -143,7 +143,15 @@ for i=0, ss.nplanets-1 do begin
 
    ss.planet[i].teq.value = ss.star.teff.value*sqrt(1d0/(2d0*ss.planet[i].ar.value)) ;(f*(1d0-Ab))^(0.25d0)
    ss.planet[i].dr.value = ss.planet[i].ar.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value) ;; d/rstar = star-planet separation at transit
-   ss.planet[i].tcirc.value = 1.6d0*ss.planet[i].mp.value*ss.star.mstar.value^(-3d0/2d0)*ss.planet[i].rp.value^(-5d0)*(ss.planet[i].a.value/0.05d0)^(13d0/2d0) ;; Adams & Laughlin, 2006, eq 3
+
+   Qp = 1d6 ;; tidal Q value   
+   ss.planet[i].tcirc.value = 4d0*Qp/63d0/(ss.constants.day*365.25d9)*$
+                              ((ss.planet[i].a.value*ss.constants.au)^3/(ss.constants.GMsun*ss.star.mstar.value))^(1d0/2d0)*$
+                              (ss.planet[i].mpsun.value/ss.star.mstar.value)*$
+                              (ss.planet[i].ar.value/ss.planet[i].p.value)^5d0*$
+                              (1d0-ss.planet[i].e.value^2)^(13d0/2d0)/$
+                              (1d0+6d0*ss.planet[i].e.value^2) ;; Adams & Laughlin, 2006, eq 2 (in Gyr)
+;   ss.planet[i].tcirc.value = 1.6d0*ss.planet[i].mp.value*ss.star.mstar.value^(-3d0/2d0)*ss.planet[i].rp.value^(-5d0)*(ss.planet[i].a.value/0.05d0)^(13d0/2d0) ;; Adams & Laughlin, 2006, eq 3
 
    ss.planet[i].fave.value = ss.constants.sigmab*ss.star.teff.value^4/(ss.planet[i].ar.value*(1d0+ss.planet[i].e.value^2/2d0))^2/1d9    ;; 10^9 erg/s/cm^2
 
