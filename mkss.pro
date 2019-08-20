@@ -1486,7 +1486,10 @@ if n_elements(fluxfile) ne 0 then begin
       ;; before then updated
       ;; the chi2 doesn't matter here, use solar values
       sedchi2 = exofast_sed(fluxfile, 6000d0,1d0,0d0,10d0,logg=4.41d0,met=0d0,alpha=0d0,/redo)
-   endif else printandlog, 'Could not find ' + fluxfile, logname
+   endif else begin
+      printandlog, 'Could not find ' + fluxfile, logname
+      stop
+   endelse
 endif
 
 if n_elements(mistsedfile) ne 0 then begin
@@ -1504,7 +1507,10 @@ if n_elements(mistsedfile) ne 0 then begin
       ;; before then updated (without exiting IDL)
       ;; the chi2 doesn't matter here, use solar values
       sedchi2 = mistsed(6000d0, 4.41d0, 0d0, 0d0, 10d0, 1d0, 1d0, mistsedfile, /redo)
-   endif else printandlog, 'Could not find ' + mistsedfile, logname
+   endif else begin
+      printandlog, 'Could not find ' + mistsedfile, logname
+      stop
+   endelse
 endif
 
 planet = create_struct($
