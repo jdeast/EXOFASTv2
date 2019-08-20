@@ -801,14 +801,20 @@ endfor
 
 if n_elements(mintz) eq 0 then mintz = 1000d0
 if n_elements(maxgr) eq 0 then maxgr = 1.01d0
-if n_elements(maxsteps) eq 0 then maxsteps = 100000L
 if n_elements(nthin) eq 0 then nthin = 1L
 if n_elements(sigclip) ne 1 then sigclip = !values.d_infinity ;; no clipping
 if n_elements(nmin) eq 0 then nmin=5
 ;; use robust (slower) random number generator by default
 if n_elements(randomfunc) eq 0 then randomfunc = 'exofast_random'
 
+;; by default, use 1 GB of RAM
+if n_elements(maxsteps) eq 0 then begin
+   maxsteps = round(1024d0^3/(double(ss.nchains)*npars*8d0))
+   printandlog, 'MAXSTEPS set to ' + strtrim(maxsteps,2), logname
+endif
+
 memrequired = double(ss.nchains)*double(maxsteps)*npars*8d0/(1024d0^3)
+
 printandlog, 'Fit will require ' + strtrim(memrequired,2) + ' GB of RAM for the final structure', logname
 if memrequired gt 2d0 then begin
    printandlog, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue', logname
@@ -871,7 +877,7 @@ if ss.debug and ~lmgr(/vm) then begin
 end
 
 nmax = 1d5
-printandlog, 'It takes ' + strtrim(modeltime,2) + ' seconds to calculate a single model'
+printandlog, 'It takes ' + strtrim(modeltime,2) + ' seconds to calculate a single model', logname
 printandlog, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nmax/60d0,format='(f0.1)') + ' minutes if it takes the maximum allowed steps (' + strtrim(nmax,2) + ')', logname
 
 ;; do the AMOEBA fit
