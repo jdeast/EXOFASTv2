@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Fri Aug  2 08:53:46 2019.<P>
+<STRONG>Last modified: </STRONG>Tue Aug 20 13:22:19 2019.<P>
  
 <HR>
  
@@ -39,13 +39,9 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_ERRELL">EXOFAST_ERRELL</A>
 <LI><A HREF="#EXOFAST_GELMANRUBIN">EXOFAST_GELMANRUBIN</A>
 <LI><A HREF="#EXOFAST_GETB">EXOFAST_GETB</A>
-<LI><A HREF="#EXOFAST_GETB2[1]">EXOFAST_GETB2[1]</A>
-<LI><A HREF="#EXOFAST_GETB2[2]">EXOFAST_GETB2[2]</A>
-<LI><A HREF="#EXOFAST_GETB3">EXOFAST_GETB3</A>
-<LI><A HREF="#EXOFAST_GETBLEFT">EXOFAST_GETBLEFT</A>
+<LI><A HREF="#EXOFAST_GETB2">EXOFAST_GETB2</A>
 <LI><A HREF="#EXOFAST_GETMCMCSCALE">EXOFAST_GETMCMCSCALE</A>
-<LI><A HREF="#EXOFAST_GETPHASE[1]">EXOFAST_GETPHASE[1]</A>
-<LI><A HREF="#EXOFAST_GETPHASE[2]">EXOFAST_GETPHASE[2]</A>
+<LI><A HREF="#EXOFAST_GETPHASE">EXOFAST_GETPHASE</A>
 <LI><A HREF="#EXOFAST_GETTC">EXOFAST_GETTC</A>
 <LI><A HREF="#EXOFAST_GETTT">EXOFAST_GETTT</A>
 <LI><A HREF="#EXOFAST_GETXYZ">EXOFAST_GETXYZ</A>
@@ -84,6 +80,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#PARS2STR">PARS2STR</A>
 <LI><A HREF="#PLOTIMAGE">PLOTIMAGE</A>
 <LI><A HREF="#QUADLD">QUADLD</A>
+<LI><A HREF="#READIPAC">READIPAC</A>
 <LI><A HREF="#SETDEFAULTVALUE">SETDEFAULTVALUE</A>
 <LI><A HREF="#STROM_CONV">STROM_CONV</A>
 <LI><A HREF="#TEXTOIDL_MATCHDELIM">TEXTOIDL_MATCHDELIM</A>
@@ -1888,7 +1885,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_GETB">
 <H2>EXOFAST_GETB</H2></A>
 <A HREF="#EXOFAST_GELMANRUBIN">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETB2[1]">[Next Routine]</A>
+<A HREF="#EXOFAST_GETB2">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -1945,10 +1942,10 @@ Function value:       1.33000
 <STRONG>(See exofast_getb.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_GETB2[1]">
-<H2>EXOFAST_GETB2[1]</H2></A>
+<A NAME="EXOFAST_GETB2">
+<H2>EXOFAST_GETB2</H2></A>
 <A HREF="#EXOFAST_GETB">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETB2[2]">[Next Routine]</A>
+<A HREF="#EXOFAST_GETMCMCSCALE">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2015,223 +2012,10 @@ Function value:       1.33000
 <STRONG>(See exofast_getb2.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_GETB2[2]">
-<H2>EXOFAST_GETB2[2]</H2></A>
-<A HREF="#EXOFAST_GETB2[1]">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETB3">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- NAME:
-   EXOFAST_GETB2
-
- PURPOSE: 
-   This function returns the impact parameter as a function of BJD
-   given orbital elements of many planets, assuming keplerian orbits.
-   Optionally, the 3-space barycentric coordinates of the star
-   (x1,y1,z1) and planets (x2,y2,z2) or the stellar coordinates of the
-   planets (x0,y0,z0) can be returned.
- 
- CALLING SEQUENCE:
-   result = getb(jds, i=i,a=a,tperiastron=tperiastron,period=p,$
-                 e=e,omega=omega, x=x, y=y, z=z)
-
- INPUTS:
-   bjd         - Barycentric Julians dates for desired impact
-                 parameters (ideally in the target's
-                 barycentric frame; see BJD2TARGET)
-   i           - an NPLANETS array of planetary inclinations (radians)
-   a           - an NPLANETS array of semi-major axis, a = a1+a2 (in
-                 units of R_*). That is, the semi-major axis should be calculated
-                 from Kepler's equation: a/rstar = G(M+m)P^2/(4pi^2rstar).
-                 Using G = 2942.71377d0 R_sun^3/(m_sun*day^2), masses
-                 in solar masses, period in days, and rstar in solar
-                 radii will give the appropriate input.
-   tperiastron - an NPLANETS array of periastron passage times (same
-                 units as BJD)
-   Period      - an NPLANETS array of Period of orbit (days)
-
- OPTIONAL INPUTS:  
-   e           - an NPLANETS array of eccentricities (0 if not specified)
-   omega       - an NPLANETS array of arguments of periastron of the star's orbit, in radians
-                 -- omega_* is typically quoted from RV
-                 -- assumed to be pi/2 if e not specified
-                 -- omega_* = omega_planet + !dpi
-   lonascnode  - an NPLANETS array of Longitudes of the ascending node
-                 (radians). Assumed to be !dpi if not specified.
-   Q           - an NPLANETS array of mass ratios of the primary to secondary
-                 (M1/M2). If not specified, the mass ratio is assumed
-                 to be infinite. The returned coordinates are the
-                 motion of the companion with respect to the primary.
-
- OUTPUTS:
-    result     - the impact parameter as a function of BJD, in units
-                 of R_*.
-
- OPTIONAL OUTPUTS:
-    x,y,z - Arrays of the cartesian coordinates of the planet at
-            each BJD, in the units of R_*. 
-              +X is right
-              +Y is up
-              +Z is out of the page (primary transit)
-
- MODIFICATION HISTORY 
-  2009/05/01 -- Jason Eastman (Ohio State University)
-  2017/04/12 -- Add optional mass ratio keyword
-  2018/07/06 -- Now properly handles 2D time array (for long cadence)
-</PRE><P>
-<STRONG>(See exofast_getb2_old.pro)</STRONG><P>
-<HR>
- 
-<A NAME="EXOFAST_GETB3">
-<H2>EXOFAST_GETB3</H2></A>
-<A HREF="#EXOFAST_GETB2[2]">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETBLEFT">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- NAME:
-   EXOFAST_GETB3
-
- PURPOSE: 
-   This function returns the impact parameter of the planet as
-   a function of BJD in the target barycentric frame, given orbital
-   elements of many planets, assuming keplerian orbits.
-
-   Optionally, the 3-space barycentric coordinates of the star
-   (x1,y1,z1) and the planets (x2,y2,z2) or the stellar centric
-   coordinates of the planets (x0,y0,z0) can be returned.
- 
- CALLING SEQUENCE:
-   result = exofast_getb3(jds, i=i,a=a,tperiastron=tperiastron,period=p,$
-                 e=e,omega=omega, x=x, y=y, z=z)
-
- INPUTS:
-   bjd         - Barycentric Julians dates for desired impact
-                 parameters (ideally in the target's
-                 barycentric frame; see BJD2TARGET)
-   i           - an NPLANETS array of planetary inclinations (radians)
-   a           - an NPLANETS array of semi-major axis, a = a1+a2 (in
-                 units of R_*). That is, the semi-major axis should be calculated
-                 from Kepler's equation: a/rstar = G(M+m)P^2/(4pi^2rstar).
-                 Using G = 2942.71377d0 R_sun^3/(m_sun*day^2), masses
-                 in solar masses, period in days, and rstar in solar
-                 radii will give the appropriate input.
-   tperiastron - an NPLANETS array of periastron passage times (same
-                 units as BJD)
-   Period      - an NPLANETS array of Period of orbit (days)
-
- OPTIONAL INPUTS:  
-   e           - an NPLANETS array of eccentricities (0 if not specified)
-   omegap      - an NPLANETS array of arguments of periastron
-                 of the planets' orbits, in radians
-                 -- omega_planet is the typical quantity quoted in
-                    the exoplanet literature
-                 -- assumed to be pi/2 if e not specified
-                 -- omega_p = omega_* + !dpi
-   lonascnode  - an NPLANETS array of Longitudes of the ascending node
-                 (radians). Assumed to be 0 if not specified.
-   Q           - an NPLANETS array of mass ratios of the primary to secondary
-                 (M1/M2). If not specified, the mass ratio is assumed
-                 to be infinite. The returned coordinates are the
-                 motion of the companion with respect to the primary.
-
- OUTPUTS:
-    result     - the impact parameter as a function of BJD, in units
-                 of R_*.
-
- OPTIONAL OUTPUTS:
-    x,y,z - Arrays of the cartesian coordinates of the planet at
-            each BJD, in the units of R_*. 
-              +X is right
-              +Y is up
-              +Z is out of the page (primary transit)
-
- MODIFICATION HISTORY 
-  2009/05/01 -- Jason Eastman (Ohio State University)
-  2017/04/12 -- Add optional mass ratio keyword
-  2018/07/06 -- Now properly handles 2D time array (for long cadence)
-  2018/11/13 -- Now properly handles a scalar time
-  2019/02/05 -- Fix sign conventions
-</PRE><P>
-<STRONG>(See exofast_getb3.pro)</STRONG><P>
-<HR>
- 
-<A NAME="EXOFAST_GETBLEFT">
-<H2>EXOFAST_GETBLEFT</H2></A>
-<A HREF="#EXOFAST_GETB3">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETMCMCSCALE">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- NAME:
-   EXOFAST_GETBLEFT
-
- PURPOSE: 
-   This function returns the impact parameter of the planet as
-   a function of BJD in the target barycentric frame, given orbital
-   elements of many planets, assuming keplerian orbits.
-
-   Optionally, the 3-space barycentric coordinates of the star
-   (x1,y1,z1) and the planets (x2,y2,z2) or the stellar centric
-   coordinates of the planets (x0,y0,z0) can be returned.
- 
- CALLING SEQUENCE:
-   result = exofast_getb3(jds, i=i,a=a,tperiastron=tperiastron,period=p,$
-                 e=e,omega=omega, x=x, y=y, z=z)
-
- INPUTS:
-   bjd         - Barycentric Julians dates for desired impact
-                 parameters (ideally in the target's
-                 barycentric frame; see BJD2TARGET)
-   i           - an NPLANETS array of planetary inclinations (radians)
-   a           - an NPLANETS array of semi-major axis, a = a1+a2 (in
-                 units of R_*). That is, the semi-major axis should be calculated
-                 from Kepler's equation: a/rstar = G(M+m)P^2/(4pi^2rstar).
-                 Using G = 2942.71377d0 R_sun^3/(m_sun*day^2), masses
-                 in solar masses, period in days, and rstar in solar
-                 radii will give the appropriate input.
-   tperiastron - an NPLANETS array of periastron passage times (same
-                 units as BJD)
-   Period      - an NPLANETS array of Period of orbit (days)
-
- OPTIONAL INPUTS:  
-   e           - an NPLANETS array of eccentricities (0 if not specified)
-   omegap      - an NPLANETS array of arguments of periastron
-                 of the planets' orbits, in radians
-                 -- omega_planet is the typical quantity quoted in
-                    the exoplanet literature
-                 -- assumed to be pi/2 if e not specified
-                 -- omega_p = omega_* + !dpi
-   lonascnode  - an NPLANETS array of Longitudes of the ascending node
-                 (radians). Assumed to be 0 if not specified.
-   Q           - an NPLANETS array of mass ratios of the primary to secondary
-                 (M1/M2). If not specified, the mass ratio is assumed
-                 to be infinite. The returned coordinates are the
-                 motion of the companion with respect to the primary.
-
- OUTPUTS:
-    result     - the impact parameter as a function of BJD, in units
-                 of R_*.
-
- OPTIONAL OUTPUTS:
-    x,y,z - Arrays of the cartesian coordinates of the planet at
-            each BJD, in the units of R_*. 
-              +X is right
-              +Y is up
-              +Z is out of the page (primary transit)
-
- MODIFICATION HISTORY 
-  2009/05/01 -- Jason Eastman (Ohio State University)
-  2017/04/12 -- Add optional mass ratio keyword
-  2018/07/06 -- Now properly handles 2D time array (for long cadence)
-  2018/11/13 -- Now properly handles a scalar time
-  2019/02/05 -- Fix sign conventions
-</PRE><P>
-<STRONG>(See exofast_getbleft.pro)</STRONG><P>
-<HR>
- 
 <A NAME="EXOFAST_GETMCMCSCALE">
 <H2>EXOFAST_GETMCMCSCALE</H2></A>
-<A HREF="#EXOFAST_GETBLEFT">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETPHASE[1]">[Next Routine]</A>
+<A HREF="#EXOFAST_GETB2">[Previous Routine]</A>
+<A HREF="#EXOFAST_GETPHASE">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2293,10 +2077,10 @@ Function value:       1.33000
 <STRONG>(See exofast_getmcmcscale.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_GETPHASE[1]">
-<H2>EXOFAST_GETPHASE[1]</H2></A>
+<A NAME="EXOFAST_GETPHASE">
+<H2>EXOFAST_GETPHASE</H2></A>
 <A HREF="#EXOFAST_GETMCMCSCALE">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETPHASE[2]">[Next Routine]</A>
+<A HREF="#EXOFAST_GETTC">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2340,57 +2124,9 @@ Function value:       1.33000
 <STRONG>(See exofast_getphase.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_GETPHASE[2]">
-<H2>EXOFAST_GETPHASE[2]</H2></A>
-<A HREF="#EXOFAST_GETPHASE[1]">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETTC">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- NAME:
-   EXOFAST_GETPHASE
-
- PURPOSE:
-   Calculates the phase (mean anomaly/(2pi)) corresponding to a
-   particular true anomaly (of the stellar orbit).
-
- CALLING SEQUENCE:
-   phase = exofast_getphase(eccen,omega,trueanom [,/PRIMARY]$
-                    [,/SECONDARY][,/L4][,/L5][,/PERIASTRON])
-
- EXAMPLE:
-   ;; find the phase of a primary transit described by e and omega 
-   phase = exofast_getphase(e,omega,/primary)
-
- INPUTS: 
-   ECCEN: The eccentricity of the orbit, must be between 0 and 1
-
-   OMEGA: The argument of periastron of the star, in radians
-
-   TRUEANOM: The true anomaly (in radians) for which the mean anomaly
-   is desired.
-
- OPTIONAL KEYWORDS:
-   PERIASTRON: Find the phase of Periastron (0 by definition)
-   PRIMARY: Find the phase of the primary transit
-   SECONDARY: Find the phase of the secondary eclipse
-   L4: Find the phase of the L4 Langrangian point (leading)
-   L5: Find the phase of the L5 Langrangian point (trailing)
-   ASCENDINGNODE: Find the phase of Ascending node (maximum RV signal)
-   DESCENDINGNODE: Find the phase of the Descending node (minimum RV signal)
-
- DEPENDENCIES:
-   EXOFAST_KEPLEREQ.PRO
-
- Modification History:
-  2010/06 - Rewritten by Jason Eastman (OSU)
-  2019/03 - This whole time I was using omega_planet... switched to omega_*
-</PRE><P>
-<STRONG>(See exofast_getphase2.pro)</STRONG><P>
-<HR>
- 
 <A NAME="EXOFAST_GETTC">
 <H2>EXOFAST_GETTC</H2></A>
-<A HREF="#EXOFAST_GETPHASE[2]">[Previous Routine]</A>
+<A HREF="#EXOFAST_GETPHASE">[Previous Routine]</A>
 <A HREF="#EXOFAST_GETTT">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -4944,7 +4680,7 @@ Function value:       1.33000
 <A NAME="QUADLD">
 <H2>QUADLD</H2></A>
 <A HREF="#PLOTIMAGE">[Previous Routine]</A>
-<A HREF="#SETDEFAULTVALUE">[Next Routine]</A>
+<A HREF="#READIPAC">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4992,13 +4728,77 @@ Function value:       1.33000
   2012/06 -- Public release -- Jason Eastman (LCOGT)
   2013/01 -- Changed save filenames so they're not case sensitive
              (now works with OSX) -- thanks Stefan Hippler.
+  2019/08 -- Now rejects steps outside of bounds
 </PRE><P>
 <STRONG>(See quadld.pro)</STRONG><P>
 <HR>
  
+<A NAME="READIPAC">
+<H2>READIPAC</H2></A>
+<A HREF="#QUADLD">[Previous Routine]</A>
+<A HREF="#SETDEFAULTVALUE">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   READIPAC
+
+ PURPOSE:
+   Reads the http://exoplanets.org/csv-files/exoplanets.csv database into an
+   IDL structure for easy plotting and manipulation.
+
+   See http://exoplanets.org/help/common/data for the definitions
+   of each tag.
+
+ OPTIONAL KEYWORDS:
+   UPDATE - By default, if exoplanets.csv exists, it will not
+            retrieve a new copy. Set this keyword to wget the csv
+            file and overwrite exoplanets.csv. It will only overwrite
+            it if the copy on the server is newer. This program is
+            about 25% slower when this keyword is specified
+            unnecessarily and 2x slower when it actually needs to
+            update.
+
+ CALLING SEQUENCE:
+   result = readexo([/update])
+
+ EXAMPLE - Print all data for HAT-P-13 b:
+
+   planetdata = readexo(/update)
+   match = where(planetdata.name eq 'HAT-P-13 b')
+   names = tag_names(planetdata)
+   if match[0] ne -1 then for i=0, n_tags(planetdata)-1 do $
+     print, names[i], planetdata.(i)[match], format='(a15,a100)'
+
+ DEPENDENCIES:
+   wget
+
+ ENVIRONMENT VARIABLES:
+   EXOFAST_PATH  - The environment variable specifying the directory
+                   in which to save/look for the CSV file. If not set,
+                   the program will use the current working directory.
+
+ NOTES: 
+   All data types are strings for robustness and generality (no
+   update to this program is required if new rows or columns are
+   added to the database). Converting to numeric values is trivial,
+   but be sure to use the appropriate precision (eg, to convert ra
+   from hours to degrees, do radeg = planetdata.ra*15.d0, not radeg =
+   planetdata.ra*15).
+
+   Be aware that the order of tags or even the tagnames may change if
+   the database changes.
+
+ REVISION HISTORY
+   Created: 2011/01/19 Jason Eastman, OSU
+            2012/06/15 Updated for change to exoplanets.org.
+            2013/01/14 Updated for change to URL.
+</PRE><P>
+<STRONG>(See readipac.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="SETDEFAULTVALUE">
 <H2>SETDEFAULTVALUE</H2></A>
-<A HREF="#QUADLD">[Previous Routine]</A>
+<A HREF="#READIPAC">[Previous Routine]</A>
 <A HREF="#STROM_CONV">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>

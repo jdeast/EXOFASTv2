@@ -44,14 +44,28 @@
 ;  2012/06 -- Public release -- Jason Eastman (LCOGT)
 ;  2013/01 -- Changed save filenames so they're not case sensitive
 ;             (now works with OSX) -- thanks Stefan Hippler.
+;  2019/08 -- Now rejects steps outside of bounds
 ;-
-function quadld, logg, teff, feh, band, model=model, method=method, vt=vt
+function quadld, logg, teff, feh, band, model=model, method=method, vt=vt, $
+                 verbose=verbose, logname=logname, skipboundcheck=skipboundcheck
 
 ;; restoring these is way too slow for MCMC fits
 ;; can't pass them from EXOFAST_MCMC in a general way
 ;; make them global for 100x improvement
 ;; only needs to talk to itself
 COMMON LD_BLOCK, a, b
+
+if ~keyword_set(skipboundcheck) then begin
+   ;; check boundary conditions
+   bad = where(feh lt -5d0 or feh gt 1d0 or $
+               teff lt 3500d0 or teff gt 50000d0 or $
+               logg lt 0d0 or logg gt 5d0, nbad)
+   if nbad gt 0 then begin
+      if keyword_set(verbose) then $
+         printandlog, 'Boundary hit for limb darkening tables; rejecting step. If this is common, you should set the /NOCLARET flag to avoid biasing the stellar parameters', logname
+      return, [!values.d_nan, !values.d_nan]
+   endif
+endif
 
 fehs = [-5d0+dindgen(10)*0.5,-0.3d0+dindgen(7)*0.1d0,0.5d0+dindgen(2)*0.5d0]
 loggs = dindgen(11)*0.5d0
@@ -98,12 +112,12 @@ if not keyword_set(a[0,0,0,ndx]) or $
 endif
 
 ;; GDL's version of interpol can't extrapolate
-defsysv, '!GDL', exists=runninggdl
-if runninggdl and n_elements(logg) eq 1 then begin
-   if logg lt loggs[0] or logg gt loggs[n_elements(loggs)-1] or $
-      teff lt teffs[0] or teff gt teffs[n_elements(teffs)-1] or $
-      feh lt fehs[0] or feh gt fehs[n_elements(fehs)-1] then return, [!values.d_nan,!values.d_nan]
-endif
+;defsysv, '!GDL', exists=runninggdl
+;if runninggdl and n_elements(logg) eq 1 then begin
+;   if logg lt loggs[0] or logg gt loggs[n_elements(loggs)-1] or $
+;      teff lt teffs[0] or teff gt teffs[n_elements(teffs)-1] or $
+;      feh lt fehs[0] or feh gt fehs[n_elements(fehs)-1] then return, [!values.d_nan,!values.d_nan]
+;endif
 
 ;; where to interpolate in the axis
 loggx = interpol(indgen(n_elements(loggs)),loggs,logg)

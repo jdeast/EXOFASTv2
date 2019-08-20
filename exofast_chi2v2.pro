@@ -568,7 +568,8 @@ for j=0, ss.ntran-1 do begin
 
    ;; quadratic limb darkening
    if ss.claret then begin
-      ldcoeffs = quadld(ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, band.name)
+      ldcoeffs = quadld(ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, band.name, $
+                        verbose=ss.verbose, logname=ss.logname)
       u1claret = ldcoeffs[0]
       u2claret = ldcoeffs[1]
       if ~finite(u1claret) or ~finite(u2claret) then return, !values.d_infinity
