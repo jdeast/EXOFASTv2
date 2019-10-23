@@ -86,28 +86,28 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    xmin = min(wp, max=xmax)
    xmax = 30
    xmin = 0.1
-   ymin = min([f[m],fp[m]-ep[m]])
-   ymax = max([f[m],fp[m]+ep[m],smooth(flux,10)])
+   ymin = alog10(min([f[m],fp[m]-ep[m]]))
+   ymax = alog10(max([f[m],fp[m]+ep[m],smooth(flux,10)]))
 
    ;; overplot the model atmosphere
-   plot, w1, smooth(flux,10),/xlog,/ylog,xtitle=xtitle,ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs;,/ys
-   oplot, wp[m], f[m], psym=8  
+   plot, w1, alog10(smooth(flux,10)),/xlog,xtitle=xtitle,ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs;,/ys
+   oplot, wp[m], alog10(f[m]), psym=8  
 
    ;; oploterror has too many dependencies
    for i=0, n_elements(m)-1 do begin
       ;; x error bar
-      oplot, [wp[m[i]]-widthhm[m[i]]/2d0,wp[m[i]]+widthhm[m[i]]/2d0], [fp[m[i]],fp[m[i]]], color=colors[1]
+      oplot, [wp[m[i]]-widthhm[m[i]]/2d0,wp[m[i]]+widthhm[m[i]]/2d0], alog10([fp[m[i]],fp[m[i]]]), color=colors[1]
       ebw = !d.y_vsize/100d0 ;; error bar width = 1% of device size
-      xy1 = convert_coord(wp[m[i]]-widthhm[m[i]]/2d0,fp[m[i]],/to_device)
-      xy2 = convert_coord(wp[m[i]]+widthhm[m[i]]/2d0,fp[m[i]],/to_device)
+      xy1 = convert_coord(wp[m[i]]-widthhm[m[i]]/2d0,alog10(fp[m[i]]),/to_device)
+      xy2 = convert_coord(wp[m[i]]+widthhm[m[i]]/2d0,alog10(fp[m[i]]),/to_device)
       plots, [xy1[0],xy1[0]], [xy1[1]-ebw,xy1[1]+ebw], color=colors[1],/device
       plots, [xy2[0],xy2[0]], [xy2[1]-ebw,xy2[1]+ebw], color=colors[1],/device
 
       ;; y error bar
-      oplot, [wp[m[i]],wp[m[i]]], [fp[m[i]]-ep[m[i]],fp[m[i]]+ep[m[i]]], color=colors[1]
+      oplot, [wp[m[i]],wp[m[i]]], alog10([fp[m[i]]-ep[m[i]],fp[m[i]]+ep[m[i]]]), color=colors[1]
       ebw = !d.x_vsize/100d0 ;; error bar width = 1% of device size
-      xy1 = convert_coord(wp[m[i]],fp[m[i]]-ep[m[i]],/to_device)
-      xy2 = convert_coord(wp[m[i]],fp[m[i]]+ep[m[i]],/to_device)
+      xy1 = convert_coord(wp[m[i]],alog10(fp[m[i]]-ep[m[i]]),/to_device)
+      xy2 = convert_coord(wp[m[i]],alog10(fp[m[i]]+ep[m[i]]),/to_device)
       plots, [xy1[0]-ebw,xy1[0]+ebw], [xy1[1],xy1[1]], color=colors[1],/device
       plots, [xy2[0]-ebw,xy2[0]+ebw], [xy2[1],xy2[1]], color=colors[1],/device
 

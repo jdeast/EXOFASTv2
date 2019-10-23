@@ -135,26 +135,26 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    xmin = min(wp, max=xmax)
    xmax = 30
    xmin = 0.1
-   ymin = min([modelflux,flux-fluxerr])
-   ymax = max([modelflux,flux+fluxerr])
-   plot, [0], [0], /xlog, /ylog, xtitle=xtitle,ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs;,/ys
-   oplot, wp, modelflux, psym=8
+   ymin = alog10(min([modelflux,flux-fluxerr]))
+   ymax = alog10(max([modelflux,flux+fluxerr]))
+   plot, [0], [0], /xlog, xtitle=xtitle,ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs;,/ys
+   oplot, wp, alog10(modelflux), psym=8
 
    ;; oploterror has too many dependencies; do it myself
    for i=0, nbands-1 do begin
       ;; x error bar
-      oplot, [wp[i]-widthhm[i],wp[i]+widthhm[i]], [flux[i],flux[i]], color=colors[1]
+      oplot, [wp[i]-widthhm[i],wp[i]+widthhm[i]], alog10([flux[i],flux[i]]), color=colors[1]
       ebw = !d.y_vsize/100d0 ;; error bar width = 1% of device size
-      xy1 = convert_coord(wp[i]-widthhm[i],flux[i],/to_device)
-      xy2 = convert_coord(wp[i]+widthhm[i],flux[i],/to_device)
+      xy1 = convert_coord(wp[i]-widthhm[i],alog10(flux[i]),/to_device)
+      xy2 = convert_coord(wp[i]+widthhm[i],alog10(flux[i]),/to_device)
       plots, [xy1[0],xy1[0]], [xy1[1]-ebw,xy1[1]+ebw], color=colors[1],/device
       plots, [xy2[0],xy2[0]], [xy2[1]-ebw,xy2[1]+ebw], color=colors[1],/device
 
       ;; y error bar
-      oplot, [wp[i],wp[i]], [flux[i]-fluxerr[i],flux[i]+fluxerr[i]], color=colors[1]
+      oplot, [wp[i],wp[i]], alog10([flux[i]-fluxerr[i],flux[i]+fluxerr[i]]), color=colors[1]
       ebw = !d.x_vsize/100d0 ;; error bar width = 1% of device size
-      xy1 = convert_coord(wp[i],flux[i]-fluxerr[i],/to_device)
-      xy2 = convert_coord(wp[i],flux[i]+fluxerr[i],/to_device)
+      xy1 = convert_coord(wp[i],alog10(flux[i]-fluxerr[i]),/to_device)
+      xy2 = convert_coord(wp[i],alog10(flux[i]+fluxerr[i]),/to_device)
       plots, [xy1[0]-ebw,xy1[0]+ebw], [xy1[1],xy1[1]], color=colors[1],/device
       plots, [xy2[0]-ebw,xy2[0]+ebw], [xy2[1],xy2[1]], color=colors[1],/device
 
