@@ -77,7 +77,7 @@ TIP 1: make your terminal wide so the MCMC updates don't spam the screen
 TIP 2: If you don't care about the results, run a very short fit by
 setting maxsteps=100 (idl -e "fithat3, maxsteps=100"). This will give
 you a very imprecise/unreliable answer, but allow you to check your
-installation in ~5 seconds instead of ~10 minutes.
+installation in ~5 seconds instead of ~45 minutes.
 
 It will generate many output files
 ($EXOFAST_PATH/examples/hat3/HAT-P-3b.Torres.*) (see
@@ -138,7 +138,7 @@ me.
 5) I have introduced a bug. Even if your problem is not a bug, if
 you've read the documentation, given it some thought, and still can't
 figure it out, it's probably at least a failure in documentation. Send
-me an email.
+me an email -- jason.eastman@cfa.harvard.edu
 
 # Tips, Warnings and Caveats #
 
