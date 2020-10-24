@@ -59,7 +59,6 @@
 function exofast_getmcmcscale, bestpars, chi2func, tofit=tofit, $
                                seedscale=seedscale, bestchi2=bestchi2,$
                                angular=angular0, debug=debug, skipiter=skipiter,logname=logname
-
 npars = n_elements(bestpars)
 if n_elements(tofit) eq 0 then tofit = indgen(npars)
 nfit = n_elements(tofit)
@@ -68,6 +67,12 @@ maxiter = 1d4
 
 if n_elements(bestchi2) eq 0 then $
   bestchi2 = call_function(chi2func, bestpars)
+
+if ~finite(bestchi2) then begin
+   printandlog, 'Best chi^2 is out of bounds; refine bestpars'
+   stop
+endif
+
 origbestchi2 = bestchi2
 
 ;; which values are angular values (error if step > 2*pi)
@@ -94,11 +99,12 @@ for i=0, nfit-1 do begin
         maxstep = 0
         niter = 0
         bestdeltachi2 = !values.d_infinity
+        bestscale = 0d0
 
         repeat begin
 
             chi2changed = 0
-            
+
             ;; an infinite step size means it's not constrained
             if ~finite(bestpars[tofit[i]] + mcmcscale[i,j]) or $
                ~finite(bestpars[tofit[i]] - mcmcscale[i,j]) then begin
@@ -106,6 +112,7 @@ for i=0, nfit-1 do begin
                       " is unconstrained. Check your starting conditions", logname
                chi2 = bestchi2 + 1 
                mcmcscale[i,j] = !values.d_nan
+               stop
                goto, next
             endif            
 ;            if ~finite(bestpars[tofit[i]] + mcmcscale[i,j]) then begin
@@ -181,7 +188,11 @@ for i=0, nfit-1 do begin
 ;                  printandlog, 'Reached the ' + bound + ' bound before hitting deltachi^2 = 1 for  parameter ' + strtrim(tofit[i],2) + '.'
 ;                  printanglog, 'Using a scale of 1/10 the distance to the boundary (' + strtrim(bestscale/10d0,2) + ').'
                   printandlog, 'The ' + bound + ' bound for parameter ' + strtrim(tofit[i],2) + ' is critical; it must be physically and independently motivated.'
-                  mcmcscale[i,j] = bestscale/10d0
+                  if bestscale ne 0d0 then $
+                     mcmcscale[i,j] = bestscale/100d0 $
+                  else mcmcscale[i,j] = maxstep/100d0;!values.d_nan
+                  chi2 = bestchi2 + 1 
+                  goto, next
                endif else if not chi2changed then begin
                   if abs(bestdeltachi2 - 1.d0) lt 0.75 then begin
                      mcmcscale[i,j] = bestscale
@@ -254,7 +265,6 @@ if bad[0] ne -1 then mcmcscale[bad,0] = mcmcscale[bad,1]
 bad = where(~finite(mcmcscale[*,1]) or mcmcscale[*,1] eq 0d0)
 if bad[0] ne -1 then mcmcscale[bad,1] = mcmcscale[bad,0]
 bad = where(~finite(mcmcscale) or mcmcscale eq 0d0,nbad)
-
 
 if bad[0] ne -1 then stop;return, -1
 
