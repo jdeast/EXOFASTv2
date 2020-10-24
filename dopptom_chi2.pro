@@ -3,10 +3,29 @@
 ;; Modified to integrate into EXOFASTv2 2017/06/27, JDE
 ;; note vsini and vline are in km/s here!
 
-function dopptom_chi2, doptom, tc, period, e, omega, cosi, p, ar, lambda, logg, teff, feh, vsini, vline, errscale, debug=debug,like=like,psname=psname
+function dopptom_chi2, doptom, tc, period, e, omega, cosi, p, ar, lambda, logg, teff, feh, vsini, vline, errscale, debug=debug,like=like,psname=psname, verbose=verbose, logname=logname
 
-if vline lt 0d0 then return, !values.d_infinity ; invalid line width
-if vsini le 0d0 then return, !values.d_infinity ; invalid vsini
+if vline le 0d0 then begin
+   if keyword_set(verbose) then printandlog, 'Invalid line width (' + strtrim(vline,2) + ' =< 0)', logname
+   return, !values.d_infinity
+endif
+if vsini le 0d0 then begin
+   if keyword_set(verbose) then printandlog, 'Invalid vsini (' + strtrim(vsini,2) + ' =< 0)', logname
+   return, !values.d_infinity
+endif
+if errscale le 0d0 then begin
+   if keyword_set(verbose) then printandlog, 'Invalid errscale (' + strtrim(errscale,2) + ' =< 0)', logname
+   return, !values.d_infinity 
+endif
+
+ldcoeffs = quadld(logg, teff, feh, 'V')
+u1 = ldcoeffs[0]
+u2 = ldcoeffs[1]
+if ((not finite(u1)) or (not finite(u2))) then begin
+   if keyword_set(verbose) then printandlog, 'Invalid DT limb darkening', logname
+   return, !values.d_infinity 
+endif
+
 
 chisqr = 0.0d0;
 convolve_limit = 5. ;; The gaussian broadening has to be less than this factor larger than vsini for it to try and include the rotation kernel. E.g., gaussian broadening ('GaussTerm') = 10km/s, vsini needs to be at least 2km/s. Otherwise just use a gaussian for the shadow.
@@ -50,11 +69,6 @@ ntimes = sz[2]
 ;; This presumes we're using an ~optical spectrograph for the observations
 beta = dblarr(ntimes)
     
-ldcoeffs = quadld(logg, teff, feh, 'V')
-u1 = ldcoeffs[0]
-u2 = ldcoeffs[1]
-if ((not finite(u1)) or (not finite(u2))) then  return, !values.d_infinity
-
 tp = tc - period*exofast_getphase(e,omega,/pri)
 z = exofast_getb2(doptom.bjd, i=inc, a=ar, tperiastron=tp, period=Period, e=e,omega=omega,z2=depth, x2=xp,y2=yp)
 up = xp*cos(lambda) - yp*sin(lambda)
