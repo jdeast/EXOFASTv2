@@ -1,10 +1,18 @@
-pro derivepars, ss
+pro derivepars, ss, logname=logname
 
 ss.star.mstar.value = 10^ss.star.logmstar.value
 ss.star.rhostar.value = ss.star.mstar.value/(ss.star.rstar.value^3)*ss.constants.rhosun ;; rho_sun
 ss.star.logg.value = alog10(ss.star.mstar.value/(ss.star.rstar.value^2)*ss.constants.gravitysun) ;; cgs
 ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
-;ss.star.fbol.value = (ss.star.lstar.value/ss.constants.lsun)/(4d0*!dpi*(ss.star.distance.value/ss.constants.pc)^2) ;; cgs
+ss.star.fbol.value = (ss.star.lstar.value*ss.constants.lsun)/(4d0*!dpi*(ss.star.distance.value*ss.constants.pc)^2) ;; cgs
+
+G = ss.constants.GMsun/ss.constants.rsun^3*ss.constants.day^2
+AU = ss.constants.au/ss.constants.rsun ;; R_sun
+mjup = ss.constants.gmjupiter/ss.constants.gmsun ;; m_sun
+rjup = ss.constants.rjupiter/ss.constants.rsun  ;; r_sun
+mearth = ss.constants.gmearth/ss.constants.gmsun ;; m_sun
+rearth = ss.constants.rearth/ss.constants.rsun  ;; r_sun
+sigmaB = ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; Stefan-Boltzmann constant
 
 ;; derive the age
 if ss.mist and not ss.star.age.fit then begin
@@ -15,7 +23,17 @@ if ss.mist and not ss.star.age.fit then begin
                                  ss.star.feh.value[i],mistage=mistage,fitage=ss.star.age.fit)
       ss.star.age.value[i] = mistage
    endfor
+endif else if ss.parsec and not ss.star.age.fit then begin
+   for i=0L, ss.nsteps-1 do begin
+      parsecchi2 = massradius_parsec(ss.star.eep.value[i],ss.star.mstar.value[i],$
+                                     ss.star.initfeh.value[i],ss.star.age.value[i],$
+                                     ss.star.teff.value[i],ss.star.rstar.value[i],$
+                                     ss.star.feh.value[i],parsec_age=parsec_age,fitage=ss.star.age.fit)
+      ss.star.age.value[i] = parsec_age
+   endfor
 endif
+
+
 
 ;; derive the absolute magnitude and distance
 if ss.star.distance.fit then ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
@@ -45,15 +63,65 @@ for i=0, ss.nastrom-1 do begin
    if tmpmaxbjd gt maxbjd then maxbjd = tmpmaxbjd
 endfor
 
+;; sanity check
+if (maxbjd-minbjd) gt 1d5 then begin
+   printandlog, 'WARNING: These data span more than 270 years!', ss.logname
+   printandlog, 'Check for consistency between the timestamps in your input data files.', ss.logname
+   printandlog, 'This will almost certainly not end well.', ss.logname
+endif
+
 starbb36 = exofast_blackbody(ss.star.teff.value,replicate(3550d0/1d9,ss.nsteps),/wave)
 starbb45 = exofast_blackbody(ss.star.teff.value,replicate(4493d0/1d9,ss.nsteps),/wave)
 
 for i=0, ss.nplanets-1 do begin
 
+   ;; derive the mass of the planet
+   if ss.planet[i].logmp.fit then ss.planet[i].mpsun.value = 10^ss.planet[i].logmp.value $ ;; m_sun
+   else ss.planet[i].logmp.value = alog10(ss.planet[i].mpsun.value) ;; m_sun
+   ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup ;; m_jupiter
+   ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth ;; m_earth
+   ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star.mstar.value                           ;; unitless
+
+   ;; derive the radius of the planet   
+   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value ;; r_sun
+   ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup ;; r_jupiter
+   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth ;; r_earth
+
+   ;; derive period
+   ss.planet[i].period.value = 10^ss.planet[i].logp.value  
+
    ;; derive eccentricity and argument of periastron based on the parameterization
    if ss.planet[i].secosw.fit and ss.planet[i].sesinw.fit then begin
       ss.planet[i].e.value = ss.planet[i].secosw.value^2 + ss.planet[i].sesinw.value^2
       ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
+   endif else if ss.planet[i].vcve.fit then begin
+
+      if ss.planet[i].lsinw2.fit then begin
+         flip = where(ss.planet[i].vcve.value-1d0 lt 0d0,complement=noflip)
+         if flip[0] ne -1 then ss.planet[i].lsinw.value[flip] = -ss.planet[i].lsinw2.value[flip]
+         if noflip[0] ne -1 then ss.planet[i].lsinw.value[noflip] = ss.planet[i].lsinw2.value[noflip]
+      endif
+
+      ;; based on L*cos(omega) and L*sin(omega)
+      if (ss.planet[i].lsinw2.fit or ss.planet[i].lsinw.fit) and ss.planet[i].lcosw.fit then begin
+         ss.planet[i].omega.value = atan(ss.planet[i].lsinw.value, ss.planet[i].lcosw.value)
+      endif
+
+      ;; what sign of the quadratic solution?
+      if ss.planet[i].sign.fit then begin
+         ;; we fit for it
+         sign = floor(ss.planet[i].sign.value)
+
+         ;; ****** this flips the sign of the sign and is experimental*******
+         flip = where(ss.planet[i].vcve.value lt 1d0)
+         if flip[0] ne -1 then sign[flip] = ~sign[flip]
+      endif else begin
+         ;; L implicitly defines it
+         lsq = ss.planet[i].lsinw.value^2 + ss.planet[i].lcosw.value^2
+         sign = (lsq lt 0.5d0)
+      endelse
+      ss.planet[i].e.value = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=sign)
+
    endif else if ss.planet[i].e.fit and ss.planet[i].omega.fit then begin
       ;; do nothing
    endif else if ss.planet[i].ecosw.fit and ss.planet[i].esinw.fit then begin
@@ -67,8 +135,10 @@ for i=0, ss.nplanets-1 do begin
    zero = where(ss.planet[i].e.value eq 0d0,complement=nonzero)
    if zero[0] ne -1 then ss.planet[i].omega.value[zero] = !dpi/2d0 
 
+   ss.planet[i].lambda.value = atan(ss.planet[i].lsinlambda.value,ss.planet[i].lcoslambda.value)
    ss.planet[i].lambdadeg.value = ss.planet[i].lambda.value*180d0/!dpi
    ss.planet[i].omegadeg.value = ss.planet[i].omega.value*180d0/!dpi
+   ss.planet[i].bigomega.value = atan(ss.planet[i].lsinbigomega.value,ss.planet[i].lcosbigomega.value)
    ss.planet[i].bigomegadeg.value = ss.planet[i].bigomega.value*180d0/!dpi
    ss.planet[i].esinw.value = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
    ss.planet[i].ecosw.value = ss.planet[i].e.value*cos(ss.planet[i].omega.value)
@@ -76,51 +146,39 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].secosw.value = sqrt(ss.planet[i].e.value)*cos(ss.planet[i].omega.value)
    ss.planet[i].qesinw.value = (ss.planet[i].e.value)^0.25d0*sin(ss.planet[i].omega.value)
    ss.planet[i].qecosw.value = (ss.planet[i].e.value)^0.25d0*cos(ss.planet[i].omega.value)
+   ss.planet[i].vcve.value = sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
+
+   ;; derive a/rstar, a
+   ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/(4d0*!dpi^2))^(1d0/3d0) ;; (a1 + a2)/rsun
+   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value                                                        ;; (a1 + a2)/rstar
+   ss.planet[i].a.value = ss.planet[i].arsun.value*ss.constants.rsun/ss.constants.au                                           ;; AU
+
+   ;; derive cosi, b, and chord (depending on which is fit)
+   if ss.planet[i].chord.fit then begin
+      ss.planet[i].b.value = sqrt((1d0+ss.planet[i].p.value)^2-ss.planet[i].chord.value^2)
+      ss.planet[i].cosi.value = ss.planet[i].b.value/$
+                                (ss.planet[i].ar.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value))
+   endif else if ss.planet[i].b.fit then begin
+      ss.planet[i].cosi.value = ss.planet[i].b.value/$
+                                (ss.planet[i].ar.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value))
+;;      ss.planet[i].chord.value = 
+   endif else if ss.planet[i].cosi.fit then begin
+      ss.planet[i].b.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*$
+                             (1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value) ;; eq 7, Winn 2010
+;;      ss.planet[i].chord.value = 
+   endif
 
    ss.planet[i].i.value = acos(ss.planet[i].cosi.value)
    ss.planet[i].ideg.value = ss.planet[i].i.value*180d0/!dpi
    sini = sin(ss.planet[i].i.value)
 
-   ss.planet[i].period.value = 10^ss.planet[i].logp.value
-   
-   if ss.planet[i].logk.fit then ss.planet[i].k.value = 10^ss.planet[i].logk.value $
-   else ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
-
-   zero = where(ss.planet[i].k.value eq 0d0)
-   if zero[0] ne -1 then begin
-      ss.planet[i].mpsun.value[zero] = 0d0
-   endif
-
-   positive = where(ss.planet[i].k.value gt 0)
-   if positive[0] ne -1 then $
-      ss.planet[i].mpsun.value[positive] =  ktom2(ss.planet[i].K.value[positive],$
-                                                  ss.planet[i].e.value[positive],$
-                                                  ss.planet[i].i.value[positive],$
-                                                  ss.planet[i].period.value[positive],$
-                                                  ss.star.mstar.value[positive], GMsun=ss.constants.GMsun/1d6) ;; convert G to SI
-
-   ;; guard against the Lucy-Sweeney type bias by allowing negative K/masses
-   negative = where(ss.planet[i].k.value lt 0)
-   if negative[0] ne -1 then $
-      ss.planet[i].mpsun.value[negative] =  -ktom2(-ss.planet[i].K.value[negative],$
-                                                   ss.planet[i].e.value[negative],$
-                                                   ss.planet[i].i.value[negative],$
-                                                   ss.planet[i].period.value[negative],$
-                                                   ss.star.mstar.value[negative], GMsun=ss.constants.GMsun/1d6) ;; convert G to SI
-
-   ss.planet[i].mp.value = ss.planet[i].mpsun.value/ss.constants.GMJupiter*ss.constants.GMSun    ;; m_jupiter
    ss.planet[i].msini.value = ss.planet[i].mp.value*sini                                         ;; m_jupiter
-   ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/ss.constants.GMearth*ss.constants.GMSun ;; m_earth
    ss.planet[i].msiniearth.value = ss.planet[i].mpearth.value*sini                               ;; m_earth
-   ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star.mstar.value                           ;; unitless
-   
-   G = ss.constants.GMsun/ss.constants.rsun^3*ss.constants.day^2
-   ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/(4d0*!dpi^2))^(1d0/3d0) ;; (a1 + a2)/rsun
-   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value                                                        ;; (a1 + a2)/rstar
-   ss.planet[i].a.value = ss.planet[i].arsun.value*ss.constants.rsun/ss.constants.au                                           ;; AU
-   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value                                                         ;; r_sun
-   ss.planet[i].rp.value = ss.planet[i].rpsun.value*ss.constants.Rsun/ss.constants.RJupiter                                    ;; r_jupiter
-   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value*ss.constants.Rsun/ss.constants.REarth                                 ;; r_earth
+
+   ;; derive RV semi-amplitude
+   ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mpsun.value)^2d0))^(1d0/3d0) * $
+                          ss.planet[i].mpsun.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value^2)*$
+                          ss.constants.rsun/ss.constants.meter/ss.constants.day ;; m/s
 
    ;; time of periastron
    ss.planet[i].phase.value=exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value,/pri)  
@@ -128,10 +186,36 @@ for i=0, ss.nplanets-1 do begin
    phasea = exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value,/ascending)
    phased = exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value,/descending)
 
+   if ss.planet[i].tt.fit then begin
+      ss.planet[i].tc.value = tc2tt(ss.planet[i].tt.value,$
+                                    ss.planet[i].e.value,$
+                                    ss.planet[i].i.value,$
+                                    ss.planet[i].omega.value,$
+                                    ss.planet[i].period.value,/reverse)                                    
+   endif else begin
+      if ss.planet[i].tt.derive then begin
+         ss.planet[i].tt.value = tc2tt(ss.planet[i].tc.value,$
+                                       ss.planet[i].e.value,$
+                                       ss.planet[i].i.value,$
+                                       ss.planet[i].omega.value,$
+                                       ss.planet[i].period.value)
+      endif
+   endelse
+
    ss.planet[i].tp.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value)
    ss.planet[i].ts.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phase2)
    ss.planet[i].ta.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phasea)
    ss.planet[i].td.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phased)
+
+   ;; if given a prior, select the epoch closest to that prior
+   if ss.planet[i].ts.prior ne 0d0 then begin
+      nper = round((ss.planet[i].ts.prior - ss.planet[i].ts.value)/ss.planet[i].period.value)
+      ss.planet[i].ts.value += nper*ss.planet[i].period.value
+   endif else begin
+      ;; otherwise select the epoch closest to Tc
+      nper = round((ss.planet[i].tc.value - ss.planet[i].ts.value)/ss.planet[i].period.value)
+      ss.planet[i].ts.value += nper*ss.planet[i].period.value
+   endelse
 
    ;; it's possible tp,ts,ta,td could be split down the middle 
    ;; then the median would be meaningless -- correct that
@@ -197,7 +281,7 @@ for i=0, ss.nplanets-1 do begin
       (ss.planet[i].taus.derive and (where(~finite(ss.planet[i].taus.value)))[0] ne -1) or $
       (ss.planet[i].tfwhm.derive and (where(~finite(ss.planet[i].tfwhm.value)))[0] ne -1) or $
       (ss.planet[i].tau.derive and (where(~finite(ss.planet[i].tau.value)))[0] ne -1) then begin
-      print, 'There are NaNs in the derived transit/eclipse duration distributions. This is a bug. Please contact jason.eastman@cfa.harvard.edu ***and do not exit IDL***. It is likely we can recover your run and fix the bug. Exiting IDL will cause you to lose all results and make it far more difficult to diagnose the problem.', logname
+      printandlog, 'There are NaNs in the derived transit/eclipse duration distributions. This is a bug. Please contact jason.eastman@cfa.harvard.edu ***and do not exit IDL***. It is likely we can recover your run and fix the bug. Exiting IDL will cause you to lose all results and make it far more difficult to diagnose the problem.', ss.logname
       stop
    endif
 
@@ -237,12 +321,6 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].eclipsedepth36.value = x/(1d0+x)*1d6
    x = ss.planet[i].p.value^2*planetbb45/starbb45
    ss.planet[i].eclipsedepth45.value = x/(1d0+x)*1d6
-   
-;   if ss.planet[i].fittran then begin
-;      
-;
-;   endif
-
 
 endfor
 
@@ -250,6 +328,7 @@ for i=0L, ss.nband-1 do begin
    massfraction = ss.planet[0].mpsun.value/(ss.star.mstar.value + ss.planet[0].mpsun.value)
    fluxfraction = ss.band[i].dilute.value
    ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
+   ss.band[i].eclipsedepth.value = ss.band[i].thermal.value + ss.band[i].reflect.value
 endfor
 
 end
