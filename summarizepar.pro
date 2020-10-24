@@ -14,7 +14,7 @@ good = where(finite(pars),complement=bad,nsteps)
 if bad[0] ne -1 then printandlog, $
    "Warning: NaNs in " + label + " distribution; NaNs will be ignored in all summaries",logname
 
-if nsteps eq 0 then begin
+if nsteps le 0 then begin
    printandlog,"ERROR: all NaNs in " + label + " distribution; skipping parameter",logname
    return
 endif
