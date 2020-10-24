@@ -20,17 +20,16 @@ for i=0, n_elements(tc)-1 do begin
 
    minepoch = floor((mintime - tc)/period)
    maxepoch = ceil((maxtime - tc)/period)
-   nepochs = maxepoch-minepoch+1)
+   nepochs = maxepoch-minepoch+1
    epochs = minepoch + lindgen(nepochs)
 
    for j=0, nepochs-1 do begin
 
-      match = where(time ge (tc + j*period - t14) and time le (tc + j*period + t14))
+      match = where(time ge (tc[i] + j*period[i] - t14[i]) and time le (tc[i] + j*period[i] + t14[i]))
       if match[0] ne -1 then begin
-         forprint, time[match], flux[match], err[match], format='(f0.8,x,f0.8,x,f0.8)',/nocomment, textout=string(prefix,planetletter[i],j,'.dat', format='(a,a,i04,a)'
+         forprint, time[match], flux[match], err[match], format='(f0.8,x,f0.8,x,f0.8)',/nocomment, textout=string(prefix,planetletter[i],j,'.dat', format='(a,a,i04,a)')
       endif
    endfor
 endfor
 
-stop
 end
