@@ -175,6 +175,9 @@ for i=0L, nbad-1 do begin
    fehgd = where(finite(fehs2),nfeh)
    fehs3 = fehs2[fehgd]
    
+   if nlogg eq 0 or nteff eq 0 or nfeh eq 0 then $
+      return, [!values.d_nan, !values.d_nan]
+
    a3 = dblarr(nlogg,nteff,nfeh)
    b3 = dblarr(nlogg,nteff,nfeh)
    for l=0, nlogg-1 do begin
