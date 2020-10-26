@@ -2,11 +2,12 @@
 ;; Required for virtual machine (free) use
 pro readargs, argfile, priorfile=priorfile, $
               rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
-              fluxfile=fluxfile,mistsedfile=mistsedfile,$
+              fluxfile=fluxfile,mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,$
               prefix=prefix,$
               circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
               rossiter=rossiter,chen=chen,$
-              fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
+              fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+              fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
               nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
               ntemps=ntemps,tf=tf,keephot=keephot,$
               debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
@@ -14,12 +15,12 @@ pro readargs, argfile, priorfile=priorfile, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               rejectflatmodel=rejectflatmodel,$
               maxgr=maxgr, mintz=mintz, $
-              yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-              fitrv=fitrv, fittran=fittran,fitdt=fitdt,lineark=lineark,$
+              yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+              fitrv=fitrv, fittran=fittran,fitdt=fitdt,fitlogmp=fitlogmp,$
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
               earth=earth, i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch,$
-              fitspline=fitspline, splinespace=splinespace, skiptt=skiptt
-
+              fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
+              skiptt=skiptt, novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, fittt=fittt, rvepoch=rvepoch
 
 line = ''
 openr, lun, argfile, /get_lun
@@ -45,6 +46,14 @@ while not eof(lun) do begin
             dtpath = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FLUXFILE' then begin
             fluxfile = strtrim(entries[1],2)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'MISTSEDFILE' then begin
+            mistsedfile = strtrim(entries[1],2)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FBOLSEDFLOOR' then begin
+            fbolsedfloor = double(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'TEFFSEDFLOOR' then begin
+            teffsedfloor = double(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'ONED' then begin
+            oned = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'PREFIX' then begin
             prefix = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'CIRCULAR' then begin
@@ -53,18 +62,28 @@ while not eof(lun) do begin
             fitslope = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITQUAD' then begin
             fitquad = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITTT' then begin
+            fittt = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'RVEPOCH' then begin
+            rvepoch = double(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'SECONDARY' then begin
             secondary = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'ROSSITER' then begin
             rossiter = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'CHEN' then begin
             chen = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITDILUTE' then begin
+            fitdilute = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITTHERMAL' then begin
             fitthermal = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITREFLECT' then begin
             fitreflect = boolean(json_parse(entries[1],/toarray))
-         endif else if strupcase(strtrim(entries[0],2)) eq 'FITDILUTE' then begin
-            fitdilute = json_parse(entries[1],/toarray)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITELLIP' then begin
+            fitellip = json_parse(entries[1],/toarray)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITBEAM' then begin
+            fitbeam = json_parse(entries[1],/toarray)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'DERIVEBEAM' then begin
+            derivebeam = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'NTHIN' then begin
             nthin = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MAXSTEPS' then begin
@@ -111,6 +130,8 @@ while not eof(lun) do begin
             torres = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOMIST' then begin
             nomist = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'PARSEC' then begin
+            parsec = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOCLARET' then begin
             noclaret = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'TIDES' then begin
@@ -123,18 +144,26 @@ while not eof(lun) do begin
             fittran = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITDT' then begin
             fitdt = boolean(json_parse(entries[1],/toarray))
-         endif else if strupcase(strtrim(entries[0],2)) eq 'LINEARK' then begin
-            lineark = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITLOGMP' then begin
+            fitlogmp = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'TTVS' then begin
-            ttvs = boolean(entries[1])
+            ttvs = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'TIVS' then begin
-            tivs = boolean(entries[1])
+            tivs = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'TDELTAVS' then begin
-            tdeltavs = boolean(entries[1])
+            tdeltavs = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'EARTH' then begin
             earth = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'I180' then begin
             i180 = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'NOVCVE' then begin
+            novcve = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'NOCHORD' then begin
+            nochord = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITSIGN' then begin
+            fitsign = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'RANDOMSIGN' then begin
+            randomsign = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOCOVAR' then begin
             nocovar = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'ALLOWORBITCROSSING' then begin
@@ -142,9 +171,11 @@ while not eof(lun) do begin
          endif else if strupcase(strtrim(entries[0],2)) eq 'STRETCH' then begin
             stretch = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITSPLINE' then begin
-            fitspline = boolean(entries[1])
+            fitspline = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'SPLINESPACE' then begin
-            splinespace = double(entries[1])
+            splinespace = double(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITWAVELET' then begin
+            fitwavelet = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'SKIPTT' then begin
             skiptt = boolean(entries[1])
          endif else begin
