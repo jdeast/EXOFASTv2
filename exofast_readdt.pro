@@ -49,6 +49,7 @@ chisqr0 = total(((ccf2d-median(ccf2d))/rms)^2)
 dopptom=create_struct('ccf2d',ccf2d,'bjd',bjd,'vel',vel,'stepsize',stepsize,'rms',rms, $
                       'chisqr0',chisqr0,'Rspec',Rspec,'model',model,'resid',resid, $
                       'lambdaRange',lambdaRange,'label',label,'tel',telescope,'night',night, 'planetndx',planetndx)
+
 return, dopptom
 
 end
