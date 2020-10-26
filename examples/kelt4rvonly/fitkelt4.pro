@@ -1,13 +1,13 @@
 pro fitkelt4, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin
 
-;; default to a very short run (not well-mixed or publication quality)
-if n_elements(maxsteps) eq 0 then maxsteps=10000 ;; 50000
-if n_elements(nthin) eq 0 then nthin=5 ;; 50
 path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','kelt4rvonly'])
 
+;; NOTE: kelt4.priors.2 was created using mkprior on an initial run
+;; using kelt4.priors.
+
 exofastv2, nplanets=1, rvpath=path+'KELT-4b.*.rv',$
-           priorfile=path+'kelt4.priors',$
-           prefix=path+'fitresults' + path_sep()+'KELT-4.MIST.',maxsteps=maxsteps,$
+           priorfile=path+'kelt4.priors.2',$
+           prefix=path+'fitresults' + path_sep()+'KELT-4Ab.',maxsteps=maxsteps,$
            nthin=nthin,fitrv=[1],circular=[0], $
            debug=debug,verbose=verbose
 
