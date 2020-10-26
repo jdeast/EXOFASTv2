@@ -1,13 +1,19 @@
-pro printandlog, string, logname, format=format
+pro printandlog, str, logname, format=format
 
 if n_elements(logname) ne 0 then begin
    if logname ne '' then begin
-      openw, lun, logname,/append, /get_lun
-      printf, lun, string, format=format
-      free_lun, lun
+      if file_test(file_dirname(logname)) then begin
+         if ~lmgr(/demo) then begin
+            openw, lun, logname, /append, /get_lun
+            printf, lun, str, format=format
+            free_lun, lun
+         endif else begin
+            spawn, 'echo "' + string(str,format=format) + '" >> ' + logname
+         endelse
+      endif else print, 'Warning: specified log path does not exist; not creating log'
    endif
 endif
 
-print, string, format=format
+print, str, format=format
 
 end
