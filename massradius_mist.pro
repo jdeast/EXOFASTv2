@@ -272,11 +272,12 @@ if keyword_set(debug) or keyword_set(epsname) then begin
       xtitle=exofast_textoidl('T_{eff}')
       ytitle=exofast_textoidl('log g_*')
    endif else begin
+;      set_plot, 'X'
       red = '0000ff'x
       symsize = 1
-      device,window_state=win_state
-      if win_state[29] eq 1 then wset, 29 $
-      else window, 29, retain=2
+      ;device,window_state=win_state
+      ;if win_state[29] eq 1 then wset, 29 $
+      ;else window, 29, retain=2
       xtitle='T_eff'
       ytitle='log g'
    endelse
@@ -322,13 +323,11 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    xminor = spacing/100d0
   
    ymax = min([loggplot,3,5,loggplottrack[use]],max=ymin) ;; plot range backwards
-   
    plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor
    plotsym,0,/fill
    oplot, [teff], [loggplot], psym=8,symsize=0.5 ;; the model point
    junk = min(abs(eepplot-eep),ndx)
    oplot, [teffplottrack[ndx]],[loggplottrack[ndx]], psym=2, color=red ;; overplot the time 
-
    if keyword_set(epsname) then begin
       !p.font=-1
       !p.multi=0
