@@ -141,7 +141,7 @@ ncolors = n_elements(colors)
 
 ;; plot the times, errors, and 0 line
 ymin = min(omc-err) & ymax = max(omc+err)
-xmin = min(epoch)-5 & xmax = max(epoch)+5
+xmin = min(epoch)-1 & xmax = max(epoch)+1
 ;xmin = -75 & xmax = 75
 plot, fix(epoch), omc,psym=3, yrange=[ymin,ymax],xrange=[xmin,xmax],$
   xtitle='Epoch',ytitle='O-C (min)';, /xstyle;,xticks=4
