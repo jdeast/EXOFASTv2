@@ -91,10 +91,11 @@ red = 254
 
 !p.multi=[0,2,4] ;; 8 to a page
 
-ymin = min(chi2,max=ymax)
+loglike = -chi2/2d0
+ymin = min(loglike,max=ymax)
 if ymin lt 0 then sign = ' + ' else sign = ' - '
-latex = '\chi^2' + sign + strtrim(abs(ymin),2)
-plotchain, chi2[*,goodchains]-ymin, latex=latex, unit='', label='chi2', logname=logname, burnndx=burnndx
+latex = 'log(Like)' + sign + strtrim(abs(ymax),2)
+plotchain, loglike[*,goodchains]-ymax, latex=latex, unit='', label='loglike', logname=logname, burnndx=burnndx
 page = 2
 
 for i=0, n_tags(ss)-1 do begin
