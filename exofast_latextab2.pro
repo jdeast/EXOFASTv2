@@ -62,6 +62,7 @@ else printf, lun, '\documentclass{aastex62}'
 printf, lun, '\providecommand{\bjdtdb}{\ensuremath{\rm {BJD_{TDB}}}}'
 printf, lun, '\providecommand{\feh}{\ensuremath{\left[{\rm Fe}/{\rm H}\right]}}'
 printf, lun, '\providecommand{\teff}{\ensuremath{T_{\rm eff}}}'
+printf, lun, '\providecommand{\teq}{\ensuremath{T_{\rm eq}}}'
 printf, lun, '\providecommand{\ecosw}{\ensuremath{e\cos{\omega_*}}}'
 printf, lun, '\providecommand{\esinw}{\ensuremath{e\sin{\omega_*}}}'
 printf, lun, '\providecommand{\msun}{\ensuremath{\,M_\Sun}}'
@@ -90,8 +91,90 @@ if n_elements(caption) ne 0 then printf, lun, '\tablecaption{' + caption + '}'
 printf, lun, '\tablehead{\colhead{~~~Parameter} & \colhead{Units} & \multicolumn{' + strtrim(maxvalues,2) + '}{c}{Values}}'
 printf, lun, '\startdata'
 
+if tag_exist(ss,'rvepoch') then rvepoch = ss.rvepoch $
+else rvepoch = 0d0
+
 ;; format for the line in the table
 ;; $symbol$ ... description (units) ... $value^{+upper}_{-lower}$\\
+masternotes = ['Uses measured mass and estimated radius from \citet{Chen:2017}',$
+               'Uses measured radius and estimated mass from \citet{Chen:2017}',$
+               'Reference epoch = ' + string(rvepoch,format='(f0.6)'),$
+               'This value ignores the systematic error and is for reference only',$ ;; Rstar,SED, Teff,SED
+               'Time of conjunction is commonly reported as the "transit time"',$
+               'Time of minimum projected separation is a more correct "transit time"',$
+               'Optimal time of conjunction minimizes the covariance between $T_C$ and Period',$
+               'In RV-only fits, we marginalize over a uniform cosi prior',$
+               'Estimated eclipse depth assumes blackbodies',$
+               'Assumes no albedo and perfect redistribution',$
+               "Corresponds to static points in a star's evolutionary history. See \S2 in \citet{Dotter:2016}.",$
+               'The metallicity of the star at birth',$
+               'See Table 3 in \citet{Eastman:2019} for a detailed description of all parameters']
+
+;; these are the names of parameters that are influenced by the Chen &
+;; Kipping mass estimate (given a radius)
+notendx = [['rstarsed','3'],$
+           ['teffsed','3'],$
+           ['tc','4'],$
+           ['tt','5'],$
+           ['t0','6'],$
+           ['eclipsedepth36','8'],$
+           ['eclipsedepth45','8'],$
+           ['teq','9'],$
+           ['eep','10'],$
+           ['initfeh','11']]
+
+if ss.ntran eq 0 then begin
+   notendx = [[notendx],$
+              ['mp','7'],$
+              ['mpearth','7'],$
+              ['mpsun','7'],$
+              ['q','7'],$
+              ['rhop','7'],$
+              ['loggp','7'],$
+              ['cosi','7'],$
+              ['ideg','7'],$
+              ['i','7']]
+endif
+
+;; these notes are only neccesary if a slope is fit
+if ss.star.slope.fit then begin
+   notendx = [[notendx],$
+              ['gamma','2'],$
+              ['slope','2'],$
+              ['quad','2']]
+endif
+
+;; these notes are only neccesary if the Chen & Kipping relation is used
+junk = where(ss.chen,nusechen)
+if nusechen gt 0 then begin
+   if ss.ntel eq 0 then begin
+      notendx = [[notendx],$
+                 ['rhop','1'],$
+                 ['loggp','1'],$
+                 ['k','1'],$
+                 ['logk','1'],$
+                 ['logk','1'],$
+                 ['mp','1'],$
+                 ['mpearth','1'],$
+                 ['mpsun','1'],$
+                 ['msini','1'],$
+                 ['msiniearth','1'],$
+                 ['q','1']]
+
+   endif else if ss.ntran eq 0 then begin
+      notendx = [[notendx],$
+                 ['p','0'],$
+                 ['rp','0'],$
+                 ['rpsun','0'],$
+                 ['rpearth','0'],$
+                 ['rhop','0'],$
+                 ['loggp','0']]
+   endif
+endif
+
+notes = ['']
+nnotes = 0L           
+
 for i=0, n_tags(ss)-1 do begin
    
    nvalues = n_elements(ss.(i)[*])
@@ -177,9 +260,21 @@ for i=0, n_tags(ss)-1 do begin
                ;; format the units
                if ss.(i)[0].(k).unit eq '' then unit = '' $
                else unit = "(" + ss.(i)[0].(k).unit + ")"
+
+               footnote = ''
+               ;; add appropriate footnotes
+               match = where(notendx[0,*] eq ss.(i)[0].(k).label)
+               if match[0] ne -1 then begin
+                  matchexisting = (where(notes eq masternotes[long(notendx[1,match[0]])]))[0]
+                  if matchexisting eq -1 then begin
+                     nnotes++
+                     notes = [notes,masternotes[long(notendx[1,match[0]])]]
+                     footnote += '$^{' + strtrim(nnotes,2) + '}$'
+                  endif else footnote += '$^{' + strtrim(matchexisting,2) + '}$'
+               endif
                
                ;; before all the values
-               header = string(ss.(i)[0].(k).latex,ss.(i)[0].(k).description,unit,$
+               header = string(ss.(i)[0].(k).latex,ss.(i)[0].(k).description+footnote,unit,$
                                format='("~~~~$",a,"$\dotfill &",a,x,a,"\dotfill ")')
                
                ;; put each value of the array in a new column
@@ -199,6 +294,7 @@ for i=0, n_tags(ss)-1 do begin
                      endelse
                      values = values + '&$' + ss.(i)[j].(k).medvalue + error + '$'
                   endif else values += '&--'
+
                endfor
       
                ;; print the line of the latex table
@@ -218,6 +314,12 @@ endfor
 ; finish the table
 printf, lun, '\enddata'
 if n_elements(label) ne 0 then printf, lun, '\label{' + label + '}'
+printf, lun, '\tablenotetext{}{' + masternotes[12] + '}'
+if nnotes gt 0 then begin
+   for i=1L, nnotes do begin
+      printf, lun, '\tablenotetext{' + strtrim(i,2) + '}{' + notes[i] + '}'
+   endfor
+endif
 printf, lun, '\end{deluxetable*}'
 printf, lun, '\end{document}'
 defsysv, '!GDL', exists=runninggdl
