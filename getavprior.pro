@@ -41,7 +41,10 @@ endif else if n_elements(ra) eq 1 and n_elements(dec) eq 1 then begin
 endif else message, 'must specify either RA and DEC or OBJECT'
 spawn, cmd, output
 
-if strpos(output[2],'Invalid object name') ne -1 then message, 'Invalid object name (try using RA and Dec instead)'
+if strpos(output[2],'Invalid object name') ne -1 then begin
+   message, 'Invalid object name (try using RA and Dec instead)',/continue
+   return, -1
+endif
 
 match = where(strtrim(output,2) eq '</maxValueSandF>')
 maxav = strtrim((strsplit(output[match-1]*3.1d0,'(',/extract))[0],2)
