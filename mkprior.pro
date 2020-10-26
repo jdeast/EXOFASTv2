@@ -37,33 +37,27 @@ function getpriorline, parameter, ndx, num=num
 label = parameter.label
 if n_elements(num) ne 0 then label = label + '_' + strtrim(num,2)
 
-;; if a gaussian prior was supplied before, keep it
-if finite(parameter.priorwidth) then begin
+bestval = strtrim(string(parameter.value[ndx],format='(f0.30)'),2)
 
-   ;; if it's very small, keep scientific notation
-   ;; otherwise, print 8 decimals
-   if alog10(parameter.prior) gt -6 then begin 
-      value = strtrim(string(parameter.prior,format='(f0.10)'),2)
-   endif else value = strtrim(string(parameter.prior,format='(f0.10)'),2)
+;; if the parameter was fixed before, keep it fixed
+if parameter.priorwidth eq 0 then begin
+   priorval = strtrim(string(parameter.prior,format='(f0.30)'),2)
+   line = label + ' ' + priorval + ' 0'
+endif else if finite(parameter.priorwidth) then begin
+   ;; if a gaussian prior was supplied before, keep it 
+   ;; (but still start at best fit)
+   priorval = strtrim(string(parameter.prior,format='(f0.30)'),2)
 
    width = strtrim(parameter.priorwidth,2)
    if finite(parameter.upperbound) then upperbound = strtrim(parameter.upperbound,2) $
-   else upperbound = ''
+   else upperbound = 'Inf'
    if finite(parameter.lowerbound) then lowerbound = strtrim(parameter.lowerbound,2) $
-   else begin
-      if upperbound eq '' then lowerbound = '' $
-      else lowerbound = '-Inf'
-   endelse
-   line = label + ' ' + value + ' ' + width + ' ' + lowerbound + ' ' + upperbound
+   else lowerbound = '-Inf'
+   line = label + ' ' + priorval + ' ' + width + ' ' + lowerbound + ' ' + upperbound + ' ' + bestval
+
 endif else if finite(parameter.upperbound) or finite(parameter.lowerbound) then begin
    ;; if just bounds were supplied, keep the bounds, but adjust the
    ;; starting value to the best fit value
-
-   ;; if it's very small, keep scientific notation
-   ;; otherwise, print 8 decimals
-   if alog10(parameter.prior) gt -6 then begin 
-      value = strtrim(string(parameter.value[ndx],format='(f0.10)'),2)
-   endif else value = strtrim(string(parameter.value[ndx],format='(f0.10)'),2)
    width = '-1'
    if finite(parameter.upperbound) then upperbound = strtrim(parameter.upperbound,2) $
    else upperbound = ''
@@ -72,13 +66,10 @@ endif else if finite(parameter.upperbound) or finite(parameter.lowerbound) then 
       if upperbound eq '' then lowerbound = '' $
       else lowerbound = '-Inf'
    endelse
-   line = label + ' ' + value + ' ' + width + ' ' + lowerbound + ' ' + upperbound
+   line = label + ' ' + bestval + ' ' + width + ' ' + lowerbound + ' ' + upperbound
 endif else if parameter.fit then begin
    ;; otherwise, if it's a fitted parameter, start at the best value
-   if alog10(parameter.value[ndx]) gt -6 then begin 
-      value = strtrim(string(parameter.value[ndx],format='(f0.10)'),2)
-   endif else value = strtrim(string(parameter.value[ndx],format='(f0.10)'),2)
-   line = label + ' ' + value
+   line = label + ' ' + bestval
 endif else line = ''
 
 return, line
@@ -87,8 +78,13 @@ end
 
 pro mkprior, filename=filename, mcmcss=mcmcss, priorfilename=priorfilename
 
+nargs = 0
+if n_elements(filename) ne 0 then nargs++
+if n_elements(mcmcss) ne 0 then nargs++
+if n_elements(priorfilename) ne 0 then nargs++
+
 ;; for use without a license
-if lmgr(/vm) or lmgr(/runtime) then begin
+if nargs lt 2 and (lmgr(/vm) or lmgr(/runtime)) then begin
    par = command_line_args(count=numargs)
    
    if numargs ne 2 then message, 'Must specify FILENAME and PRIORFILENAME'
