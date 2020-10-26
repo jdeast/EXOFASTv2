@@ -107,6 +107,9 @@ endif
 if ngood ne nchains then begin
    badchains = sorted[ndx+1:nchains-1] 
    badchains = badchains[sort(badchains)]
+   if ~keyword_set(silent) then begin
+      printandlog, "WARNING: there are " + strtrim(n_elements(badchains),2) + " bad chains. They have been discarded for inference, but future runs are likely to be more efficient by using mkprior to reinitialize the fit", logname
+   endif
 endif else badchains = [-1L]
 
 ;; never use less than the last 10% of steps
