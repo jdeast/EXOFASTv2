@@ -27,7 +27,6 @@ endif else begin
    symsize = 0.5         
    charsize = 1.0
 endelse
-p   
    ;; plotting ranges
    sigma = stddev(doptom.resid)
    dtrange = [-5d0*sigma,5d0*sigma]
