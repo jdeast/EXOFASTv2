@@ -304,7 +304,9 @@ if n_elements(number) eq 0 then number = 1
  1: textcolors = replicate(textcolorsi,n)
  else: textcolors = textcolorsi
  endcase 
- fill = keyword_set(fill)
+
+if n_elements(fill) eq 0 then fill = 1B + bytarr(n_elements(psym))
+; fill = keyword_set(fill)
 if n_elements(usersym) eq 1 then usersym = 2*[[0,0],[0,1],[1,1],[1,0],[0,0]]-1
 
 if n_elements(outline_color) EQ 0 then outline_color = !P.Color
@@ -398,7 +400,7 @@ for iclr = 0,clear do begin
  for i = ii[0],ii[1],ii[2] do begin
 
   if keyword_set(useplotsym) then begin
-     plotsym, psym[i],fill=fill, color=colors[i]
+     plotsym, psym[i],fill=fill[i], color=colors[i]
      psym[i]=8
   endif
 
@@ -418,7 +420,7 @@ for iclr = 0,clear do begin
     yp = [min(yp),max(yp)]                      ; DITTO
     endif
   if (psym[i] eq 8) and (N_elements(usersym) GT 1) then $
-                usersym,usersym,fill=fill,color=colors[i]
+                usersym,usersym,fill=fill[i],color=colors[i]
 ;; extra by djseed .. psym=88 means use the already defined usersymbol
   if psym[i] eq 88 then psym[i] =8
   if vectorfont[i] ne '' then begin
