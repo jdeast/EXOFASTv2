@@ -75,13 +75,14 @@ function keplerspline, t, f, ndays=ndays, maxiter = maxiter, rms = rms, yplot = 
   endif
   if gaps[0] gt -1 then begin
     s = dblarr(n_elements(t))
-    goodind = []
+    goodind = [-1]
     gaps = [0,gaps,n_elements(t)]
     for i =1, n_elements(gaps)-1 do begin
       ;print, max(diff(k.t[gaps[i-1]:gaps[i]-1]))
       s[gaps[i-1]:gaps[i]-1] = keplerspline2(t[gaps[i-1]:gaps[i]-1], f[gaps[i-1]:gaps[i]-1], ndays = ndays, maxiter = maxiter,rms=rms,yplot=yplot, good = good)
       goodind = [goodind, good + gaps[i-1]]
     endfor
+    if n_elements(goodind) gt 1 then goodind = goodind[1:*]
   end
   
   
