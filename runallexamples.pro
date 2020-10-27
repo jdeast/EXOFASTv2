@@ -9,7 +9,7 @@ example_dir = getenv('EXOFAST_PATH') + path_sep() + 'examples' + path_sep()
 
 ;           planet name   |  procedures |             example directory          |         ref file        |         csv file
 fits = [[         'HAT-3b',    'fithat3',example_dir +        'hat3' + path_sep(),         'HAT-3b.ref.csv',        'HAT-3b.median.csv'],$ ;; cannonical example (simplified)
-        [        'HATS-7b',   'fithats7',example_dir +       'hats7' + path_sep(),        'HATS-7b.ref.csv',       'HATS-7b.median.csv'],$
+        [        'HATS-7b',   'fithats7',example_dir +       'hats7' + path_sep(),        'HATS-7b.ref.csv',       'HATS-7b.median.csv'],$ ;; PARSEC evolutionary models
         [        'KELT-1b',   'fitkelt1',example_dir +       'kelt1' + path_sep(),        'KELT-1b.ref.csv',       'KELT-1b.median.csv'],$ 
         [       'KELT-4Ab',   'fitkelt4',example_dir + 'kelt4rvonly' + path_sep(),       'KELT-4Ab.ref.csv',      'KELT-4Ab.median.csv'],$ ;; RV-only example
         [        'KELT-6b',   'fitkelt6',example_dir +       'kelt6' + path_sep(),        'KELT-6b.ref.csv',       'KELT-6b.median.csv'],$ ;; LC fitting with detrending

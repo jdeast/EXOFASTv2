@@ -6,6 +6,6 @@ exofastv2, nplanets=1, rvpath=path+'HATS-7b.*.rv',tranpath=path+'n20*.dat',$
            priorfile=path+'hats7.priors',$
            prefix=path+'fitresults' + path_sep()+'HATS-7b.',maxsteps=maxsteps,$
            nthin=nthin,fitrv=[1],fittran=[1],circular=[0], $
-           debug=debug,verbose=verbose, nthread=nthread
+           debug=debug,verbose=verbose, nthread=nthread,/nomist, /parsec
 
 end
