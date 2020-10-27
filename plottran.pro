@@ -1,4 +1,4 @@
-pro plottran2, ss, psname=psname, ndx=ndx, noresiduals=noresiduals
+pro plottran, ss, psname=psname, ndx=ndx, noresiduals=noresiduals
 
 if n_elements(ndx) eq 0 then ndx = 0L
 
@@ -88,9 +88,9 @@ for i=0L, ss.nplanets-1 do begin
       bandnames[j] = band.name
       depth2[i,j] = band.thermal.value[ndx]/1d6
 
-      if band.reflect.value[ndx] ne 0 then phasecurve[i,j] = 1B
-      if band.ellipsoidal.value[ndx] ne 0 then phasecurve[i,j] = 1B
-      if ss.planet[i].beam.value[ndx] ne 0 then phasecurve[i,j] = 1B
+      if band.reflect.fit then phasecurve[i,j] = 1B
+      if band.ellipsoidal.fit then phasecurve[i,j] = 1B
+      if ss.planet[i].beam.fit ne 0 then phasecurve[i,j] = 1B
 
       u1 = band.u1.value[ndx]
       u2 = band.u2.value[ndx]

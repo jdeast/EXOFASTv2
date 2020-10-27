@@ -134,9 +134,14 @@ for i=0, n_tags(ss)-1 do begin
                               (*ss.(i)[j].(k)).(l)[m].medvalue = strtrim(value,2)
                               (*ss.(i)[j].(k)).(l)[m].upper = strtrim(errhi,2)
                               (*ss.(i)[j].(k)).(l)[m].lower = strtrim(errlo,2)
+                              (*ss.(i)[j].(k)).(l)[m].best = (*(ss.(i)[j].(k))).(l)[m].value[bestndx]
                               
-                              if n_elements(csvfile) ne 0 then $
-                                 printf, csvlun, (*(ss.(i)[j].(k))).(l)[m].latex, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),format='(3(a,","),a)'
+                              if n_elements(csvfile) ne 0 then begin
+                                 parname = (*(ss.(i)[j].(k))).(l)[m].label
+;                                 parname = (*(ss.(i)[j].(k))).(l)[m].latex
+                                 parname += '_' + strtrim(j,2) + '_' + strtrim(m,2)
+                                 printf, csvlun, parname, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),format='(3(a,","),a)'
+                              endif
 
                               ;; store these for the covariance plot
                               if (*(ss.(i)[j].(k))).(l)[m].fit or keyword_set(useallpars) then begin
@@ -187,9 +192,14 @@ for i=0, n_tags(ss)-1 do begin
                      ss.(i)[j].(k).medvalue = strtrim(value,2)
                      ss.(i)[j].(k).upper = strtrim(errhi,2)
                      ss.(i)[j].(k).lower = strtrim(errlo,2)
+                     ss.(i)[j].(k).best = ss.(i)[j].(k).value[bestndx]
 
-                     if n_elements(csvfile) ne 0 then $
-                        printf, csvlun, ss.(i)[j].(k).latex, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),format='(3(a,","),a)'
+                     if n_elements(csvfile) ne 0 then begin
+                        parname = ss.(i)[j].(k).label
+;                        parname = ss.(i)[j].(k).latex
+                        parname += '_' + strtrim(j,2)
+                        printf, csvlun, parname, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),format='(3(a,","),a)'
+                     endif
 
                      ;; store these for the covariance plot
                      if ss.(i)[j].(k).fit or keyword_set(useallpars) then begin

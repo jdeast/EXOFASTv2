@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Tue Aug 20 13:22:19 2019.<P>
+<STRONG>Last modified: </STRONG>Mon Oct 26 16:10:05 2020.<P>
  
 <HR>
  
@@ -44,7 +44,6 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_GETPHASE">EXOFAST_GETPHASE</A>
 <LI><A HREF="#EXOFAST_GETTC">EXOFAST_GETTC</A>
 <LI><A HREF="#EXOFAST_GETTT">EXOFAST_GETTT</A>
-<LI><A HREF="#EXOFAST_GETXYZ">EXOFAST_GETXYZ</A>
 <LI><A HREF="#EXOFAST_KEPLEREQ">EXOFAST_KEPLEREQ</A>
 <LI><A HREF="#EXOFAST_LATEXTAB[1]">EXOFAST_LATEXTAB[1]</A>
 <LI><A HREF="#EXOFAST_LATEXTAB[2]">EXOFAST_LATEXTAB[2]</A>
@@ -57,9 +56,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_RANDOM">EXOFAST_RANDOM</A>
 <LI><A HREF="#EXOFAST_RECENTER">EXOFAST_RECENTER</A>
 <LI><A HREF="#EXOFAST_ROSSITER">EXOFAST_ROSSITER</A>
-<LI><A HREF="#EXOFAST_RV[1]">EXOFAST_RV[1]</A>
-<LI><A HREF="#EXOFAST_RV[2]">EXOFAST_RV[2]</A>
-<LI><A HREF="#EXOFAST_RV[3]">EXOFAST_RV[3]</A>
+<LI><A HREF="#EXOFAST_RV">EXOFAST_RV</A>
 <LI><A HREF="#EXOFAST_TEXTOIDL[1]">EXOFAST_TEXTOIDL[1]</A>
 <LI><A HREF="#EXOFAST_TEXTOIDL[2]">EXOFAST_TEXTOIDL[2]</A>
 <LI><A HREF="#EXOFAST_TRAN">EXOFAST_TRAN</A>
@@ -71,7 +68,9 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#KTOM2">KTOM2</A>
 <LI><A HREF="#LEGEND">LEGEND</A>
 <LI><A HREF="#LINLD">LINLD</A>
-<LI><A HREF="#MASSRADIUS_MIST">MASSRADIUS_MIST</A>
+<LI><A HREF="#MASSRADIUS_MIST[1]">MASSRADIUS_MIST[1]</A>
+<LI><A HREF="#MASSRADIUS_MIST[2]">MASSRADIUS_MIST[2]</A>
+<LI><A HREF="#MASSRADIUS_MIST[3]">MASSRADIUS_MIST[3]</A>
 <LI><A HREF="#MASSRADIUS_TORRES">MASSRADIUS_TORRES</A>
 <LI><A HREF="#MKCONSTANTS">MKCONSTANTS</A>
 <LI><A HREF="#MKPRIOR">MKPRIOR</A>
@@ -82,7 +81,9 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#QUADLD">QUADLD</A>
 <LI><A HREF="#READIPAC">READIPAC</A>
 <LI><A HREF="#SETDEFAULTVALUE">SETDEFAULTVALUE</A>
-<LI><A HREF="#STROM_CONV">STROM_CONV</A>
+<LI><A HREF="#SPLITPDF">SPLITPDF</A>
+<LI><A HREF="#STROM_CONV[1]">STROM_CONV[1]</A>
+<LI><A HREF="#STROM_CONV[2]">STROM_CONV[2]</A>
 <LI><A HREF="#TEXTOIDL_MATCHDELIM">TEXTOIDL_MATCHDELIM</A>
 <LI><A HREF="#TEXTOIDL_NEXTTOK">TEXTOIDL_NEXTTOK</A>
 <LI><A HREF="#TEXTOIDL_STRCNT">TEXTOIDL_STRCNT</A>
@@ -91,6 +92,8 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#TEXTOIDL_SUB_SUP">TEXTOIDL_SUB_SUP</A>
 <LI><A HREF="#TEXTOIDL_TABLE">TEXTOIDL_TABLE</A>
 <LI><A HREF="#TEXTOIDL_TRANS_SUB_SUPER">TEXTOIDL_TRANS_SUB_SUPER</A>
+<LI><A HREF="#TRANSITGIF">TRANSITGIF</A>
+<LI><A HREF="#WAVELETLIKE">WAVELETLIKE</A>
 </UL><P>
  
 <HR>
@@ -1012,10 +1015,6 @@ with a diff
                  should be fixed to be circular (1) or left with
                  eccentricity free (0). 
                  Default is bytarr(nplanets) + 1B.
-   SECONDARY   - An NPLANETS boolean array that specifies which planets
-                 should have a secondary eclipse modeled. 
-                 Default is bytarr(nplanets)
-                 ***NOT YET IMPLEMENTED***
    ROSSITER    - An NPLANETS boolean array that specifies which planets
                  should fit the Rossiter-McLaughlin effect to the RV
                  data using the Ohta approximation. If a run was
@@ -1023,11 +1022,9 @@ with a diff
                  file to fit a different zero point and jitter
                  parameter to it.
                  Default is bytarr(nplanets)
-                 ***NOT YET IMPLEMENTED***
    FITDT       - An NPLANETS boolean array that specifies which planets
                  should fit using a Doppler Tomography model.
                  Default is bytarr(nplanets)
-                 ***NOT YET IMPLEMENTED***
   FITTHERMAL- A string array specifying which bands to fit thermal
              emission for. This is what you want to set to fit an
              isolated secondary eclipse. All observations in this
@@ -1070,6 +1067,21 @@ with a diff
 
              TODO: automatically model dilution based on multiple
              SEDs
+ FITBEAM   - An NPLANET boolean array that specifies which planets to
+             model a doppler beaming signal. If this beaming
+             amplitude is fit directly, it will *not* constrain the
+             planetary mass (set DERIVEBEAM instead).
+ DERIVEBEAM- An NPLANET boolean array that specifies which planets to
+             model a doppler beaming signal. If this beaming
+             amplitude is derived (from K), it will constrain the
+             planetary mass through Faigler & Mazeh, 2011, eq 1 (set
+             FITBEAM instead to model the beaming but break this
+             connection).
+ FITELLIP  - A string array specifying which bands to fit an
+             ellipsoidal variation amplitude for. Note: this does
+             *not* feedback into the global model through F&M 2011,
+             eq 2
+
    CHEN        - An NPLANET boolean array that specifies which
                  planets should have the Chen & Kipping, 2017
                  mass-radius relation applied. By default CHEN =
@@ -1089,12 +1101,15 @@ with a diff
  OPTIONAL KEYWORDS:
    FITSLOPE  - If set, it will fit a linear trend to the RV data.
    FITQUAD   - If set, it will fit a quadratic trend to the RV data.
+   RVEPOCH   - If set, this is the reference epoch (A BJD_TDB) for RV
+               linear and quadratic trends. Default is the midpoint
+               of all RV observations.
    NOMIST    - If set, do not use the MIST evolutionary tracks 
                see http://waps.cfa.harvard.edu/MIST/
                And please cite
                http://adsabs.harvard.edu/abs/2016ApJS..222....8D
                http://adsabs.harvard.edu/abs/2016ApJ...823..102C
-               *** Use with caution, not thoroughly tested ***
+   PARSEC    - If set, use the PARSEC evolutionary models. 
    YY        - If set, use the YY evolutionary tracks see
                http://adsabs.harvard.edu/abs/2001ApJS..136..417Y
                to constrain the mass/radius of the star. YY should
@@ -1130,7 +1145,18 @@ with a diff
                      signficance of the signal. This is likely
                      required for low SNR transits or when using
                      parallel tempering (see NTEMP and TF).
-
+   FITSPLINE - An NTRANSITFILES byte array specifying which transits
+               should be flatted with a spline. This should only be
+               used for long baseline data like Kepler, K2, or TESS.
+   SPLINESPACE - An NTRANSITFILES array specifying the knot spacing
+                 between adjacent points in the spline, in days. To
+                 be used in conjunction with FITSPLINE. Default is
+                 0.75 days. This spacing should be large compared to
+                 the transit duration (>~ 3x), or there is
+                 significant risk of introducing a strong covariance
+                 between the spline and the transit parameters,
+                 biasing the inferred values, inflating the
+                 uncertainties, and increasing convergence times.
    TIDES     - If set, when (1-Rstar/a-rp/a) < e < (1-3*Rstar/a), we
                set the eccentricity to zero, presuming that the tidal
                circularization timescale is much much smaller than
@@ -1139,17 +1165,24 @@ with a diff
                periastron as e^(1/4)*sin(omega) and
                e^(1/4)*cos(omega) to more closely match the observed
                eccentricity distribution
-   TTVS      - If set, a new (non-periodic) transit time is fit for
-               each transit file. The period is constrained by a
-               linear fit to all transit times at each
-               step. Otherwise, a linear ephemeris is assumed.
-   TDELTAVS  - If set, a new transit depth is fit for each transit
-               file. Otherwise, all transits of the same planet are
-               modeled with the same same depth.
-   TIVS      - If set, a new inclination is fit for each transit
-               file. Otherwise, all transits of the same planet are
-               modeled with the same same depth.
-
+   TTVS      - An NTRANSITSxNPLANETS boolean array, specifying which
+               transit files should have a timing offset applied
+               corresponding to which planets. 
+               NOTE: if the same transit applies to more than one
+               planet, the same offset will be applied to both. Such
+               transits should probably be removed from the analysis. 
+   TDELTAVS  - An NTRANSITSxNPLANETS boolean array, specifying which
+               transit files should have a depth offset applied
+               corresponding to which planets. 
+               NOTE: if the same transit applies to more than one
+               planet, the same offset will be applied to both. Such
+               transits should probably be removed from the analysis. 
+   TIVS      - An NTRANSITSxNPLANETS boolean array, specifying which
+               transit files should have an inclination offset applied
+               corresponding to which planets. 
+               NOTE: if the same transit applies to more than one
+               planet, the same offset will be applied to both. Such
+               transits should probably be removed from the analysis. 
    BESTONLY  - If set, only the best fit (using AMOEBA) will be
                performed.
                ***NOT YET IMPLEMENTED***
@@ -1728,7 +1761,7 @@ Function value:       1.33000
              end. This is sketchy, but better than nothing.
              This was a relatively common failure mode.
 </PRE><P>
-<STRONG>(See exofast_demcpt.pro)</STRONG><P>
+<STRONG>(See exofast_demcpt_multi.pro)</STRONG><P>
 <HR>
  
 <A NAME="EXOFAST_ERRELL">
@@ -2156,7 +2189,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_GETTT">
 <H2>EXOFAST_GETTT</H2></A>
 <A HREF="#EXOFAST_GETTC">[Previous Routine]</A>
-<A HREF="#EXOFAST_GETXYZ">[Next Routine]</A>
+<A HREF="#EXOFAST_KEPLEREQ">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2177,82 +2210,9 @@ Function value:       1.33000
 <STRONG>(See exofast_gettt.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_GETXYZ">
-<H2>EXOFAST_GETXYZ</H2></A>
-<A HREF="#EXOFAST_GETTT">[Previous Routine]</A>
-<A HREF="#EXOFAST_KEPLEREQ">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- NAME:
-   EXOFAST_GETXYZ
-
- PURPOSE: 
-   This function returns the impact parameter of the planet as
-   a function of BJD in the target barycentric frame, given orbital
-   elements of many planets, assuming keplerian orbits.
-
-   Optionally, the 3-space barycentric coordinates of the star
-   (x1,y1,z1) and the planets (x2,y2,z2) or the stellar centric
-   coordinates of the planets (x0,y0,z0) can be returned.
- 
- CALLING SEQUENCE:
-   result = exofast_getb3(jds, i=i,a=a,tperiastron=tperiastron,period=p,$
-                 e=e,omega=omega, x=x, y=y, z=z)
-
- INPUTS:
-   bjd         - Barycentric Julians dates for desired impact
-                 parameters (ideally in the target's
-                 barycentric frame; see BJD2TARGET)
-   i           - an NPLANETS array of planetary inclinations (radians)
-   a           - an NPLANETS array of semi-major axis, a = a1+a2 (in
-                 units of R_*). That is, the semi-major axis should be calculated
-                 from Kepler's equation: a/rstar = G(M+m)P^2/(4pi^2rstar).
-                 Using G = 2942.71377d0 R_sun^3/(m_sun*day^2), masses
-                 in solar masses, period in days, and rstar in solar
-                 radii will give the appropriate input.
-   tperiastron - an NPLANETS array of periastron passage times (same
-                 units as BJD)
-   Period      - an NPLANETS array of Period of orbit (days)
-
- OPTIONAL INPUTS:  
-   e           - an NPLANETS array of eccentricities (0 if not specified)
-   omegap      - an NPLANETS array of arguments of periastron
-                 of the planets' orbits, in radians
-                 -- omega_planet is the typical quantity quoted in
-                    the exoplanet literature
-                 -- assumed to be pi/2 if e not specified
-                 -- omega_p = omega_* + !dpi
-   lonascnode  - an NPLANETS array of Longitudes of the ascending node
-                 (radians). Assumed to be 0 if not specified.
-   Q           - an NPLANETS array of mass ratios of the primary to secondary
-                 (M1/M2). If not specified, the mass ratio is assumed
-                 to be infinite. The returned coordinates are the
-                 motion of the companion with respect to the primary.
-
- OUTPUTS:
-    result     - the impact parameter as a function of BJD, in units
-                 of R_*.
-
- OPTIONAL OUTPUTS:
-    x,y,z - Arrays of the cartesian coordinates of the planet at
-            each BJD, in the units of R_*. 
-              +X is right
-              +Y is up
-              +Z is out of the page (primary transit)
-
- MODIFICATION HISTORY 
-  2009/05/01 -- Jason Eastman (Ohio State University)
-  2017/04/12 -- Add optional mass ratio keyword
-  2018/07/06 -- Now properly handles 2D time array (for long cadence)
-  2018/11/13 -- Now properly handles a scalar time
-  2019/02/05 -- Fix sign conventions
-</PRE><P>
-<STRONG>(See exofast_getxyz.pro)</STRONG><P>
-<HR>
- 
 <A NAME="EXOFAST_KEPLEREQ">
 <H2>EXOFAST_KEPLEREQ</H2></A>
-<A HREF="#EXOFAST_GETXYZ">[Previous Routine]</A>
+<A HREF="#EXOFAST_GETTT">[Previous Routine]</A>
 <A HREF="#EXOFAST_LATEXTAB[1]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -3095,7 +3055,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_ROSSITER">
 <H2>EXOFAST_ROSSITER</H2></A>
 <A HREF="#EXOFAST_RECENTER">[Previous Routine]</A>
-<A HREF="#EXOFAST_RV[1]">[Next Routine]</A>
+<A HREF="#EXOFAST_RV">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -3138,10 +3098,10 @@ Function value:       1.33000
 <STRONG>(See exofast_rossiter.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_RV[1]">
-<H2>EXOFAST_RV[1]</H2></A>
+<A NAME="EXOFAST_RV">
+<H2>EXOFAST_RV</H2></A>
 <A HREF="#EXOFAST_ROSSITER">[Previous Routine]</A>
-<A HREF="#EXOFAST_RV[2]">[Next Routine]</A>
+<A HREF="#EXOFAST_TEXTOIDL[1]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -3200,141 +3160,9 @@ Function value:       1.33000
 <STRONG>(See exofast_rv.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_RV[2]">
-<H2>EXOFAST_RV[2]</H2></A>
-<A HREF="#EXOFAST_RV[1]">[Previous Routine]</A>
-<A HREF="#EXOFAST_RV[3]">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- NAME:
-   exofast_rv
-
- PURPOSE: 
-   This function returns the radial velocity at each BJD. Optionally
-   includes the Rossiter McLaughlin effect, using the Ohta et al 2005
-   approximation good to ~1 m/s.
- 
- CALLING SEQUENCE:
-   result = exofast_rv(bjd, TPeriastron, period, V0, K, e, omega, $
-                       i=i, a=a, u1=u1, p=p, vsini=vsini, lambda=lambda, $
-                       r_star=r_star, slope=slope)
-
- INPUTS:
-   bjd         - Barycentric Julians dates for desired impact parameters
-   tperiastron - periastron passage time (BJD)
-   Period      - Period of orbit (days)
-   V0          - systemic velocity (m/s)
-   K           - radial velocity semi-amplitude (m/s)
-
- OPTIONAL INPUTS:  
-   e           - eccentricity of orbit (0 if not specified)
-   omega       - orbit's argument of periastron (radians) 
-                 - required if e is specified
-                 - assumed to be pi/2 if e not specified
-                 - omega is the argument of periastron of the orbit
-                   being measured (for exoplanets, omega_*)
-                 - due to right handed coordinate system and the fact
-                   that blueshifts are negative,
-                     RV = -dZ_*/dt 
-   slope       - the slope of the RV signal
-   t0          - the time at which V0 is referenced, if a slope is
-                 given. If not given, (maxtime + mintime)/2 is
-                 assumed.
-                 NOTE: if comparing two data sets with a slope and
-                 different times, this must be specified.
-
- OPTIONAL KEYWORDS:
-   rossiter    - If set, calculates the RM effect. All values below
-                 must also be specified.
-
- Optional parameters (required for Rossiter-McLaughlin effect)
-   i           - inclination of orbit (radians)
-   a           - semi-major axis (R_star)
-   u1          - linear limb-darkening coefficient
-   p           - occulting star size (stellar radii)
-   vsini       - projected stellar surface velocity (m/s)
-   lambda      - projected spin-orbit angle (radians)   
-
- OUTPUTS:
-    result     - the radial velocity of the star at each point
-
- MODIFICATION HISTORY 
-  2009/05/01 -- Jason Eastman (Ohio State University)
-  2013/10/15 -- Clarified documentation
-  2019/03/11 -- Flip sign (adhere to standard convention)! Clarify documentation
-</PRE><P>
-<STRONG>(See exofast_rv2.pro)</STRONG><P>
-<HR>
- 
-<A NAME="EXOFAST_RV[3]">
-<H2>EXOFAST_RV[3]</H2></A>
-<A HREF="#EXOFAST_RV[2]">[Previous Routine]</A>
-<A HREF="#EXOFAST_TEXTOIDL[1]">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- NAME:
-   exofast_rv
-
- PURPOSE: 
-   This function returns the radial velocity at each BJD. Optionally
-   includes the Rossiter McLaughlin effect, using the Ohta et al 2005
-   approximation good to ~1 m/s.
- 
- CALLING SEQUENCE:
-   result = exofast_rv(bjd, TPeriastron, period, V0, K, e, omega, $
-                       i=i, a=a, u1=u1, p=p, vsini=vsini, lambda=lambda, $
-                       r_star=r_star, slope=slope)
-
- INPUTS:
-   bjd         - Barycentric Julians dates for desired impact parameters
-   tperiastron - periastron passage time (BJD)
-   Period      - Period of orbit (days)
-   V0          - systemic velocity (m/s)
-   K           - radial velocity semi-amplitude (m/s)
-
- OPTIONAL INPUTS:  
-   e           - eccentricity of orbit (0 if not specified)
-   omega       - orbit's argument of periastron (radians) 
-                 - required if e is specified
-                 - assumed to be pi/2 if e not specified
-                 - omega is the argument of periastron of the orbit
-                   being measured (for exoplanets, omega_*)
-                 - due to right handed coordinate system and the fact
-                   that blueshifts are negative,
-                     RV = -dZ_*/dt 
-   slope       - the slope of the RV signal
-   t0          - the time at which V0 is referenced, if a slope is
-                 given. If not given, (maxtime + mintime)/2 is
-                 assumed.
-                 NOTE: if comparing two data sets with a slope and
-                 different times, this must be specified.
-
- OPTIONAL KEYWORDS:
-   rossiter    - If set, calculates the RM effect. All values below
-                 must also be specified.
-
- Optional parameters (required for Rossiter-McLaughlin effect)
-   i           - inclination of orbit (radians)
-   a           - semi-major axis (R_star)
-   u1          - linear limb-darkening coefficient
-   p           - occulting star size (stellar radii)
-   vsini       - projected stellar surface velocity (m/s)
-   lambda      - projected spin-orbit angle (radians)   
-
- OUTPUTS:
-    result     - the radial velocity of the star at each point
-
- MODIFICATION HISTORY 
-  2009/05/01 -- Jason Eastman (Ohio State University)
-  2013/10/15 -- Clarified documentation
-  2019/03/11 -- Flip sign (adhere to standard convention)! Clarify documentation
-</PRE><P>
-<STRONG>(See exofast_rv_standard.pro)</STRONG><P>
-<HR>
- 
 <A NAME="EXOFAST_TEXTOIDL[1]">
 <H2>EXOFAST_TEXTOIDL[1]</H2></A>
-<A HREF="#EXOFAST_RV[3]">[Previous Routine]</A>
+<A HREF="#EXOFAST_RV">[Previous Routine]</A>
 <A HREF="#EXOFAST_TEXTOIDL[2]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -4024,7 +3852,7 @@ Function value:       1.33000
 <A NAME="LINLD">
 <H2>LINLD</H2></A>
 <A HREF="#LEGEND">[Previous Routine]</A>
-<A HREF="#MASSRADIUS_MIST">[Next Routine]</A>
+<A HREF="#MASSRADIUS_MIST[1]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4077,10 +3905,10 @@ Function value:       1.33000
 <STRONG>(See linld.pro)</STRONG><P>
 <HR>
  
-<A NAME="MASSRADIUS_MIST">
-<H2>MASSRADIUS_MIST</H2></A>
+<A NAME="MASSRADIUS_MIST[1]">
+<H2>MASSRADIUS_MIST[1]</H2></A>
 <A HREF="#LINLD">[Previous Routine]</A>
-<A HREF="#MASSRADIUS_TORRES">[Next Routine]</A>
+<A HREF="#MASSRADIUS_MIST[2]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4147,9 +3975,149 @@ Function value:       1.33000
 <STRONG>(See massradius_mist.pro)</STRONG><P>
 <HR>
  
+<A NAME="MASSRADIUS_MIST[2]">
+<H2>MASSRADIUS_MIST[2]</H2></A>
+<A HREF="#MASSRADIUS_MIST[1]">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_MIST[3]">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   massradius_mist
+
+ PURPOSE: 
+   Interpolate the MIST stellar evolutionary models to derive Teff
+   and Rstar from mass, metallicity, and age. Intended to be a drop in
+   replacement for the Yonsie Yale model interpolation
+   (massradius_yy3.pro).
+
+ CALLING SEQUENCE:
+   chi2 = massradius_mist(mstar, feh, age, teff, rstar, $
+                          VVCRIT=vvcrit, ALPHA=alpha, SPAN=span,$
+                          MISTRSTAR=mistrstar, MISTTEFF=mistteff)
+ INPUTS:
+
+    MSTAR  - The mass of the star, in m_sun
+    FEH    - The metallicity of the star [Fe/H]
+    AGE    - The age of the star, in Gyr
+    RSTAR  - The radius you expect; used to calculate a chi^2
+    TEFF   - The Teff you expect; used to calculate a chi^2
+    
+ OPTIONAL INPUTS:
+   VVCRIT    - The rotational velocity normalized by the critical
+               rotation speed. Must be 0.0d0 or 0.4d0 (default 0.0d0).
+   ALPHA     - The alpha abundance. Must be 0.0 (default 0.0). A
+               placeholder for future improvements to MIST models.
+   SPAN      - The interpolation is done at the closest value +/-
+               SPAN grid points in the evolutionary tracks in mass,
+               age, metallicity. The larger this number, the longer it
+               takes. Default=1. Change with care.
+   EPSNAME   - A string specifying the name of postscript file to plot
+               the evolutionary track. If not specified, no plot is
+               generated.
+
+ OPTIONAL KEYWORDS:
+   DEBUG     - If set, will plot the teff and rstar over the MIST
+               Isochrone.
+
+ OPTIONAL OUTPUTS:
+   MISTRSTAR - The rstar interpolated from the MIST models.
+   MISTTEFF  - The Teff interpolated from the MIST models.
+
+ RESULT:
+   The chi^2 penalty due to the departure from the MIST models,
+   assuming 3% errors in the MIST model values.
+
+ COMMON BLOCKS:
+   MIST_BLOCK:
+     Loading EEPs (model tracks) is very slow. This common block
+     allows us to store the tracks in memory between calls. The first
+     call will take ~3 seconds. Subsequent calls that use the same
+     EEP files take 1 ms.
+
+ EXAMPLE: 
+   ;; penalize a model for straying from the MIST models 
+   chi2 += massradius_mist(mstar, feh, age, rstar=rstar, teff=teff)
+
+ MODIFICATION HISTORY
+ 
+  2018/01 -- Written, JDE
+</PRE><P>
+<STRONG>(See massradius_parsec.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="MASSRADIUS_MIST[3]">
+<H2>MASSRADIUS_MIST[3]</H2></A>
+<A HREF="#MASSRADIUS_MIST[2]">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_TORRES">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   massradius_mist
+
+ PURPOSE: 
+   Interpolate the MIST stellar evolutionary models to derive Teff
+   and Rstar from mass, metallicity, and age. Intended to be a drop in
+   replacement for the Yonsie Yale model interpolation
+   (massradius_yy3.pro).
+
+ CALLING SEQUENCE:
+   chi2 = massradius_mist(mstar, feh, age, teff, rstar, $
+                          VVCRIT=vvcrit, ALPHA=alpha, SPAN=span,$
+                          MISTRSTAR=mistrstar, MISTTEFF=mistteff)
+ INPUTS:
+
+    MSTAR  - The mass of the star, in m_sun
+    FEH    - The metallicity of the star [Fe/H]
+    AGE    - The age of the star, in Gyr
+    RSTAR  - The radius you expect; used to calculate a chi^2
+    TEFF   - The Teff you expect; used to calculate a chi^2
+    
+ OPTIONAL INPUTS:
+   VVCRIT    - The rotational velocity normalized by the critical
+               rotation speed. Must be 0.0d0 or 0.4d0 (default 0.0d0).
+   ALPHA     - The alpha abundance. Must be 0.0 (default 0.0). A
+               placeholder for future improvements to MIST models.
+   SPAN      - The interpolation is done at the closest value +/-
+               SPAN grid points in the evolutionary tracks in mass,
+               age, metallicity. The larger this number, the longer it
+               takes. Default=1. Change with care.
+   EPSNAME   - A string specifying the name of postscript file to plot
+               the evolutionary track. If not specified, no plot is
+               generated.
+
+ OPTIONAL KEYWORDS:
+   DEBUG     - If set, will plot the teff and rstar over the MIST
+               Isochrone.
+
+ OPTIONAL OUTPUTS:
+   MISTRSTAR - The rstar interpolated from the MIST models.
+   MISTTEFF  - The Teff interpolated from the MIST models.
+
+ RESULT:
+   The chi^2 penalty due to the departure from the MIST models,
+   assuming 3% errors in the MIST model values.
+
+ COMMON BLOCKS:
+   MIST_BLOCK:
+     Loading EEPs (model tracks) is very slow. This common block
+     allows us to store the tracks in memory between calls. The first
+     call will take ~3 seconds. Subsequent calls that use the same
+     EEP files take 1 ms.
+
+ EXAMPLE: 
+   ;; penalize a model for straying from the MIST models 
+   chi2 += massradius_mist(mstar, feh, age, rstar=rstar, teff=teff)
+
+ MODIFICATION HISTORY
+ 
+  2018/01 -- Written, JDE
+</PRE><P>
+<STRONG>(See massradius_parsec_rosen.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="MASSRADIUS_TORRES">
 <H2>MASSRADIUS_TORRES</H2></A>
-<A HREF="#MASSRADIUS_MIST">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_MIST[3]">[Previous Routine]</A>
 <A HREF="#MKCONSTANTS">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -4799,7 +4767,7 @@ Function value:       1.33000
 <A NAME="SETDEFAULTVALUE">
 <H2>SETDEFAULTVALUE</H2></A>
 <A HREF="#READIPAC">[Previous Routine]</A>
-<A HREF="#STROM_CONV">[Next Routine]</A>
+<A HREF="#SPLITPDF">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  This procedure sets default values for positional and keyword arguments to
@@ -4862,10 +4830,37 @@ Function value:       1.33000
 <STRONG>(See setdefaultvalue.pro)</STRONG><P>
 <HR>
  
-<A NAME="STROM_CONV">
-<H2>STROM_CONV</H2></A>
+<A NAME="SPLITPDF">
+<H2>SPLITPDF</H2></A>
 <A HREF="#SETDEFAULTVALUE">[Previous Routine]</A>
-<A HREF="#TEXTOIDL_MATCHDELIM">[Next Routine]</A>
+<A HREF="#STROM_CONV[1]">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   SPLITPDF
+
+ PURPOSE: 
+   Splits an EXOFASTv2 output IDL file and reports two
+   solutions. Intended to summarize bimodal distributions.
+
+ CALLING SEQUENCE:
+   splitpdf, idlfile, 1.0
+
+ INPUTS:
+   IDLFILE - The name of the EXOFAST output IDL file
+   MASSCUT - The value to cut on, in solar masses
+
+ MODIFICATION HISTORY
+ 
+  2019/10/11 -- added
+</PRE><P>
+<STRONG>(See splitpdf.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="STROM_CONV[1]">
+<H2>STROM_CONV[1]</H2></A>
+<A HREF="#SPLITPDF">[Previous Routine]</A>
+<A HREF="#STROM_CONV[2]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4881,9 +4876,28 @@ Function value:       1.33000
 <STRONG>(See mksed.pro)</STRONG><P>
 <HR>
  
+<A NAME="STROM_CONV[2]">
+<H2>STROM_CONV[2]</H2></A>
+<A HREF="#STROM_CONV[1]">[Previous Routine]</A>
+<A HREF="#TEXTOIDL_MATCHDELIM">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   STROM_CONV
+ PURPOSE:
+    Translates stromgren color combinations from the catalog to
+    individual uvby magnitudes
+ Modification 
+    2018-04-12: Jason Eastman, CfA
+                Renamed, documented, and cleaned up for distribution with EXOFASTv2
+
+</PRE><P>
+<STRONG>(See mkticsed.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="TEXTOIDL_MATCHDELIM">
 <H2>TEXTOIDL_MATCHDELIM</H2></A>
-<A HREF="#STROM_CONV">[Previous Routine]</A>
+<A HREF="#STROM_CONV[2]">[Previous Routine]</A>
 <A HREF="#TEXTOIDL_NEXTTOK">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -5429,6 +5443,7 @@ Function value:       1.33000
 <A NAME="TEXTOIDL_TRANS_SUB_SUPER">
 <H2>TEXTOIDL_TRANS_SUB_SUPER</H2></A>
 <A HREF="#TEXTOIDL_TABLE">[Previous Routine]</A>
+<A HREF="#TRANSITGIF">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -5506,6 +5521,155 @@ Function value:       1.33000
   This code comes with absolutely NO warranty; see DISCLAIMER for details.
 </PRE><P>
 <STRONG>(See exofast_textoidl.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="TRANSITGIF">
+<H2>TRANSITGIF</H2></A>
+<A HREF="#TEXTOIDL_TRANS_SUB_SUPER">[Previous Routine]</A>
+<A HREF="#WAVELETLIKE">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   TRANSITGIF
+
+ PURPOSE: 
+   Creates an animated gif of a transit from exoplanets.org.
+
+ CALLING SEQUENCE:
+   TRANSITGIF, ['pname',PARS=,BAND=,CADENCE=,PARS=,YMIN=,BAK=,
+                /YELLOW,/DISPLAY,/SAVEFRAMES,/UPDATE]
+
+ OPTIONAL INPUTS:
+   PNAME     - The name of the planet from exoplanets.org (not case
+               sensitive). The output file will be the planet name
+               stripped of spaces + .gif. 
+   PARS      - A 10 element array of custom parameters with which to
+               make a transit animation:
+                PARS[0] = period (days)
+                PARS[1] = eccentricity
+                PARS[2] = omega_star (radians)
+                PARS[3] = inclination (radians)
+                PARS[4] = a/Rstar 
+                PARS[5] = Rp/Rstar
+                PARS[6] = logg (cgs)
+                PARS[7] = Teff (K)
+                PARS[8] = [Fe/H]
+                PARS[9] = Rstar (R_sun)
+               NOTE: PNAME or PARS must be specified. If PARS is
+               specified and PNAME is not, the output will be "transit.gif".
+   BAND      - The bandpass for the limb darkening calculation (see
+               quadld.pro for allowed values). Default = 'Sloanz'
+   CADENCE   - A frame is generated every CADENCE minutes for a
+               duration of 2*T_FWHM*MAXSTAR/RSTAR. This duration
+               forces the X axis of the plot to be on the same scale as
+               the drawing, ignoring the curvature of the planet's orbit.
+               Default = 5.
+               NOTE: A constant cadence between animations means the
+               duration of the animation (number of frames)
+               corresponds to the duration of the transit.
+   NPOINTS   - The number of pixels in the image of the star. Larger
+               images may break the conversion to gif.
+               Default = 299. 
+   YMIN      - The minimum of transit plot. Default is 0.985
+               NOTE: A constant minimum makes the plots to scale from
+               animation to animation, but this default cuts off some
+               deeper planets.
+   BAK       - A 3-element array containing the RGB values of the
+               background color. Default is [135,206,250]; (sky blue)
+               Use [255,255,255] for white.
+   MAXSTAR   - The size of the maximum star, in R_sun. A star of this
+               size will be centered left/right and span the top half of
+               the image. The total image is 4*MAXSTAR
+               square. Keeping MAXSTAR the same (positive value)
+               for multiple animations means they will be to
+               scale. Default = 1.5.
+               Numbers between -1 and 0 are interpreted as a
+               fractions of RSTAR (e.g, -1 ensures the star will take
+               up the entire range; -0.9 leaves a nice margin). Negative
+               numbers are useful if you're making a single
+               animation and want it to fit nicely.
+               NOTE: If the Rstar is larger than MAXSTAR, it will
+               produce an error.
+ OPTIONAL KEYWORDS:
+   YELLOW     - Makes the star yellow and the planet black, instead of
+                their color temperatures. 
+                NOTE: Output file is then PNAME.yellow.gif
+   DISPLAY    - Spawns firefox to display the animated gif.
+   SAVEFRAMES - The individual PNG frames are deleted upon
+                completion. Set this keyword to keep them.
+   UPDATE     - Update the local copy of exoplanets.csv
+
+ OUTPUTS:
+  pname.gif - An animated gif of the transit.
+
+ EXAMPLES:  
+   ;; creates an animation of HAT-P-3b, called 'HAT-P-3b.gif'
+   transitgif, 'HAT-P-3b'
+
+   ;; creates an animation Earth, called 'transit.gif'
+   pars = [365.242199d0,0.01671123d0,!dpi/2d0,!dpi/2d0,215.094177d0,$
+           0.0091705248d0,4.43834417d0,5778d0,0d0,1d0]
+   transitgif, pars=pars
+
+   ;; creates an animation of Jupiter, called "Jupiter.gif'
+   transitgif, 'Jupiter',pars=[4332.59d0,0.048498,!dpi/2d0,!dpi/2d0,215.094177d0*5.20260d,0.102792236d0,4.43834417d0,5778d0,0d0,1d0]
+
+   ;; Creates animations for all transiting exoplanets from exoplanets.org
+   planets = readexo(/update)
+   transit = where(planets.transit,ntransits)
+   for i=0, ntransits-1 do $
+      transitgif, strcompress(planets.name[transit[i]],/remove_all),$
+      maxstar=max(double(planets.rstar[transit])), band='Sloanz',$
+      ymin=1d0-max(double(planets.depth[transit]))
+
+ DEPENDENCIES:
+   convert. While IDL can write animated gifs directly,
+   they're only 8 bit. In color, that creates unsightly
+   ringing, so we use convert instead.
+   EXOFAST (http://astroutils.astronomy.ohio-state.edu/exofast/)
+
+ MODIFICATION HISTORY
+   2012/06 -- Public Release, Jason Eastman (LCOGT)
+</PRE><P>
+<STRONG>(See transitgif.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="WAVELETLIKE">
+<H2>WAVELETLIKE</H2></A>
+<A HREF="#TRANSITGIF">[Previous Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+       WAVELETLIKE
+ PURPOSE:
+       Calculates the (log) likelihood for a given vector to be
+       described for parameters sigma_r and sigma_w as 1/f noise plus
+       white noise as detailed by Carter & Winn (2009)
+
+ CALLING SEQUENCE:
+       result = waveletlike(x, sigma_r, sigma_w)
+
+ INPUTS:
+       X - Data vector, must be a power of two
+       SIGMA_R - Red noise amplitude parameter (not equal to
+                 1/f-component RMS)
+       SIGMA_W - White noise amplitude parameter (approximately equal
+                 to white-component RMS)
+
+ OUTPUTS:
+       RESULT - log(likelihood) as defined in Eqn. (32) of Carter &
+                Winn (2009)
+
+ NOTES:
+       Refer to the paper by Carter & Winn (2009) for theory and
+       details.  In the notation of that paper, gamma=1 for this
+       algorithm.
+
+ REVISION HISTORY:
+       Written,    J. Carter               September, 2009
+       Removed inner for loop (~7x speed gain). JDE, Dec 2012
+</PRE><P>
+<STRONG>(See exofast_wavelike.pro)</STRONG><P>
 <HR>
  
 </body>

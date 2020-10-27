@@ -12,6 +12,8 @@
 
 pro pars2str, pars, str, best=best
 
+;  if (size(str))[2] ne 8 then stop
+
   tofit = *(str.tofit)
   npars = n_elements(tofit[0,*])
 

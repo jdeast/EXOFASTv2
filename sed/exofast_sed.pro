@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug, redo=redo, flux=flux
+function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug, redo=redo, flux=flux, oned=oned
 
 common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m, w1, kapp1
 
@@ -30,12 +30,21 @@ if n_elements(fp) eq 0 or keyword_set(redo) then begin
    kapp1 = interpol(kkap,klam,w1)
 endif
 
-;; round to 0.5 dex in each (!??!)
-;logg1 = double(round(logg*2d0))/2d0
+if keyword_set(oned) then begin
+   ;; round to 0.5 dex in logg and met rather than interpolate
+   logg1 = double(round(logg*2d0))/2d0
+   exofast_interp_model,teff,logg1,met,w1,lamflam1temp,alpha=alpha,/next, interpfiles=interpfiles
+endif else begin
+   exofast_interp_model3d,teff,logg,met,w1,lamflam1temp,alpha=alpha,/next, interpfiles=interpfiles, logname=logname, verbose=verbose
+endelse
 
-exofast_interp_model3d,teff,logg,met,w1,lamflam1temp,alpha=alpha,/next, interpfiles=interpfiles, logname=logname, verbose=verbose
-;exofast_interp_model,teff,logg,met,w1,lamflam1temp,alpha=alpha,/next, interpfiles=interpfiles
-if ~finite(lamflam1temp[0]) then return, !values.d_infinity
+if ~finite(lamflam1temp[0]) then begin
+   f0 = !values.d_nan
+   fp0 = fp
+   ep0 = ep
+   return, !values.d_infinity
+endif
+
 lamflam1=lamflam1temp*rstar*rstar*rsun*rsun/d/d/pc/pc
 taul1 = kapp1/kapv/1.086*Av
 extinct1 = exp(-taul1)

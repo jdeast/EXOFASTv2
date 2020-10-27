@@ -1,3 +1,5 @@
+;; this derives all relevant parameters from the fitted parameters in
+;; the stellar structure
 function step2pars, ss, verbose=verbose, logname=logname, changedefaults=changedefaults
 
 G = ss.constants.GMSun/ss.constants.RSun^3*ss.constants.day^2 ;; R_sun^3/(m_sun*day^2)
@@ -8,30 +10,24 @@ mearth = ss.constants.gmearth/ss.constants.gmsun ;; m_sun
 rearth = ss.constants.rearth/ss.constants.rsun  ;; r_sun
 sigmaB = ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; Stefan-Boltzmann constant
 
-mindist = dblarr(ss.nplanets>1)
-maxdist = dblarr(ss.nplanets>1)
+;;; these are the default guesses... why are these here?
+;if keyword_set(changedefaults) then begin
+;   if ss.star.rstar.value ne 1d0 and ss.star.rstarsed.value eq 1d0 then ss.star.rstarsed.value = ss.star.rstar.value 
+;   if ss.star.rstar.value eq 1d0 and ss.star.rstarsed.value ne 1d0 then ss.star.rstar.value = ss.star.rstarsed.value 
+;   
+;   if ss.star.teff.value ne 5778d0 and ss.star.teffsed.value eq 5778d0 then ss.star.teffsed.value = ss.star.teff.value 
+;   if ss.star.teff.value eq 5778d0 and ss.star.teffsed.value ne 5778d0 then ss.star.teff.value = ss.star.teffsed.value 
+;endif
 
 ;; derive stellar parameters
 ss.star.mstar.value = 10^ss.star.logmstar.value
 ss.star.logg.value = alog10(ss.constants.gravitysun*ss.star.mstar.value/(ss.star.rstar.value^2)) ;; cgs
 ;; derive the distance from lstar
 ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*sigmaB ;; L_sun
-
 if ss.star.distance.fit then ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
 if ss.star.parallax.fit then ss.star.distance.value = 1d3/ss.star.parallax.value ;; mas
-;ss.star.fbol.value = (ss.star.lstar.value/ss.constants.lsun)/(4d0*!dpi*(ss.star.distance.value/ss.constants.pc)^2) ;; cgs
-
-;print, 'derived: ' + strtrim(ss.star.fbol.value,2)
-;stop
-
-;; require planets to stay in the same order as they start
-if ss.nplanets gt 0 then begin
-   if max(abs(ss.planetorder - sort(ss.planet.logp.value))) ne 0 then begin
-;      if keyword_set(verbose) then printandlog, 'Planets must remain in the original order! Rejecting step', logname
-;      stop
-;      return, -1
-   endif
-endif
+ss.star.fbol.value = (ss.star.lstar.value/ss.constants.lsun)/(4d0*!dpi*(ss.star.distance.value/ss.constants.pc)^2) ;; cgs
+ss.star.rhostar.value = ss.star.mstar.value/(ss.star.rstar.value^3)*ss.constants.rhosun ;; rho_sun
 
 for j=0, ss.ntel-1 do begin
    if ss.telescope[j].jittervar.value gt 0 then $
@@ -40,26 +36,74 @@ endfor
 
 for i=0, ss.nplanets-1 do begin
 
-   ;; derive K if logK is fit
-   if ss.planet[i].logk.fit then ss.planet[i].k.value = 10^ss.planet[i].logk.value
-   ss.planet[i].i.value = acos(ss.planet[i].cosi.value)
-   ss.planet[i].period.value = 10^ss.planet[i].logp.value
+   ;; derive the mass of the planet
+   if ss.planet[i].logmp.fit then ss.planet[i].mpsun.value = 10^ss.planet[i].logmp.value $ ;; m_sun
+   else ss.planet[i].logmp.value = alog10(ss.planet[i].mpsun.value) ;; m_sun
+   ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup ;; m_jupiter
+   ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth ;; m_earth
 
-   ;; bound tc to be within 1 period of the starting value for tc
-   if ss.planet[i].tc.prior ne 0d0 then begin
-      nper = round((ss.planet[i].tc.prior - ss.planet[i].tc.value)/ss.planet[i].period.value)
-      ss.planet[i].tc.value -= nper*ss.planet[i].period.value
+   ;; derive the radius of the planet   
+   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value ;; r_sun
+   ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup ;; r_jupiter
+   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth ;; r_earth
+
+   ;; allow neg planet mass to avoid boundary bias, but can't have neg total mass
+   if ss.star.mstar.value + ss.planet[i].mpsun.value le 0d0 then begin
+      if keyword_set(verbose) then printandlog, 'Net mass (Mstar + Mp) must be positive; rejecting step', logname
+      return, -1
    endif
 
-   ;; eccentricity and argument of periastron
+   ;; derive period
+   ss.planet[i].period.value = 10^ss.planet[i].logp.value
+
+   ;; possible e/omega/i/mp parameterizations are:
+   ;; secosw, sesinw, cosi
+   ;; ecosw, esinw
+   ;; vcve, lsinw, lcosw, cosi/chord, sign
+   ;; vcve, lsinw, lcosw, cosi/chord
+   ;; e, omega, cosi
+
+   ;; derive eccentricity and argument of periastron
    if ss.planet[i].secosw.fit and ss.planet[i].sesinw.fit then begin
       ss.planet[i].e.value = ss.planet[i].secosw.value^2 + ss.planet[i].sesinw.value^2
       ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
+   endif else if ss.planet[i].vcve.fit then begin
+
+      if ss.planet[i].lsinw2.fit then begin
+         if (ss.planet[i].vcve.value-1d0 lt 0) then $
+            ss.planet.lsinw.value = -ss.planet.lsinw2.value $
+         else ss.planet.lsinw.value = ss.planet.lsinw2.value
+      endif
+
+      ;; based on L*cos(omega) and L*sin(omega)
+      if (ss.planet[i].lsinw2.fit or ss.planet[i].lsinw.fit) and ss.planet[i].lcosw.fit then begin
+         ss.planet[i].omega.value = atan(ss.planet[i].lsinw.value, ss.planet[i].lcosw.value)
+      endif
+
+      ;; what sign of the quadratic solution?
+      if ss.planet[i].sign.fit then begin
+         ;; we fit for it
+         sign = floor(ss.planet[i].sign.value)
+         ;; ****** this flips the sign of the sign and is experimental*******
+         if ss.planet[i].vcve.value lt 1d0 then sign = ~sign
+      endif else begin
+         ;; L implicitly defines it
+         lsq = ss.planet[i].lsinw.value^2 + ss.planet[i].lcosw.value^2
+         sign = (lsq ge 0.5d0) ;; if L^2 >= 0.5, use the positive solution to the quadratic!
+      endelse
+
+      ss.planet[i].e.value = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=sign)
+      if ~finite(ss.planet[i].e.value) or ss.planet[i].e.value lt 0d0 or ss.planet[i].e.value ge 1d0 then begin
+         if keyword_set(verbose) then printandlog, 'e is not in range', logname
+         return, -1   
+      endif
    endif else if ss.planet[i].ecosw.fit and ss.planet[i].esinw.fit then begin
+      ;; ecosw, esinw parameterization
       ss.planet[i].e.value = sqrt(ss.planet[i].ecosw.value^2 + ss.planet[i].esinw.value^2)
       ss.planet[i].omega.value = atan(ss.planet[i].esinw.value,ss.planet[i].ecosw.value)
    endif else if ss.planet[i].e.fit and ss.planet[i].omega.fit then begin
-      if ss.planet[i].e.value lt 0d0 then begin
+      ;; fit e, omega direct
+      if ss.planet[i].e.value lt 0d0 or ss.planet[i].e.value ge 1d0 then begin
          if keyword_set(verbose) then printandlog, 'Eccentricity not allowed'
          return, -1
       endif
@@ -72,58 +116,18 @@ for i=0, ss.nplanets-1 do begin
       ss.planet[i].omega.value = atan(ss.planet[i].qesinw.value,ss.planet[i].qecosw.value)
    endif
 
-   ;; bound lambda to be between -pi and pi
-   ss.planet[i].lambda.value = ss.planet[i].lambda.value mod (2d0*!dpi)
-   if ss.planet[i].lambda.value gt !dpi then ss.planet[i].lambda.value -= (2d0*!dpi)
-   if ss.planet[i].lambda.value lt -!dpi then ss.planet[i].lambda.value += (2d0*!dpi)
+   ;; derive various combinations of e and omega
+   if ss.planet[i].e.value eq 0d0 then ss.planet[i].omega.value = !dpi/2d0
+   ss.planet[i].omegadeg.value = ss.planet[i].omega.value*180d0/!dpi
+   if ~ss.planet[i].esinw.fit then ss.planet[i].esinw.value = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
+   if ~ss.planet[i].ecosw.fit then ss.planet[i].ecosw.value = ss.planet[i].e.value*cos(ss.planet[i].omega.value)
+   if ~ss.planet[i].vcve.fit then ss.planet[i].vcve.value = sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
 
-   if ss.fitrv[i] or ss.fittran[i] or i gt 1 then begin
-      ;; fitting transits, RVs, or multiple planets mean we can resolve the discreet degeneracy
-      ;; between Omega and Omega + pi
-      if ss.planet[i].bigomega.value ge (2d0*!dpi) then ss.planet[i].bigomega.value -= 2d0*!dpi
-      if ss.planet[i].bigomega.value lt 0d0  then ss.planet[i].bigomega.value += 2d0*!dpi
-   endif else begin
-      ;; otherwise, we can only measure the longitude of the Node 
-      ;; (0 < Omega < 180)
-      if ss.planet[i].bigomega.value ge (!dpi) then ss.planet[i].bigomega.value -= !dpi
-      if ss.planet[i].bigomega.value lt 0d0  then ss.planet[i].bigomega.value += !dpi
-   endelse
-
-   if ss.planet[i].k.value le 0d0 then begin
-      ss.planet[i].mpsun.value = -ktom2(-ss.planet[i].K.value, ss.planet[i].e.value,$
-                                        ss.planet[i].i.value, ss.planet[i].period.value, $
-                                        ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun      
-   endif else ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
-                                               ss.planet[i].i.value, ss.planet[i].period.value, $
-                                               ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
-
-;   if ss.planet[i].mpsun.value gt 0.08d0 then begin
-;      if keyword_set(verbose) then printandlog, 'Planet ' + strtrim(i,2) + ' mass (' + strtrim(ss.planet[i].mpsun.value/mjup,2) + ' M_J) above hydrogen burning limit',logname
-;      return, -1 ;; planet above the hydrogen burning limit
-;   endif
-
-   if ss.star.mstar.value + ss.planet[i].mpsun.value le 0d0 then begin
-      if keyword_set(verbose) then printandlog, 'Net mass (Mstar + Mp) must be positive; rejecting step', logname
-      return, -1
-   endif
-
-   if ~finite(ss.planet[i].mpsun.value) then begin
-      if keyword_set(verbose) then printandlog, 'Planet mass must be finite; rejecting step', logname
-      return, -1
-   endif
-
-   ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup ;; m_jupiter
-   ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth ;; m_earth
+   ;; derive a/rstar, a
    ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
-                             (4d0*!dpi^2))^(1d0/3d0)                    ;; semi-major axis in r_sun
-   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value ;; a/rstar (unitless)
+                             (4d0*!dpi^2))^(1d0/3d0)                       ;; semi-major axis in r_sun
+   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value    ;; a/rstar (unitless)
    ss.planet[i].a.value = ss.planet[i].arsun.value/AU ;; semi major axis in AU
-
-   ;; tighter (empirical) constraint on eccentricity (see Eastman 2013)
-   if ss.tides and ss.planet[i].e.value gt (1d0-3d0/ss.planet[i].ar.value) then begin
-      if keyword_set(verbose) then printandlog, 'TIDES flag set and eccentricity (' + strtrim(ss.planet[i].e.value,2) + ') exceeds empirical limit (' + strtrim((1d0-3d0/ss.planet[i].ar.value),2) + ')', logname
-      return, -1
-   endif ;else if ss.planet[i].e.value gt (1d0-1d0/ss.planet[i].ar.value)
 
    ;; limit eccentricity to avoid collision with star during periastron
    ;; the ignored tidal effects would become important long before this,
@@ -131,53 +135,130 @@ for i=0, ss.nplanets-1 do begin
    ;; the not/lt (instead of ge) robustly handles NaNs too
    ;; abs(p) because p is allowed to be negative to eliminate bias
    if not (ss.planet[i].e.value lt (1d0-1d0/ss.planet[i].ar.value-abs(ss.planet[i].p.value)/ss.planet[i].ar.value)) then begin
-      if keyword_set(verbose) then printandlog, 'Planet ' + strtrim(i,2) + ' will collide with the star! e=' + strtrim(ss.planet[i].e.value,2) + '; a/Rstar=' + strtrim(ss.planet[i].ar.value,2) + '; Rp/Rstar=' + strtrim(ss.planet[i].p.value,2) + '; Rstar=' + strtrim(ss.star.rstar.value,2), logname
-      if keyword_set(verbose) then printandlog, 'Rstar is derived from YY isochrones; adjust starting values for Age, Teff, [Fe/H], or Mstar to change it', logname
+      if keyword_set(verbose) then begin
+         printandlog, 'Planet ' + strtrim(i,2) + ' will collide with the star!'+$
+                      'e= ' + strtrim(ss.planet[i].e.value,2) + $
+                      '; a/Rstar=' + strtrim(ss.planet[i].ar.value,2) + $
+                      '; Rp/Rstar=' + strtrim(ss.planet[i].p.value,2) + $
+                      '; Rstar=' + strtrim(ss.star.rstar.value,2), logname
+         printandlog, "a/Rstar is derived using Kepler's law; adjust starting values " + $
+                      'for mstar, mp, or period to change it', logname
+      endif
       return, -1
    endif
 
-   if ss.planet[i].e.value eq 0d0 then ss.planet[i].omega.value = !dpi/2d0
+   ;; error checking -- this should never happen
+   if ~finite(ss.planet[i].ar.value) then begin
+      printandlog, 'a/rstar is not finite; this should never happen', ss.logname
+      stop
+   endif
 
-   if ~finite(ss.planet[i].ar.value ) then stop
+   if ss.planet[i].chord.fit then begin
+      ;; derive cosi from chord
+      ss.planet[i].b.value = sqrt((1d0+ss.planet[i].p.value)^2-ss.planet[i].chord.value^2)
+      ss.planet[i].cosi.value = ss.planet[i].b.value/$
+                                (ss.planet[i].ar.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value))
 
-   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value ;; r_sun
-   ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup ;; r_jupiter
-   ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth ;; r_earth
+;***** debugging ********
+      if ss.planet[i].cosi.value lt 0d0 then begin
+         printandlog, string(ss.planet[i].b.value,format='("b=",f0.20)'), logname
+         printandlog, string(ss.planet[i].ar.value,format='("a/r=",f0.20)'), logname
+         printandlog, string(ss.planet[i].e.value,format='("e=",f0.20)'), logname
+         printandlog, string(ss.planet[i].esinw.value,format='("esinw=",f0.20)'), logname
+         printandlog, string(ss.planet[i].sign.value,format='("sign=",f0.20)'), logname
+         printandlog, string(ss.planet[i].vcve.value,format='("vcve=",f0.20)'), logname
+         printandlog, string(ss.planet[i].lsinw.value,format='("lsinw=",f0.20)'), logname
+         printandlog, string(ss.planet[i].lsinw2.value,format='("lsinw2=",f0.20)'), logname
+         printandlog, string(ss.planet[i].lcosw.value,format='("lcosw=",f0.20)'), logname
+      endif
+;*************************
 
-   ss.planet[i].esinw.value = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
-   ss.planet[i].b.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value) ;; eq 7, Winn 2010
+   endif else if ss.planet[i].b.fit then begin
+      ;; derive cosi from b
+      ss.planet[i].cosi.value = ss.planet[i].b.value/$
+                                (ss.planet[i].ar.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value))
+   endif else if ss.planet[i].cosi.fit then begin
+      ;; derive b from cosi
+      ss.planet[i].b.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*$
+                             (1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value) ;; eq 7, Winn 2010
+   endif
+   ss.planet[i].bs.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value)  ;; eq 8, Winn 2010
 
-   ;; no transit and we're fitting a transit! This causes major problems; exclude this model
-   if ss.planet[i].fittran and (ss.planet[i].b.value gt (1d0+ss.planet[i].p.value)) then begin
-       if keyword_set(verbose) then printandlog, 'Planet does not transit!', logname
+   ;; TC2TT can fail at weird inclinations; do this rejection here (instead of exofast_chi2v2.pro) 
+   if ss.fittran[i] and (abs(ss.planet[i].b.value) gt (1d0 + ss.planet[i].p.value)) and (abs(ss.planet[i].bs.value) gt (1d0 + ss.planet[i].p.value)) then begin
+      if keyword_set(verbose) then printandlog, 'planet does not transit; rejecting step', logname
+      return, -1
+   endif else if ss.planet[i].cosi.value lt 0 and ~ss.planet[i].i180 then begin
+      if keyword_set(verbose) then printandlog, 'cosi out of bounds; rejecting step', logname
+      return, -1
+   endif else if abs(ss.planet[i].cosi.value) gt 1d0 then begin
+      if keyword_set(verbose) then printandlog, 'cosi out of bounds; rejecting step', logname
       return, -1
    endif
 
-   ;; time of periastron
+   ;; derive inclination
+   ss.planet[i].i.value = acos(ss.planet[i].cosi.value)
+   ss.planet[i].ideg.value = ss.planet[i].i.value*180d0/!dpi
+
+   ;; derive RV semi-amplitude
+   ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mpsun.value)^2d0))^(1d0/3d0) * $
+                          ss.planet[i].mpsun.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value^2)*ss.constants.rsun/ss.constants.meter/ss.constants.day ;; m/s
+   
+   ;; Faigler & Mazeh, 2011
+   ;; this assumes alpha_beam = 1d0, when in reality it is between 0.8
+   ;; and 1.2
+   if ss.planet[i].beam.derive and ~ss.planet[i].beam.fit then $
+      ss.planet[i].beam.value = 4d0*ss.planet[i].k.value/(ss.constants.c/ss.constants.meter) ;; eq 1
+;   if ss.planet[i].ellipsoidal.derive then $
+;      ss.planet[i].ellipsoidal.value = ss.planet[i].mpsun.value/ss.star.mstar.value*sin(ss.planet[i].i.value)/ss.planet.ar.value^3*sin(ss.planet[i].i.value) ;; eq 2
+
+   ;; derive lambda and bigomega
+   ss.planet[i].lambda.value = atan(ss.planet[i].lsinlambda.value,ss.planet[i].lcoslambda.value)
+   ss.planet[i].bigomega.value = atan(ss.planet[i].lsinbigomega.value,ss.planet[i].lcosbigomega.value)
+
+   if ss.planet[i].tt.fit then begin
+
+      ;; compute the time of conjunction
+      ss.planet[i].tc.value = tc2tt(ss.planet[i].tt.value,$
+                                    ss.planet[i].e.value,$
+                                    ss.planet[i].i.value,$
+                                    ss.planet[i].omega.value,$
+                                    ss.planet[i].period.value,/reverse)
+
+   endif else begin
+      ;; tc is fit, don't bother computing tt unless it's constrained by a prior
+      if ss.planet[i].tt.prior ne 0 then begin
+         
+         ;; compute the time of minimum projected separation
+         ss.planet[i].tt.value = tc2tt(ss.planet[i].tc.value,$
+                                       ss.planet[i].e.value,$
+                                       ss.planet[i].i.value,$
+                                       ss.planet[i].omega.value,$
+                                       ss.planet[i].period.value)
+         
+      endif
+   endelse
+
+   ;; time of periastron (required for the model)
    ss.planet[i].phase.value=exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value,/pri)
    ss.planet[i].tp.value = ss.planet[i].tc.value - ss.planet[i].period.value*ss.planet[i].phase.value
+   ;; pick the value closest to Tc
+   if ss.planet[i].tp.value gt ss.planet[i].tc.value + ss.planet[i].period.value/2d0 then ss.planet[i].tp.value -= ss.planet[i].period.value
+   if ss.planet[i].tp.value lt ss.planet[i].tc.value - ss.planet[i].period.value/2d0 then ss.planet[i].tp.value -= ss.planet[i].period.value
 
-   if keyword_set(changedefaults) then begin
-      ;; if the user supplied a value rp/rstar but not K, use
-      ;; the mass-radius relation to derive a better starting value for K
-      if ss.planet[i].k.value eq 10d0 and ss.planet[i].p.value ne 0.1d0 then begin
-         ss.planet[i].mpearth.value = massradius_chenreverse(ss.planet[i].rpearth.value)
-         ss.planet[i].mpsun.value = ss.planet[i].mpearth.value*mearth ;; m_sun
-         ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup        ;; m_jupiter
-         ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mpsun.value)^2d0))^(1d0/3d0) * $
-                                ss.planet[i].mpsun.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value^2)*ss.constants.rsun/ss.constants.meter/ss.constants.day ;; m/s
-         ss.planet[i].logk.value = alog10(ss.planet[i].k.value)
-      endif
+   ;; for plotting (fitting?) secondaries
+   phase2 = exofast_getphase(ss.planet[i].e.value,ss.planet[i].omega.value,/secondary)
+   ss.planet[i].ts.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phase2)
 
-      ;; if the user supplied a value of K changed, but not rp/rstar, use
-      ;; the mass-radius relation to derive a better starting value for rp/rstar
-      if ss.planet[i].p.value eq 0.1d0 and ss.planet[i].k.value ne 10d0 then begin
-         ss.planet[i].rpearth.value = massradius_chen(ss.planet[i].mpearth.value)
-         ss.planet[i].rpsun.value = ss.planet[i].rpearth.value*rearth ;; r_sun
-         ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup        ;; r_jupiter
-         ss.planet[i].p.value = ss.planet[i].rpsun.value/ss.star.rstar.value  
-      endif
-   endif
+   ;; if given a prior, select the epoch closest to that prior
+   if ss.planet[i].ts.prior ne 0d0 then begin
+      nper = round((ss.planet[i].ts.prior - ss.planet[i].ts.value)/ss.planet[i].period.value)
+      ss.planet[i].ts.value += nper*ss.planet[i].period.value
+   endif else begin
+      ;; otherwise select the epoch closest to Tc
+      nper = round((ss.planet[i].tc.value - ss.planet[i].ts.value)/ss.planet[i].period.value)
+      ss.planet[i].ts.value += nper*ss.planet[i].period.value
+   endelse
 
 endfor
 
@@ -186,26 +267,6 @@ for i=0L, ss.nband-1 do begin
    fluxfraction = ss.band[i].dilute.value
    ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
 endfor
-
-if ~ss.alloworbitcrossing then begin
-   for i=0L, ss.nplanets-1 do begin
-      ;; for multi-planet systems, make sure they don't enter each other's hill spheres
-      ;; if mp unknown, mp=0 => hill radius=0 => planets can't cross orbits
-      ;; **** ignores mutual inclination; a priori excludes systems like Neptune and Pluto!! ****
-      hillradius = ((1d0-ss.planet[i].e.value)*ss.planet[i].a.value*(ss.planet[i].mpsun.value/(3d0*ss.star.mstar.value))^(1d0/3d0)) > 0d0
-      mindist[i] = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value - hillradius
-      maxdist[i] = (1d0+ss.planet[i].e.value)*ss.planet[i].a.value + hillradius
-      for j=i-1,0,-1 do begin
-         if ((mindist[i] ge mindist[j]) and (mindist[i] le maxdist[j])) or $
-            ((maxdist[i] ge mindist[j]) and (maxdist[i] le maxdist[j])) or $
-            ((mindist[j] ge mindist[i]) and (mindist[j] le maxdist[i])) or $
-            ((maxdist[j] ge mindist[i]) and (maxdist[j] le maxdist[i])) then begin
-            if keyword_set(verbose) then printandlog, 'Planets ' + strtrim(j,2) + ' (' + strtrim(mindist[j],2) + ',' + strtrim(maxdist[j],2) + ') and ' + strtrim(i,2) + ' (' + strtrim(mindist[i],2) + ',' + strtrim(maxdist[i],2) + ') cross paths', logname
-            return, -1
-         endif
-      endfor
-   endfor
-endif
 
 return, 1
 end

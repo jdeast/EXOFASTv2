@@ -65,12 +65,14 @@
 ;    
 ;-
 function exofast_tran, time, inc, ar, tp, period, e, omega, p, u1, u2, f0, $
-                       rstar=rstar, thermal=thermal, reflect=reflect, $
+                       rstar=rstar, thermal=thermal, reflect=reflect, beam=beam, ellipsoidal=ellipsoidal, $
                        dilute=dilute, tc=tc, q=q, au=au,c=c;,x1=x1,y1=y1,z1=z1
 
-if n_elements(thermal) eq 0 then thermal = 0
-if n_elements(reflect) eq 0 then reflect = 0
-if n_elements(dilute) eq 0 then dilute = 0
+if n_elements(thermal) eq 0 then thermal = 0d0
+if n_elements(reflect) eq 0 then reflect = 0d0
+if n_elements(dilute) eq 0 then dilute = 0d0
+if n_elements(ellipsoidal) eq 0 then ellipsoidal = 0d0
+if n_elements(beam) eq 0 then beam = 0d0
 if n_elements(AU) eq 0 then AU = 215.094177d0
 
 ;; if we have the stellar radius, we can convert time to the
@@ -112,12 +114,30 @@ if reflect ne 0d0 then begin
       phase = exofast_getphase(e,omega,/primary)  
       tc0 = tp - phase*period
    endif else tc0 = tc
-   modelflux+=1d-6*reflect*cos(2d0*!dpi*(transitbjd-tc0)/period)*planetvisible
+   modelflux-=1d-6*reflect*cos(2d0*!dpi*(transitbjd-tc0)/period)*planetvisible
 endif
 
 ;; normalization and dilution due to neighboring star
 if dilute ne 0d0 then modelflux = f0*(modelflux*(1d0-dilute)+dilute) $
 else modelflux *= f0
+
+;; add beaming and ellipsoidal variations
+if ellipsoidal ne 0d0 then begin
+   if n_elements(tc) eq 0 and n_elements(tc0) eq 0 then begin
+      phase = exofast_getphase(e,omega,/primary)  
+      tc0 = tp - phase*period
+   endif else tc0 = tc
+   modelflux = modelflux * (1d0 - ellipsoidal/1d6*cos(2d0*!dpi*(transitbjd-tc0)/(period/2d0)))
+endif
+
+if beam ne 0d0 then begin
+   if n_elements(tc) eq 0 and n_elements(tc0) eq 0 then begin
+      phase = exofast_getphase(e,omega,/primary)  
+      tc0 = tp - phase*period
+   endif else tc0 = tc
+   modelflux += beam/1d6 * sin(2d0*!dpi*(transitbjd-tc0)/period)
+endif
+
 
 return, modelflux
 

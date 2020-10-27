@@ -48,10 +48,22 @@
 
 function exofast_chi2v2, pars, determinant=determinant, $
                          modelrv=modelrv, modelflux=modelflux, psname=psname, $
-                         derived=derived
+                         derived=derived, loadss=loadss, ss0=ss0
 
 COMMON chi2_block, ss
+
 ;; populate the structure with the new parameters
+if keyword_set(loadss) then begin
+   ss = ss0
+   return, -1
+endif
+
+;; this is just a time sink for debugging/evaluating multithreading
+;; it should never be uncommented in production code!!
+;for i=0L, 2.5d6 do t = i ;; this takes 0.05 seconds on my machine
+;for i=0L, 2.5d7 do t = i ;; this takes 0.5 seconds on my machine
+for i=0L, ss.delay do t = i ;; this takes 0.5 seconds on my machine
+
 if n_elements(pars) ne 0 then pars2str, pars, ss
 
 au = ss.constants.au/ss.constants.rsun
@@ -64,6 +76,10 @@ au = ss.constants.au/ss.constants.rsun
 chi2 = 0.d0
 determinant = 1d0
 
+if ss.debug or ss.verbose then printandlog, '', ss.logname
+
+;; *** First make sure step parameters are in bounds ***
+
 ;; physical limb darkening (Kipping, 2013)
 ;; http://adsabs.harvard.edu/abs/2013MNRAS.435.2152K, eq 8
 if (where(ss.planet.fittran))[0] ne -1 then begin
@@ -71,7 +87,8 @@ if (where(ss.planet.fittran))[0] ne -1 then begin
                ss.band.u1.value lt 0d0 or $
                ss.band.u1.value + 2d0*ss.band.u2.value lt 0d0, nbad)
    if nbad gt 0 then begin
-      if ss.debug then printandlog, strtrim(nbad,2) + ' limb darkening parameters are bad (' + strtrim(ss.band[bad[0]].u1.value,2) + ', ' + strtrim(ss.band[bad[0]].u2.value,2) + ')',ss.logname
+      if ss.debug or ss.verbose then printandlog, $
+         strtrim(nbad,2) + ' limb darkening parameters are bad (' + strtrim(ss.band[bad[0]].u1.value,2) + ', ' + strtrim(ss.band[bad[0]].u2.value,2) + ')',ss.logname
       return, !values.d_infinity
    endif
 endif
@@ -79,87 +96,107 @@ endif
 ;; 0.1 < Period < 10^13 (~age of the universe)
 bad = where(ss.planet.logp.value gt 13d0 or ss.planet.logp.value lt -1d0,nbad)
 if nbad gt 0 then begin
-   if ss.debug then printandlog, 'logP is bad (' + strtrim(bad,2) + ')', ss.logname
-   return, !values.d_infinity
-endif
-
-;; tc-period/2 < tc < tc+period/2
-ss.planet.period.value = 10^ss.planet.logp.value
-bad = where(abs(ss.planet.tc.value - ss.planet.tc.prior) gt ss.planet.period.value/2d0,nbad)
-if nbad gt 0 then begin
-   if ss.debug then printandlog, 'tc is bad (' + strtrim(ss.planet[bad].tc.value,2) + ')', ss.logname
+   if ss.debug or ss.verbose then printandlog, 'logP is bad (' + strtrim(bad,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
 ;; -max(period)/2 < ttv < max(period)/2
 bad = where(abs(ss.transit.ttv.value) gt max(ss.planet.period.value)/2d0,nbad)
 if nbad gt 0 then begin
-   if ss.debug then printandlog, 'ttv is bad (' + strtrim(ss.transit[bad].ttv.value,2) + ')', ss.logname
-   return, !values.d_infinity
-endif
-
-;; 0 <= cosi <= 1 (or -1 <= cosi <= 1 if i180 keyword set or astrometry fit)
-bad = where(ss.planet.cosi.value gt 1 or (ss.planet.cosi.value lt 0 and ~ss.planet.i180) or (ss.planet.cosi.value lt -1),nbad)
-if nbad gt 0 then begin
-   if ss.debug then printandlog, 'cosi is bad (' + strtrim(bad,2) + ')', ss.logname
+   if ss.debug or ss.verbose then printandlog, 'ttv is bad (' + strtrim(ss.transit[bad].ttv.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
 ;; older than the universe (too conservative?)
 if ss.star.age.value gt 13.82d0 or ss.star.age.value lt 0d0 then begin
-   if ss.debug then printandlog, strtrim(nbad,2) + ' age is bad (' + strtrim(bad,2) + ')',ss.logname
+   if ss.debug or ss.verbose then printandlog, strtrim(nbad,2) + ' age is bad (' + strtrim(bad,2) + ')',ss.logname
    return, !values.d_infinity
 endif
 
 ;; positive extinction
 if ss.star.av.value lt 0 or ss.star.av.value gt 1d3 then begin
-   if ss.debug then printandlog, 'extinction is bad (' + strtrim(ss.star.av.value,2) + ')',ss.logname
+   if ss.debug or ss.verbose then printandlog, 'extinction is bad (' + strtrim(ss.star.av.value,2) + ')',ss.logname
    return, !values.d_infinity
 endif
 
 ;; can't have more than +/-100% dilution
-bad = where((ss.band.u1.fit or ss.band.u2.fit) and (ss.band.dilute.value le -1 or ss.band.dilute.value ge 1),nbad)
+bad = where(ss.band.dilute.fit and (ss.band.dilute.value le -1d0 or ss.band.dilute.value ge 1d0),nbad)
 if nbad gt 0 then begin
-   if ss.debug then printandlog, 'dilution is bad (' + strtrim(ss.band[bad].dilute.value,2) + ')',ss.logname
+   if ss.debug or ss.verbose then printandlog, 'dilution is bad (' + strtrim(ss.band[bad].dilute.value,2) + ')',ss.logname
    return, !values.d_infinity
 endif
 
 ;; 0.9 AU to the size of the universe
 if ss.star.distance.value lt 4d-6 or ss.star.distance.value gt 3d10 then begin
-   if ss.debug then printandlog, 'distance is bad (' + strtrim(ss.star.distance.value,2) + ')',ss.logname
+   if ss.debug or ss.verbose then printandlog, 'distance is bad (' + strtrim(ss.star.distance.value,2) + ')',ss.logname
    return, !values.d_infinity
 endif
 
-;; bound marginally detected planets to limit (infinite) parameter space at low logK
-;; conservative lower limit of 1 Ceres in 1 year orbit around sun = 10 um/s
-;; conservative upper limit corresponds to 500 solar masses (larger
-;; than the largest known star)
-bad = where((ss.planet.logk.value lt -5d0 or ss.planet.logk.value gt 5d0) and ss.planet.logk.fit, nbad)
+;; check vcve
+bad = where(ss.planet.vcve.value lt 0, nbad)
 if nbad gt 0 then begin
-   if ss.debug  or ss.verbose then printandlog, 'logK is bad (' + strtrim(ss.planet[bad].logk.value,2) + ')', ss.logname
+   if ss.debug or ss.verbose then printandlog, 'vcve is bad (' + strtrim(ss.planet[bad].vcve.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; check sign
+bad = where(ss.planet.sign.value lt 0 or ss.planet.sign.value ge 2, nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'sign is bad (' + strtrim(ss.planet[bad].sign.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif 
+
+;; Omega boundary checking
+bad = where(ss.planet.lsinbigomega.value^2 + ss.planet.lsinbigomega.value^2 gt 1d0, nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'bigomega is bad', ss.logname
+   return, !values.d_infinity
+endif
+
+;; limit 0 < Omega < 180 if RVs or Transits not fit
+bad = where((ss.planet.lsinbigomega.value lt 0d0 or ss.planet.lcosbigomega.value lt 0d0) and (ss.fitrv or ss.fittran), nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'bigomega is bad', ss.logname
+   return, !values.d_infinity
+endif
+
+;; lambda boundary checking
+bad = where(ss.planet.lsinlambda.value^2 + ss.planet.lcoslambda.value^2 gt 1d0, nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'lambda is bad', ss.logname
    return, !values.d_infinity
 endif
 
 ;; -c < gamma < c
 bad = where(abs(ss.telescope.gamma.value) gt ss.constants.c/ss.constants.meter,nbad)
 if nbad gt 0 then begin
-   if ss.debug  or ss.verbose then printandlog, 'gamma is bad (' + strtrim(ss.telescope[bad].gamma.value,2) + ')', ss.logname
+   if ss.debug or ss.verbose then printandlog, 'gamma is bad (' + strtrim(ss.telescope[bad].gamma.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
+;; excludes non-transiting planets where the transit is fit
+bad = where((ss.planet.chord.value le 0d0 or ss.planet.chord.value gt (1d0+ss.planet.p.value)) and ss.planet.fittran,nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'chord is bad (' + strtrim(bad,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; -c^2 < jitter^2 < c^2
 bad = where(abs(ss.telescope.jittervar.value) gt (ss.constants.c/ss.constants.meter)^2,nbad)
 if nbad gt 0 then begin
    if ss.debug  or ss.verbose then printandlog, 'jittervar is bad (' + strtrim(ss.telescope[bad].jittervar.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
+;; abs(slope) < 1d5 m/s/day
 if abs(ss.star.slope.value) gt 1d5 then begin
-   if ss.debug  or ss.verbose then printandlog, 'slope is bad (' + strtrim(ss.star.slope.value,2) + ')', ss.logname
+   if ss.debug or ss.verbose then printandlog, 'slope is bad (' + strtrim(ss.star.slope.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
+;; abs(quad) < 1d5 m/s/day^2
 if abs(ss.star.quad.value) gt 1d5 then begin
-   if ss.debug  or ss.verbose then printandlog, 'quad is bad (' + strtrim(ss.star.quad.value,2) + ')', ss.logname
+   if ss.debug or ss.verbose then printandlog, 'quad is bad (' + strtrim(ss.star.quad.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
@@ -187,9 +224,25 @@ if ss.star.rstar.value lt 1d-6 or ss.star.rstar.value gt 2000d0 then begin
    return, !values.d_infinity
 endif
 
+;; 10^-6 < rstar < 2000
+if ss.star.rstarsed.value lt 1d-6 or ss.star.rstarsed.value gt 2000d0 then begin
+   if ss.debug or ss.verbose then printandlog, 'rstarsed is bad (' + strtrim(ss.star.rstar.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
 ;; 10^-3 < mstar < 500
 if ss.star.logmstar.value lt -3 or ss.star.logmstar.value gt 2.6989700d0 then begin
    if ss.debug or ss.verbose then printandlog, 'mstar is bad (' + strtrim(ss.star.mstar.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; bound marginally detected planets to limit (infinite) parameter space at low logmp
+;; conservative lower limit of 1 Ceres in 1 year orbit around sun = 10 um/s
+;; conservative upper limit corresponds to 500 solar masses (larger
+;; than the largest known star)
+bad = where((ss.planet.logmp.value lt -9.4d0 or ss.planet.logmp.value gt 2.7d0) and ss.planet.logmp.fit, nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'logmp is bad (' + strtrim(ss.planet[bad].logmp.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
@@ -207,32 +260,32 @@ if ss.nastrom gt 0 then begin
       if ss.debug or ss.verbose then printandlog, 'ra is bad (' + strtrim(ss.star.ra.value,2) + ')', ss.logname
       return, !values.d_infinity
    endif
-
+   
    ;; -90 <= dec+decoffset <= 90
    bad = where(abs(ss.star.dec.value + ss.astrom.decoffset.value) gt 90,nbad)
    if nbad gt 0 then begin
       if ss.debug or ss.verbose then printandlog, 'dec is bad (' + strtrim(ss.star.dec.value +ss.astrom[bad].decoffset.value,2) + ')', ss.logname
       return, !values.d_infinity
    endif
-
+   
    ;; -20000 <= pmra <= 20000 (2x barnard's star)
    if abs(ss.star.pmra.value) gt 2d4 then begin
       if ss.debug or ss.verbose then printandlog, 'pmra is bad (' + strtrim(ss.star.pmra.value,2) + ')', ss.logname
       return, !values.d_infinity
    endif
-
+   
    ;; -20000 <= pmdec <= 20000 (2x barnard's star)
    if abs(ss.star.pmdec.value) gt 2d4 then begin
       if ss.debug or ss.verbose then printandlog, 'pmdec is bad (' + strtrim(ss.star.pmdec.value,2) + ')', ss.logname
       return, !values.d_infinity
    endif
-
+   
    ;; -c <= rvabs <= c 
    if abs(ss.star.rvabs.value) gt ss.constants.c/ss.constants.meter then begin
       if ss.debug or ss.verbose then printandlog, 'pmdec is bad (' + strtrim(ss.star.pmdec.value,2) + ')', ss.logname
       return, !values.d_infinity
    endif
-
+   
 endif
 
 ;; 0.01 < DT error scaling < 100
@@ -242,86 +295,116 @@ if nbad gt 0 then begin
    return, !values.d_infinity
 endif
 
+;; require planets to stay in the same order as they start
+if ss.nplanets gt 0 then begin
+   if max(abs(ss.planetorder - sort(ss.planet.logp.value))) ne 0 then begin
+      if keyword_set(verbose) then printandlog, 'Planets must remain in the original order! Rejecting step', logname
+      return, !values.d_infinity
+   endif
+endif
+
 ;; limit range of alpha abundance (not used yet)
 ;if ss.star.alpha.value lt -0.3d0 or ss.star.alpha.value gt 0.7d0 then begin
 ;   if ss.debug or ss.verbose then printandlog, 'alpha is bad (' + strtrim(ss.star.alpha.value,2) + ')', ss.logname
 ;   return, !values.d_infinity
 ;endif
 
-;; derive the model parameters from the stepping parameters (return if
-;; unphysical)
-if step2pars(ss,verbose=ss.debug,logname=ss.logname) eq -1 then begin
+;; **** Now place additional physical constraints on derived parameters ****
+
+;; derive the model parameters from the step parameters
+;; (returns -1 if can't be derived due to non-physical inputs)
+if step2pars(ss,verbose=(ss.debug or ss.verbose),logname=ss.logname) eq -1 then begin
    if ss.debug or ss.verbose then printandlog, 'stellar system is bad', ss.logname
    return, !values.d_infinity
 endif
 
-;; if angles are directly fit, repopulate the parameter array 
-;; (to ensure they stay in range)
-if (where(ss.planet.omega.fit))[0] ne -1 or $
-   (where(ss.planet.bigomega.fit))[0] ne -1 or $
-   (where(ss.planet.lambda.fit))[0] ne -1 then pars = str2pars(ss)
+;; check angular parameters
+;; omega boundary checking
+bad = where(ss.planet.lsinw.value^2 + ss.planet.lcosw.value^2 gt 1d0, nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'omega is bad', ss.logname
+   return, !values.d_infinity
+endif
 
-;; use the YY tracks to guide the stellar parameters
-if ss.yy then begin
-   if keyword_set(psname) then epsname = psname+'.yy.eps'
-   yychi2 = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, $
-                           ss.star.age.value, ss.star.teff.value,$
-                           yyrstar=yyrstar, debug=ss.debug, psname=epsname, $
-                           sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
-                           gravitysun=ss.constants.gravitysun)
-   if ~finite(yychi2) then begin
-      if ss.debug then printandlog, 'star not on YY tracks', ss.logname
+;; tighter (empirical) constraint on eccentricity (see Eastman 2013)
+if ss.tides then begin
+   bad = where(ss.planet.e.value gt (1d0-3d0/ss.planet.ar.value), nbad)
+   if nbad ne 0 then begin
+      if ss.verbose then $
+         printandlog, 'TIDES flag set and eccentricity (' + strtrim(ss.planet[bad].e.value,2) + $
+                   ') exceeds empirical limit (' + strtrim((1d0-3d0/ss.planet[bad].ar.value),2) + ')', ss.logname
       return, !values.d_infinity
    endif
-
-   yychi2 += ((ss.star.rstar.value - yyrstar)/(0.03*yyrstar))^2
-   chi2 += yychi2
-   if ss.verbose then printandlog, 'YY penalty = ' + strtrim(yychi2,2), ss.logname
 endif
 
-;; use the MIST tracks to guide the stellar parameters
-if ss.mist then begin
-   if keyword_set(psname) then epsname = psname+'.mist.eps'
+;; no transit and we're fitting a transit! This causes major
+;; problems; exclude this model (but this biases the significance of
+;; the detection)
+bad = where(ss.planet.fittran and ss.planet.b.value gt (1d0+ss.planet.p.value), nbad)
 
-   mistchi2 = massradius_mist(ss.star.eep.value, ss.star.mstar.value, ss.star.initfeh.value, $
-                              ss.star.age.value, ss.star.teff.value,$
-                              ss.star.rstar.value, ss.star.feh.value, debug=ss.debug, $
-                              epsname=epsname, gravitysun=ss.constants.gravitysun, $
-                              fitage=ss.star.age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose)
-
-   chi2 += mistchi2
-   if ss.verbose then printandlog, 'MIST penalty = ' + strtrim(mistchi2,2), ss.logname
-   if ~finite(chi2) then begin
-      if ss.debug then printandlog, 'star not on MIST tracks', ss.logname
-      return, !values.d_infinity
-   endif
-   determinant *= ageweight ;; correct uniform EEP prior to uniform Age prior
-
+;; note: this still allows eccentric solutions with only secondary eclipses!
+;; these should be excluded with the rejectflattransit input
+;bad = where(ss.planet.fittran and ss.planet.b.value gt (1d0+ss.planet.p.value) and ss.planet.bs.value gt (1d0+ss.planet.p.value), nbad)
+if nbad ne 0L then begin
+   if ss.verbose then printandlog, 'Planet does not transit!', ss.logname
+   return, !values.d_infinity
 endif
 
-;; use the Torres relation to guide the stellar parameters
-if ss.torres then begin
-   massradius_torres, ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, mstar_prior, rstar_prior
-   umstar = 0.027d0
-   urstar = 0.014d0
-   if mstar_prior lt 0.6d0 then printandlog, $
-      'WARNING: Torres not applicable (mstar = ' + $
-      strtrim(mstar_prior,2) + '); ignore at beginning. Otherwise, ' + $
-      'use MIST, YY, or impose a prior on mstar/rstar',ss.logname
-   ;; add "prior" penalty
-   chi2 += (alog10(ss.star.mstar.value/mstar_prior)/umstar)^2
-   chi2 += (alog10(ss.star.rstar.value/rstar_prior)/urstar)^2
-
-   if ss.verbose then $
-      printandlog, 'Torres penalty: ' + string((alog10(ss.star.mstar.value/mstar_prior)/umstar)^2, $
-                                               (alog10(ss.star.rstar.value/rstar_prior)/urstar)^2,format='(f0.6,x,f0.6)'), ss.logname
+;; for multi-planet systems, make sure they don't enter each other's hill spheres
+;; if mp unknown, mp=0 => hill radius=0 => planets can't cross orbits
+;; **** ignores mutual inclination; a priori excludes systems like Neptune and Pluto!! ****
+if ~ss.alloworbitcrossing then begin
+   mindist = dblarr(ss.nplanets>1)
+   maxdist = dblarr(ss.nplanets>1)
+   for i=0L, ss.nplanets-1 do begin
+      hillradius = ((1d0-ss.planet[i].e.value)*ss.planet[i].a.value*(ss.planet[i].mpsun.value/(3d0*ss.star.mstar.value))^(1d0/3d0)) > 0d0
+      mindist[i] = (1d0-ss.planet[i].e.value)*ss.planet[i].a.value - hillradius
+      maxdist[i] = (1d0+ss.planet[i].e.value)*ss.planet[i].a.value + hillradius
+      for j=i-1,0,-1 do begin
+         if ((mindist[i] ge mindist[j]) and (mindist[i] le maxdist[j])) or $
+            ((maxdist[i] ge mindist[j]) and (maxdist[i] le maxdist[j])) or $
+            ((mindist[j] ge mindist[i]) and (mindist[j] le maxdist[i])) or $
+            ((maxdist[j] ge mindist[i]) and (maxdist[j] le maxdist[i])) then begin
+            if ss.verbose then printandlog, 'Planets ' + strtrim(j,2) + ' (' + strtrim(mindist[j],2) + ',' + strtrim(maxdist[j],2) + ') and ' + strtrim(i,2) + ' (' + strtrim(mindist[i],2) + ',' + strtrim(maxdist[i],2) + ') cross paths', logname
+            return, !values.d_infinity
+         endif
+      endfor
+   endfor
 endif
 
-;; add prior penalties
+;; must do after step2pars -- sometimes tt is derived
+;; tt-period/2 < tt < tt+period/2
+bad = where(ss.planet.tt.prior ne 0d0 and $
+            abs(ss.planet.tt.value - ss.planet.tt.prior) gt ss.planet.period.value/2d0,nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'tt is bad (' + strtrim(ss.planet[bad].tt.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; must do after step2pars -- sometimes tc is derived
+;; tc-period/2 < tc < tc+period/2
+bad = where(ss.planet.tc.prior ne 0d0 and $
+            abs(ss.planet.tc.value - ss.planet.tc.prior) gt ss.planet.period.value/2d0,nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'tc is bad (' + strtrim(ss.planet[bad].tc.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; must do after step2pars -- sometimes cosi is derived
+;; 0 <= cosi <= 1 (or -1 <= cosi <= 1 if i180 keyword set or astrometry fit)
+bad = where(ss.planet.cosi.value gt 1 or (ss.planet.cosi.value lt 0 and ~ss.planet.i180) or (ss.planet.cosi.value lt -1),nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'cosi is bad (' + strtrim(bad,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; *** Now start penalizing the model ***
+
+;; *** apply prior penalties ***
 priors = *(ss.priors)
 for i=0, n_elements(priors[0,*])-1 do begin
-
-   ;; if it's a detrending variable
+   
+   ;; if it's not a detrending variable
    if priors[3,i] eq -1 then begin
       value = ss.(priors[0,i])[priors[1,i]].(priors[2,i]).value
       upperbound = ss.(priors[0,i])[priors[1,i]].(priors[2,i]).upperbound
@@ -340,52 +423,150 @@ for i=0, n_elements(priors[0,*])-1 do begin
       priorwidth = (*(ss.(priors[0,i])[priors[1,i]].(priors[2,i]))).(priors[3,i])[priors[4,i]].priorwidth
       unit = strupcase((*(ss.(priors[0,i])[priors[1,i]].(priors[2,i]))).(priors[3,i])[priors[4,i]].unit)
    endelse 
-
+   
    ;; apply the bounds
    if value gt upperbound or value lt lowerbound then begin
-      if ss.debug then $
+      if ss.debug or ss.verbose then $
          printandlog, label + '( ' + strtrim(value,2) + ') is out of user-defined bounds (' +$
                       strtrim(lowerbound,2) + ',' + strtrim(upperbound,2) + ')',ss.logname
       return, !values.d_infinity
    endif
-
-   ;; if it's an angular parameter, make sure the prior accounts for the periodicity
-   if unit eq 'RADIANS' then begin
-      if (value - prior) gt !dpi then prior += 2d0*!dpi $
-      else if (value - prior) lt -!dpi then prior -= 2d0*!dpi
-   endif else if unit eq 'DEGREES' then begin
-      if (value - prior) gt 180d0 then prior += 360d0 $
-      else if (value - prior) lt -180d0 then prior -= 360d0
-   endif
-
+   
    ;; apply the Gaussian prior
-   chi2 += ((value - prior)/priorwidth)^2
+   ;; if it's an angular parameter, make sure we handle the boundary
+   if unit eq 'RADIANS' then begin
+      chi2 += (atan(sin(value-prior),cos(value-prior))/priorwidth)^2
+   endif else if unit eq 'DEGREES' then begin
+      chi2 += (atan(sin((value-prior)*!dpi/180d0),cos((value-prior)*!dpi/180d0))/(priorwidth*!dpi/180d0))^2
+   endif else begin
+      chi2 += ((value - prior)/priorwidth)^2
+   endelse
 
    ;; output debugging info if requested
    if ss.verbose then begin
       str = string(label,((value - prior)/priorwidth)^2, format='(a," penalty = ",f0.6)')
-      printandlog, str, logname
+      printandlog, str, ss.logname
    endif
+   
+endfor
+
+;; **** apply corrections to make priors physical ****
+
+; if fitting in v_c/v_e & omega, correct for a uniform eccentricity prior
+for i=0, ss.nplanets-1 do begin
+   ;; vcve jacobian
+   if ss.planet[i].vcve.fit then begin
+      dvcvede = abs((-sin(ss.planet[i].omega.value)-ss.planet[i].e.value)/$
+                    (sqrt(1d0-ss.planet[i].e.value^2)*(ss.planet[i].esinw.value+1d0)^2))
+      determinant *= dvcvede
+   endif
+
+   ;; chord jacobian
+   if ss.planet[i].chord.fit then begin
+      dchorddcosi = ss.planet[i].b.value^2/(ss.planet[i].cosi.value*ss.planet[i].chord.value)
+      determinant *= dchorddcosi
+   endif
+
+   ;; linear eccentricity prior
+   ;; we never fit in ecosw & esinw; a waste of time
+   ;if ss.planet[i].ecosw.fit and ss.planet[i].esinw.fit then begin
+   ;   determinant *= ss.planet[i].e.value
+   ;endif
 
 endfor
 
-;; Apply the Mass-Radius relation 
-;; Chen & Kipping, 2017 (http://adsabs.harvard.edu/abs/2017ApJ...834...17C)
-;; this introduces a near perfect correlation between K and p, which
-;; AMOEBA finds challenging to work with (but is handled naturally by DEMC)
-;; does it? Or was that a bug that has been fixed?
+;; *** Now computing model constraints ***
+
+;; apply YY penalty to constrain stellar parameters
+if ss.yy then begin
+   if keyword_set(psname) then epsname = psname+'.yy.eps'
+   yychi2 = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, $
+                           ss.star.age.value, ss.star.teff.value,$
+                           yyrstar=yyrstar, debug=ss.debug, psname=epsname, $
+                           sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
+                           gravitysun=ss.constants.gravitysun)
+   if ~finite(yychi2) then begin
+      if ss.debug or ss.verbose then printandlog, 'star not on YY tracks', ss.logname
+      return, !values.d_infinity
+   endif
+   
+   yychi2 += ((ss.star.rstar.value - yyrstar)/(0.03*yyrstar))^2
+   chi2 += yychi2
+   if ss.verbose then printandlog, 'YY penalty = ' + strtrim(yychi2,2), ss.logname
+endif
+
+;; apply PARSEC penalty to constrain stellar parameters
+if ss.parsec then begin
+   if keyword_set(psname) then epsname = psname+'.parsec.eps'
+   
+   parsecchi2 = massradius_parsec(ss.star.eep.value, ss.star.mstar.value, ss.star.initfeh.value, $
+                                  ss.star.age.value, ss.star.teff.value,$
+                                  ss.star.rstar.value, ss.star.feh.value, debug=ss.debug, $
+                                  epsname=epsname, gravitysun=ss.constants.gravitysun, $
+                                  fitage=ss.star.age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose)
+   
+   chi2 += parsecchi2
+   if ss.verbose then printandlog, 'PARSEC penalty = ' + strtrim(parsecchi2,2), ss.logname
+   if ~finite(chi2) then begin
+      if ss.debug or ss.verbose then printandlog, 'star not on PARSEC tracks', ss.logname
+      return, !values.d_infinity
+   endif
+   determinant *= ageweight ;; correct uniform EEP prior to uniform Age prior
+   
+endif
+
+;; apply MIST penalty to constrain stellar parameters
+if ss.mist then begin
+   if keyword_set(psname) then epsname = psname+'.mist.eps'
+   
+   mistchi2 = massradius_mist(ss.star.eep.value, ss.star.mstar.value, ss.star.initfeh.value, $
+                              ss.star.age.value, ss.star.teff.value,$
+                              ss.star.rstar.value, ss.star.feh.value, debug=ss.debug, $
+                              epsname=epsname, gravitysun=ss.constants.gravitysun, $
+                              fitage=ss.star.age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose)
+   
+   chi2 += mistchi2
+   if ss.verbose then printandlog, 'MIST penalty = ' + strtrim(mistchi2,2), ss.logname
+   if ~finite(chi2) then begin
+      if ss.debug or ss.verbose then printandlog, 'star not on MIST tracks', ss.logname
+      return, !values.d_infinity
+   endif
+   determinant *= ageweight ;; correct uniform EEP prior to uniform Age prior
+   
+endif
+
+;; apply TORRES penalty to constrain stellar parameters
+if ss.torres then begin
+   massradius_torres, ss.star.logg.value, ss.star.teff.value, ss.star.feh.value, mstar_prior, rstar_prior
+   umstar = 0.027d0
+   urstar = 0.014d0
+   if mstar_prior lt 0.6d0 then printandlog, $
+      'WARNING: Torres not applicable (mstar = ' + $
+      strtrim(mstar_prior,2) + '); ignore at beginning. Otherwise, ' + $
+      'use MIST, YY, or impose a prior on mstar/rstar',ss.logname
+   ;; add "prior" penalty
+   chi2 += (alog10(ss.star.mstar.value/mstar_prior)/umstar)^2
+   chi2 += (alog10(ss.star.rstar.value/rstar_prior)/urstar)^2
+   
+   if ss.verbose then $
+      printandlog, 'Torres penalty: ' + string((alog10(ss.star.mstar.value/mstar_prior)/umstar)^2, $
+                                               (alog10(ss.star.rstar.value/rstar_prior)/urstar)^2,format='(f0.6,x,f0.6)'), ss.logname
+endif
+
+;; Apply Chen & Kipping Mass-Radius relation 
+;; http://adsabs.harvard.edu/abs/2017ApJ...834...17C
 for j=0, ss.nplanets-1 do begin
    if ss.planet[j].chen then begin
-
+      
       ;; negative radii are allowed to assess the significance of the
       ;; transit depth. That breaks these relations, so exclude them here
       if ss.planet[j].rpearth.value le 0d0 then begin
-         if ss.debug then printandlog, 'rpearth is bad', ss.logname
+         if ss.debug or ss.verbose then printandlog, 'rpearth is bad', ss.logname
          return, !values.d_infinity
       endif
-
+      
       rp = massradius_chen(ss.planet[j].mpearth.value > 1d-10,rperr=rperr)
-
+      
       ;; add a chi2 penalty for deviation from the mass-radius relation
       ;; if the radius is well-constrained (by transit depth), it
       ;; becomes an implicit constraint on mass. If the mass is well
@@ -393,76 +574,74 @@ for j=0, ss.nplanets-1 do begin
       ;; radius
       chi2 += ((rp - ss.planet[j].rpearth.value)/rperr)^2
       
-      if ss.verbose then printandlog, 'chen penalty = ' + strtrim(((rp - ss.planet[j].rpearth.value)/rperr)^2,2),logname
+      if ss.verbose then printandlog, 'chen penalty = ' + strtrim(((rp - ss.planet[j].rpearth.value)/rperr)^2,2),ss.logname
    endif
 endfor
 
 ;; fit the SED with MIST BC tables
-;t0 = systime(/seconds)
-if file_test(ss.star.mistsedfile) then begin
+if file_test(ss.star.mistsedfile) or file_test(ss.star.fluxfile) then begin
    if keyword_set(psname) then epsname = psname+'.sed.eps'
-   sedchi2 = mistsed(ss.star.teff.value, ss.star.logg.value,ss.star.feh.value, ss.star.av.value, ss.star.distance.value, ss.star.lstar.value, ss.star.errscale.value, ss.star.mistsedfile, debug=ss.debug, psname=epsname)
 
-   chi2 += sedchi2
-   if ss.verbose then printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
+   sedchi2 = 0d0
 
-endif
-;print, 'MIST SED: ' + strtrim(systime(/seconds)-t0,2)
+   ;; the SED can constrain Teff too precisely
+   ;; (they ignore systematics in interferimetric radii on which they're based). 
+   ;; Add a floor for the Teff used everywhere else
+   if ss.star.teffsed.fit then begin
+      teffsed = ss.star.teffsed.value
+      sedchi2 += ((ss.star.teff.value - ss.star.teffsed.value)/(ss.teffsedfloor*ss.star.teffsed.value))^2
+   endif else teffsed = ss.star.teff.value
 
-;; fit the SED (Keivan's)
-;t0 = systime(/seconds)
-if file_test(ss.star.fluxfile) then begin
-   if keyword_set(psname) then epsname = psname+'.sed.eps'
-   sedchi2 = exofast_sed(ss.star.fluxfile, ss.star.teff.value, $
-                         ss.star.rstar.value,$
+   ;; the SED can constrain FBol too precisely
+   ;; Add a floor for the Fbol used everywhere else
+   if ss.star.rstarsed.fit then begin
+      rstarsed = ss.star.rstarsed.value
+      lstarsed = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+      sedchi2 += ((lstarsed - ss.star.lstar.value)/(ss.fbolsedfloor*lstarsed))^2
+   endif else begin
+      rstarsed = ss.star.rstar.value
+      lstarsed = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+   endelse
+
+   if file_test(ss.star.mistsedfile) then begin
+      ;; MIST BC SED
+      sedchi2 += mistsed(teffsed, ss.star.logg.value,ss.star.feh.value, ss.star.av.value, ss.star.distance.value, lstarsed, ss.star.errscale.value, ss.star.mistsedfile, debug=ss.debug, psname=epsname)
+   endif else begin
+      ;; Keivan Stassun's SED
+      junk = exofast_sed(ss.star.fluxfile, teffsed, $
+                         rstarsed,$
                          ss.star.av.value, ss.star.distance.value, $
                          logg=ss.star.logg.value,met=ss.star.feh.value,$
                          alpha=ss.star.alpha.value,verbose=ss.verbose, $
                          f0=f, fp0=fp, ep0=ep, psname=epsname, $
                          pc=ss.constants.pc, rsun=ss.constants.rsun, $
-                         logname=logname, debug=ss.debug)
-
+                         logname=logname, debug=ss.debug, oned=ss.oned)
+      if ~finite(junk) then begin
+         if ss.debug or ss.verbose then printandlog, 'sed is bad', ss.logname
+         return, !values.d_infinity
+      endif
+      sedchi2 += exofast_like(f-fp,0d0,ss.star.errscale.value*ep,/chi2)
+   endelse
+   
+   ;; do some error checking
    if ~finite(sedchi2) then begin
-      if ss.debug then printandlog, 'sed is bad', ss.logname
-      return, !values.d_infinity
-   endif
-
-   sedchi2 = exofast_like(f-fp,0d0,ss.star.errscale.value*ep,/chi2)
-   if ~finite(sedchi2) then begin
-      if ss.debug then printandlog, 'sed is bad', ss.logname
+      if ss.debug or ss.verbose then printandlog, 'sed is bad', ss.logname
       return, !values.d_infinity
    endif
    chi2 += sedchi2
    if ss.verbose then printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
+
 endif
-;print, 'Keivan SED: ' + strtrim(systime(/seconds)-t0,2)
-
-;; this should never be encountered, just a waste of time
-;for i=0, ss.nplanets-1 do begin
-;   if ss.planet[i].ecosw.fit and ss.planet[i].esinw.fit then begin
-;      determinant *= ss.planet[i].e.value
-;   endif
-;endfor
-
-
-if ss.star.slope.fit then begin
-   allmindate = !values.d_infinity
-   allmaxdate = -!values.d_infinity
-   for i=0, ss.ntel-1 do begin
-      rv = *(ss.telescope[i].rvptrs)
-      mindate = min(rv.bjd,max=maxdate)
-      if mindate lt allmindate then allmindate = mindate
-      if maxdate gt allmaxdate then allmaxdate = maxdate
-   endfor
-   t0 = (allmindate+allmaxdate)/2d0
-endif else t0 = 0d0
 
 ;; RV model (non-interacting planets)
 for j=0, ss.ntel-1 do begin
 
    rv = *(ss.telescope[j].rvptrs)
 
-   if (where(rv.err^2 + ss.telescope[j].jittervar.value le 0d0))[0] ne -1 then return, !values.d_infinity
+   if (where(rv.err^2 + ss.telescope[j].jittervar.value le 0d0))[0] ne -1 then begin
+      if ss.debug or ss.verbose then printandlog, ss.telescope[j].label + ' variance is bad', ss.logname
+      return, !values.d_infinity
+   endif
 
    modelrv = dblarr(n_elements(rv.rv))
    for i=0, ss.nplanets-1 do begin
@@ -470,31 +649,52 @@ for j=0, ss.ntel-1 do begin
       if ss.planet[i].fitrv then begin      
          ;; rvbjd = rv.bjd ;; usually sufficient (See Eastman et al., 2013)
 
-         ;; time in target barycentric frame (expensive)
-         rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
-                            a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
-                            period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
-                            omega=ss.planet[i].omega.value,/primary,$
-                            c=ss.constants.c/ss.constants.au*ss.constants.day)
-         
-         ;; calculate the RV model
-         if ss.planet[i].rossiter then $
-            u1 = linld(ss.star.logg.value,ss.star.teff.value,ss.star.feh.value,'V') $
-         else u1 = 0d0
-         modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
-                               0d0,ss.planet[i].K.value,$
-                               ss.planet[i].e.value,ss.planet[i].omega.value,$
-                               slope=0d0, $
-                               rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
-                               p=abs(ss.planet[i].p.value),vsini=ss.star.vsini.value,$
-                               lambda=ss.planet[i].lambda.value,$
-                               u1=u1,deltarv=deltarv)
+         q = ss.star.mstar.value/ss.planet[i].mpsun.value
+         if rv.planet eq i then begin
+            ;; time in target barycentric frame (expensive)
+;; this needs to be debugged
+            rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
+                               a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
+                               period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
+                               omega=ss.planet[i].omega.value+!dpi,$
+                               c=ss.constants.c/ss.constants.au*ss.constants.day,$
+                               q=ss.star.mstar.value/ss.planet[i].mpsun.value)
+            
+            ;; calculate the RV model
+            modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
+                                  0d0,ss.planet[i].K.value*q,$
+                                  ss.planet[i].e.value,ss.planet[i].omega.value+!dpi,$
+                                  slope=0d0)
+         endif else begin
+            ;; time in target barycentric frame (expensive)
+            rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
+                               a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
+                               period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
+                               omega=ss.planet[i].omega.value,/primary,$
+                               c=ss.constants.c/ss.constants.au*ss.constants.day,$
+                               q=q)
+
+            ;; calculate the RV model
+            if ss.planet[i].rossiter then $
+               u1 = linld(ss.star.logg.value,ss.star.teff.value,ss.star.feh.value,'V') $
+            else u1 = 0d0
+            modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
+                                  0d0,ss.planet[i].K.value,$
+                                  ss.planet[i].e.value,ss.planet[i].omega.value,$
+                                  slope=0d0, $
+                                  rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
+                                  p=abs(ss.planet[i].p.value),vsini=ss.star.vsini.value,$
+                                  lambda=ss.planet[i].lambda.value,$
+                                  u1=u1,deltarv=deltarv)
+         endelse
 
       endif
 
    endfor
    ;; add instrumental offset, slope, and quadratic term
-   modelrv += ss.telescope[j].gamma.value + ss.star.slope.value*(rv.bjd-t0) + ss.star.quad.value*(rv.bjd-t0)^2
+   modelrv += ss.telescope[j].gamma.value 
+   if (*ss.telescope[j].rvptrs).planet eq -1 then $
+      modelrv += ss.star.slope.value*(rv.bjd-ss.rvepoch) + ss.star.quad.value*(rv.bjd-ss.rvepoch)^2
 
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
    
@@ -522,6 +722,7 @@ endif
 ;; Doppler Tomography Model
 for i=0, ss.ndt-1 do begin
    if keyword_set(psname) then epsname = psname + '.dt_' + strtrim(i,2) + '.eps'
+
    dtchi2 = dopptom_chi2(*(ss.doptom[i].dtptrs),$
                          ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].tc.value, $
                          ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].period.value, $
@@ -533,7 +734,8 @@ for i=0, ss.ndt-1 do begin
                          ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].lambda.value, $
                          ss.star.logg.value, ss.star.teff.value, ss.star.feh.value,$
                          ss.star.vsini.value/1d3,ss.star.vline.value/1d3,$
-                         ss.doptom[i].dtscale.value, debug=ss.debug,/like,psname=epsname)
+                         ss.doptom[i].dtscale.value, debug=ss.debug,/like,psname=epsname,$
+                         verbose=ss.verbose, logname=ss.logname)
 
    if 0 then begin
    stop
@@ -550,11 +752,12 @@ for i=0, ss.ndt-1 do begin
    plot, vline, dtchi22
    endif
    
-
-
-   if ~finite(dtchi2) then return, !values.d_infinity
+   if ~finite(dtchi2) then begin
+      if ss.verbose or ss.debug then printandlog, (*ss.doptom[i].dtptrs).label + ': DT chi2 is bad', ss.logname
+      return, !values.d_infinity
+   endif
    chi2 += dtchi2
-   if ss.verbose then printandlog, ss.doptom[i].label + ' DT penalty = ' + strtrim(dtchi2,2),ss.logname
+   if ss.verbose then printandlog, (*ss.doptom[i].dtptrs).label + ' DT penalty = ' + strtrim(dtchi2,2),ss.logname
 endfor
 
 ;; Transit model
@@ -562,7 +765,10 @@ for j=0, ss.ntran-1 do begin
 
    transit = *(ss.transit[j].transitptrs)
 
-   if (where(transit.err^2 + ss.transit[j].variance.value le 0d0))[0] ne -1 then return, !values.d_infinity
+   if (where(transit.err^2 + ss.transit[j].variance.value le 0d0))[0] ne -1 then begin
+      if ss.verbose then printandlog, transit.label + ' variance would make total error negative; rejecting step', ss.logname
+      return, !values.d_infinity
+   endif
 
    band = ss.band[ss.transit[j].bandndx]
 
@@ -572,8 +778,16 @@ for j=0, ss.ntran-1 do begin
                         verbose=ss.verbose, logname=ss.logname)
       u1claret = ldcoeffs[0]
       u2claret = ldcoeffs[1]
-      if ~finite(u1claret) or ~finite(u2claret) then return, !values.d_infinity
-      u1err = 0.05d0 
+      if ~finite(u1claret) or ~finite(u2claret) then begin
+         if ss.verbose then begin
+            printandlog, band.label + ' limb darkening coefficients are not defined at this ' +$
+                         'Teff (' + strtrim(ss.star.teff.value,2) + ', ' + $
+                         'logg (' + strtrim(ss.star.logg.value,2) + ', and ' + $
+                         '[Fe/H] (' + strtrim(ss.star.feh.value,2) + '; rejecting step',ss.logname
+         endif
+         return, !values.d_infinity
+      endif
+      u1err = 0.05d0
       u2err = 0.05d0
       chi2 += ((band.u1.value-u1claret)/u1err)^2
       chi2 += ((band.u2.value-u2claret)/u2err)^2
@@ -595,18 +809,10 @@ for j=0, ss.ntran-1 do begin
       modelflux = dblarr(npoints) + 1d0
    endelse
 
-;   ;; get the motion of the star due to all planets
-;   junk = exofast_getb2(transitbjd,inc=ss.planet.i.value,a=ss.planet.ar.value,$
-;                        tperiastron=ss.planet.tp.value,$
-;                        period=ss.planet.period.value,$
-;                        e=ss.planet.e.value,omega=ss.planet.omega.value,$
-;                        q=ss.star.mstar.value/ss.planet.mpsun.value,$
-;                        x1=x1,y1=y1,z1=z1)
-
    for i=0, ss.nplanets-1 do begin
       if ss.planet[i].fittran then begin
-
-         modelflux += (exofast_tran(transitbjd, $
+        
+         tmpmodelflux = (exofast_tran(transitbjd, $
                                     ss.planet[i].i.value + ss.transit[j].tiv.value, $
                                     ss.planet[i].ar.value, $
                                     ss.planet[i].tp.value + ss.transit[j].ttv.value, $
@@ -620,6 +826,7 @@ for j=0, ss.ntran-1 do begin
                                     q=ss.star.mstar.value/ss.planet[i].mpsun.value, $
                                     thermal=band.thermal.value, $
                                     reflect=band.reflect.value, $
+                                    beam=ss.planet[i].beam.value,$
                                     dilute=band.dilute.value,$
                                     tc=ss.planet[i].tc.value,$
                                     rstar=ss.star.rstar.value/AU,$
@@ -627,9 +834,10 @@ for j=0, ss.ntran-1 do begin
                                     au=au,$
                                     c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0)
 
+         modelflux += tmpmodelflux
+
       endif
    endfor
-
    
    if ss.transit[j].rejectflatmodel then begin
       minmodel = min(modelflux,max=maxmodel)
@@ -639,6 +847,11 @@ for j=0, ss.ntran-1 do begin
       endif
    endif
 
+   ;; ellipsoidal variations
+   if band.ellipsoidal.value ne 0d0 then begin
+      minperiod = min(ss.planet.period.value,ndx)
+      modelflux = modelflux * (1d0 - band.ellipsoidal.value/1d6*cos(2d0*!dpi*(transitbjd-ss.planet[ndx].tc.value)/(ss.planet[ndx].period.value/2d0)))
+   endif
 
    ;; now integrate the model points (before detrending)
    ;; Riemann integration beats trapezoidal and simpsons wins when
@@ -659,22 +872,48 @@ for j=0, ss.ntran-1 do begin
 
    ;; fit Andrew Vanderburg's keplerspline to the residuals to detrend the lightcurve
    if ss.transit[j].fitspline then begin
-      if transit.breakpts[0] eq -1 then $
+      if transit.breakpts[0] eq -1 then $         
          norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, ndays=ss.transit[j].splinespace) $
       else norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, breakp=transit.breakpts, ndays=ss.transit[j].splinespace)
       modelflux *= norm
    endif
 
+phase = (transitbjd - ss.planet[0].tc.value) mod ss.planet[0].period.value
+toohigh = where(phase gt ss.planet[0].period.value/2d0)
+if toohigh[0] ne -1 then phase[toohigh] -= ss.planet[0].period.value
+toolow = where(phase lt -ss.planet[0].period.value/2d0)
+if toolow[0] ne -1 then phase[toohigh] += ss.planet[0].period.value
+
+;set_plot, 'ps'
+;device, filename='toi2165.ps'
+;loadct, 39, /silent
+;red = 254
+;sorted = sort(phase)
+;plot, phase, transit.flux, psym=1, /ynoz, xtitle='phased time', ytitle='Normalized flux'
+;oplot, phase[sorted], modelflux[sorted],color=red
+;device, /close
+;spawn, 'gv toi2165.ps &'
+;stop
+
    ;; chi^2
-   transitchi2 = exofast_like(transit.flux - modelflux,ss.transit[j].variance.value,transit.err,/chi2)
+   if ss.transit[j].sigma_r.fit then begin
+      transitchi2 = -2d0*exofast_wavelike(transit.flux - modelflux,ss.transit[j].sigma_r.value,mean(transit.err),/zeropad)
+   endif else begin
+      transitchi2 = exofast_like(transit.flux - modelflux,ss.transit[j].variance.value,transit.err,/chi2)
+   endelse
 
    (*ss.transit[j].transitptrs).residuals = transit.flux - modelflux
-   (*ss.transit[j].transitptrs).model = modelflux
+;   (*ss.transit[j].transitptrs).model = modelflux
 
    if keyword_set(psname) then begin
       base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
       exofast_forprint, transit.bjd, transit.flux - modelflux, transit.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.transit_' + strtrim(j,2) + '.txt', /nocomment,/silent
       exofast_forprint, transit.bjd, modelflux, format='(f0.8,x,f0.6)', textout=base + '.model.transit_' + strtrim(j,2) + '.txt', /nocomment,/silent
+      
+      if ss.transit[j].fitspline then $
+         exofast_forprint, transit.bjd, norm, format='(f0.8,x,f0.6)',$
+                           textout=base+'.spline.transit_' + strtrim(j,2) + '.txt', /nocomment,/silent
+      
    endif
 
    if ~finite(transitchi2) then stop
@@ -697,104 +936,144 @@ endif
 ;; if TTVs are allowed, add a chi2 penalty to the period and t0 from
 ;; the fit to a linear ephemeris
 ;; this imposes the constraint of the linear ephemeris while allowing TTVs
-junk = where(ss.fittran, nfittran)
-if ss.ttvs and nfittran eq 1 then begin
-   ;; an nplanets x ntransits array of model transit times
-   time = replicate(1,ss.nplanets)#ss.transit.ttv.value + $
-          ss.planet.tc.value#replicate(1,ss.ntran) + $
-          ss.planet.period.value#replicate(1,ss.ntran)*$
-          ss.transit.epoch
+for i=0L, ss.nplanets-1L do begin
 
-   ;; add a chi2 penalty for the deviation of the ephemeris to the
-   ;; linear fit of the transit times for each planet
-   for i=0L, ss.nplanets-1L do begin
-
-      good = where(finite(time[i,*]),ngood) ;; why wouldn't that be finite??
-      if ngood lt 2 then continue
-;      if ngood lt 2 then stop ;continue
-
-      coeffs = poly_fit((ss.transit.epoch)[i,good],time[i,good],1, sigma=sigma, yfit=yfit)
-      sigma = (sigma > 1d-18)
-
-      chi2 += ((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2
-      chi2 += ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
-
-      if ss.verbose then begin
-         printandlog, 'Tc penalty ' + strtrim(((coeffs[0]-ss.planet[i].tc.value)/sigma[0])^2,2),ss.logname
-         printandlog, 'Period penalty ' + strtrim(((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2,2),ss.logname
+   ;; ensure the tdeltavs average to zero
+   good = where(ss.tdeltavs[*,i],ngood)
+   if ngood ge 2 then begin
+      sigma = stdev(ss.transit[good].tdeltav.value)
+      if sigma gt 0d0 then begin
+         chi2 += (mean(ss.transit[good].tdeltav.value)/sigma)^2
+         if ss.verbose then printandlog, 'TDELTVA penalty ' + strtrim((mean(ss.transit[good].tdeltav.value)/sigma)^2,2)
       endif
+   endif else if ngood ne 0 then begin
+      printandlog, 'ERROR: TDELTAVs are requested for planet ' + strtrim(i,2) + ', but must have at least 2 transits', ss.logname
+      stop
+   endif
+ 
+   ;; ensure the tivs average to zero
+   good = where(ss.tivs[*,i],ngood)
+   if ngood ge 2 then begin
+      sigma = stdev(ss.transit[good].tiv.value)
+      if sigma gt 0d0 then begin
+         chi2 += (mean(ss.transit[good].tiv.value)/sigma)^2
+         if ss.verbose then printandlog, 'TIV penalty ' + strtrim((mean(ss.transit[good].tiv.value)/sigma)^2,2)
+      endif
+   endif else if ngood ne 0 then begin
+      printandlog, 'ERROR: TIVs are requested for planet ' + strtrim(i,2) + ', but must have at least 2 transits', ss.logname
+      stop
+   endif
 
-      if ss.debug or keyword_set(psname) then begin
-         if keyword_set(psname) then begin
-            ;; astrobetter.com tip on making pretty IDL plots
-            mydevice=!d.name
-            set_plot, 'PS'
-            aspect_ratio=1.5
-            xsize=10.5
-            ysize=xsize/aspect_ratio
-            !p.font=0
-            device, filename=psname + '.ttv.' + strtrim(i,2) + '.eps', /color, bits=24,/encapsulated
-            device, xsize=xsize, ysize=ysize
-            LOADCT, 39,/silent
-            colors = [0,254,159,95,223,31,207,111,191,47]
-            charsizelegend = 0.09
-            xlegend = 0.1
-            ylegend = 0.90
-            charsize = 0.5
-         endif else begin
-            device,window_state=win_state
-            if win_state[10+i] eq 1 then wset, 10+i $
-            else window, 10+i, retain=2
-            colors= ['ffffff'x,'0000ff'x,'00ff00'x,'ff0000'x,'0080ff'x,$
-                     '800080'x,'00ffff'x,'ffff00'x,'80d000'x,'660000'x]
-            charsizelegend = 0.03
-            xlegend = 0.90
-            ylegend = 0.95
-            charsize = 1
-         endelse
-         ncolors = n_elements(colors)
-         syms = [0,3,8,5,0,3,8,5]
-         fill = [1,1,1,1,0,0,0,0]
-         nsyms = n_elements(syms)
-         
-         telescopes = strarr(ss.ntran)
-         for j=0L, ss.ntran-1L do telescopes[j] = (strsplit(ss.transit[j].label,' UT ',/regex,/extract))[0]
-         sorted = sort(telescopes)
-         tnames = telescopes[sorted[uniq(telescopes[sorted])]]
+   ;; ensure the TTVs average to the ephermeris
+   good = where(ss.ttvs[*,i],ngood)
+   if ngood eq 0 then continue
+   if ngood le 2 then begin
+      printandlog, 'ERROR: TTVs are requested for planet ' + strtrim(i,2) + ', but must have at least 3 transits', ss.logname
+      stop
+   endif
+   
+   time = ss.epochs[good,i]*ss.planet[i].period.value+ss.transit[good].ttv.value
+   
+;      fit = bytarr(ss.ntran)
+;      epochs = dblarr(ss.ntran)
+;      time = dblarr(ss.ntran)
+;      for j=0L, ss.ntran-1L do begin
+;         if ss.transit[j].ttv.fit then begin
+;            minbjd = min((*ss.transit[j].transitptrs).bjd,max=maxbjd)
+;            epochs[j] = round(((maxbjd+minbjd)/2d0 - ss.planet[i].tc.value)/ss.planet[i].period.value)
+;            time[j] = ss.planet[i].tc.value + epochs[j]*ss.planet[i].period.value
+;            if time[j] gt minbjd and time[j] lt maxbjd then fit[j] = 1B
+;         endif
+;      endfor
+;
+;stop
+   
+;      good = where(fit,ngood) ;; why wouldn't that be finite??
+;      if ngood eq 0 then continue
+;      if ngood le 2 then begin
+;         if ss.verbose then printandlog, 'ERROR: TTVs are requested for planet ' + strtrim(i,2) + ', but must have at least 3 transits', ss.logname
+;         continue
+;      endif
+   
+   coeffs = poly_fit(ss.epochs[good,i],time,1, sigma=sigma, yfit=yfit)
+   sigma = sigma > 1d-18
+   chi2 += ((coeffs[0])/sigma[0])^2
+   chi2 += ((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2
+   if ss.verbose then begin
+      printandlog, 'Tc penalty ' + strtrim(((coeffs[0])/sigma[0])^2,2),ss.logname
+      printandlog, 'Period penalty ' + strtrim(((coeffs[1]-ss.planet[i].period.value)/sigma[1])^2,2),ss.logname
+   endif
 
-         xmin = min((ss.transit.epoch)[i,good],max=xmax)
-         ymin = min((time[i,good]-yfit)*86400d0,max=ymax)
-         plot, [0],[0],psym=3, xtitle='!3Epoch', ytitle='!3O-C (seconds)',xrange=[xmin,xmax],yrange=[ymin,ymax]
-         for j=0, n_elements(tnames)-1 do begin
-            observed = where(telescopes eq tnames[j])
-            if observed[0] ne -1 then begin
-               plotsym, syms[j mod nsyms], color=colors[j mod ncolors],fill=fill[j mod nsyms]
-               oplot, ((ss.transit.epoch)[i,good])[observed],(time[i,good[observed]]-yfit[observed])*86400d0,psym=8
-               xsize = (!x.crange[1] - !x.crange[0])
-               ysize = (!y.crange[1] - !y.crange[0])
-
-               ;; only need a legend if we have more than one telescope
-               if n_elements(tnames) gt 1 then begin
-                  xyouts, !x.crange[0] + xlegend*xsize,!y.crange[0]+(ylegend - j*charsizelegend)*ysize, $
-                          tnames[j],color=colors[j mod ncolors],charsize=charsize
-                  oplot, [!x.crange[0]+xlegend*xsize-xsize/20],$
-                         [!y.crange[0]+(ylegend - (j-0.25)*charsizelegend)*ysize],psym=8
-               endif
+   if ss.debug or keyword_set(psname) then begin
+      if keyword_set(psname) then begin
+         ;; astrobetter.com tip on making pretty IDL plots
+         mydevice=!d.name
+         set_plot, 'PS'
+         aspect_ratio=1.5
+         xsize=10.5
+         ysize=xsize/aspect_ratio
+         !p.font=0
+         device, filename=psname + '.ttv.' + strtrim(i,2) + '.eps', /color, bits=24,/encapsulated
+         device, xsize=xsize, ysize=ysize
+         LOADCT, 39,/silent
+         colors = [0,254,159,95,223,31,207,111,191,47]
+         charsizelegend = 0.09
+         xlegend = 0.1
+         ylegend = 0.90
+         charsize = 0.5
+      endif else begin
+         device,window_state=win_state
+         if win_state[10+i] eq 1 then wset, 10+i $
+         else window, 10+i, retain=2
+         colors= ['ffffff'x,'0000ff'x,'00ff00'x,'ff0000'x,'0080ff'x,$
+                  '800080'x,'00ffff'x,'ffff00'x,'80d000'x,'660000'x]
+         charsizelegend = 0.03
+         xlegend = 0.90
+         ylegend = 0.95
+         charsize = 1
+      endelse
+      ncolors = n_elements(colors)
+      syms = [0,3,8,5,0,3,8,5]
+      fill = [1,1,1,1,0,0,0,0]
+      nsyms = n_elements(syms)
+      
+      telescopes = strarr(ss.ntran)
+      for j=0L, ss.ntran-1L do telescopes[j] = (strsplit(ss.transit[j].label,' UT ',/regex,/extract))[0]
+      sorted = sort(telescopes)
+      tnames = telescopes[sorted[uniq(telescopes[sorted])]]
+      
+      xmin = min((ss.epochs)[good,i],max=xmax)
+      ymin = min((time-yfit)*1440d0,max=ymax)
+      plot, [0],[0],psym=3, xtitle='!3Epoch', ytitle='!3O-C (min)',xrange=[xmin,xmax],yrange=[ymin,ymax]
+      for j=0, n_elements(tnames)-1 do begin
+         observed = where(telescopes eq tnames[j])
+         if observed[0] ne -1 then begin
+            plotsym, syms[j mod nsyms], color=colors[j mod ncolors],fill=fill[j mod nsyms]
+            oplot, (ss.epochs[good,i])[observed],(time[observed]-yfit[observed])*1440d0,psym=8
+            xsize = (!x.crange[1] - !x.crange[0])
+            ysize = (!y.crange[1] - !y.crange[0])
+            
+            ;; only need a legend if we have more than one telescope
+            if n_elements(tnames) gt 1 then begin
+               xyouts, !x.crange[0] + xlegend*xsize,!y.crange[0]+(ylegend - j*charsizelegend)*ysize, $
+                       tnames[j],color=colors[j mod ncolors],charsize=charsize
+               oplot, [!x.crange[0]+xlegend*xsize-xsize/20],$
+                      [!y.crange[0]+(ylegend - (j-0.25)*charsizelegend)*ysize],psym=8
             endif
-         endfor
-         oplot, [-9d9,9d9],[0d0,0d0],linestyle=2
-
-         if keyword_set(psname) then begin
-            !p.font=-1
-            !p.multi=0
-            device, /close
-            device, encapsulated=0
-            set_plot, mydevice
          endif
-
+      endfor
+      oplot, [-9d9,9d9],[0d0,0d0],linestyle=2
+      
+      if keyword_set(psname) then begin
+         !p.font=-1
+         !p.multi=0
+         device, /close
+         device, encapsulated=0
+         set_plot, mydevice
       endif
-   endfor
-endif
+      
+   endif
+endfor
 
 ;; astrometric model
 nastromplots = 4
@@ -850,9 +1129,7 @@ for i=0L, ss.nastrom-1 do begin
 
    if ss.verbose then printandlog, ss.astrom[i].label + ' astrometry penalty: ' + strtrim(astromchi2,2),ss.logname
    if ~finite(astromchi2) then begin
-      print
-      print, 'ERROR, NaN chi^2 from astrometry!'
-      stop
+      printandlog, ss.astrom[i].label + ': NaN chi^2 from astrometry!', ss.logname
       return, !values.d_infinity
    endif
 
@@ -997,8 +1274,10 @@ stop
 
 endfor
 
-;; print all the parameters and the chi^2
-if ss.debug or ss.verbose then printandlog, string(pars, chi2, format='(' + strtrim(n_elements(pars)+1,2) + '(f0.8,x))'),ss.logname
+;; print all the parameters, determinant, and the chi^2
+if ss.debug or ss.verbose then printandlog, string(pars, determinant, -0.5d0*chi2, format='(' + strtrim(n_elements(pars)+2,2) + '(f0.8,x))'),ss.logname
+
+;printandlog, string(pars, ss.planet.omegadeg.value, determinant, chi2, format='(' + strtrim(n_elements(pars)+3,2) + '(f0.8,x))'),ss.logname
 
 ;; if this stop is triggered, you've found a bug!!
 if ~finite(chi2) then begin

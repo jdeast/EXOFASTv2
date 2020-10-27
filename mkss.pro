@@ -151,15 +151,32 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                fitslope=fitslope, fitquad=fitquad, $
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
                rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
-               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
+               fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+               fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
                nvalues=nvalues, debug=debug, verbose=verbose, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, $
-               astrompath=astrompath,lineark=lineark,$
+               astrompath=astrompath,fitlogmp=fitlogmp,$
                longcadence=longcadence, rejectflatmodel=rejectflatmodel,ninterp=ninterp, exptime=exptime,$
-               earth=earth, silent=silent, yy=yy, torres=torres, nomist=nomist, $
+               earth=earth, silent=silent, yy=yy, torres=torres, nomist=nomist, parsec=parsec, $
                noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
-               logname=logname, best=best, tides=tides, mistsedfile=mistsedfile,$
-               fitspline=fitspline, splinespace=splinespace
+               logname=logname, best=best, tides=tides, $
+               mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,oned=oned,$
+               fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
+               novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, chi2func=chi2func, fittt=fittt,delay=delay, rvepoch=rvepoch
+
+if n_elements(fbolsedfloor) eq 0 then fbolsedfloor = 0.02d0
+if n_elements(teffsedfloor) eq 0 then teffsedfloor = 0.015d0
+if n_elements(delay) eq 0 then delay = 0L $
+else begin
+   if delay ne 0 then $
+      printandlog, 'You have specified a delay!! This is only designed to test threading and will needlessly slow down the fit. Are you sure?', logname
+endelse
+
+
+if ~keyword_set(nomist) + keyword_set(yy) + keyword_set(parsec) + keyword_set(torres) gt 1 then begin
+   printandlog, 'You are **STRONGLY** advised to disable all but one evolutionary model (they are not independent), but type ".con" to proceed', logname
+   stop
+endif
 
 if n_elements(nplanets) eq 0 then nplanets = 1
 if n_elements(circular) ne nplanets and n_elements(circular) gt 1 then begin
@@ -190,14 +207,41 @@ if n_elements(fitdt) ne nplanets and n_elements(fitdt) gt 1 then begin
    printandlog, "FITDT must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    stop
 endif
-if n_elements(lineark) ne nplanets and n_elements(lineark) gt 1 then begin
-   printandlog, "LINEARK must have 1 or NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+if n_elements(fitlogmp) ne nplanets and n_elements(fitlogmp) gt 1 then begin
+   printandlog, "FITLOGMP must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    stop
 endif
+if n_elements(novcve) ne nplanets and n_elements(novcve) gt 1 then begin
+   printandlog, "NOVCVE must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   stop
+endif
+if n_elements(nochord) ne nplanets and n_elements(nochord) gt 1 then begin
+   printandlog, "NOCHORD must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   stop
+endif
+if n_elements(fitsign) ne nplanets and n_elements(fitsign) gt 1 then begin
+   printandlog, "FITSIGN must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   stop
+endif
+if n_elements(fitbeam) ne nplanets and n_elements(fitbeam) gt 1 then begin
+   printandlog, "FITBEAM must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   stop
+endif
+if n_elements(derivebeam) ne nplanets and n_elements(derivebeam) gt 1 then begin
+   printandlog, "DERIVEBEAM must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   stop
+endif
+if n_elements(fittt) ne nplanets and n_elements(fittt) gt 1 then begin
+   printandlog, "FITTT must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   stop
+endif
+
+
 
 if not keyword_set(longcadence) then longcadence=0B
 if n_elements(fitthermal) eq 0 then fitthermal = ['']
 if n_elements(fitreflect) eq 0 then fitreflect = ['']
+if n_elements(fitellip) eq 0 then fitellip = ['']
 if n_elements(fitdilute) eq 0 then fitdilute = ['']
 if n_elements(tranpath) eq 0 then tranpath = ''
 if n_elements(astrompath) eq 0 then astrompath = ''
@@ -238,8 +282,8 @@ if tranpath ne '' or astrompath ne '' then begin
                   'u','b','v','y']
    bands = strarr(ntran+nastrom)
    for i=0, ntran+nastrom-1 do begin
-      if i lt ntran then bands[i] = (strsplit(tranfiles[i],'.',/extract))(1) $
-      else bands[i] = (strsplit(astromfiles[i-ntran],'.',/extract))(1)
+      if i lt ntran then bands[i] = (strsplit(file_basename(tranfiles[i]),'.',/extract))(1) $
+      else bands[i] = (strsplit(file_basename(astromfiles[i-ntran]),'.',/extract))(1)
       if bands[i] eq 'u' then begin
          bands[i] = 'Sloanu'
       endif else if bands[i] eq 'g' then begin
@@ -259,15 +303,57 @@ if tranpath ne '' or astrompath ne '' then begin
    endfor
    bands = bands[uniq(bands, sort(bands))]
    nband = n_elements(bands)
-   printandlog, 'The index for each fitted band is', logname
-   for i=0L, nband-1 do printandlog, string(i,bands[i],format='(i2,x,a)'),logname
-   printandlog, '', logname
+   if ~keyword_set(silent) then begin
+      printandlog, 'The index for each fitted band is', logname
+      for i=0L, nband-1 do printandlog, string(i,bands[i],format='(i2,x,a)'),logname
+      printandlog, '', logname
+   endif
 endif else begin
    ntran = 0
    tranpath = ''
    nastrom = 0
    astrompath = ''
    nband = 0
+endelse
+
+if nplanets ge 1 and ntran ge 1 then begin
+   ;; some error checking on TTVs
+   if n_elements(ttvs) eq 0 then ttvs = bytarr(ntran,nplanets) $
+   else if n_elements(ttvs) eq 1 then ttvs = bytarr(ntran,nplanets)+ttvs[0] $
+   else if n_elements(ttvs) ne ntran*nplanets then begin
+      printandlog, 'TTVs must be an NTRANSITSxNPLANETS (' + string(ntran,nplanets,format='(i,"x",i)') + ') array', logname
+      stop
+   endif
+   if nplanets eq 1 then dim=1 else dim=2
+   if max(total(ttvs,dim)) gt 1 then begin
+      printandlog, 'TTVs applied to more than one planet. This is unlikely to be what you want.'
+   endif
+   
+   ;; some error checking on TIVs
+   if n_elements(tivs) eq 0 then tivs = bytarr(ntran,nplanets) $
+   else if n_elements(tivs) eq 1 then tivs = bytarr(ntran,nplanets)+tivs[0] $
+   else if n_elements(tivs) ne ntran*nplanets then begin
+      printandlog, 'TIVs must be an NTRANSITSxNPLANETS (' + string(ntran,nplanets,format='(i,"x",i)') + ') array', logname
+      stop
+   endif
+   if max(total(tivs,dim)) gt 1 then begin
+      printandlog, 'TIVs applied to more than one planet. This is unlikely to be what you want.'
+   endif
+   
+   ;; some error checking on TDELTAVs
+   if n_elements(tdeltavs) eq 0 then tdeltavs = bytarr(ntran,nplanets) $
+   else if n_elements(tdeltavs) eq 1 then deltavs = bytarr(ntran,nplanets)+tdeltavs[0] $
+   else if n_elements(tdeltavs) ne ntran*nplanets then begin
+      printandlog, 'Tdeltavs must be an NTRANSITSxNPLANETS (' + string(ntran,nplanets,format='(i,"x",i)') + ') array', logname
+      stop
+   endif
+   if max(total(tdeltavs,dim)) gt 1 then begin
+      printandlog, 'TDELTAVs applied to more than one planet. This is unlikely to be what you want.'
+   endif
+endif else begin
+   ttvs = 0B
+   tivs = 0B
+   tdeltavs = 0B
 endelse
 
 if n_elements(rejectflatmodel) ne ntran and n_elements(rejectflatmodel) ne 0 then begin
@@ -277,7 +363,7 @@ end
 if n_elements(rejectflatmodel) eq 0 and ntran gt 0 then rejectflatmodel = bytarr(ntran)
 
 if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 then begin
-   printandlog, 'FITSPLINE must be an NTRANSITS element array', logname
+   printandlog, 'FITSPLINE has ' + strtrim(n_elements(fitspline),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
    stop
 end
 if n_elements(fitspline) eq 0 and ntran gt 0 then fitspline = bytarr(ntran)
@@ -287,6 +373,13 @@ if n_elements(splinespace) ne ntran and n_elements(splinespace) ne 0 then begin
    stop
 end
 if n_elements(splinespace) eq 0 and ntran gt 0 then splinespace = dblarr(ntran) + 0.75d0
+
+if n_elements(fitwavelet) ne ntran and n_elements(fitwavelet) ne 0 then begin
+   printandlog, 'FITWAVELET must be an NTRANSITS element array', logname
+   stop
+end
+if n_elements(fitwavelet) eq 0 and ntran gt 0 then fitwavelet = bytarr(ntran)
+
 
 ;; if RVPATH not specified or empty, don't use any telescope
 if n_elements(rvpath) eq 0 then begin
@@ -305,9 +398,22 @@ if ntel eq 0 and rvpath ne '' then begin
    stop
 endif
 
+;; same for DT path
+if n_elements(dtpath) ne 0 then begin
+   dtfiles = file_search(dtpath,count=ndt)
+   if ndt eq 0 then message, 'DTPATH specified (' + dtpath + ') but no files found'
+endif else begin
+   dtfiles = ['']
+   ndt = 0
+endelse
+
 if n_elements(circular) ne nplanets or nplanets eq 0 then circular = bytarr(nplanets>1)
 if n_elements(rossiter) ne nplanets or nplanets eq 0 then rossiter = bytarr(nplanets>1)
-if n_elements(fitdt) ne nplanets or nplanets eq 0 then fitdt = bytarr(nplanets>1)
+if n_elements(novcve) ne nplanets or nplanets eq 0 then novcve = bytarr(nplanets>1)
+if n_elements(nochord) ne nplanets or nplanets eq 0 then nochord = bytarr(nplanets>1)
+if n_elements(fitsign) ne nplanets or nplanets eq 0 then fitsign = bytarr(nplanets>1)+1B
+if n_elements(fitbeam) ne nplanets or nplanets eq 0 then fitbeam = bytarr(nplanets>1)
+if n_elements(derivebeam) ne nplanets or nplanets eq 0 then derivebeam = bytarr(nplanets>1)
 
 if n_elements(nvalues) ne 0 then value = dblarr(nvalues) $
 else value = 0d0
@@ -323,8 +429,16 @@ if n_elements(fitrv) eq 0 then begin
    else fitrv = bytarr(nplanets>1)+1B
 endif
 
-if n_elements(lineark) eq 0 then lineark = bytarr(nplanets>1)
+if n_elements(fitdt) eq 0 then begin
+   if ndt eq 0 then fitdt = bytarr(nplanets>1) $
+   else fitdt = bytarr(nplanets>1)+1B
+endif
 
+if n_elements(fittt) eq 0 then begin
+   fittt = bytarr(nplanets>1)
+endif
+
+if n_elements(fitlogmp) eq 0 then fitlogmp = bytarr(nplanets>1)
 
 if n_elements(chen) ne nplanets or nplanets eq 0 then chen = fittran xor fitrv
 if n_elements(i180) ne nplanets or nplanets eq 0 then i180 = bytarr(nplanets>1)
@@ -349,8 +463,8 @@ endif
 ;; was rvpath specified but no planets are fit? (ignore it)
 junk = where(fitrv,nrvfit)
 if rvpath ne '' and nrvfit eq 0 then begin
-   printandlog, 'WARNING: an RVPATH was specified, but no RV planets are fit. Ignoring the supplied RVs'
-   printandlog, 'Remove RVPATH or set at least one planet in FITRV to 1 to remove this message.'
+   if ~keyword_set(silent) then printandlog, 'WARNING: an RVPATH was specified, but no RV planets are fit. Ignoring the supplied RVs'
+   if ~keyword_set(silent) then printandlog, 'Remove RVPATH or set at least one planet in FITRV to 1 to remove this message.'
    ntel = 0
 endif
 
@@ -363,8 +477,8 @@ endif
 ;; was tranpath specified but no planets are fit? (ignore it)
 junk = where(fittran,ntranfit)
 if tranpath ne '' and ntranfit eq 0 then begin
-   printandlog, 'WARNING: a TRANPATH was specified, but no transits are fit. Ignoring the supplied transits'
-   printandlog, 'Remove TRANPATH or set at least one planet in FITTRAN to 1 to remove this message.'
+   if ~keyword_set(silent) then printandlog, 'WARNING: a TRANPATH was specified, but no transits are fit. Ignoring the supplied transits'
+   if ~keyword_set(silent) then printandlog, 'Remove TRANPATH or set at least one planet in FITTRAN to 1 to remove this message.'
    ntran = 0
 endif
 
@@ -384,13 +498,14 @@ parameter = create_struct('value',value,$     ;; its numerical value
                           'cgs',1d0,$         ;; multiply value by this to convert to cgs units
                           'link',ptr_new(),$  ;; a pointer to a linked parameter (not implemented)
                           'scale',0d0,$       ;; scale for amoeba
-                          'best',!values.d_nan,$ ;; best-fit parameter
                           'latex','',$        ;; latex label for the latex table
+                          'userchanged',0B,$  ;; the user supplied a prior that impacts this parameter
                           'description','',$  ;; a verbose description
                           'unit','',$         ;; units ("Radians" triggers special angular behavior)
                           'medvalue','',$     ;; median value
                           'upper','',$        ;; upper error bar (68% confidence)
                           'lower','',$        ;; lower error bar (68% confidence)
+                          'best',!values.d_nan,$ ;; best-fit parameter
                           'fit', 0B,$         ;; If true, step in this parameter during the MCMC
                           'derive',1B)        ;; If true, quote this parameter in the final table
                           
@@ -431,6 +546,16 @@ teff.label = 'teff'
 teff.fit=1
 teff.scale = 500d0
 
+teffsed = parameter
+teffsed.value = 5778d0
+teffsed.unit = 'K'
+teffsed.description = 'Effective Temperature'
+teffsed.latex = 'T_{\rm eff,SED}'
+teffsed.label = 'teffsed'
+teffsed.fit=0
+teffsed.derive=0
+teffsed.scale = 500d0
+
 feh = parameter
 feh.value = 0d0
 feh.description = 'Metallicity'
@@ -446,7 +571,7 @@ initfeh.description = 'Initial Metallicity'
 initfeh.latex = '[{\rm Fe/H}]_{0}'
 initfeh.label = 'initfeh'
 initfeh.scale = 0.5d0
-if ~keyword_set(nomist) then begin
+if ~keyword_set(nomist) or keyword_set(parsec) then begin
    initfeh.fit=1
    initfeh.derive=1
 endif else begin
@@ -498,6 +623,14 @@ if nastrom gt 0 then begin
    distance.fit = 1d0
    distance.derive = 1B
 endif
+
+fbol = parameter
+fbol.unit = 'cgs'
+fbol.description = 'Bolometric Flux'
+fbol.latex = 'F_{Bol}'
+fbol.label = 'fbol'
+fbol.cgs = 1d0
+fbol.derive = 0d0
 
 ra = parameter
 ra.value = 0d0
@@ -604,6 +737,7 @@ parallax.derive=0B
 parallax.fit = 0B
 if nastrom gt 0 then begin
    parallax.derive=1B
+   fbol.derive = 1B
 endif
 
 gamma = parameter
@@ -622,7 +756,7 @@ slope.description = 'RV slope'
 slope.latex = '\dot{\gamma}'
 slope.label = 'slope'
 slope.cgs = 100d0/86400d0
-if keyword_set(fitslope) then slope.fit = 1 $
+if keyword_set(fitslope) or keyword_set(fitquad) then slope.fit = 1 $
 else slope.derive=0
 slope.scale=1d0
 
@@ -646,6 +780,17 @@ rstar.cgs = 6.955d10
 rstar.fit = 1
 rstar.scale = 0.5d0
 
+rstarsed = parameter
+rstarsed.value = 1d0
+rstarsed.unit = '\rsun'
+rstarsed.description = 'Radius'
+rstarsed.latex = 'R_{*,SED}'
+rstarsed.label = 'rstarsed'
+rstarsed.cgs = 6.955d10
+rstarsed.fit = 0
+rstarsed.derive = 0
+rstarsed.scale = 0.5d0
+
 age = parameter
 age.value = 4.603d0
 age.unit = 'Gyr'
@@ -658,18 +803,19 @@ if keyword_set(yy) then begin
    age.fit = 1
    age.derive = 1
 endif
-if ~keyword_set(nomist) then age.derive=1
+if ~keyword_set(nomist) or keyword_set(parsec) then age.derive=1
 
 age.scale = 3d0
 
 eep = parameter
-eep.value = 354.1661d0 ;; solar EEP
+eep.value = 398.668d0 ;; solar EEP (PARSEC)
+eep.value = 354.1661d0 ;; solar EEP (MIST)
 eep.unit = ''
 eep.description = 'Equal Evolutionary Phase'
 eep.latex = 'EEP'
 eep.label = 'eep'
 eep.scale = 50d0
-if ~keyword_set(nomist) then begin
+if ~keyword_set(nomist) or keyword_set(parsec) then begin
    eep.fit = 1
    eep.derive = 1
 endif else begin
@@ -683,13 +829,6 @@ lstar.description = 'Luminosity'
 lstar.latex = 'L_*'
 lstar.label = 'lstar'
 lstar.cgs = 3600d0*24d0*365.242d0*1d9
-
-fbol = parameter
-fbol.unit = 'cgs'
-fbol.description = 'Bolometric Flux'
-fbol.latex = 'F_{Bol}'
-fbol.label = 'fbol'
-fbol.cgs = 1d0
 
 rhostar = parameter
 rhostar.unit = 'cgs'
@@ -706,6 +845,20 @@ tc.cgs = 86400d0
 if nplanets eq 0 then tc.derive=0 $
 else tc.fit = 1
 tc.scale = 0.1
+
+tt = parameter
+tt.unit = '\bjdtdb'
+tt.description = 'Time of minimum projected separation'
+tt.latex = 'T_T'
+tt.label = 'tt'
+tt.cgs = 86400d0
+if ntran eq 0 then tt.derive=0
+tt.scale = 0.1
+
+if keyword_set(fittt) then begin
+   tc.fit = 0
+   tt.fit = 1
+endif
 
 t0 = parameter
 t0.unit = '\bjdtdb'
@@ -761,6 +914,46 @@ secosw.cgs = !values.d_nan
 secosw.scale = 0.1d0
 secosw.derive = 0
 
+vcve = parameter
+vcve.unit = ''
+vcve.description = ''
+vcve.latex = 'V_c/V_e'
+vcve.label = 'vcve'
+vcve.cgs = !values.d_nan
+vcve.scale = 1d0
+vcve.value = 0.99d0
+if nplanets eq 0 then vcve.derive=0B
+
+chord = parameter
+chord.unit = ''
+chord.description = ''
+chord.latex = '((1-R_P/R_*)^2-b^2)^{1/2}'
+chord.label = 'chord'
+chord.cgs = 1d0
+chord.scale = 1d0
+chord.value = 1d0
+chord.derive = 0
+
+sign = parameter
+sign.unit = ''
+sign.description = ''
+sign.latex = 'sign'
+sign.label = 'sign'
+sign.cgs = !values.d_nan
+sign.scale = 1
+sign.value = 1.5
+sign.derive = 0
+
+sign2 = parameter
+sign2.unit = ''
+sign2.description = ''
+sign2.latex = 'sign2'
+sign2.label = 'sign2'
+sign2.cgs = !values.d_nan
+sign2.scale = 1
+sign2.value = 1.5
+sign2.derive = 0
+
 if keyword_set(eprior4) then begin
    ;; step in qesinw (prior favoring lower e)
    qesinw.fit = 1
@@ -805,6 +998,36 @@ omega.label = 'omega'
 omega.cgs = 1d0
 omega.derive = 0
 
+lsinw = parameter
+lsinw.unit = ''
+lsinw.description = 'L*Sine of Argument of Periastron'
+lsinw.latex = 'L\sin\{\omega_*}'
+lsinw.label = 'lsinw'
+lsinw.cgs = 1d0
+lsinw.value = 0d0
+lsinw.scale = 1d0
+lsinw.derive = 0
+
+lsinw2 = parameter
+lsinw2.unit = ''
+lsinw2.description = 'L*Sine of Argument of Periastron'
+lsinw2.latex = 'sign(vcve-1)*L\sin\{\omega_*}'
+lsinw2.label = 'lsinw2'
+lsinw2.cgs = 1d0
+lsinw2.value = 0d0
+lsinw2.scale = 1d0
+lsinw2.derive = 0
+
+lcosw = parameter
+lcosw.unit = ''
+lcosw.description = 'L*Cosine of Argument of Periastron'
+lcosw.latex = 'L\cos{\omega_*}'
+lcosw.label = 'lcosw'
+lcosw.cgs = 1d0
+lcosw.value = 0d0
+lcosw.scale = 1d0
+lcosw.derive = 0
+
 omegadeg = parameter
 omegadeg.unit = 'Degrees'
 omegadeg.description = 'Argument of Periastron'
@@ -814,7 +1037,7 @@ omegadeg.cgs = !dpi/180d0
 if nplanets eq 0 then omegadeg.derive=0
 
 bigomega = parameter
-bigomega.value = !dpi
+bigomega.value = 0d0
 bigomega.scale = !dpi
 bigomega.unit = 'Radians'
 bigomega.description = 'Longitude of ascending node'
@@ -823,8 +1046,28 @@ bigomega.label = 'bigomega'
 bigomega.cgs = 1d0
 bigomega.derive = 0B
 
+lsinbigomega = parameter
+lsinbigomega.value = 0d0
+lsinbigomega.scale = 0.5
+lsinbigomega.unit = ''
+lsinbigomega.description = 'l*Sine of Longitude of ascending node'
+lsinbigomega.latex = 'l\sin{\Omega}'
+lsinbigomega.label = 'lsinbigomega'
+lsinbigomega.cgs = 1d0
+lsinbigomega.derive = 0B
+
+lcosbigomega = parameter
+lcosbigomega.value = 0d0
+lcosbigomega.scale = 0.5
+lcosbigomega.unit = ''
+lcosbigomega.description = 'l*Cosine of Longitude of ascending node'
+lcosbigomega.latex = 'l\cos{\Omega}'
+lcosbigomega.label = 'lcosbigomega'
+lcosbigomega.cgs = 1d0
+lcosbigomega.derive = 0B
+
 bigomegadeg = parameter
-bigomegadeg.value = 180d0
+bigomegadeg.value = 0d0
 bigomegadeg.scale = 180d0
 bigomegadeg.unit = 'Degrees'
 bigomegadeg.description = 'Longitude of ascending node'
@@ -834,11 +1077,13 @@ bigomegadeg.cgs = !dpi/180d0
 bigomegadeg.derive=0B
 bigomegadeg.fit=0B
 if nastrom gt 0 then begin
-   bigomega.fit=1B
+   lsinbigomega.fit=1B
+   lcosbigomega.fit=1B
    bigomegadeg.derive=1B
 endif else begin
-   bigomega.fit=0B
-endelse   
+   lsinbigomega.fit=0B
+   lcosbigomega.fit=0B
+endelse
    
 p = parameter
 p.value = 0.1d0
@@ -969,6 +1214,14 @@ taus.label = 'taus'
 taus.cgs = 86400d0
 if nplanets eq 0 then taus.derive = 0
 
+eclipsedepth = parameter
+eclipsedepth.unit = 'ppm'
+eclipsedepth.description = 'Measured eclipse depth'
+eclipsedepth.latex = '\delta_{S}'
+eclipsedepth.label = 'eclipsedepth'
+eclipsedepth.cgs = 1d6
+eclipsedepth.derive = 0
+
 eclipsedepth36 = parameter
 eclipsedepth36.unit = 'ppm'
 eclipsedepth36.description = 'Blackbody eclipse depth at 3.6$\mu$m'
@@ -1004,20 +1257,6 @@ dr.latex = 'd/R_*'
 dr.label = 'dr'
 if nplanets eq 0 then dr.derive = 0
 
-;sqrtcosicoslambda = parameter
-;sqrtcosicoslambda.description = 'sqrtcosicoslambda'
-;sqrtcosicoslambda.latex = '\sqrt{cosi_*}\cos{\lambda}'
-;sqrtcosicoslambda.label = 'sqrtcosicoslambda'
-;sqrtcosicoslambda.scale = 1d2
-;sqrtcosicoslambda.derive = 0
-;
-;sqrtsinisinlambda = parameter
-;sqrtsinisinlambda.description = 'sqrtsinisinlambda'
-;sqrtsinisinlambda.latex = '\sqrt{sini}\sin{\lambda}'
-;sqrtsinisinlambda.label = 'sqrtsinisinlambda'
-;sqrtsinisinlambda.scale = 1d2
-;sqrtsinisinlambda.derive = 0
-
 lambda = parameter
 lambda.unit = 'Radians'
 lambda.description = 'Projected Spin-orbit alignment'
@@ -1025,6 +1264,24 @@ lambda.latex = '\lambda'
 lambda.label = 'lambda'
 lambda.scale = !dpi
 lambda.derive = 0
+
+lsinlambda = parameter
+lsinlambda.value = 0d0
+lsinlambda.unit = ''
+lsinlambda.description = 'lSine of Projected Spin-orbit alignment'
+lsinlambda.latex = 'l\sin{\lambda}'
+lsinlambda.label = 'lsinlambda'
+lsinlambda.scale = 0.5
+lsinlambda.derive = 0
+
+lcoslambda = parameter
+lcoslambda.value = 0d0
+lcoslambda.unit = ''
+lcoslambda.description = 'l*Cosine of Projected Spin-orbit alignment'
+lcoslambda.latex = 'l\cos{\lambda}'
+lcoslambda.label = 'lcoslambda'
+lcoslambda.scale = 0.5
+lcoslambda.derive = 0
 
 lambdadeg = parameter
 lambdadeg.unit = 'Degrees'
@@ -1061,23 +1318,29 @@ dtscale.derive = 0
 dtscale.scale = 1d2
 dtscale.value = 1d0
 
-logk = parameter
-logk.description = 'Log of RV semi-amplitude'
-logk.latex = '\log{K}'
-logk.label = 'logk'
-if nplanets eq 0 then logk.derive=0 $
-else logk.fit = 1
-logk.value = 1d0
-logk.scale = 1d0
+logmp = parameter
+logmp.description = 'Log of mp in solar units'
+logmp.latex = '\log{M_P}'
+logmp.label = 'logmp'
+logmp.derive=0
 
 k = parameter
-k.value = 10^logk.value ;; earth
+k.value = 10d0
 k.unit = 'm/s'
 k.description = 'RV semi-amplitude'
 k.latex = 'K'
 k.label = 'k'
 k.cgs = 100d0
 if nplanets eq 0 then k.derive=0
+
+logk = parameter
+logk.value = 10d0
+logk.unit = 'm/s'
+logk.description = 'RV semi-amplitude'
+logk.latex = 'LOGK'
+logk.label = 'logk'
+logk.cgs = 100d0
+logk.derive=0
 
 period = parameter
 period.unit = 'days'
@@ -1120,9 +1383,13 @@ detrend.fit = 1
 detrend.derive = 1
 
 beam = parameter
-beam.description = 'Doppler Beaming'
+beam.value = 0d0
+beam.description = 'Doppler Beaming amplitude'
 beam.latex = 'A_B'
+beam.unit = 'ppm'
 beam.label = 'beam'
+beam.scale = 100d0
+beam.fit = 0
 beam.derive = 0
 
 bs = parameter
@@ -1178,7 +1445,8 @@ mpsun.latex = 'M_P'
 mpsun.label = 'mpsun'
 mpsun.cgs = 1.9891d33
 mpsun.derive = 0
-if nplanets eq 0 then mpsun.derive = 0
+mpsun.value = 0.001d0
+if nplanets ne 0 then mpsun.fit = 1
 
 msini = parameter
 msini.unit = '\mj'
@@ -1333,6 +1601,15 @@ reflect.unit = 'ppm'
 reflect.fit = 0
 reflect.derive = 0
 
+ellipsoidal = parameter
+ellipsoidal.description = 'Ellipsoidal variation of the star'
+ellipsoidal.latex = 'A_E'
+ellipsoidal.label = 'ellipsoidal'
+ellipsoidal.scale = 1d4
+ellipsoidal.unit = 'ppm'
+ellipsoidal.fit = 0
+ellipsoidal.derive = 0
+
 dilute = parameter
 dilute.description = 'Dilution from neighboring stars'
 dilute.latex = 'A_D'
@@ -1356,9 +1633,7 @@ ttv.label = 'ttv'
 ttv.unit = 'days'
 ttv.scale = 0.02 ;; ~30 minutes
 junk = where(fittran, nfittran)
-if keyword_set(ttvs) and nfittran ge 1 then begin
-   ttv.fit = 1
-endif else ttv.derive=0
+ttv.derive=0
 
 tiv = parameter
 tiv.description = 'Transit Inclination Variation'
@@ -1366,25 +1641,14 @@ tiv.latex = 'TiV'
 tiv.label = 'tiv'
 tiv.unit = 'Radians'
 tiv.scale = 0.01*!dpi/180d0
-if keyword_set(tivs) then begin
-   tiv.fit = 1
-endif else tiv.derive=0
+tiv.derive=0
 
 tdeltav = parameter
 tdeltav.description = 'Transit Depth Variation'
 tdeltav.latex = 'T\delta V'
 tdeltav.label = 'tdeltav'
 tdeltav.scale = 0.01
-if keyword_set(tdeltavs) then begin
-   tdeltav.fit = 1
-endif else tdeltav.derive=0
-
-rednoise = parameter
-rednoise.description = 'Red Noise'
-rednoise.latex = '\sigma_r'
-rednoise.label = 'rednoise'
-rednoise.fit=0
-rednoise.derive=0
+tdeltav.derive=0
 
 jitter = parameter
 jitter.description = 'RV Jitter'
@@ -1414,6 +1678,15 @@ variance.scale = 1d0
 if nplanets eq 0 then variance.derive = 0 $
 else variance.fit=1
 
+sigma_r = parameter
+sigma_r.description = 'Red noise'
+sigma_r.latex = '\sigma_r'
+sigma_r.label = 'sigma_r'
+sigma_r.value = 0d0
+sigma_r.scale = 1d0
+sigma_r.derive = 0
+sigma_r.fit=0
+
 errscale = parameter
 errscale.description = 'SED photometry error scaling'
 errscale.latex = '\sigma_{SED}'
@@ -1430,11 +1703,13 @@ errscale.derive = 0
 columnlabels = ''
 star = create_struct(mstar.label,mstar,$
                      rstar.label,rstar,$
+                     rstarsed.label,rstarsed,$
                      lstar.label,lstar,$
-;                     fbol.label,fbol,$
+                     fbol.label,fbol,$
                      rhostar.label,rhostar,$
                      logg.label,logg,$
                      teff.label,teff,$
+                     teffsed.label,teffsed,$
                      feh.label,feh,$
                      initfeh.label,initfeh,$
                      age.label,age,$
@@ -1447,7 +1722,6 @@ star = create_struct(mstar.label,mstar,$
 ;                     Ma.label,Ma,$
 ;                     Mv.label,Mv,$
                      errscale.label,errscale,$
-;                     ellip.label,0d0,$
                      ra.label,ra,$       ;; astrometry
                      dec.label,dec,$     ;; astrometry
                      pmra.label,pmra,$   ;; astrometry
@@ -1478,9 +1752,19 @@ if n_elements(fluxfile) ne 0 then begin
       star.errscale.derive = 1
       star.distance.derive = 1
       star.distance.fit = 1
+      star.fbol.derive = 1
       star.parallax.derive = 1
       star.av.fit = 1
       star.av.derive = 1
+
+      if teffsedfloor ne 0d0 then begin
+         star.teffsed.fit = 1
+         star.teffsed.derive = 1
+      endif
+      if fbolsedfloor ne 0d0 then begin
+         star.rstarsed.fit = 1
+         star.rstarsed.derive = 1
+      endif
 
       ;; overwrite the common block, in case it's been called
       ;; before then updated
@@ -1499,9 +1783,19 @@ if n_elements(mistsedfile) ne 0 then begin
       star.errscale.derive = 1
       star.distance.derive = 1
       star.distance.fit = 1
+      star.fbol.derive = 1
       star.parallax.derive = 1
       star.av.fit = 1
       star.av.derive = 1
+
+      if teffsedfloor ne 0d0 then begin
+         star.teffsed.fit = 1
+         star.teffsed.derive = 1
+      endif
+      if fbolsedfloor ne 0d0 then begin
+         star.rstarsed.fit = 1
+         star.rstarsed.derive = 1
+      endif
 
       ;; overwrite the common block, in case it's been called
       ;; before then updated (without exiting IDL)
@@ -1519,8 +1813,10 @@ planet = create_struct($
          rpearth.label,rpearth,$
          mp.label,mp,$
          mpsun.label,mpsun,$
+         logmp.label,logmp,$
          mpearth.label,mpearth,$
          tc.label,tc,$
+         tt.label,tt,$
          t0.label,t0,$
          a.label,a,$              
          i.label,i,$
@@ -1528,12 +1824,17 @@ planet = create_struct($
          e.label,e,$
          omega.label,omega,$
          omegadeg.label,omegadeg,$
+         lsinw.label,lsinw,$
+         lsinw2.label,lsinw2,$
+         lcosw.label,lcosw,$
          bigomega.label,bigomega,$ ;; for astrometry
          bigomegadeg.label,bigomegadeg,$
+         lsinbigomega.label,lsinbigomega,$
+         lcosbigomega.label,lcosbigomega,$
          teq.label,teq,$
          tcirc.label, tcirc,$
          K.label,k,$              ;; RV parameters
-         logK.label,logk,$
+         logK.label,logk,$              ;; RV parameters
          p.label,p,$              ;; Primary Transit parameters
          ar.label,ar,$
          delta.label,delta,$
@@ -1555,6 +1856,8 @@ planet = create_struct($
          loggp.label,loggp,$
          lambda.label,lambda,$
          lambdadeg.label,lambdadeg,$
+         lsinlambda.label,lsinlambda,$
+         lcoslambda.label,lcoslambda,$
          safronov.label,safronov,$
          fave.label,fave,$
          tp.label,tp,$
@@ -1562,6 +1865,10 @@ planet = create_struct($
          ta.label,ta,$
          td.label,td,$
          phase.label,phase,$
+         vcve.label,vcve,$
+         chord.label,chord,$
+         sign.label,sign,$
+         sign2.label,sign2,$
          ecosw.label,ecosw,$
          esinw.label,esinw,$
          secosw.label,secosw,$
@@ -1595,6 +1902,8 @@ band = create_struct(u1.label,u1,$ ;; linear limb darkening
                      thermal.label,thermal,$ ;; thermal emission
                      dilute.label,dilute,$   ;; dilution
                      reflect.label,reflect,$ ;; reflection
+                     ellipsoidal.label,ellipsoidal,$
+                     eclipsedepth.label,eclipsedepth,$
                      mag.label,mag,$
                      phottobary.label,phottobary,$
                      'name','',$
@@ -1618,7 +1927,8 @@ if ntel le 0 then begin
 endif
 
 ;; for each transit
-transit = create_struct(variance.label,variance,$ ;; Red noise
+transit = create_struct(variance.label,variance,$ ;; jitter
+                        sigma_r.label,sigma_r,$ ;; Red noise
                         ttv.label,ttv,$           ;; Transit Timing Variation
                         tiv.label,tiv,$ ;; Transit inclination variation
                         tdeltav.label,tdeltav,$ ;; Transit depth variation
@@ -1638,14 +1948,6 @@ transit = create_struct(variance.label,variance,$ ;; Red noise
                         'fitspline',0B,$
                         'splinespace',0.75d0,$
                         'label','') 
-
-if n_elements(dtpath) ne 0 then begin
-   dtfiles = file_search(dtpath,count=ndt)
-   if ndt eq 0 then message, 'DTPATH specified (' + dtpath + ') but no files found'
-endif else begin
-   dtfiles = ['']
-   ndt = 0
-endelse
 
 doptom = create_struct('dtptrs',ptr_new(),$
                        'rootlabel','Doppler Tomography Parameters:',$
@@ -1674,27 +1976,35 @@ ss = create_struct('star',star,$
                    'transit',replicate(transit,ntran > 1),$
                    'doptom',replicate(doptom,ndt>1),$
                    'astrom',replicate(astrom,nastrom>1),$
+                   'epochs',dblarr(ntran>1,nplanets>1),$
                    'constants',constants,$
                    'tofit',ptr_new(1),$
                    'priors',ptr_new(1),$
                    'debug',keyword_set(debug),$
                    'verbose',keyword_set(verbose),$
                    'tides',keyword_set(tides),$
+                   'randomsign',keyword_set(randomsign),$
                    'ntel',ntel,$
+                   'rvepoch',0d0,$
                    'ntran',ntran,$
                    'nastrom',nastrom,$
                    'nband',nband,$
                    'ndt',ndt,$
                    'nplanets',nplanets,$
                    'mist', ~keyword_set(nomist),$
+                   'parsec', keyword_set(parsec),$
+                   'fbolsedfloor', fbolsedfloor,$
+                   'teffsedfloor', teffsedfloor,$
+                   'oned', keyword_set(oned),$
                    'yy', keyword_set(yy),$
                    'torres', keyword_set(torres),$
                    'claret', ~keyword_set(noclaret),$
-                   'ttvs', keyword_set(ttvs),$
-                   'tivs', keyword_set(tivs),$
-                   'tdeltavs', keyword_set(tdeltavs),$
+                   'ttvs', ttvs,$
+                   'tivs', tivs,$
+                   'tdeltavs', tdeltavs,$
                    'alloworbitcrossing', keyword_set(alloworbitcrossing),$
-                   'nsteps',nsteps,$
+                   'nsteps',nsteps,$                   
+                   'npars',0L,$
                    'burnndx',0L,$
                    'nchains',1L,$
                    'goodchains',1L,$
@@ -1712,24 +2022,25 @@ ss = create_struct('star',star,$
                    'planetorder',lindgen(nplanets > 1),$
 ;                   'dtpath',dtpath,$
 ;                   'fluxfile',fluxfile,$
+                   'delay',delay,$
                    'earth',keyword_set(earth));,$
 ;                   'prefix',prefix $
 ;)
 
 if keyword_set(ss.mist) + keyword_set(ss.torres) + keyword_set(ss.yy) gt 1 then begin
-   printandlog, 'WARNING: More than one stellar model invoked -- while this is not forbidden, it is likely an error that will result in underestimated stellar parameters. When using /YY or /TORRES, specify /NOMIST', logname
+   if ~keyword_set(silent) then printandlog, 'WARNING: More than one stellar model invoked -- while this is not forbidden, it is likely an error that will result in underestimated stellar parameters. When using /YY or /TORRES, specify /NOMIST', logname
 endif
 
 if n_elements(logname) eq 1 then ss.logname=logname
 
 if ndt gt 0 then begin
    ss.doptom[*].dtptrs = ptrarr(ndt,/allocate_heap)
-   printandlog, 'The index for each DT file is',logname
+   if ~keyword_set(silent) then printandlog, 'The index for each DT file is',logname
    for i=0, ndt-1 do begin
       *(ss.doptom[i].dtptrs) = exofast_readdt(dtfiles[i])
-      printandlog, string(i,dtfiles[i],format='(i2,x,a)'),logname
+      if ~keyword_set(silent) then printandlog, string(i,dtfiles[i],format='(i2,x,a)'),logname
    endfor
-   printandlog, '', logname
+   if ~keyword_set(silent) then printandlog, '', logname
 endif
 
 ;; for each planet 
@@ -1766,7 +2077,8 @@ for i=0, nplanets-1 do begin
    if rossiter[i] or fitdt[i] then begin
       ss.star.vsini.fit = 1
       ss.star.vsini.derive = 1
-      ss.planet[i].lambda.fit = 1
+      ss.planet[i].lsinlambda.fit = 1
+      ss.planet[i].lcoslambda.fit = 1
       ss.planet[i].lambdadeg.derive = 1
       if fitdt[i] then begin
          ss.planet[i].fitdt = 1B
@@ -1776,12 +2088,51 @@ for i=0, nplanets-1 do begin
          ss.doptom[*].dtscale.derive = 1
       endif
       if rossiter[i] then ss.planet[i].rossiter = 1B
-
    endif
 
    ss.planet[i].fittran = fittran[i]
    ss.planet[i].fitrv = fitrv[i]
    ss.planet[i].chen = chen[i]
+   if ss.planet[i].fittran then ss.planet[i].tt.derive = 1B $
+   else ss.planet[i].tt.derive = 0B
+
+   if ss.planet[i].fittran and fittt[i] then begin
+      ss.planet[i].tt.fit = 1B
+      ss.planet[i].tc.fit = 0B
+   endif
+
+   ;; fit in Vc/Ve, lcosw, lsinw, and sign if only fitting transit (far more efficient)
+   ;; fit in tfwhm0, lcosw, lsinw, and sign if only fitting transit (far more efficient)
+   if ~ss.planet[i].fitrv and ss.planet[i].fittran and ~circular[i] and ~novcve[i] then begin
+      ss.planet[i].secosw.fit = 0
+      ss.planet[i].sesinw.fit = 0
+      ss.planet[i].lsinw.fit = 0
+      ss.planet[i].lsinw2.fit = 0
+      ss.planet[i].lcosw.fit = 0
+
+      ;; reparameterize secosw, sesinw => vcve, lsinw, lcosw
+      ss.planet[i].lsinw.fit = 0
+      ss.planet[i].lsinw2.fit = 1
+      ss.planet[i].lcosw.fit = 1
+      ss.planet[i].vcve.fit = 1
+      ss.planet[i].vcve.derive = 1
+      
+      ;; use sign to choose between + and - solutions to the quadratic
+      ;; to solve for e (otherwise, use lsinw^2 + lcosw^2 = L)
+      if fitsign[i] then begin
+         ss.planet[i].sign.fit = 1
+         ss.planet[i].sign.derive = 1
+;         ss.planet[i].sign2.fit = 1
+;         ss.planet[i].sign2.derive = 1
+      endif
+
+      ;; reparameterize cosi as chord
+      if ~nochord[i] then begin
+         ss.planet[i].cosi.fit = 0
+         ss.planet[i].chord.fit = 1         
+         ss.planet[i].chord.derive = 1
+      endif
+   endif
 
    ;; we can marginalize over these parameters 
    ;; even if a transit is not fit.
@@ -1824,11 +2175,16 @@ for i=0, nplanets-1 do begin
 
    endif
 
+   if fitbeam[i] then begin
+      ss.planet[i].beam.fit = 1B
+      ss.planet[i].beam.derive = 1B
+   endif else if derivebeam[i] then ss.planet[i].beam.derive = 1B
+
    if i180[i] or ss.nastrom gt 0 then ss.planet[i].i180 = 1
 
-   if lineark[i] then begin
-      ss.planet[i].logk.fit = 0
-      ss.planet[i].k.fit = 1
+   if fitlogmp[i] then begin
+      ss.planet[i].logmp.fit = 1
+      ss.planet[i].mpsun.fit = 0
    endif
 
 endfor
@@ -1847,21 +2203,30 @@ for i=0, nband-1 do begin
    if match[0] ne -1 then begin
       ss.band[i].thermal.fit = 1B
       ss.band[i].thermal.derive = 1B
-      printandlog, "Fitting thermal emission for " + ss.band[i].name + " band",logname
+      ss.band[i].eclipsedepth.derive = 1B
+      if ~keyword_set(silent) then printandlog, "Fitting thermal emission for " + ss.band[i].name + " band",logname
    endif
 
    match = where(fitreflect eq ss.band[i].name)
    if match[0] ne -1 then begin
       ss.band[i].reflect.fit = 1B
       ss.band[i].reflect.derive = 1B
-      printandlog, "Fitting reflected light for " + ss.band[i].name + " band", logname
+      ss.band[i].eclipsedepth.derive = 1B
+      if ~keyword_set(silent) then printandlog, "Fitting reflected light for " + ss.band[i].name + " band", logname
    endif
 
    match = where(fitdilute eq ss.band[i].name)
    if match[0] ne -1 then begin
       ss.band[i].dilute.fit = 1B
       ss.band[i].dilute.derive = 1B
-      printandlog, "Fitting dilution for " + ss.band[i].name + " band", logname
+      if ~keyword_set(silent) then printandlog, "Fitting dilution for " + ss.band[i].name + " band", logname
+   endif
+
+   match = where(fitellip eq ss.band[i].name)
+   if match[0] ne -1 then begin
+      ss.band[i].ellipsoidal.fit = 1B
+      ss.band[i].ellipsoidal.derive = 1B
+      if ~keyword_set(silent) then printandlog, "Fitting ellipsoidal for " + ss.band[i].name + " band", logname
    endif
 
 endfor
@@ -1906,11 +2271,11 @@ if ntran gt 0 then begin
       stop
    endelse
 
-   printandlog, 'The index for each transit is',logname
+   if ~keyword_set(silent) then printandlog, 'The index for each transit is',logname
    ss.transit[*].transitptrs = ptrarr(ntran,/allocate_heap)
    for i=0, ntran-1 do begin
-      printandlog, string(i,tranfiles[i],format='(i2,x,a)'),logname
-      *(ss.transit[i].transitptrs) = readtran(tranfiles[i], detrendpar=detrend)
+      if ~keyword_set(silent) then printandlog, string(i,tranfiles[i],format='(i2,x,a)'),logname
+      *(ss.transit[i].transitptrs) = readtran(tranfiles[i], detrendpar=detrend, nplanets=nplanets)
 
 ;      stop
 
@@ -1929,11 +2294,42 @@ if ntran gt 0 then begin
       ss.transit[i].bandndx = where(ss.band[*].name eq band)
       ss.transit[i].label = (*(ss.transit[i].transitptrs)).label
       ss.transit[i].rejectflatmodel = rejectflatmodel[i]
+
       ss.transit[i].fitspline = fitspline[i]
       ss.transit[i].splinespace = splinespace[i]
-      
+;      ;; F0 and the spline are totally degenerate. 
+;      ;; Don't fit (or derive) F0 if flattening with a spline
+;      if ss.transit[i].fitspline then begin
+;         ss.transit[i].f0.fit = 0B
+;         ss.transit[i].f0.derive = 0B
+;      endif         
+
+      ;; added variance and added red noise are highly
+      ;; degenerate; don't fit both!
+      if fitwavelet[i] then begin
+         ss.transit[i].variance.fit = 0B
+         ss.transit[i].variance.derive = 0B
+         ss.transit[i].sigma_r.fit = 1B
+         ss.transit[i].sigma_r.derive = 1B
+      endif
+
+      for j=0L, ss.nplanets-1L do begin
+         if keyword_set(ttvs[i,j]) then begin
+            ss.transit[i].ttv.fit = 1B
+            ss.transit[i].ttv.derive = 1B
+         endif
+         if keyword_set(tivs[i,j]) then begin
+            ss.transit[i].tiv.fit = 1B
+            ss.transit[i].tiv.derive = 1B
+         endif
+         if keyword_set(tdeltavs[i,j]) then begin
+            ss.transit[i].tdeltav.fit = 1B
+            ss.transit[i].tdeltav.derive = 1B
+         endif
+      endfor
+
    endfor
-   printandlog, '',logname
+   if ~keyword_set(silent) then printandlog, '',logname
 endif else begin
    ss.transit[0].f0.fit = 0
    ss.transit[0].f0.derive = 0
@@ -1944,10 +2340,10 @@ endelse
 ;; read in the RV files
 if ntel gt 0 then begin
    ss.telescope[*].rvptrs = ptrarr(ntel,/allocate_heap)
-   printandlog, "The index for each RV data set is",logname
+   if ~keyword_set(silent) then printandlog, "The index for each RV data set is",logname
    maxpoints = 0
    for i=0, ntel-1 do begin
-      printandlog, string(i,rvfiles[i],format='(i2,x,a)'),logname
+      if ~keyword_set(silent) then printandlog, string(i,rvfiles[i],format='(i2,x,a)'),logname
       *(ss.telescope[i].rvptrs) = readrv(rvfiles[i])
       ss.telescope[i].label = (*(ss.telescope[i].rvptrs)).label
 
@@ -1962,7 +2358,7 @@ if ntel gt 0 then begin
 ;         ss.planet[*].k.value = sqrt(2d0)*stddev((*(ss.telescope[i].rvptrs)).rv)
 ;      endif
    endfor
-   printandlog, '', logname
+   if ~keyword_set(silent) then printandlog, '', logname
 endif else begin
    ss.telescope[*].rvptrs = ptr_new(/allocate_heap)
 endelse
@@ -1970,30 +2366,44 @@ endelse
 for i=0, ss.ntel-1 do begin
    rv = *(ss.telescope[i].rvptrs)
    ss.telescope[i].gamma.value = mean(rv.rv)
-   if i eq 0 then begin     
-      alltime = rv.bjd
-      allrv = rv.rv-ss.telescope[i].gamma.value
-   endif else begin
-      alltime = [alltime,rv.bjd]
-      allrv = [allrv,rv.rv-ss.telescope[i].gamma.value]
-   endelse
+
+;   print, (*ss.telescope[i].rvptrs).planet, (*ss.telescope[i].rvptrs).planet eq -1
+;stop
+
+   if (*ss.telescope[i].rvptrs).planet eq -1 then begin
+      if n_elements(alltime) eq 0 then begin
+         alltime = rv.bjd
+         allrv = rv.rv-ss.telescope[i].gamma.value
+      endif else begin
+         alltime = [alltime,rv.bjd]
+         allrv = [allrv,rv.rv-ss.telescope[i].gamma.value]
+      endelse
+   endif
 endfor
 
 ;; take a rough stab at gamma, slope, quad, and K
-if ss.ntel gt 0 then t0 = (min(alltime) + max(alltime))/2d0
+if ss.ntel gt 0 and n_elements(rvepoch) eq 0 then ss.rvepoch = (min(alltime) + max(alltime))/2d0
 if ss.star.quad.fit then begin
-   coeffs = poly_fit(alltime-t0, allrv, 2, yfit=yfit)
+   coeffs = poly_fit(alltime-ss.rvepoch, allrv, 2, yfit=yfit)
    allrv -= yfit
    ss.star.quad.value = coeffs[2]
    ss.star.slope.value = coeffs[1]
+   ss.star.quad.userchanged = 1B
+   ss.star.slope.userchanged = 1B
    ss.telescope[*].gamma.value += coeffs[0]
 endif else if ss.star.slope.fit then begin
-   coeffs = poly_fit(alltime-t0, allrv, 1, yfit=yfit)
+   coeffs = poly_fit(alltime-ss.rvepoch, allrv, 1, yfit=yfit)
    allrv -= yfit
    ss.star.slope.value = coeffs[1]
    ss.telescope[*].gamma.value += coeffs[0]
-endif   
-if ss.ntel gt 0 then ss.planet[*].k.value = sqrt(2d0)*stddev(allrv)
+   ss.star.slope.userchanged = 1B
+endif
+ss.telescope[*].gamma.userchanged = 1B
+
+if ss.ntel gt 0 then begin
+   ss.planet[*].k.value = sqrt(2d0)*stddev(allrv)
+   ss.planet[*].k.userchanged=1B
+endif
 
 ;; read in astrometry files
 if nastrom gt 0 then begin
@@ -2054,8 +2464,8 @@ while not eof(lun) do begin
 
    nentries = n_elements(entries)
    ;; each line must have at least a name and value
-   if nentries lt 2 or nentries gt 5 then begin
-      if line ne '' then printandlog, 'WARNING: line ' + strtrim(lineno,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE [UNCERTAINTY] [LOWERBOUND] [UPPERBOUND]); ignoring: ' + line, logname
+   if nentries lt 2 or nentries gt 6 then begin
+      if line ne '' and ~keyword_set(silent) then printandlog, 'WARNING: line ' + strtrim(lineno,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE [UNCERTAINTY] [LOWERBOUND] [UPPERBOUND] [START]); ignoring: ' + line, logname
       continue
    endif 
 
@@ -2078,6 +2488,9 @@ while not eof(lun) do begin
       if strupcase(entries[4]) eq 'INF' then upperbound = !values.d_infinity $
       else upperbound = double(entries[4])
    endif else upperbound = !values.d_infinity
+   if nentries ge 6 then begin
+      startval = double(entries[5])
+   endif else startval = priorval
 
    ;; determine the subscript
    tmp = strsplit(priorname,'_',/extract)
@@ -2125,25 +2538,36 @@ while not eof(lun) do begin
                            if (*(ss.(i)[priornum].(k))).(l)[detrendnum].label eq strupcase(priorlabel) then begin
 
                               if not (*(ss.(i)[priornum].(k))).(l)[detrendnum].fit and not (*(ss.(i)[priornum].(k))).(l)[detrendnum].derive then begin
+                                 ;; it's not fit or derived; 
+                                 ;; only use it to derive the starting parameters
+                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].value = startval
+                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].userchanged = 1B
+
                                  if nplanets ne 0 then $
-                                    printandlog, "WARNING: Prior supplied on '" + $
-                                                 priorname + "' but it is neither fitted or derived; not applying prior", logname
+                                    if ~keyword_set(silent) then printandlog, "WARNING: Prior supplied on '" + $
+                                      priorname + "' but it is neither fitted or derived. Not applying prior, " + $
+                                      'but it will be used to derive the starting parameters if possible.', logname
+                                 
                               endif else begin
                               
                                  ;; found it! change the default starting guess to the value
                                  (*(ss.(i)[priornum].(k))).(l)[detrendnum].prior = priorval
-                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].value = priorval
+                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].value = startval
                                  (*(ss.(i)[priornum].(k))).(l)[detrendnum].upperbound = upperbound
                                  (*(ss.(i)[priornum].(k))).(l)[detrendnum].lowerbound = lowerbound
+                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].userchanged = 1B
                                  
                                  if priorwidth eq 0d0 then begin
-                                    ;; priorwidth = 0 => fix it at the prior value
-                                    (*(ss.(i)[priornum].(k))).(l)[detrendnum].fit = 0d0
-                                    (*(ss.(i)[priornum].(k))).(l)[detrendnum].derive = 0d0
-                                    (*(ss.(i)[priornum].(k))).(l)[detrendnum].priorwidth = 0d0
+                                    if ~(*(ss.(i)[priornum].(k))).(l)[detrendnum].fit then begin
+                                       if ~keyword_set(silent) then printandlog, priorname + ' is not fit. Only fitted parameters can be fixed. Ignoring constraint', logname
+                                    endif else begin
+                                       ;; priorwidth = 0 => fix it at the prior value
+                                       (*(ss.(i)[priornum].(k))).(l)[detrendnum].fit = 0d0
+                                       (*(ss.(i)[priornum].(k))).(l)[detrendnum].derive = 0d0
+                                       (*(ss.(i)[priornum].(k))).(l)[detrendnum].priorwidth = 0d0
 
-                                    if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)', logname
-                                    
+                                       if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)', logname
+                                    endelse
                                  endif else if finite(priorwidth) and priorwidth gt 0d0 or finite(lowerbound) or finite(upperbound) then begin
                                     ;; apply a Gaussian prior with width = priorwidth
                                     priors=[[priors],[i,priornum,k,l,detrendnum]]
@@ -2154,13 +2578,18 @@ while not eof(lun) do begin
                                     endif
                                     
                                     if ~keyword_set(silent) then begin
-                                       if priorwidth lt 0 then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname $
-                                       else printandlog, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
+                                       if priorwidth lt 0d0 then printandlog, priorname + ' = ' + strtrim(startval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname $
+                                       else begin
+                                          printandlog, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
+                                          if startval ne priorval then begin
+                                             printandlog, 'NOTE: ' + priorname + ' starts at ' + strtrim(startval,2), logname
+                                          endif
+                                       endelse
                                     endif
                                     
                                  endif else begin
                                     ;; else no prior, just change the default starting value
-                                    if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
+                                    if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(startval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
                                  endelse
                                  
                               endelse
@@ -2187,26 +2616,37 @@ while not eof(lun) do begin
                   if ss.(i)[priornum].(ndx).label eq 'e' or ss.(i)[priornum].(ndx).label eq 'omega' or $
                      ss.(i)[priornum].(ndx).label eq 'omegadeg' or $
                      ss.(i)[priornum].(ndx).label eq 'secosw' or ss.(i)[priornum].(ndx).label eq 'sesinw' or $
-                     ss.(i)[priornum].(ndx).label eq 'ecosw' or ss.(i)[priornum].(ndx).label eq 'esinw' and circ then begin                        printandlog, "WARNING: Prior supplied on '" + $
-                     priorname + "' but planet is specified to be circular; not applying prior", logname
+                     ss.(i)[priornum].(ndx).label eq 'ecosw' or ss.(i)[priornum].(ndx).label eq 'esinw' and circ then begin                        
+                     if ~keyword_set(silent) then printandlog, "WARNING: Prior supplied on '" + $
+                         priorname + "' but planet is specified to be circular; not applying prior", logname
                   endif else if not ss.(i)[priornum].(ndx).fit and not ss.(i)[priornum].(ndx).derive then begin
+                     ;; it's not fit or derived; 
+                     ;; only use it to derive the starting parameters
+                     ss.(i)[priornum].(ndx).value = startval
+                     ss.(i)[priornum].(ndx).userchanged = 1B
                      if nplanets ne 0 then $
-                        printandlog, "WARNING: Prior supplied on '" + $
-                                     priorname + "' but it is neither fitted or derived; not applying prior", logname
+                        if ~keyword_set(silent) then printandlog, "WARNING: Prior supplied on '" + $
+                            priorname + "' but it is neither fitted or derived. Not applying prior, " + $
+                            'but it will be used to derive the starting parameters if possible.', logname
                   endif else begin
                      
                      ;; found it! change the default starting guess to the value
                      ss.(i)[priornum].(ndx).prior = priorval
-                     ss.(i)[priornum].(ndx).value = priorval
+                     ss.(i)[priornum].(ndx).value = startval
                      ss.(i)[priornum].(ndx).upperbound = upperbound
                      ss.(i)[priornum].(ndx).lowerbound = lowerbound
+                     ss.(i)[priornum].(ndx).userchanged = 1B
                      
                      if priorwidth eq 0d0 then begin
-                        ;; priorwidth = 0 => fix it at the prior value
-                        ss.(i)[priornum].(ndx).fit = 0d0
-                        ss.(i)[priornum].(ndx).derive = 0d0
-                        ss.(i)[priornum].(ndx).priorwidth = 0d0
-                        if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)', logname
+                        if ~ss.(i)[priornum].(ndx).fit then begin
+                           if ~keyword_set(silent) then printandlog, priorname + ' is not fit. Only fitted parameters can be fixed. Ignoring constraint', logname
+                        endif else begin
+                           ;; priorwidth = 0 => fix it at the prior value
+                           ss.(i)[priornum].(ndx).fit = 0d0
+                           ss.(i)[priornum].(ndx).derive = 0d0
+                           ss.(i)[priornum].(ndx).priorwidth = 0d0
+                           if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)', logname
+                        endelse
                      endif else if finite(priorwidth) and priorwidth gt 0d0 or finite(lowerbound) or finite(upperbound) then begin
                         ;; apply a Gaussian prior with width = priorwidth
                         priors=[[priors],[i,priornum,ndx,-1,-1]]
@@ -2217,13 +2657,18 @@ while not eof(lun) do begin
                         endif                  
                         
                         if ~keyword_set(silent) then begin
-                           if priorwidth lt 0 then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname $
-                           else printandlog, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
+                           if priorwidth lt 0 then printandlog, priorname + ' = ' + strtrim(startval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname $
+                           else begin
+                              printandlog, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
+                              if startval ne priorval then begin
+                                 printandlog, 'NOTE: ' + priorname + ' starts at ' + strtrim(startval,2), logname
+                              endif
+                           endelse
                         endif
                         
                      endif else begin
                         ;; else no prior, just change the default starting value
-                        if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
+                        if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(startval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
                      endelse
                   endelse
 
@@ -2238,7 +2683,7 @@ while not eof(lun) do begin
    endfor
 
    ;; didn't find it, warn user
-   if not found and nplanets ne 0 then printandlog, "WARNING: No parameter matches '" + $
+   if not found and nplanets ne 0 and ~keyword_set(silent) then printandlog, "WARNING: No parameter matches '" + $
       priorname + "' from " + priorfile + "; not applying prior", logname
                 
 endwhile
@@ -2254,18 +2699,19 @@ priors = priors[*,1:*]
 
 ;; determine the epoch for each observation
 for i=0, ntran-1 do begin
-   if i eq 0 then begin
-      ;; variations are defined relative to the first transit
-      if keyword_set(tivs) then begin
-         ss.transit[i].tiv.fit = 0
-         ss.transit[i].tiv.derive = 0
-      endif
-      if keyword_set(tdeltavs) then begin
-         ss.transit[i].tdeltav.fit = 0
-         ss.transit[i].tdeltav.derive = 0
-      endif
-   endif
 
+;   if i eq 0 then begin
+;      ;; variations are defined relative to the first transit
+;      if keyword_set(tivs) then begin
+;         ss.transit[i].tiv.fit = 0
+;         ss.transit[i].tiv.derive = 0
+;      endif
+;      if keyword_set(tdeltavs) then begin
+;         ss.transit[i].tdeltav.fit = 0
+;         ss.transit[i].tdeltav.derive = 0
+;      endif
+;   endif
+   
    for j=0, nplanets-1 do begin
 
       
@@ -2283,7 +2729,10 @@ for i=0, ntran-1 do begin
       endelse
       
       minbjd = min((*(ss.transit[i].transitptrs)).bjd, max=maxbjd)
-      epoch = round(((maxbjd+minbjd)/2d0 - tc)/period)
+      
+
+      ss.epochs[i,j] = round(((maxbjd+minbjd)/2d0 - tc)/period)
+
       
 ;      t14 = ??
 ;      t14s = ??
@@ -2296,10 +2745,11 @@ for i=0, ntran-1 do begin
 ;            transit[i].bitmask += 2ULL^j 
 ;
 
-      ss.transit[i].epoch[j] = epoch
+      ss.transit[i].epoch[j] = ss.epochs[i,j]
 
    endfor
 endfor
+
 
 ;; creates an array of indicies into the stellar structure to map which parameters should be fit
 ;; fit[*,0] indexes the object [star=0, planet=1, band=2, telescope=3, or transit=4]
@@ -2320,6 +2770,7 @@ for i=0L, n_tags(ss)-1 do begin
                      for m=0L, n_elements((*(ss.(i)[j].(k))).(l))-1 do begin
                         if tag_exist((*(ss.(i)[j].(k))).(l)[m],'fit') then begin
                            if (*(ss.(i)[j].(k))).(l)[m].fit then tofit = [[tofit],[i,j,k,l,m]]
+                           if (*(ss.(i)[j].(k))).(l)[m].fit or (*(ss.(i)[j].(k))).(l)[m].derive then ss.npars++
                         endif
                      endfor
                   endif
@@ -2329,6 +2780,7 @@ for i=0L, n_tags(ss)-1 do begin
             ;; and this captures everything else
             if tag_exist(ss.(i)[j].(k),'fit') then begin
                if ss.(i)[j].(k).fit then tofit = [[tofit],[i,j,k,-1,-1]]
+               if ss.(i)[j].(k).fit or ss.(i)[j].(k).derive then ss.npars++
             endif
          endif
       endfor
@@ -2346,7 +2798,7 @@ if n_elements(ss.star.mstar.value) eq 1 then begin
 
    ;; derive all step parameters
    if not pars2step(ss) then begin
-      printandlog, 'Warning: The isochrones are not applicable here; refine your priors.', logname
+      printandlog, 'ERROR: The isochrones are not applicable here; refine your priors.', logname
       stop
    endif
 
@@ -2359,10 +2811,9 @@ if n_elements(ss.star.mstar.value) eq 1 then begin
 
    ;; return an error if the starting stellar system is not allowed
    if step2pars(ss,/verbose,/changedefaults) eq -1 then begin
-      printandlog, 'Warning: starting values for stellar system not allowed; refine priors', logname
+      printandlog, 'ERROR: starting values for stellar system not allowed; refine priors', logname
       stop
    endif
-
 
    ;; calculate the right period stepping scale for AMOEBA based on the
    ;; input data
@@ -2371,7 +2822,15 @@ endif else begin
    ;; use this to require planets to stay in the same order as they start
    if ss.nplanets gt 0 then ss.planetorder = sort(ss.planet.period.value[0])
 endelse
-   
+
+;; load stellar structure into common block
+;; must do it here because threads can't pass structures
+if n_elements(chi2func) eq 1 then junk = call_function(chi2func, /loadss, ss0=ss)
+
+if (ss.star.mistsedfile ne ' ' or ss.star.fluxfile ne ' ') and $
+   (nastrom eq 0 and ~finite(ss.star.parallax.priorwidth)) then  begin
+   printandlog, 'WARNING: Fitting an SED without providing parallax information will essentially determine a photometric parallax.', logname
+endif
 
 return, ss
 

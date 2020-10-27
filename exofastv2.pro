@@ -383,10 +383,6 @@
 ;                 should be fixed to be circular (1) or left with
 ;                 eccentricity free (0). 
 ;                 Default is bytarr(nplanets) + 1B.
-;   SECONDARY   - An NPLANETS boolean array that specifies which planets
-;                 should have a secondary eclipse modeled. 
-;                 Default is bytarr(nplanets)
-;                 ***NOT YET IMPLEMENTED***
 ;   ROSSITER    - An NPLANETS boolean array that specifies which planets
 ;                 should fit the Rossiter-McLaughlin effect to the RV
 ;                 data using the Ohta approximation. If a run was
@@ -394,11 +390,9 @@
 ;                 file to fit a different zero point and jitter
 ;                 parameter to it.
 ;                 Default is bytarr(nplanets)
-;                 ***NOT YET IMPLEMENTED***
 ;   FITDT       - An NPLANETS boolean array that specifies which planets
 ;                 should fit using a Doppler Tomography model.
 ;                 Default is bytarr(nplanets)
-;                 ***NOT YET IMPLEMENTED***
 ;  FITTHERMAL- A string array specifying which bands to fit thermal
 ;             emission for. This is what you want to set to fit an
 ;             isolated secondary eclipse. All observations in this
@@ -441,6 +435,21 @@
 ;
 ;             TODO: automatically model dilution based on multiple
 ;             SEDs
+; FITBEAM   - An NPLANET boolean array that specifies which planets to
+;             model a doppler beaming signal. If this beaming
+;             amplitude is fit directly, it will *not* constrain the
+;             planetary mass (set DERIVEBEAM instead).
+; DERIVEBEAM- An NPLANET boolean array that specifies which planets to
+;             model a doppler beaming signal. If this beaming
+;             amplitude is derived (from K), it will constrain the
+;             planetary mass through Faigler & Mazeh, 2011, eq 1 (set
+;             FITBEAM instead to model the beaming but break this
+;             connection).
+; FITELLIP  - A string array specifying which bands to fit an
+;             ellipsoidal variation amplitude for. Note: this does
+;             *not* feedback into the global model through F&M 2011,
+;             eq 2
+;
 ;   CHEN        - An NPLANET boolean array that specifies which
 ;                 planets should have the Chen & Kipping, 2017
 ;                 mass-radius relation applied. By default CHEN =
@@ -460,12 +469,15 @@
 ; OPTIONAL KEYWORDS:
 ;   FITSLOPE  - If set, it will fit a linear trend to the RV data.
 ;   FITQUAD   - If set, it will fit a quadratic trend to the RV data.
+;   RVEPOCH   - If set, this is the reference epoch (A BJD_TDB) for RV
+;               linear and quadratic trends. Default is the midpoint
+;               of all RV observations.
 ;   NOMIST    - If set, do not use the MIST evolutionary tracks 
 ;               see http://waps.cfa.harvard.edu/MIST/
 ;               And please cite
 ;               http://adsabs.harvard.edu/abs/2016ApJS..222....8D
 ;               http://adsabs.harvard.edu/abs/2016ApJ...823..102C
-;               *** Use with caution, not thoroughly tested ***
+;   PARSEC    - If set, use the PARSEC evolutionary models. 
 ;   YY        - If set, use the YY evolutionary tracks see
 ;               http://adsabs.harvard.edu/abs/2001ApJS..136..417Y
 ;               to constrain the mass/radius of the star. YY should
@@ -501,7 +513,18 @@
 ;                     signficance of the signal. This is likely
 ;                     required for low SNR transits or when using
 ;                     parallel tempering (see NTEMP and TF).
-;
+;   FITSPLINE - An NTRANSITFILES byte array specifying which transits
+;               should be flatted with a spline. This should only be
+;               used for long baseline data like Kepler, K2, or TESS.
+;   SPLINESPACE - An NTRANSITFILES array specifying the knot spacing
+;                 between adjacent points in the spline, in days. To
+;                 be used in conjunction with FITSPLINE. Default is
+;                 0.75 days. This spacing should be large compared to
+;                 the transit duration (>~ 3x), or there is
+;                 significant risk of introducing a strong covariance
+;                 between the spline and the transit parameters,
+;                 biasing the inferred values, inflating the
+;                 uncertainties, and increasing convergence times.
 ;   TIDES     - If set, when (1-Rstar/a-rp/a) < e < (1-3*Rstar/a), we
 ;               set the eccentricity to zero, presuming that the tidal
 ;               circularization timescale is much much smaller than
@@ -510,17 +533,24 @@
 ;               periastron as e^(1/4)*sin(omega) and
 ;               e^(1/4)*cos(omega) to more closely match the observed
 ;               eccentricity distribution
-;   TTVS      - If set, a new (non-periodic) transit time is fit for
-;               each transit file. The period is constrained by a
-;               linear fit to all transit times at each
-;               step. Otherwise, a linear ephemeris is assumed.
-;   TDELTAVS  - If set, a new transit depth is fit for each transit
-;               file. Otherwise, all transits of the same planet are
-;               modeled with the same same depth.
-;   TIVS      - If set, a new inclination is fit for each transit
-;               file. Otherwise, all transits of the same planet are
-;               modeled with the same same depth.
-
+;   TTVS      - An NTRANSITSxNPLANETS boolean array, specifying which
+;               transit files should have a timing offset applied
+;               corresponding to which planets. 
+;               NOTE: if the same transit applies to more than one
+;               planet, the same offset will be applied to both. Such
+;               transits should probably be removed from the analysis. 
+;   TDELTAVS  - An NTRANSITSxNPLANETS boolean array, specifying which
+;               transit files should have a depth offset applied
+;               corresponding to which planets. 
+;               NOTE: if the same transit applies to more than one
+;               planet, the same offset will be applied to both. Such
+;               transits should probably be removed from the analysis. 
+;   TIVS      - An NTRANSITSxNPLANETS boolean array, specifying which
+;               transit files should have an inclination offset applied
+;               corresponding to which planets. 
+;               NOTE: if the same transit applies to more than one
+;               planet, the same offset will be applied to both. Such
+;               transits should probably be removed from the analysis. 
 ;   BESTONLY  - If set, only the best fit (using AMOEBA) will be
 ;               performed.
 ;               ***NOT YET IMPLEMENTED***
@@ -679,11 +709,13 @@
 ;             offsets). Now easily extensible.
 ;-
 pro exofastv2, priorfile=priorfile, $
-               rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,mistsedfile=mistsedfile,$
+               rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
+               fluxfile=fluxfile,mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,$
                prefix=prefix,$
                circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
                rossiter=rossiter,chen=chen,$
-               fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
+               fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+               fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
                nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
                ntemps=ntemps, tf=tf, keephot=keephot, $
                debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
@@ -691,14 +723,23 @@ pro exofastv2, priorfile=priorfile, $
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                rejectflatmodel=rejectflatmodel,$
                maxgr=maxgr, mintz=mintz, $
-               yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-               fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
+               yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+               fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
                earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
-               fitspline=fitspline, splinespace=splinespace, skiptt=skiptt
+               fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
+               skiptt=skiptt, novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, $
+               nthreads=nthreads, delay=delay, fittt=fittt, rvepoch=rvepoch
+
+;; this is the stellar system structure
+COMMON chi2_block, ss
 
 ;; if a virtual machine or runtime license, read the arguments from args.txt
 if lmgr(/vm) or lmgr(/runtime) then begin
+   ;; IDL_IDLBridge disabled in the virtual machine
+   ;; no multi-threading without a license :(
+   nthreads = 1L 
+
    par = command_line_args(count=numargs)
    if numargs eq 1 then begin
       argfile = par[0]
@@ -706,27 +747,35 @@ if lmgr(/vm) or lmgr(/runtime) then begin
 
    if not file_test(argfile) then message, argfile + ', containing desired arguments to EXOFASTv2, does not exist'
    readargs, argfile, priorfile=priorfile, $
-             rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, mistsedfile=mistsedfile, $
+             rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
+             fluxfile=fluxfile, mistsedfile=mistsedfile, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,$
              prefix=prefix,$
              circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
              rossiter=rossiter,chen=chen,$
-             fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
+             fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+             fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
              nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, ntemps=ntemps, tf=tf, dontstop=dontstop, $
              debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
              bestonly=bestonly, plotonly=plotonly, refinestar=refinestar, $
              longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
              rejectflatmodel=rejectflatmodel,$
              maxgr=maxgr, mintz=mintz, $
-             yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, tides=tides, nplanets=nplanets, $
-             fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
+             yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+             fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
              earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
-             fitspline=fitspline, splinespace=splinespace, skiptt=skiptt
+             fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
+             skiptt=skiptt, novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, fittt=fittt, rvepoch=rvepoch
 
 endif
 
-;; this is the stellar system structure
-COMMON chi2_block, ss
+;; default prefix for all output files (filename without extension)
+if n_elements(prefix) eq 0 then prefix = 'planet.'
+basename = file_basename(prefix)
+
+;; output to log file and the screen
+logname = prefix + 'log'
+file_delete, logname, /allow_nonexistent
 
 ;; name of the chi square function
 chi2func = 'exofast_chi2v2'
@@ -735,12 +784,18 @@ chi2func = 'exofast_chi2v2'
 ;; resolve_all doesn't interpret execute; it's also broken prior to IDL v6.4(?)
 defsysv, '!GDL', exists=runninggdl  
 
+;; default to NCORES threads, if we're running a full copy of IDL
+if n_elements(nthreads) eq 0 and ~runninggdl and $
+   ~lmgr(/runtime) and ~lmgr(/vm) then begin
+   nthreads = !cpu.hw_ncpu
+endif else nthreads = 1
+
 if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
    resolve_all, resolve_function=[chi2func,'exofast_random'],skip_routines=['cggreek'],/cont,/quiet
 
-;; default prefix for all output files (filename without extension)
-if n_elements(prefix) eq 0 then prefix = 'planet.'
-basename = file_basename(prefix)
+;; output to log file too
+logname = prefix + 'log'
+file_delete, logname, /allow_nonexistent
 
 ;; if the directory doesn't exist, make it
 dirname = file_dirname(prefix)
@@ -750,9 +805,14 @@ if dirname ne '.' then begin
    endif
 endif
 
-;; output to log file too
-logname = prefix + 'log'
-file_delete, logname, /allow_nonexistent
+;; some error checking on NTHREADS (multi-threading)
+if nthreads gt !cpu.hw_ncpu then begin
+   printandlog, "WARNING: Using more threads (" + strtrim(nthreads,2) + ") than physical cores (" + strtrim(!cpu.hw_ncpu,2) + "); this is likely to be inefficient", logname
+;endif else if nthreads eq !cpu.hw_ncpu then begin
+;   printandlog, "WARNING: Doing fit with " + strtrim(nthreads,2) + " threads. This may impact performance of other tasks (See NTHREADS argument).", logname
+endif else begin
+   printandlog, "Doing fit with " + strtrim(nthreads,2) + ' threads', logname
+endelse
 
 ;; insert the commit id into the log
 spawn, 'git -C $EXOFAST_PATH rev-parse HEAD', output, stderr
@@ -763,8 +823,9 @@ if stderr[0] eq '' then printandlog, "Using EXOFASTv2 commit " + output[0], logn
 ;; parameters, especially for the MIST models, but is a waste of time if you do
 if nplanets ne 0 and keyword_set(refinestar) then begin
    printandlog, 'Refining stellar parameters', logname
-   ss = mkss(fluxfile=fluxfile,mistsedfile=mistsedfile,nplanet=0,priorfile=priorfile, $
-             yy=yy, torres=torres, nomist=nomist, logname=logname, debug=stardebug, verbose=verbose)
+   ss = mkss(fluxfile=fluxfile,mistsedfile=mistsedfile,$
+             fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,nplanet=0,priorfile=priorfile, $
+             yy=yy, torres=torres, nomist=nomist, parsec=parsec, logname=logname, debug=stardebug, verbose=verbose)
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
    staronlybest = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
    if staronlybest[0] eq -1 then begin
@@ -774,53 +835,146 @@ if nplanets ne 0 and keyword_set(refinestar) then begin
 endif
 
 ;; create the master structure
-ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, mistsedfile=mistsedfile,nplanets=nplanets, $
-          debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
+ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, $
+          mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,nplanets=nplanets, $
+          debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,$
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
           rossiter=rossiter,longcadence=longcadence,rejectflatmodel=rejectflatmodel,$
           ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
-          fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-          chen=chen, yy=yy, torres=torres, nomist=nomist, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,$
-          fitspline=fitspline, splinespace=splinespace)
+          fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+          fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
+          chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,$
+          fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
+          novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, chi2func=chi2func, fittt=fittt, rvepoch=rvepoch,delay=delay)
 
-npars = 0L
-nfit = 0L
-for i=0L, n_tags(ss)-1 do begin
-   for j=0L, n_elements(ss.(i))-1 do begin
-      for k=0L, n_tags(ss.(i)[j])-1 do begin
-         if n_tags(ss.(i)[j].(k)) ne 0 then begin
-            if tag_exist(ss.(i)[j].(k),'fit') then begin
-               npars += 1L
-               if ss.(i)[j].(k).fit then nfit += 1L
-            endif
-         endif
+npars = ss.npars
+nfit = n_elements((*(ss.tofit))[0,*])
+
+if nthreads gt 1 then begin
+   ;; load the stellar structure into the common block for each thread
+   ;; (can't pass structures between threads, so we have to create it in each thread)
+   thread_array = replicate(create_struct('obridge',obj_new("IDL_IDLBridge", output=''),$
+                                          'j',-1L, 'm',-1L, 'k', -1L, $
+                                          'newpars',dblarr(nfit),'status',0B, 'fac', 1d0,$
+                                          'start', systime(/seconds)),nthreads)
+   
+   ;; get the current working directory (make sure all threads start there)
+   cd, current=cwd
+
+   for i=0L, nthreads-1 do begin
+      ;; replicate copies the IDLBridge by reference, not by value!! reinitialize here
+      thread_array[i].obridge = obj_new("IDL_IDLBridge", output='')
+      
+      ;; can't share a structure directly with a thread
+      ;; must share components and create the structure within the thread
+      ;; share every variable in memory to make it future proof
+      help, output=helpoutput
+      for j=0L, n_elements(helpoutput)-2 do begin
+         ;; done with variables, we're done
+         if helpoutput[j] eq 'Compiled Procedures:' then break
+         
+         ;; undefined variable; skip it
+         if strpos(helpoutput[j],'UNDEFINED') eq 16 then continue
+
+         entries = strsplit(helpoutput[j],/extract)
+
+         ;; either a long variable name that spans two lines, or not a variable
+         if strpos(helpoutput[j],'=') ne 26 then begin
+
+            ;; not a variable; skip it
+            if strpos(helpoutput[j+1],'=') ne 26 then continue
+
+            ;; undefined variable, skip it
+            if strpos(helpoutput[j+1],'UNDEFINED') eq 16 then continue
+
+            ;; if it's not a lone (long) variable name, skip it
+            if n_elements(entries) ne 1 then continue
+
+            ;; this line is the name of a long variable name
+            ;; skip the next line, which is its value
+            j++
+
+         endif else if n_elements(entries) gt 4 then begin
+            ;; catch N-dimentional arrays and strings with spaces
+            if strpos(helpoutput[j],'Array') ne 28 and strpos(helpoutput[j],'STRING') ne 16 then continue
+         endif else if n_elements(entries) ne 4 then continue            
+         ;; declare it in the thread
+         ;; EXECUTE is ok here, since we can't use VM with IDLBridge anyway
+         varname = entries[0]
+         junk = execute("thread_array[i].obridge->setvar,'" + varname + "'," + varname)
+;         print, 'setting ' + varname + ' to '
+;         junk = execute('print, ' + strtrim(varname,2))
       endfor
+
+      ;; disable NaN warnings inside each thread
+      thread_array[i].obridge->setvar,'!except',0
+
+      ;; make sure each thread is run from the current working directory
+      thread_array[i].obridge->setvar,'cwd',cwd
+      thread_array[i].obridge->execute,'cd, cwd'
+      
+      ;; compile all the codes in each thread so compilation messages don't pollute the screen
+      if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
+         thread_array[i].obridge->execute, "resolve_all, resolve_function=[chi2func,'exofast_random'], resolve_procedure=['exofastv2'],skip_routines=['cggreek'],/cont,/quiet"
+
+
+;      print, thread_array[i].obridge->getvar('rvpath')
+;      print, thread_array[i].obridge->getvar('tranpath')
+;      print, thread_array[i].obridge->getvar('astrompath')
+;      print, thread_array[i].obridge->getvar('fbolsedfloor')
+         
+
+      ;; create the stellar stucture within each thread
+      thread_array[i].obridge->execute,'ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,'+ $
+         'mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,nplanets=nplanets,'+ $
+         'debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,'+$
+         'circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,'+$
+         'ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,'+$
+         'rossiter=rossiter,longcadence=longcadence,rejectflatmodel=rejectflatmodel,'+$
+         'ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,'+$
+         'fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect,'+ $
+         'fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam,'+ $
+         'chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec,'+$
+         'noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,'+$
+         'fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet,'+$
+         'novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign,'+$
+         'chi2func=chi2func,fittt=fittt,rvepoch=rvepoch,delay=delay,/silent)'
+      
    endfor
-endfor
+endif
 
 if n_elements(mintz) eq 0 then mintz = 1000d0
 if n_elements(maxgr) eq 0 then maxgr = 1.01d0
-if n_elements(nthin) eq 0 then nthin = 1L
-if n_elements(sigclip) ne 1 then sigclip = !values.d_infinity ;; no clipping
-if n_elements(nmin) eq 0 then nmin=5
-;; use robust (slower) random number generator by default
-if n_elements(randomfunc) eq 0 then randomfunc = 'exofast_random'
 
-;; by default, use 1 GB of RAM
+;; by default, use 1 GB of RAM and set NTHIN so it converges
 if n_elements(maxsteps) eq 0 then begin
    maxsteps = round(1024d0^3/(double(ss.nchains)*npars*8d0))
-   printandlog, 'MAXSTEPS set to ' + strtrim(maxsteps,2), logname
-endif
+   
+   ;; set to 10x the limit expected from an idealized Gaussian case of N parameters
+   if n_elements(nthin) eq 0 then begin
+      a = [173881.7852504589d0,-3934.6300584134d0,512.5700554749d0]
+      nthin = ceil((a[0]+a[1]*nfit+a[2]*nfit^2)/(2d0*nfit)/maxsteps*10d0) > 1
+      printandlog, 'NTHIN set to ' + strtrim(nthin,2) + ' for the fit to converge.', logname
+      printandlog, 'This is an extremely rough estimate and varies wildly depending on the ',logname
+      printandlog, 'details of the fit and the accuracy of the starting conditions.',logname
+      printandlog, 'You should monitor the progress of the fit and increase NTHIN if necessary.', logname
+      printandlog, '', logname
+   endif
+endif 
 
 memrequired = double(ss.nchains)*double(maxsteps)*npars*8d0/(1024d0^3)
-
 printandlog, 'Fit will require ' + strtrim(memrequired,2) + ' GB of RAM for the final structure', logname
 if memrequired gt 2d0 then begin
    printandlog, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue', logname
    if ~lmgr(/vm) then stop
 endif
 printandlog, '', logname
+
+if n_elements(nthin) eq 0 then nthin = 1L
+
+printandlog, 'MAXSTEPS set to ' + strtrim(maxsteps,2), logname
+printandlog, 'NTHIN set to ' + strtrim(nthin,2), logname
 
 pars = str2pars(ss,scale=scale,name=name, angular=angular)
 
@@ -851,20 +1005,23 @@ bestchi2 = call_function(chi2func, pars)
 modeltime = systime(/seconds)-t0
 
 ;; these are the starting values for all step parameters
-printandlog, 'These are the starting values for all the step parameters', logname
+printandlog, 'These are the starting values for all fitted parameters', logname
 printandlog, 'and the amoeba stepping scale, which is roughly the range', logname
 printandlog, 'of parameter space it will explore around the starting value', logname
-printandlog, 'and is equal to 3x any input priors. When priors are not ', logname
+printandlog, 'and is equal to 3x any Gaussian width. When priors are not ', logname
 printandlog, 'specified in ' + priorfile + ', a default guess is used.', logname
-printandlog, 'The parameter number is useful for tracking down unconstrained parameters', logname
+printandlog, 'The parameter number is useful for tracking down unconstrained',logname
+printandlog, 'parameters', logname
 printandlog,'',logname 
 printandlog, '**************************************************************', logname
-printandlog, '*** ESPECIALLY DURING BETA TESTING, YOU SHOULD MAKE SURE   ***', logname
-printandlog, '*** THESE MAKE SENSE AND AGREE WITH YOUR EXPECTATION FROM  ***', logname
-printandlog, '*** PRIORFILE. IF NOT, YOUR STARTING PRIORS MAY NOT BE     ***', logname
-printandlog, '*** TRANSLATED CORRECTLY INTO THE STEPPING                 ***', logname
-printandlog, '*** PARAMETERIZATION BY pars2step.pro. NOT ALL PARAMETER   ***', logname
+printandlog, '*** IT IS WISE TO MAKE SURE THESE AGREE WITH YOUR          ***', logname
+printandlog, '*** EXPECTATION FROM THE PRIORFILE. IF NOT, YOUR           ***', logname
+printandlog, '*** STARTING PRIORS MAY NOT BE TRANSLATED CORRECTLY INTO   ***', logname
+printandlog, '*** THE FITTED PARAMETERIZATION BY                         ***', logname
+printandlog, '*** $EXOFAST_PATH/pars2step.pro. NOT ALL PARAMETER         ***', logname
 printandlog, '*** COMBINATIONS ARE ALLOWED/SUPPORTED.                    ***', logname
+printandlog, '*** WHEN IN DOUBT, SET PRIORS/CHANGE STARTING VALUES       ***', logname
+printandlog, '*** DIRECTLY IN THESE FITTED PARAMETERS.                    ***', logname
 printandlog, '**************************************************************', logname
 printandlog, '', logname
 printandlog, 'Par #      Par Name    Par Value       Amoeba Scale', logname
@@ -882,7 +1039,9 @@ printandlog, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nma
 
 ;; do the AMOEBA fit
 ss.amoeba = 1B
+ss.delay =0
 best = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
+ss.delay = delay
 if best[0] eq -1 then begin
    printandlog, 'ERROR: Could not find best combined fit; adjust your starting values and try again. You may want to set the /DEBUG keyword.', logname
    return
@@ -902,16 +1061,40 @@ save, best, filename=prefix + 'amoeba.idl'
 ;; output the best-fit model fluxes/rvs
 bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'amoeba')
 
+printandlog, 'The best loglike found by AMOEBA was ' + strtrim(-bestchi2/2d0,2), logname
+printandlog, 'It should only be compared against the loglike of the same model with different starting points', logname
+
+
+
 ;; do the MCMC fit
 if not keyword_set(bestonly) then begin
 
-   exofast_demcpt, best, chi2func, pars, chi2=chi2,$
+;   if nthreads gt 1 then begin
+;      thread_array = replicate(create_struct('obridge',obj_new("IDL_IDLBridge", output=''),'j',0L, 'm',0L, 'newpars',dblarr(nfit),'status',0B, 'fac', 1d0),nthreads)
+;      for i=0L, nthreads-1 do begin
+;         ss_json = json_serialize(ss)
+;         thread_array[i].obridge->execute, 'COMMON chi2_block, ss_json' ;; share the structure to each thread
+;         thread_array[i].obridge->execute,'call_myfunc, det'
+;         print, thread_array[i].obridge->getvar('det')
+;         thread_array[i].obridge->execute, 'HELP, /full, output=x'
+;         print, thread_array[i].obridge->getvar('x')
+;         stop
+
+
+
+ ;     endfor
+
+;   endif
+
+;   ss.debug=1
+;   ss.verbose=1
+   exofast_demcpt_multi, best, chi2func, pars, chi2=chi2,$
                    nthin=nthin,maxsteps=maxsteps, maxtime=maxtime, $
                    ntemps=ntemps, tf=tf, dontstop=dontstop, $
                    burnndx=burnndx, seed=seed, randomfunc=randomfunc, $
                    gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
                    stretch=stretch, logname=logname, angular=angular, $
-                   keephot=keephot, hotpars=hotpars, hotchi2=hotchi2
+                   keephot=keephot, hotpars=hotpars, hotchi2=hotchi2, thread_array=thread_array
 
    if pars[0] eq -1 then begin
       printandlog, 'MCMC Failed to find a stepping scale. This usually means one or more parameters are unconstrained by the data or priors.', logname
@@ -935,9 +1118,14 @@ if not keyword_set(bestonly) then begin
    chi2 = reform(chi2,nsteps*nchains)
    minchi2 = min(chi2,bestndx)
    
-   printandlog, 'The best "chi^2" found was ' + strtrim(minchi2,2), logname
-   printandlog, 'Note: "chi^2" is actually a normalized form of log-like.', logname
-   printandlog, 'It should only be compared against the "chi^2" of the same model with different starting points', logname
+   printandlog, 'The best loglike found by MCMC was ' + strtrim(-minchi2/2d0,2), logname
+   printandlog, 'It should only be compared against the loglike of the same model with different starting points', logname
+   if minchi2 lt bestchi2 then begin
+      printandlog, 'WARNING: MCMC found a better model that AMOEBA.', logname
+      printandlog, 'Using mkprior to refine your starting values and refitting', logname
+      printandlog, 'may result in a faster and more robust answer.', logname
+      printandlog, 'Look at the chain plot before you trust this fit.', logname
+   endif
 endif else begin
    pars = reform(best[tofit],n_elements(tofit),1)
    bestndx = 0
@@ -947,22 +1135,27 @@ endelse
 bestamoeba = best
 best = pars[*,bestndx]
 modelfile = prefix + 'mcmc'
+ss.verbose = 1
 bestchi2 = call_function(chi2func,best,psname=modelfile, $
                          modelrv=modelrv, modelflux=modelflux)
+ss.verbose = keyword_set(verbose)
 
 ;; make a new stellar system structure with only fitted and derived
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
-mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, mistsedfile=mistsedfile, nplanets=nplanets, $
-              debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,lineark=lineark,$
+mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, $
+              mistsedfile=mistsedfile, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,nplanets=nplanets, $
+              debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
               circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
               rossiter=rossiter,longcadence=longcadence, rejectflatmodel=rejectflatmodel,$
               ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
-              fitthermal=fitthermal, fitreflect=fitreflect, fitdilute=fitdilute,$
-              chen=chen,nvalues=nsteps*nchains,/silent,yy=yy,torres=torres,nomist=nomist,noclaret=noclaret,$
+              fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+              fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
+              chen=chen,nvalues=nsteps*nchains,/silent,yy=yy,torres=torres,nomist=nomist,parsec=parsec,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing, logname=logname, best=best,$
-              fitspline=fitspline, splinespace=splinespace)
+              fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
+              novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, fittt=fittt,rvepoch=rvepoch,delay=delay)
 
 mcmcss.nchains = nchains
 mcmcss.burnndx = burnndx
@@ -970,20 +1163,14 @@ mcmcss.burnndx = burnndx
 
 pars2str, pars, mcmcss
 
+;; populate residuals for the mcmcss file
+for i=0L, mcmcss.ntran-1 do $
+   (*mcmcss.transit[i].transitptrs).residuals = (*ss.transit[i].transitptrs).residuals
+for i=0L, mcmcss.ntel-1 do $
+   (*mcmcss.telescope[i].rvptrs).residuals = (*ss.telescope[i].rvptrs).residuals
+   
 ;; derive all parameters
-derivepars, mcmcss
-
-;; save the chains for additional analysis
-idlfile = prefix + 'mcmc.idl'
-;; GDL compatibility
-if runninggdl then begin
-   if keyword_set(keephot) and ntemps gt 1 then cmsave, mcmcss, hotpars, hotchi2, filename=idlfile $
-   else cmsave, mcmcss, filename=idlfile
-endif else begin
-   if keyword_set(keephot) and ntemps gt 1 then save, mcmcss, hotpars, hotchi2, filename=idlfile $
-   else save, mcmcss, filename=idlfile
-endelse
-
+derivepars, mcmcss, logname=logname
 
 spawn, 'git -C $EXOFAST_PATH rev-parse --short HEAD', output, stderr
 if output[0] ne '' then versiontxt = ", created using EXOFASTv2 commit number " + output[0] $
@@ -999,6 +1186,27 @@ texfile = prefix + 'median.tex'
 csvfile = prefix + 'median.csv'
 
 exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, csvfile=csvfile
+;; save the chains for additional analysis 
+;; wait until here because many things are populated in exofast_plotdist_corner
+idlfile = prefix + 'mcmc.idl'
+
+;; make a new prior file to start at the best fit found here
+priorfileparts = strsplit(priorfile,'.',/extract,/preserve_null)
+suffix = priorfileparts[n_elements(priorfileparts)-1]
+if valid_num(suffix) then priorfileparts[n_elements(priorfileparts)-1] = strtrim(suffix+1L,2) $
+else priorfileparts = [priorfileparts,'2']
+priorfile2 = strjoin(priorfileparts,'.')
+mkprior, mcmcss=mcmcss, priorfilename=priorfile2
+
+;; GDL compatibility
+if runninggdl then begin
+   if keyword_set(keephot) and ntemps gt 1 then cmsave, mcmcss, hotpars, hotchi2, filename=idlfile $
+   else cmsave, mcmcss, filename=idlfile
+endif else begin
+   if keyword_set(keephot) and ntemps gt 1 then save, mcmcss, hotpars, hotchi2, filename=idlfile $
+   else save, mcmcss, filename=idlfile
+endelse
+
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 exofast_plotchains, mcmcss, chainfile=chainfile, logname=logname
 
@@ -1010,7 +1218,7 @@ if (keyword_set(mcmcss.ttvs) or ~keyword_set(skiptt)) and mcmcss.ntran ne 0 then
    printandlog, 'point with the idl file and exofast_gettt', logname
    junk = exofast_gettt(mcmcss, filebase=prefix)
 
-   if keyword_set(mcmcss.ttvs) then begin
+   if total(mcmcss.ttvs) gt 1 then begin
       ;; generate an O-C diagram for each planet
       readcol, prefix + 'transits.csv',label,planet,epoch,time,hierr,loerr, format='a,a,l,d,d,d', delimiter=',', comment='#',/silent
       err = (double(hierr) + double(loerr))/2d0
@@ -1020,7 +1228,7 @@ if (keyword_set(mcmcss.ttvs) or ~keyword_set(skiptt)) and mcmcss.ntran ne 0 then
       sorted = sort(planet)
       uniqplanets = planet[sorted[uniq(planet[sorted])]]
       for i=0L, n_elements(uniqplanets)-1 do begin
-         match = where(planet eq uniqplanets[i])
+         match = where(planet eq uniqplanets[i] and mcmcss.ttvs[*,i])
          omc, time[match], err[match], telescope=telescope[match], epsname=prefix + uniqplanets[i] + '.ttv.eps', $
               period=median(mcmcss.planet[i].period.value), t0=median(mcmcss.planet[i].tc.value)
       endfor

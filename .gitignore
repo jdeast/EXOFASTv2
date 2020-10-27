@@ -1,4 +1,5 @@
 *~
+#*
 *.log
 *.ps
 *.eps
@@ -9,6 +10,8 @@
 *.dvi
 *.pdf
 *.csv
+*.DAT
+*.gz
 examples/*/*.idl
 examples/*/*.txt
 examples/*/fitresults

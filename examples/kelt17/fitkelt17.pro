@@ -1,4 +1,4 @@
-pro fitkelt17,debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin
+pro fitkelt17,debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin, nthread=nthread
 
 path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','kelt17'])
 
@@ -19,6 +19,6 @@ exofastv2, nplanets=1, tranpath=path + 'n20??????.*.dat',$
            dtpath=path+'n201?????.KELT-17b.TRES.44000.fits',$
            mistsedfile=path+'kelt17.sed',rvpath=path+'KELT-17b.*.rv',$
            priorfile=path + 'kelt17.priors.2',prefix=path + 'fitresults/KELT-17b.',$
-           debug=debug, verbose=verbose, maxsteps=maxsteps,nthin=nthin, fitdt=[1]
+           debug=debug, verbose=verbose, maxsteps=maxsteps,nthin=nthin, fitdt=[1], nthread=nthread
 
 end
