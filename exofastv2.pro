@@ -785,10 +785,11 @@ chi2func = 'exofast_chi2v2'
 defsysv, '!GDL', exists=runninggdl  
 
 ;; default to NCORES threads, if we're running a full copy of IDL
-if n_elements(nthreads) eq 0 and ~runninggdl and $
-   ~lmgr(/runtime) and ~lmgr(/vm) then begin
+if runninggdl or lmgr(/runtime) or lmgr(/vm) then begin
+   nthreads=1
+endif else if n_elements(nthreads) ne 1 then begin
    nthreads = !cpu.hw_ncpu
-endif else nthreads = 1
+endif ;; else use the user's input   
 
 if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
    resolve_all, resolve_function=[chi2func,'exofast_random'],skip_routines=['cggreek'],/cont,/quiet
