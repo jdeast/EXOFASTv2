@@ -75,15 +75,15 @@ while not eof(lun) do begin
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITDILUTE' then begin
             fitdilute = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITTHERMAL' then begin
-            fitthermal = boolean(json_parse(entries[1],/toarray))
-         endif else if strupcase(strtrim(entries[0],2)) eq 'FITREFLECT' then begin
-            fitreflect = boolean(json_parse(entries[1],/toarray))
+            fitthermal = json_parse(entries[1],/toarray)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITREFLECT' then begin 
+            fitreflect = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITELLIP' then begin
             fitellip = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITBEAM' then begin
-            fitbeam = json_parse(entries[1],/toarray)
+            fitbeam = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'DERIVEBEAM' then begin
-            derivebeam = json_parse(entries[1],/toarray)
+            derivebeam = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'NTHIN' then begin
             nthin = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MAXSTEPS' then begin

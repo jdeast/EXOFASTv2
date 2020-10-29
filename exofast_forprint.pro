@@ -34,7 +34,7 @@ if n_elements(comment) ne 0 then begin
    else printf, lun, comment
 endif
 
-for i=0, n_elements(v1)-1 do begin
+for i=0L, n_elements(v1)-1 do begin
 
    if n_elements(v18) ne 0 then begin
       str = string(v1[i],v2[i],v3[i],v4[i],v5[i],v6[i],v7[i],v8[i],v9[i],$

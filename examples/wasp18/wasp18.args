@@ -1,0 +1,15 @@
+priorfile=$EXOFAST_PATH/examples/wasp18/wasp18.priors.2
+prefix=$EXOFAST_PATH/examples/wasp18/fitresults/WASP-18b.
+tranpath=$EXOFAST_PATH/examples/wasp18/n*.dat
+rvpath=$EXOFAST_PATH/examples/wasp18/*.rv
+mistsedfile=$EXOFAST_PATH/examples/wasp18/wasp18.sed
+nplanets=1
+maxsteps=100
+ntemps=8
+# NOTE: double quotes (not single quotes) required!
+fitthermal=["TESS"]
+fitreflect=["TESS"]
+fitellip=["TESS"]
+fitbeam=[1]
+#verbose=1
+#debug=1

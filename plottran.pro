@@ -545,12 +545,14 @@ for jj=0L, 2 do begin
          sorted = sort(phasetime)
 
          if jj eq 2 then begin
-            use = where(phasetime ge ss.planet[i].period.value[ndx] + t14 and $
-                        phasetime le ss.planet[i].period.value[ndx] - t14)
+            ;; ignore the primary transit for the Y scaling (to
+            ;; highlight phase variations)
+            use = where(phasetime le (ss.planet[i].period.value[ndx] - t14) and $
+                        phasetime ge (-ss.planet[i].period.value[ndx] + t14))
          endif else begin
-            use = where(phasetime ge -duration[i] and $
-                        phasetime le duration[i])
+            use = where(abs(phasetime) lt duration[i])
          endelse
+
          ymin = min(modelflux[use]) - 3d0*maxnoise
 
          

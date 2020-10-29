@@ -1,0 +1,1 @@
+idl -arg $EXOFAST_PATH/examples/wasp18/wasp18.args -vm=$EXOFAST_PATH/exofastv2.sav
