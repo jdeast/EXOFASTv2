@@ -324,9 +324,10 @@ if nplanets ge 1 and ntran ge 1 then begin
       printandlog, 'TTVs must be an NTRANSITSxNPLANETS (' + string(ntran,nplanets,format='(i,"x",i)') + ') array', logname
       stop
    endif
-   if nplanets eq 1 then dim=1 else dim=2
-   if max(total(ttvs,dim)) gt 1 then begin
-      printandlog, 'TTVs applied to more than one planet. This is unlikely to be what you want.'
+   if nplanets gt 1 then begin
+      if max(total(ttvs,2)) gt 1 then begin
+         printandlog, 'TTVs applied to more than one planet. This is unlikely to be what you want.', logname
+      endif
    endif
    
    ;; some error checking on TIVs
@@ -336,19 +337,23 @@ if nplanets ge 1 and ntran ge 1 then begin
       printandlog, 'TIVs must be an NTRANSITSxNPLANETS (' + string(ntran,nplanets,format='(i,"x",i)') + ') array', logname
       stop
    endif
-   if max(total(tivs,dim)) gt 1 then begin
-      printandlog, 'TIVs applied to more than one planet. This is unlikely to be what you want.'
+   if nplanets gt 1 then begin
+      if max(total(tivs,2)) gt 1 then begin
+         printandlog, 'TIVs applied to more than one planet. This is unlikely to be what you want.', logname
+      endif
    endif
    
    ;; some error checking on TDELTAVs
    if n_elements(tdeltavs) eq 0 then tdeltavs = bytarr(ntran,nplanets) $
-   else if n_elements(tdeltavs) eq 1 then deltavs = bytarr(ntran,nplanets)+tdeltavs[0] $
+   else if n_elements(tdeltavs) eq 1 then tdeltavs = bytarr(ntran,nplanets)+tdeltavs[0] $
    else if n_elements(tdeltavs) ne ntran*nplanets then begin
       printandlog, 'Tdeltavs must be an NTRANSITSxNPLANETS (' + string(ntran,nplanets,format='(i,"x",i)') + ') array', logname
       stop
    endif
-   if max(total(tdeltavs,dim)) gt 1 then begin
-      printandlog, 'TDELTAVs applied to more than one planet. This is unlikely to be what you want.'
+   if nplanets gt 1 then begin
+      if max(total(tdeltavs,2)) gt 1 then begin
+         printandlog, 'TDELTAVs applied to more than one planet. This is unlikely to be what you want.', logname
+      endif
    endif
 endif else begin
    ttvs = 0B

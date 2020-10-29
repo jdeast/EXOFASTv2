@@ -1,12 +1,10 @@
-teff 4985 50
+teff 4985 80
 feh 0.25 0.08
 mstar 0.849
 rstar 0.815
-#av 0 -1 0 
-#parallax  
 p 0.0711
 ideg 87.92
-k 18.4
-gamma 0
-period 3.1853150 0.0000054
+period 3.1853150
 tc 2456528.29697
+av 0 -1 0 0.19623000
+parallax 4.15580 0.05263
