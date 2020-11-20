@@ -172,7 +172,6 @@ else begin
       printandlog, 'You have specified a delay!! This is only designed to test threading and will needlessly slow down the fit. Are you sure?', logname
 endelse
 
-
 if ~keyword_set(nomist) + keyword_set(yy) + keyword_set(parsec) + keyword_set(torres) gt 1 then begin
    printandlog, 'You are **STRONGLY** advised to disable all but one evolutionary model (they are not independent), but type ".con" to proceed', logname
    stop
@@ -236,7 +235,7 @@ if n_elements(fittt) ne nplanets and n_elements(fittt) gt 1 then begin
    stop
 endif
 
-
+ndata = 0L
 
 if not keyword_set(longcadence) then longcadence=0B
 if n_elements(fitthermal) eq 0 then fitthermal = ['']
