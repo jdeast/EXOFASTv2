@@ -77,7 +77,7 @@ repeat begin
    
 ;   if ~finite(max(abs(diff))) then stop
 
-   if niter gt 100 then message, 'Not converging; this is a rare bug usually associated with poorly constrained parameters. Try again or consider imposing some priors for poorly constrained parameters'
+   if niter gt 100 then message, 'Not converging; this is a rare bug usually associated with poorly constrained parameters. Try again or consider imposing some priors for poorly constrained parameters. Especially if you have parallel tempering enabled, you should have loose, uniform priors on Period and Tc.'
 
 endrep until max(abs(diff)) lt tol
 
