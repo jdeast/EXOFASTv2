@@ -86,6 +86,13 @@ galNUV GALEX_NUV
 GaiaBP Gaia_BP_DR2Rev
 Gaia Gaia_G_DR2Rev
 GaiaRP Gaia_RP_DR2Rev
+Unsupported Gaia_BP_EDR3
+Unsupported Gaia_G_EDR3
+Unsupported Gaia_RP_EDR3
+Unsupported Gaia_BP_MAWf
+Unsupported Gaia_BP_MAWb
+Unsupported Gaia_G_MAW
+Unsupported Gaia_RP_MAW
 Unsupported H158
 Unsupported Hipparcos_Hp
 Unsupported IRAC_3.6
