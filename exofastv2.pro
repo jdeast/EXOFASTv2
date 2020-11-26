@@ -992,7 +992,10 @@ endif
 modelfile = prefix + 'start'
 bestchi2 = call_function(chi2func, pars, psname=modelfile)
 if ~finite(bestchi2) then begin
-   printandlog, 'Starting conditions outside of bounds. Setting the /VERBOSE and /DEBUG flags may help you revise the starting values', logname
+   printandlog, 'Starting model is out of bounds; cannot recover. You must change the starting parameter(s) via the prior file.', logname
+   printandlog, 'Re-running starting model with /VERBOSE flag to identify the parameter', logname
+   bestchi2 = call_function(chi2func, pars, psname=modelfile,/verbose)
+   printandlog, 'Starting model is out of bounds; cannot recover. You must change the starting parameter(s) via the prior file.', logname
    return
 endif
 
@@ -1121,6 +1124,14 @@ if not keyword_set(bestonly) then begin
    
    printandlog, 'The best loglike found by MCMC was ' + strtrim(-minchi2/2d0,2), logname
    printandlog, 'It should only be compared against the loglike of the same model with different starting points', logname
+   printandlog, '', logname
+   printandlog, 'Use BIC and AIC to compare different models', logname
+   bic = nfit*alog(ss.ndata) + minchi2
+   aic = 2d0*nfit + minchi2
+   printandlog, 'NDATA = ' + strtrim(ss.ndata,2),logname
+   printandlog, 'NFIT = ' + strtrim(nfit,2),logname
+   printandlog, 'BIC = ' + strtrim(bic,2),logname
+   printandlog, 'AIC = ' + strtrim(aic,2),logname
    if minchi2 lt bestchi2 then begin
       printandlog, 'WARNING: MCMC found a better model that AMOEBA.', logname
       printandlog, 'Using mkprior to refine your starting values and refitting', logname
