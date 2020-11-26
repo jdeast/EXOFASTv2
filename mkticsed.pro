@@ -143,6 +143,7 @@ endelse
 ;; open the SED file for writing
 fmt = '(a10,x,f9.6,x,f0.6,x,f0.6)'
 openw, lun, sedfile, /get_lun
+print, lun, '# bandname magnitude used_errors catalog_errors'
 
 ;; use the Gaia ID to query the Gaia catalog
 gaiaid = qtic.gaia
@@ -163,6 +164,7 @@ if (size(qgaia))[2] eq 8 then begin
          endif else begin
             sigma_s = 0.043d0
          endelse
+         printf, priorlun, "# NOTE: the Gaia DR2 parallax and uncertainty has been corrected as prescribed in Lindegren+ (2018)"
          printf, priorlun, qgaia.plx + 0.030d0, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("parallax",x,f0.5,x,f0.5)'
       endif      
 
