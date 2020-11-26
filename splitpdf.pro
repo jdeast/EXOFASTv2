@@ -38,6 +38,7 @@ parfile = basename + 'pdf.ps'
 covarfile = basename + 'covar.ps'
 logname = basename + 'log'
 texfile = basename + 'tex'
+csvfile = basename + 'csv'
 exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, csvfile=csvfile, mask=mask1
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 
@@ -47,6 +48,7 @@ parfile = basename + 'pdf.ps'
 covarfile = basename + 'covar.ps'
 logname = basename + 'log'
 texfile = basename + 'tex'
+csvfile = basename + 'csv'
 exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, csvfile=csvfile, mask=mask2
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 
