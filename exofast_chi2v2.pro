@@ -766,7 +766,7 @@ for j=0, ss.ntran-1 do begin
    transit = *(ss.transit[j].transitptrs)
 
    if (where(transit.err^2 + ss.transit[j].variance.value le 0d0))[0] ne -1 then begin
-      if ss.verbose then printandlog, transit.label + ' variance would make total error negative; rejecting step', ss.logname
+      if ss.verbose then printandlog, transit.label + ' variance + err^2 < 0. If this is the starting model, check the supplied errors are accurate and the starting value for variance_' + strtrim(j,2) + ' is sensible; rejecting step', ss.logname
       return, !values.d_infinity
    endif
 
