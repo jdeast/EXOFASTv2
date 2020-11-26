@@ -235,8 +235,6 @@ if n_elements(fittt) ne nplanets and n_elements(fittt) gt 1 then begin
    stop
 endif
 
-ndata = 0L
-
 if not keyword_set(longcadence) then longcadence=0B
 if n_elements(fitthermal) eq 0 then fitthermal = ['']
 if n_elements(fitreflect) eq 0 then fitreflect = ['']
@@ -1748,9 +1746,13 @@ star = create_struct(mstar.label,mstar,$
 ;; https://arxiv.org/abs/1507.07956, Table 1
 constants = mkconstants()
 
+ndata = 0L
 ;; if we're fitting an SED, fit the distance, extinction, and error scale
 if n_elements(fluxfile) ne 0 then begin
    if file_test(fluxfile) then begin
+      readcol, fluxfile, junk, format='a', comment='#', /silent
+      ndata += n_elements(junk)
+
       star.fluxfile = fluxfile
       star.errscale.fit = 1
       star.errscale.derive = 1
@@ -1782,6 +1784,8 @@ endif
 
 if n_elements(mistsedfile) ne 0 then begin
    if file_test(mistsedfile) then begin
+      readcol, mistsedfile, junk, format='a', comment='#', /silent
+      ndata += n_elements(junk)
       star.mistsedfile = mistsedfile
       star.errscale.fit = 1
       star.errscale.derive = 1
@@ -1995,6 +1999,7 @@ ss = create_struct('star',star,$
                    'nband',nband,$
                    'ndt',ndt,$
                    'nplanets',nplanets,$
+                   'ndata',ndata,$
                    'mist', ~keyword_set(nomist),$
                    'parsec', keyword_set(parsec),$
                    'fbolsedfloor', fbolsedfloor,$
@@ -2281,15 +2286,14 @@ if ntran gt 0 then begin
       if ~keyword_set(silent) then printandlog, string(i,tranfiles[i],format='(i2,x,a)'),logname
       *(ss.transit[i].transitptrs) = readtran(tranfiles[i], detrendpar=detrend, nplanets=nplanets)
 
-;      stop
-
 ;      ;; create an array of detrending variables 
 ;      ;; (one for each extra column in the transit file)
-;      nadd = (*(ss.transit[i].transitptrs)).nadd
+      nadd = (*(ss.transit[i].transitptrs)).nadd
 ;      if nadd ge 1 then *(ss.transit[i].detrendadd) = replicate(detrendadd,nadd)
-;      nmult = (*(ss.transit[i].transitptrs)).nmult
+      nmult = (*(ss.transit[i].transitptrs)).nmult
 ;      if nmult ge 1 then *(ss.transit[i].detrendmult) = replicate(detrendmult,nmult)
-;stop
+
+      ss.ndata += n_elements((*(ss.transit[i].transitptrs)).bjd)*(1L+nadd+nmult)
 
       ss.transit[i].exptime = exptime[i]
       ss.transit[i].ninterp = ninterp[i]
@@ -2350,6 +2354,8 @@ if ntel gt 0 then begin
       if ~keyword_set(silent) then printandlog, string(i,rvfiles[i],format='(i2,x,a)'),logname
       *(ss.telescope[i].rvptrs) = readrv(rvfiles[i])
       ss.telescope[i].label = (*(ss.telescope[i].rvptrs)).label
+
+      ss.ndata += n_elements((*(ss.telescope[i].rvptrs)).bjd)
 
       ;; = mean(RVs) and K = sqrt(2)*stdev(RVs)     
 ;      if ss.star.quad.fit then begin
@@ -2416,6 +2422,7 @@ if nastrom gt 0 then begin
       *(ss.astrom[i].astromptrs) = readastrom(astromfiles[i])
       band = (*(ss.astrom[i].astromptrs)).band
       ss.astrom[i].bandndx = where(ss.band[*].name eq band)
+      ss.ndata += n_elements((*(ss.astrom[i].astromptrs)).bjd)
    endfor
 endif
 
@@ -2484,6 +2491,7 @@ while not eof(lun) do begin
    priorval = double(entries[1])
    if nentries ge 3 then priorwidth = double(entries[2]) $
    else priorwidth = -1
+   if priorwidth gt 0d0 then ss.ndata++
    if nentries ge 4 then begin
       if strupcase(entries[3]) eq '-INF' then lowerbound = -!values.d_infinity $
       else lowerbound = double(entries[3])
@@ -2835,6 +2843,11 @@ if (ss.star.mistsedfile ne ' ' or ss.star.fluxfile ne ' ') and $
    (nastrom eq 0 and ~finite(ss.star.parallax.priorwidth)) then  begin
    printandlog, 'WARNING: Fitting an SED without providing parallax information will essentially determine a photometric parallax.', logname
 endif
+
+if keyword_set(ss.mist) then ss.ndata+=3
+if keyword_set(ss.yy) then ss.ndata+=3
+if keyword_set(ss.parsec) then ss.ndata+=3
+if keyword_set(ss.torres) then ss.ndata+=2
 
 return, ss
 
