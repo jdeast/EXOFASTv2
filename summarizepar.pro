@@ -57,7 +57,7 @@ endif else begin
    lower = medvalue - pars[good[sorted[lowsigndx]]]
 endelse
 
-if n_elements(medianpars) eq 1 then medianpars = [medvalue,upper,lower] $
+if n_elements(medianpars) lt 3 then medianpars = [medvalue,upper,lower] $
 else medianpars = [[medianpars],[[medvalue,upper,lower]]]
 
 xmax = (medvalue + 4*upper) < max(pars[good])
@@ -84,6 +84,12 @@ endif else if ~keyword_set(noplot) then begin
    hist = histogram(pars[good],nbins=100,locations=x,min=xmin,max=xmax,/nan)
    oplot, x, hist/double(total(hist)), psym=10, thick=3
    
+;   ;; check for multi-modal distributions:
+;   ndx = lclxtrem(hist,/maxima)
+;   if n_elements(ndx) gt 1 then begin
+;      printandlog, 'WARNING: ' + label + ' is multi-modal -- the median and 68% confidence interval will poorly describe this PDF. splitpdf.pro may help.',logname
+;   endif
+
    ;; if the best parameters are given, overplot them on the PDFs
    if finite(best) then $
       oplot, [best,best],[-9d9,9d9]
