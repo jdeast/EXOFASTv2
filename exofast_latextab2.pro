@@ -200,53 +200,59 @@ for i=0, n_tags(ss)-1 do begin
          if ptr_valid(ss.(i)[0].(k)) then begin ;; if it's not empty
             for l=0L, n_tags(*(ss.(i)[0].(k)))-1 do begin ;; loop through each tag
                if (size((*(ss.(i)[0].(k))).(l)))[2] eq 8 then begin ;; if it's an array of structures
-                  maxm = 0
-                  maxj = 0
+
+                  ;; now I need to loop through all transits (j => columns) and
+                  ;; all detrending parameters for each transit (m =>
+                  ;; rows) to map out the table
+                  maxdetrend = lonarr(nvalues)-1
                   for j=0L, nvalues-1 do begin
-                     if n_elements((*(ss.(i)[j].(k))).(l)) gt maxm then begin 
-                        maxm = n_elements((*(ss.(i)[j].(k))).(l))
-                        maxj = j
-                     endif
+                     maxdetrend[j] = n_elements((*(ss.(i)[j].(k))).(l))
                   endfor
-                  for m=0L, maxm-1 do begin ;; loop through each structure
-                     if tag_exist((*(ss.(i)[maxj].(k))).(l)[m],'derive') then begin ;; if it's a parameter
-                        if (*(ss.(i)[maxj].(k))).(l)[m].derive then begin ;; if we want to derive it
+                  ;; the index here is for the transit with the most
+                  ;; detrending variables
+                  nrows = max(maxdetrend,ndx)
 
-                           ;; format the units
-                           if (*(ss.(i)[maxj].(k))).(l)[m].unit eq '' then unit = '' $
-                           else unit = "(" + (*(ss.(i)[maxj].(k))).(l)[m].unit + ")"
+                  for m=0L, nrows-1 do begin ;; loop through each structure
 
-                           ;; before all the values
-                           header = string((*(ss.(i)[maxj].(k))).(l)[m].latex,$
-                                           (*(ss.(i)[maxj].(k))).(l)[m].description,unit,$
-                                           format='("~~~~$",a,"$\dotfill &",a,x,a,"\dotfill ")')
-
-                           ;; put each value of the array in a new column
-                           values = ''
-                           for j=0, nvalues-1 do begin
-                              if n_elements((*(ss.(i)[j].(k))).(l)) gt (m) then begin
-                                 if (*(ss.(i)[j].(k))).(l)[m].derive then begin
-                                    ;; format the errors
-                                    if (*(ss.(i)[j].(k))).(l)[m].upper eq (*(ss.(i)[j].(k))).(l)[m].lower then begin
-                                       ;; fixed value, no errors
-                                       if (*(ss.(i)[j].(k))).(l)[m].upper eq '0.00' then error = '' $ 
-                                       else error = '\pm' + (*(ss.(i)[j].(k))).(l)[m].upper ;; symmetric errors, use +/-
-                                    endif else begin
-                                       ;; asymmetric errors, use ^+_-
-                                       error = "^{+" + (*(ss.(i)[j].(k))).(l)[m].upper + "}_{-" +  $
-                                               (*(ss.(i)[j].(k))).(l)[m].lower + "}"
-                                    endelse
-                                    if (*(ss.(i)[j].(k))).(l)[m].medvalue eq '0.00' and error eq '' then values += '&--' $
-                                    else values = values + '&$' + (*(ss.(i)[j].(k))).(l)[m].medvalue + error + '$'
-                                 endif else values += '&--'
-                              endif else values += '&--'
-                           endfor
+                     ;; format the line
+                     if tag_exist((*(ss.(i)[ndx].(k))).(l)[m],'derive') then begin ;; if it's a parameter
                            
-                           ;; print the line of the latex table
-                           printf, lun, header + values + '\\'
-                           npars++
+                        ;; format the units
+                        if (*(ss.(i)[ndx].(k))).(l)[m].unit eq '' then unit = '' $
+                        else unit = "(" + (*(ss.(i)[ndx].(k))).(l)[m].unit + ")"
+                        
+                        ;; before all the values
+                        header = string((*(ss.(i)[ndx].(k))).(l)[m].latex,$
+                                        (*(ss.(i)[ndx].(k))).(l)[m].description,unit,$
+                                        format='("~~~~$",a,"$\dotfill &",a,x,a,"\dotfill ")')
+                     endif
 
-                        endif
+                     ;; put each value of the array in a new column
+                     values = ''
+                     ngood = 0L
+                     for j=0, nvalues-1 do begin
+                        if n_elements((*(ss.(i)[j].(k))).(l)) gt (m) then begin
+                           if (*(ss.(i)[j].(k))).(l)[m].derive then begin
+                              ;; format the errors
+                              if (*(ss.(i)[j].(k))).(l)[m].upper eq (*(ss.(i)[j].(k))).(l)[m].lower then begin
+                                 ;; fixed value, no errors
+                                 if (*(ss.(i)[j].(k))).(l)[m].upper eq '0.00' then error = '' $ 
+                                 else error = '\pm' + (*(ss.(i)[j].(k))).(l)[m].upper ;; symmetric errors, use +/-
+                              endif else begin
+                                 ;; asymmetric errors, use ^+_-
+                                 error = "^{+" + (*(ss.(i)[j].(k))).(l)[m].upper + "}_{-" +  $
+                                         (*(ss.(i)[j].(k))).(l)[m].lower + "}"
+                              endelse
+                              if (*(ss.(i)[j].(k))).(l)[m].medvalue eq '0.00' and error eq '' then values += '&--' $
+                              else values = values + '&$' + (*(ss.(i)[j].(k))).(l)[m].medvalue + error + '$'
+                              ngood++
+                           endif else values += '&--'
+                        endif else values += '&--'
+                     endfor
+                     if ngood gt 0 then begin
+                        ;; print the line of the latex table
+                        printf, lun, header + values + '\\'
+                        npars++
                      endif
                   endfor
                endif
