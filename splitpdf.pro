@@ -25,31 +25,38 @@ restore, idlfile
 ;burnndx = getburnndx(chi2,goodchains=goodchains)
 ;e = (reform(mcmcss.planet[0].e.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[burnndx:*,goodchains]
 ;ar = (reform(mcmcss.planet[0].ar.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[burnndx:*,goodchains]
+;mstar = (reform(mcmcss.star.mstar.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[burnndx:*,goodchains]
 
 mstar = mcmcss.star.mstar.value
-mask1 = where(mstar gt masscut, complement=mask2)
 
-print, 'The probability the low-mass solution is right is ' +  strtrim(double(n_elements(mask2))/n_elements(mstar),2)
-print, 'The probability the high-mass solution is right is ' +  strtrim(double(n_elements(mask1))/n_elements(mstar),2)
+highmass = where(mstar gt masscut, complement=lowmass)
 
-;; high mass solution
-basename = file_basename(idlfile,'.mcmc.idl') + '.highmass.'
+if highmass[0] eq -1 or lowmass[0] eq -1 then begin
+   print, 'masscut (' + strtrim(masscut,2) + ') does not split PDF; median mass is ' + strtrim(median(mstar),2)
+   stop
+endif
+
+print, 'The probability of the low-mass solution is ' +  strtrim(double(n_elements(lowmass))/n_elements(mstar),2)
+print, 'The probability of the high-mass solution is ' +  strtrim(double(n_elements(highmass))/n_elements(mstar),2)
+
+;; high mass solution (cut out low mass solutions)
+basename = file_dirname(idlfile) + path_sep() + file_basename(idlfile,'.mcmc.idl') + '.highmass.'
 parfile = basename + 'pdf.ps'
 covarfile = basename + 'covar.ps'
 logname = basename + 'log'
 texfile = basename + 'tex'
 csvfile = basename + 'csv'
-exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, csvfile=csvfile, mask=mask1
+exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, csvfile=csvfile, mask=lowmass
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 
-;; low mass solution
-basename = file_basename(idlfile,'.mcmc.idl') + '.lowmass.'
+;; low mass solution (cut out low mass solutions)
+basename = file_dirname(idlfile) + path_sep() + file_basename(idlfile,'.mcmc.idl') + '.lowmass.'
 parfile = basename + 'pdf.ps'
 covarfile = basename + 'covar.ps'
 logname = basename + 'log'
 texfile = basename + 'tex'
 csvfile = basename + 'csv'
-exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, csvfile=csvfile, mask=mask2
+exofast_plotdist_corner, mcmcss, pdfname=parfile, covarname=covarfile,nocovar=nocovar,logname=logname, csvfile=csvfile, mask=highmass
 exofast_latextab2, mcmcss, caption=caption, label=label,texfile=texfile
 
 end
