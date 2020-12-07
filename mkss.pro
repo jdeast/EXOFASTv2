@@ -1224,21 +1224,45 @@ eclipsedepth.label = 'eclipsedepth'
 eclipsedepth.cgs = 1d6
 eclipsedepth.derive = 0
 
-eclipsedepth36 = parameter
-eclipsedepth36.unit = 'ppm'
-eclipsedepth36.description = 'Blackbody eclipse depth at 3.6$\mu$m'
-eclipsedepth36.latex = '\delta_{S,3.6\mu m}'
-eclipsedepth36.label = 'eclipsedepth36'
-eclipsedepth36.cgs = 1d6
-if nplanets eq 0 then eclipsedepth36.derive = 0
+;eclipsedepth36 = parameter
+;eclipsedepth36.unit = 'ppm'
+;eclipsedepth36.description = 'Blackbody eclipse depth at 3.6$\mu$m'
+;eclipsedepth36.latex = '\delta_{S,3.6\mu m}'
+;eclipsedepth36.label = 'eclipsedepth36'
+;eclipsedepth36.cgs = 1d6
+;if nplanets eq 0 then eclipsedepth36.derive = 0
 
-eclipsedepth45 = parameter
-eclipsedepth45.unit = 'ppm'
-eclipsedepth45.description = 'Blackbody eclipse depth at 4.5$\mu$m'
-eclipsedepth45.latex = '\delta_{S,4.5\mu m}'
-eclipsedepth45.label = 'eclipsedepth45'
-eclipsedepth45.cgs = 1d6
-if nplanets eq 0 then eclipsedepth45.derive = 0
+;eclipsedepth45 = parameter
+;eclipsedepth45.unit = 'ppm'
+;eclipsedepth45.description = 'Blackbody eclipse depth at 4.5$\mu$m'
+;eclipsedepth45.latex = '\delta_{S,4.5\mu m}'
+;eclipsedepth45.label = 'eclipsedepth45'
+;eclipsedepth45.cgs = 1d6
+;if nplanets eq 0 then eclipsedepth45.derive = 0
+
+eclipsedepth25 = parameter
+eclipsedepth25.unit = 'ppm'
+eclipsedepth25.description = 'Blackbody eclipse depth at 2.5$\mu$m'
+eclipsedepth25.latex = '\delta_{S,2.5\mu m}'
+eclipsedepth25.label = 'eclipsedepth25'
+eclipsedepth25.cgs = 1d6
+if nplanets eq 0 then eclipsedepth25.derive = 0
+
+eclipsedepth50 = parameter
+eclipsedepth50.unit = 'ppm'
+eclipsedepth50.description = 'Blackbody eclipse depth at 5.0$\mu$m'
+eclipsedepth50.latex = '\delta_{S,5.0\mu m}'
+eclipsedepth50.label = 'eclipsedepth50'
+eclipsedepth50.cgs = 1d6
+if nplanets eq 0 then eclipsedepth50.derive = 0
+
+eclipsedepth75 = parameter
+eclipsedepth75.unit = 'ppm'
+eclipsedepth75.description = 'Blackbody eclipse depth at 7.5$\mu$m'
+eclipsedepth75.latex = '\delta_{S,7.5\mu m}'
+eclipsedepth75.label = 'eclipsedepth75'
+eclipsedepth75.cgs = 1d6
+if nplanets eq 0 then eclipsedepth75.derive = 0
 
 delta = parameter
 delta.unit = 'fraction'
@@ -1856,8 +1880,11 @@ planet = create_struct($
          taus.label,taus,$
          t14s.label,t14s,$
          tfwhms.label,tfwhms,$
-         eclipsedepth36.label,eclipsedepth36,$
-         eclipsedepth45.label,eclipsedepth45,$
+;         eclipsedepth36.label,eclipsedepth36,$
+;         eclipsedepth45.label,eclipsedepth45,$
+         eclipsedepth25.label,eclipsedepth25,$
+         eclipsedepth50.label,eclipsedepth50,$
+         eclipsedepth75.label,eclipsedepth75,$
          rhop.label,rhop,$      ;; less useful parameters            
          rpsun.label,rpsun,$
          logP.label,logp,$  
