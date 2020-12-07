@@ -6,6 +6,9 @@ pro mkexofastv2
 resolve_all, resolve_procedure='mksed',/cont,/quiet
 save, /routines, filename='mksed.sav'
 
+resolve_all, resolve_procedure='mkticsed',/cont,/quiet
+save, /routines, filename='mkticsed.sav'
+
 resolve_all, resolve_procedure='mkprior',/cont,/quiet
 save, 'getpriorline','mkprior','strsplit','tag_exist',/routines, filename='mkprior.sav'
 
