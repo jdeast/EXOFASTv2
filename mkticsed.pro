@@ -37,7 +37,22 @@ end
 
 pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile
 
-if n_elements(ticid) eq 0 then ticid = '455139555'
+;; for use without a license
+if lmgr(/vm) or lmgr(/runtime) then begin
+   par = command_line_args(count=numargs)
+   
+   ticid = strtrim(par[0],2)
+   for i=0L, numargs-1 do begin
+      if strpos(par[i],'=') ne -1 then begin
+         entries = strsplit(par[i],'=',/extract)
+         if strupcase(entries[0]) eq 'PRIORFILE' then priorfile = strtrim(entries[1],2)
+         if strupcase(entries[0]) eq 'SEDFILE' then sedfile = strtrim(entries[1],2)
+      endif
+   endfor
+endif
+
+
+if n_elements(ticid) eq 0 then message, 'TICID is required'
 if n_elements(priorfile) eq 0 then priorfile = ticid + '.priors'
 if n_elements(sedfile) eq 0 then sedfile = ticid + '.sed'
 
@@ -47,10 +62,16 @@ dist = 120d0
 if strtrim(long(ticid),2) eq ticid then begin
    qtic = Exofast_Queryvizier('IV/38/tic','TIC ' + strtrim(ticid,2),/allcolumns,/cfa)
 endif else begin
+   ;; query by supplied name (less robust)
+   print, 'WARNING: querying by name is less robust than querying by TIC ID and may lead to misidentification'
    qtic = Exofast_Queryvizier('IV/38/tic',ticid,2d0,/allcolumns,/cfa)
 
    qgaia = Exofast_Queryvizier('I/345/gaia2',ticid,2d0,/allcolumns,/cfa)   
+print, 'lkdjf'
+
    sorted = sort(qgaia.gmag)
+print, 'lkdjf'
+
    nstars = n_elements(qgaia)
    if strpos(ticid,'B') eq (strlen(ticid)-1) and nstars ge 2 then begin
       gaiaid = qgaia[sorted[1]].source
@@ -59,36 +80,8 @@ endif else begin
    if match[0] eq -1 then message, 'no matching star found. try using the TIC ID directly'
    qtic = qtic[match]
 
-
-; gt -9 and finite(qgaia.e_gmag) then printf, lun,'Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
-;      if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) then printf, lun,'GaiaBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
-;      if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag) then printf, lun,'GaiaRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt      
-;      endif
-
-;stop
-
-
-;gaiaid = qtic.gaia
-;qgaia=Exofast_Queryvizier('I/345/gaia2',star,dist/60.,/silent,cfa=cfa,/all)
-;if (size(qgaia))[2] eq 8 then begin
-;   match = (where(qgaia.source eq gaiaid))[0]
-;   if match ne -1 then begin
-;      qgaia = qgaia[match]
-
-
-
-
-;   sorted = sort(qtic.tmag)
-;   nstars = n_elements(qtic)
-;
-;   forprint, qtic[sorted].tic, qtic[sorted].tmag
-;
-;   if strpos(ticid,'B') eq (strlen(ticid)-1) and nstars ge 2 then begin
-;      ;; B component -- grab the second brightest thing 
-;      qtic = qtic[sorted[1]]
-;   endif else qtic = qtic[sorted[0]]
    ticid = strtrim(qtic.tic,2)
-print, ticid
+   print, 'Matching TIC ID is ' + strtrim(ticid,2)
 endelse
 
 if (size(qtic))[2] ne 8 then begin
@@ -141,9 +134,9 @@ endelse
 ;if finite(qtic.teff) then printf, priorlun, qtic.teff, format='("teff",x,i5)'
 
 ;; open the SED file for writing
-fmt = '(a10,x,f9.6,x,f0.6,x,f0.6)'
+fmt = '(a13,x,f9.6,x,f0.6,x,f0.6)'
 openw, lun, sedfile, /get_lun
-print, lun, '# bandname magnitude used_errors catalog_errors'
+printf, lun, '# bandname magnitude used_errors catalog_errors'
 
 ;; use the Gaia ID to query the Gaia catalog
 gaiaid = qtic.gaia
@@ -171,6 +164,24 @@ if (size(qgaia))[2] eq 8 then begin
       if qgaia.gmag gt -9 and finite(qgaia.e_gmag) then printf, lun,'Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
       if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) then printf, lun,'GaiaBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
       if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag) then printf, lun,'GaiaRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt      
+
+   endif
+endif
+
+;; EDR3 (print it, but leave it commented out)
+qgaia3=Exofast_Queryvizier('I/350/gaiaedr3',star,dist/60.,/silent,cfa=cfa,/all)
+if (size(qgaia3))[2] eq 8 then begin
+   match = (where(qgaia3.source eq gaiaid))[0]
+   if match ne -1 then begin
+      qgaia3 = qgaia3[match]
+      
+      if finite(qgaia3.plx) and finite(qgaia3.e_plx) and qgaia3.plx gt 0d0 then begin
+         printf, priorlun, "# NOTE: the Gaia EDR3 parallax and uncertainty is raw from the catalog"
+         printf, priorlun, qgaia3.plx, qgaia.e_plx, format='("#parallax",x,f0.5,x,f0.5)'
+      endif      
+      if qgaia3.gmag gt -9 and finite(qgaia3.e_gmag)   then printf, lun,'# Gaia_G_EDR3',qgaia3.gmag,max([0.02d,qgaia3.e_gmag]),qgaia3.e_gmag, format=fmt
+      if qgaia3.bpmag gt -9 and finite(qgaia3.e_bpmag) then printf, lun,'#Gaia_BP_EDR3',qgaia3.bpmag,max([0.02d,qgaia3.e_bpmag]),qgaia3.e_bpmag, format=fmt
+      if qgaia3.rpmag gt -9 and finite(qgaia3.e_rpmag) then printf, lun,'#Gaia_RP_EDR3',qgaia3.rpmag,max([0.02d,qgaia3.e_rpmag]),qgaia3.e_rpmag, format=fmt      
    endif
 endif
 
