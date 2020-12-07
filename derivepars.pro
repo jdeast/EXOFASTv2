@@ -70,8 +70,11 @@ if (maxbjd-minbjd) gt 1d5 then begin
    printandlog, 'This will almost certainly not end well.', ss.logname
 endif
 
-starbb36 = exofast_blackbody(ss.star.teff.value,replicate(3550d0/1d9,ss.nsteps),/wave)
-starbb45 = exofast_blackbody(ss.star.teff.value,replicate(4493d0/1d9,ss.nsteps),/wave)
+;starbb36 = exofast_blackbody(ss.star.teff.value,replicate(3550d0/1d9,ss.nsteps),/wave)
+;starbb45 = exofast_blackbody(ss.star.teff.value,replicate(4493d0/1d9,ss.nsteps),/wave)
+starbb25 = exofast_blackbody(ss.star.teff.value,replicate(2500d0/1d9,ss.nsteps),/wave)
+starbb50 = exofast_blackbody(ss.star.teff.value,replicate(5000d0/1d9,ss.nsteps),/wave)
+starbb75 = exofast_blackbody(ss.star.teff.value,replicate(7500d0/1d9,ss.nsteps),/wave)
 
 for i=0, ss.nplanets-1 do begin
 
@@ -315,12 +318,26 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].t0.value = ss.planet[i].tc.value + bestepoch*ss.planet[i].period.value
 
    ;; blackbody eclipse depths
-   planetbb36 = exofast_blackbody(ss.planet[i].teq.value,replicate(3550d0/1d9,ss.nsteps),/wave)
-   planetbb45 = exofast_blackbody(ss.planet[i].teq.value,replicate(4493d0/1d9,ss.nsteps),/wave)
-   x = ss.planet[i].p.value^2*planetbb36/starbb36
-   ss.planet[i].eclipsedepth36.value = x/(1d0+x)*1d6
-   x = ss.planet[i].p.value^2*planetbb45/starbb45
-   ss.planet[i].eclipsedepth45.value = x/(1d0+x)*1d6
+
+;   planetbb36 = exofast_blackbody(ss.planet[i].teq.value,replicate(3550d0/1d9,ss.nsteps),/wave)
+;   x = ss.planet[i].p.value^2*planetbb36/starbb36
+;   ss.planet[i].eclipsedepth36.value = x/(1d0+x)*1d6
+
+;   planetbb45 = exofast_blackbody(ss.planet[i].teq.value,replicate(4493d0/1d9,ss.nsteps),/wave)
+;   x = ss.planet[i].p.value^2*planetbb45/starbb45
+;   ss.planet[i].eclipsedepth45.value = x/(1d0+x)*1d6
+
+   planetbb25 = exofast_blackbody(ss.planet[i].teq.value,replicate(2500d0/1d9,ss.nsteps),/wave)
+   x = ss.planet[i].p.value^2*planetbb25/starbb25
+   ss.planet[i].eclipsedepth25.value = x/(1d0+x)*1d6
+
+   planetbb50 = exofast_blackbody(ss.planet[i].teq.value,replicate(5000d0/1d9,ss.nsteps),/wave)
+   x = ss.planet[i].p.value^2*planetbb50/starbb50
+   ss.planet[i].eclipsedepth50.value = x/(1d0+x)*1d6
+
+   planetbb75 = exofast_blackbody(ss.planet[i].teq.value,replicate(7500d0/1d9,ss.nsteps),/wave)
+   x = ss.planet[i].p.value^2*planetbb75/starbb75
+   ss.planet[i].eclipsedepth75.value = x/(1d0+x)*1d6
 
 endfor
 
