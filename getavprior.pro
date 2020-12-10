@@ -41,9 +41,18 @@ endif else if n_elements(ra) eq 1 and n_elements(dec) eq 1 then begin
 endif else message, 'must specify either RA and DEC or OBJECT'
 spawn, cmd, output
 
+if output[0] eq '' then begin
+   message, 'Curl not installed? curl command failed: ' + cmd,/continue
+   line = 'av 0 -1 0 99'
+   maxav = 99d0
+   return, 99d0
+endif
+
 if strpos(output[2],'Invalid object name') ne -1 then begin
    message, 'Invalid object name (try using RA and Dec instead)',/continue
-   return, -1
+   line = 'av 0 -1 0 99'
+   maxav = 99d0
+   return, maxav
 endif
 
 match = where(strtrim(output,2) eq '</maxValueSandF>')
