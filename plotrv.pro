@@ -78,6 +78,11 @@ bjd0 = floor(allmindate/roundto)*roundto
 allmindate = (allmindate-bjd0)*0.95 + bjd0
 allmaxdate = (allmaxdate-bjd0)*1.05 + bjd0
 
+;; if the timespan is > 100 years, there's got to be an error in the timestamps
+if (allmaxdate-allmindate) gt 36500 then begin
+   message, 'WARNING: RV data span > 100 years. Make sure your input timestamps are consistent. This may cause memory issues', /continue
+endif
+
 ;; sample the pretty light curve 100 times per (minimum) period 
 ;; for the span of the data
 cadence = min(ss.planet.period.value[ndx])/100d0
