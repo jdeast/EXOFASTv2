@@ -65,12 +65,9 @@ endif else begin
    ;; query by supplied name (less robust)
    print, 'WARNING: querying by name is less robust than querying by TIC ID and may lead to misidentification'
    qtic = Exofast_Queryvizier('IV/38/tic',ticid,2d0,/allcolumns,/cfa)
-
    qgaia = Exofast_Queryvizier('I/345/gaia2',ticid,2d0,/allcolumns,/cfa)   
-print, 'lkdjf'
 
    sorted = sort(qgaia.gmag)
-print, 'lkdjf'
 
    nstars = n_elements(qgaia)
    if strpos(ticid,'B') eq (strlen(ticid)-1) and nstars ge 2 then begin
