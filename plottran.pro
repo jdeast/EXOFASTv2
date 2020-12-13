@@ -1,6 +1,15 @@
-pro plottran, ss, psname=psname, ndx=ndx, noresiduals=noresiduals
+pro plottran, ss, psname=psname, ndx=ndx, noresiduals=noresiduals, savfile=savfile
 
-if n_elements(ndx) eq 0 then ndx = 0L
+if n_elements(savfile) ne 0 then begin
+   restore, savfile
+   ss = mcmcss
+endif
+
+;; pick the best-fit index if not specified
+if n_elements(ndx) eq 0 then begin
+   if ss.nsteps eq 1 then ndx = 0 $
+   else minchi2 = min(*ss.chi2,ndx)
+endif
 
 au = ss.constants.au/ss.constants.rsun ;; AU in rsun (~215)
 
@@ -94,7 +103,8 @@ for i=0L, ss.nplanets-1 do begin
 
       u1 = band.u1.value[ndx]
       u2 = band.u2.value[ndx]
-      exofast_occultquad_cel, abs(ss.planet[i].b.value[ndx]), u1, u2, ss.planet[i].p.value[ndx],mu1
+;      exofast_occultquad_cel, abs(ss.planet[i].b.value[ndx]), u1, u2, ss.planet[i].p.value[ndx],mu1
+      exofast_occultquad_cel, abs(ss.planet[i].b.value[ndx]), u1, u2, ss.planet[i].p.value[ndx]+ss.transit[j].tdeltav.value[ndx],mu1
       depth[i,j] = 1d0 - mu1
 
       ;; noise for each band
