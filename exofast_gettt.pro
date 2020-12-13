@@ -172,7 +172,7 @@ planetname = ['b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r
 if n_elements(filebase) eq 0 then filebase = 'planet.'
 openw, texlun, filebase + 'transits.tex', /get_lun
 openw, csvlun, filebase + 'transits.csv', /get_lun
-printf, csvlun, '# Transit, Planet, Epoch, T_T, b, Depth'
+printf, csvlun, '# Transit, Planet, Epoch, T_T, sigma_tt_high, sigma_tt_low, b, sigma_b_high, sigma_b_low, Depth, sigma_depth_high, sigma_depth_low'
 
 printf, texlun, '\documentclass{aastex62}'
 printf, texlun, '\begin{document}'
