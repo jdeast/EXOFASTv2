@@ -944,7 +944,7 @@ for i=0L, ss.nplanets-1L do begin
       sigma = stdev(ss.transit[good].tdeltav.value)
       if sigma gt 0d0 then begin
          chi2 += (mean(ss.transit[good].tdeltav.value)/sigma)^2
-         if ss.verbose then printandlog, 'TDELTVA penalty ' + strtrim((mean(ss.transit[good].tdeltav.value)/sigma)^2,2)
+         if ss.verbose then printandlog, 'TDELTAV penalty ' + strtrim((mean(ss.transit[good].tdeltav.value)/sigma)^2,2)
       endif
    endif else if ngood ne 0 then begin
       printandlog, 'ERROR: TDELTAVs are requested for planet ' + strtrim(i,2) + ', but must have at least 2 transits', ss.logname
