@@ -1,5 +1,11 @@
-pro plotrv, ss, psname=psname, ndx=ndx, yrange=yrange
+pro plotrv, ss, psname=psname, ndx=ndx, yrange=yrange, savfile=savfile
 
+if n_elements(savfile) ne 0 then begin
+   restore, savfile
+   ss = mcmcss
+endif
+
+;; pick the best-fit index if not specified
 if n_elements(ndx) eq 0 then begin
    if ss.nsteps eq 1 then ndx = 0 $
    else minchi2 = min(*ss.chi2,ndx)
