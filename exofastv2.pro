@@ -994,7 +994,8 @@ bestchi2 = call_function(chi2func, pars, psname=modelfile)
 if ~finite(bestchi2) then begin
    printandlog, 'Starting model is out of bounds; cannot recover. You must change the starting parameter(s) via the prior file.', logname
    printandlog, 'Re-running starting model with /VERBOSE flag to identify the parameter', logname
-   bestchi2 = call_function(chi2func, pars, psname=modelfile,/verbose)
+   ss.verbose=1B
+   bestchi2 = call_function(chi2func, pars, psname=modelfile)
    printandlog, 'Starting model is out of bounds; cannot recover. You must change the starting parameter(s) via the prior file.', logname
    return
 endif
