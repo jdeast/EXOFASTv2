@@ -175,7 +175,8 @@ if nbad gt 0 then begin
 endif
 
 ;; excludes non-transiting planets where the transit is fit
-bad = where((ss.planet.chord.value le 0d0 or ss.planet.chord.value gt (1d0+ss.planet.p.value)) and ss.planet.fittran,nbad)
+;; NOTE: chord is not derived by step2pars, only check if chord is fit
+bad = where((ss.planet.chord.value le 0d0 or ss.planet.chord.value gt (1d0+ss.planet.p.value)) and ss.planet.chord.fit,nbad)
 if nbad gt 0 then begin
    if ss.debug or ss.verbose then printandlog, 'chord is bad (' + strtrim(bad,2) + ')', ss.logname
    return, !values.d_infinity
@@ -937,6 +938,8 @@ endif
 ;; the fit to a linear ephemeris
 ;; this imposes the constraint of the linear ephemeris while allowing TTVs
 for i=0L, ss.nplanets-1L do begin
+
+   if ~ss.planet[i].fittran then continue
 
    ;; ensure the tdeltavs average to zero
    good = where(ss.tdeltavs[*,i],ngood)
