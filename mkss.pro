@@ -856,11 +856,7 @@ tt.label = 'tt'
 tt.cgs = 86400d0
 if ntran eq 0 then tt.derive=0
 tt.scale = 0.1
-
-if keyword_set(fittt) then begin
-   tc.fit = 0
-   tt.fit = 1
-endif
+tt.derive = 0B
 
 t0 = parameter
 t0.unit = '\bjdtdb'
