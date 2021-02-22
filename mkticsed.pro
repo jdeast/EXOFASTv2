@@ -154,7 +154,7 @@ if (size(qgaia))[2] eq 8 then begin
          endif else begin
             sigma_s = 0.043d0
          endelse
-         printf, priorlun, "# NOTE: the Gaia DR2 parallax and uncertainty has been corrected as prescribed in Lindegren+ (2018)"
+         printf, priorlun, "# NOTE: the Gaia DR2 parallax (" + strtrim(qgaia.plx,2) + ") and uncertainty (" + strtrim(qgaia.e_plx,2) + ") has been corrected as prescribed in Lindegren+ (2018)"
          printf, priorlun, qgaia.plx + 0.030d0, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("parallax",x,f0.5,x,f0.5)'
       endif      
 
@@ -173,8 +173,27 @@ if (size(qgaia3))[2] eq 8 then begin
       qgaia3 = qgaia3[match]
       
       if finite(qgaia3.plx) and finite(qgaia3.e_plx) and qgaia3.plx gt 0d0 then begin
-         printf, priorlun, "# NOTE: the Gaia EDR3 parallax and uncertainty is raw from the catalog"
-         printf, priorlun, qgaia3.plx, qgaia.e_plx, format='("#parallax",x,f0.5,x,f0.5)'
+
+         phot_g_mean_mag = qgaia3.gmag 
+         nu_eff_used_in_astrometry = qgaia3.nueff
+         pseudocolor = qgaia3.pscol
+         ecl_lat = qgaia3.elat
+         astrometric_params_solved = qgaia3.solved
+
+         ;; is it within range of the Lindegren+ 2020 prescription?
+         if ( (astrometric_params_solved eq 31 and nu_eff_used_in_astrometry ge 1.1d0 and nu_eff_used_in_astrometry le 1.9d0) or $
+              (astrometric_params_solved eq 95 and pseudocolor ge 1.24d0 and pseudocolor le 1.72d0)) and $
+            phot_g_mean_mag ge 6d0 and phot_g_mean_mag le 21d0 then begin
+            zpt = get_zpt(phot_g_mean_mag, nu_eff_used_in_astrometry, pseudocolor, ecl_lat, astrometric_params_solved)
+            printf, priorlun, "# NOTE: the Gaia EDR3 parallax (" + strtrim(qgaia3.plx,2) + ") has been corrected by " + strtrim(zpt,2) + " mas according to the Lindegren+ 2020 prescription"
+            printf, priorlun, qgaia3.plx+zpt, qgaia.e_plx, format='("#parallax",x,f0.5,x,f0.5)'            
+         endif else begin
+            printf, priorlun, "# NOTE: the Gaia EDR3 parallax could not be corrected and is raw from the catalog"
+            printf, priorlun, qgaia3.plx, qgaia.e_plx, format='("#parallax",x,f0.5,x,f0.5)'
+         endelse
+
+
+
       endif      
       if qgaia3.gmag gt -9 and finite(qgaia3.e_gmag)   then printf, lun,'# Gaia_G_EDR3',qgaia3.gmag,max([0.02d,qgaia3.e_gmag]),qgaia3.e_gmag, format=fmt
       if qgaia3.bpmag gt -9 and finite(qgaia3.e_bpmag) then printf, lun,'#Gaia_BP_EDR3',qgaia3.bpmag,max([0.02d,qgaia3.e_bpmag]),qgaia3.e_bpmag, format=fmt
