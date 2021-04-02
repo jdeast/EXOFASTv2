@@ -37,6 +37,15 @@ if n_elements(teffgrid) eq 0 or keyword_set(redo) then begin
 
    ;; read in the file with observed magnitudes
    readcol, sedfile, bands, mags, errs, format='a,d,d', comment='#', /silent
+   good = where(errs lt 1d0, ngood)
+   if ngood gt 1 then begin
+      bands = bands[good]
+      mags = mags[good]
+      errs = errs[good]
+   endif else begin
+      print, 'Bands must have errors less than 1 mag; no good bands'
+      stop
+   endelse
    nbands = n_elements(bands)
 
    readcol, filepath('filternames.txt', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist']), keivanname, mistname, format='a,a', comment='#',/silent
@@ -121,14 +130,16 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    ;; convert everything to AB mag scale
    vega = where(filterprops.type eq 'Vega')
    abmags = mags
-   abmags[vega] += filterprops[vega].vegaab
    modelabmags = modelmags
-   modelabmags[vega] += filterprops[vega].vegaab
+   if vega[0] ne -1 then begin
+      abmags[vega] += filterprops[vega].vegaab
+      modelabmags[vega] += filterprops[vega].vegaab
+   endif
 
    ;; compute the absolute fluxes
    zp = 3631d0*3d-9/wp
    flux = zp*10^(-0.4d0*abmags)
-   fluxerr = flux*alog(10)/2.5d0*errs
+   fluxerr = flux*alog(10d0)/2.5d0*errs
    modelflux = zp*10^(-0.4d0*modelabmags)
 
    ;; define the limits; plot the model flux
@@ -137,6 +148,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    xmin = 0.1
    ymin = alog10(min([modelflux,flux-fluxerr]))
    ymax = alog10(max([modelflux,flux+fluxerr]))
+
    plot, [0], [0], /xlog, xtitle=xtitle,ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs;,/ys
    oplot, wp, alog10(modelflux), psym=8
 
