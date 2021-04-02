@@ -1769,6 +1769,8 @@ constants = mkconstants()
 ndata = 0L
 ;; if we're fitting an SED, fit the distance, extinction, and error scale
 if n_elements(fluxfile) ne 0 then begin
+   printandlog, 'WARNING: FLUXFILE has been deprecated. MISTSEDFILE should be used instead.', logname
+   printandlog, 'NOTE: When using MISTSEDFILE, the atmosphere is not computed directly or plotted.', logname
    if file_test(fluxfile) then begin
       readcol, fluxfile, junk, format='a', comment='#', /silent
       ndata += n_elements(junk)
