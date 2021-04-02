@@ -35,7 +35,10 @@ return,[u,sigu,v,sigv,b,sigb,y,sigy]
 
 end
 
-pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile
+pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile, france=france
+
+if keyword_set(france) then cfa = 0B $
+else cfa = 1B
 
 ;; for use without a license
 if lmgr(/vm) or lmgr(/runtime) then begin
@@ -60,12 +63,12 @@ dist = 120d0
 
 ;; query TICv8 for the TIC ID
 if strtrim(long(ticid),2) eq ticid then begin
-   qtic = Exofast_Queryvizier('IV/38/tic','TIC ' + strtrim(ticid,2),/allcolumns,/cfa)
+   qtic = Exofast_Queryvizier('IV/38/tic','TIC ' + strtrim(ticid,2),/allcolumns,cfa=cfa)
 endif else begin
    ;; query by supplied name (less robust)
    print, 'WARNING: querying by name is less robust than querying by TIC ID and may lead to misidentification'
-   qtic = Exofast_Queryvizier('IV/38/tic',ticid,2d0,/allcolumns,/cfa)
-   qgaia = Exofast_Queryvizier('I/345/gaia2',ticid,2d0,/allcolumns,/cfa)   
+   qtic = Exofast_Queryvizier('IV/38/tic',ticid,2d0,/allcolumns,cfa=cfa)
+   qgaia = Exofast_Queryvizier('I/345/gaia2',ticid,2d0,/allcolumns,cfa=cfa)   
 
    sorted = sort(qgaia.gmag)
 
@@ -158,9 +161,9 @@ if (size(qgaia))[2] eq 8 then begin
          printf, priorlun, qgaia.plx + 0.030d0, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("parallax",x,f0.5,x,f0.5)'
       endif      
 
-      if qgaia.gmag gt -9 and finite(qgaia.e_gmag) then printf, lun,'Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
-      if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) then printf, lun,'GaiaBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
-      if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag) then printf, lun,'GaiaRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt      
+      if qgaia.gmag gt -9 and finite(qgaia.e_gmag) and (qgaia.e_gmag lt 1d0) then printf, lun,'Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
+      if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) and (qgaia.e_bpmag lt 1d0) then printf, lun,'GaiaBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
+      if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag)  and (qgaia.e_rpmag lt 1d0) then printf, lun,'GaiaRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt      
 
    endif
 endif
@@ -185,8 +188,8 @@ if (size(qgaia3))[2] eq 8 then begin
               (astrometric_params_solved eq 95 and pseudocolor ge 1.24d0 and pseudocolor le 1.72d0)) and $
             phot_g_mean_mag ge 6d0 and phot_g_mean_mag le 21d0 then begin
             zpt = get_zpt(phot_g_mean_mag, nu_eff_used_in_astrometry, pseudocolor, ecl_lat, astrometric_params_solved)
-            printf, priorlun, "# NOTE: the Gaia EDR3 parallax (" + strtrim(qgaia3.plx,2) + ") has been corrected by " + strtrim(zpt,2) + " mas according to the Lindegren+ 2020 prescription"
-            printf, priorlun, qgaia3.plx+zpt, qgaia.e_plx, format='("#parallax",x,f0.5,x,f0.5)'            
+            printf, priorlun, "# NOTE: the Gaia EDR3 parallax (" + strtrim(qgaia3.plx,2) + ") has been corrected by subtracting " + strtrim(zpt,2) + " mas according to the Lindegren+ 2020 prescription"
+            printf, priorlun, qgaia3.plx-zpt, qgaia.e_plx, format='("#parallax",x,f0.5,x,f0.5)'            
          endif else begin
             printf, priorlun, "# NOTE: the Gaia EDR3 parallax could not be corrected and is raw from the catalog"
             printf, priorlun, qgaia3.plx, qgaia.e_plx, format='("#parallax",x,f0.5,x,f0.5)'
@@ -195,9 +198,9 @@ if (size(qgaia3))[2] eq 8 then begin
 
 
       endif      
-      if qgaia3.gmag gt -9 and finite(qgaia3.e_gmag)   then printf, lun,'# Gaia_G_EDR3',qgaia3.gmag,max([0.02d,qgaia3.e_gmag]),qgaia3.e_gmag, format=fmt
-      if qgaia3.bpmag gt -9 and finite(qgaia3.e_bpmag) then printf, lun,'#Gaia_BP_EDR3',qgaia3.bpmag,max([0.02d,qgaia3.e_bpmag]),qgaia3.e_bpmag, format=fmt
-      if qgaia3.rpmag gt -9 and finite(qgaia3.e_rpmag) then printf, lun,'#Gaia_RP_EDR3',qgaia3.rpmag,max([0.02d,qgaia3.e_rpmag]),qgaia3.e_rpmag, format=fmt      
+      if qgaia3.gmag gt -9 and finite(qgaia3.e_gmag) and (qgaia3.e_gmag lt 1d0)  then printf, lun,'# Gaia_G_EDR3',qgaia3.gmag,max([0.02d,qgaia3.e_gmag]),qgaia3.e_gmag, format=fmt
+      if qgaia3.bpmag gt -9 and finite(qgaia3.e_bpmag) and (qgaia3.e_bpmag lt 1d0) then printf, lun,'#Gaia_BP_EDR3',qgaia3.bpmag,max([0.02d,qgaia3.e_bpmag]),qgaia3.e_bpmag, format=fmt
+      if qgaia3.rpmag gt -9 and finite(qgaia3.e_rpmag) and (qgaia3.e_rpmag lt 1d0) then printf, lun,'#Gaia_RP_EDR3',qgaia3.rpmag,max([0.02d,qgaia3.e_rpmag]),qgaia3.e_rpmag, format=fmt      
    endif
 endif
 
@@ -208,9 +211,9 @@ if (size(q2mass))[2] eq 8 then begin
    match = (where(q2mass._2mass eq tmassid))[0]
    if match ne -1 then begin
       q2mass = q2mass[match]
-      if q2mass.Jmag gt -9 then printf, lun,'J2M',q2mass.Jmag,max([0.02d,q2mass.e_Jmag]),q2mass.e_Jmag, format=fmt
-      if q2mass.Hmag gt -9 then printf, lun,'H2M',q2mass.Hmag,max([0.02d,q2mass.e_Hmag]),q2mass.e_Hmag, format=fmt
-      if q2mass.Kmag gt -9 then printf, lun,'K2M',q2mass.Kmag,max([0.02d,q2mass.e_Kmag]),q2mass.e_Kmag, format=fmt
+      if q2mass.Jmag gt -9 and (q2mass.e_Jmag lt 1d0) then printf, lun,'J2M',q2mass.Jmag,max([0.02d,q2mass.e_Jmag]),q2mass.e_Jmag, format=fmt
+      if q2mass.Hmag gt -9 and (q2mass.e_Hmag lt 1d0) then printf, lun,'H2M',q2mass.Hmag,max([0.02d,q2mass.e_Hmag]),q2mass.e_Hmag, format=fmt
+      if q2mass.Kmag gt -9 and (q2mass.e_Kmag lt 1d0) then printf, lun,'K2M',q2mass.Kmag,max([0.02d,q2mass.e_Kmag]),q2mass.e_Kmag, format=fmt
    endif
 endif
 
@@ -221,10 +224,10 @@ if (size(qwise))[2] eq 8 then begin
    match = (where(qwise.allwise eq wiseid))[0]
    if match ne -1 then begin
       qwise = qwise[match]
-      if qwise.w1mag gt -9 and finite(qwise.e_w1mag) then printf, lun,'WISE1',qwise.w1mag,max([0.03d,qwise.e_w1mag]),qwise.e_w1mag, format=fmt
-      if qwise.w2mag gt -9 and finite(qwise.e_w2mag) then printf, lun,'WISE2',qwise.w2mag,max([0.03d,qwise.e_w2mag]),qwise.e_w2mag, format=fmt
-      if qwise.w3mag gt -9 and finite(qwise.e_w3mag) then printf, lun,'WISE3',qwise.w3mag,max([0.03d,qwise.e_w3mag]),qwise.e_w3mag, format=fmt
-      if qwise.w4mag gt -9 and finite(qwise.e_w4mag) then printf, lun,'WISE4',qwise.w4mag,max([0.1d,qwise.e_w4mag]),qwise.e_w4mag, format=fmt
+      if qwise.w1mag gt -9 and finite(qwise.e_w1mag) and (qwise.e_w1mag lt 1d0) then printf, lun,'WISE1',qwise.w1mag,max([0.03d,qwise.e_w1mag]),qwise.e_w1mag, format=fmt
+      if qwise.w2mag gt -9 and finite(qwise.e_w2mag) and (qwise.e_w2mag lt 1d0) then printf, lun,'WISE2',qwise.w2mag,max([0.03d,qwise.e_w2mag]),qwise.e_w2mag, format=fmt
+      if qwise.w3mag gt -9 and finite(qwise.e_w3mag) and (qwise.e_w3mag lt 1d0) then printf, lun,'WISE3',qwise.w3mag,max([0.03d,qwise.e_w3mag]),qwise.e_w3mag, format=fmt
+      if qwise.w4mag gt -9 and finite(qwise.e_w4mag) and (qwise.e_w4mag lt 1d0) then printf, lun,'WISE4',qwise.w4mag,max([0.10d,qwise.e_w4mag]),qwise.e_w4mag, format=fmt
    endif
 endif
 
@@ -247,10 +250,10 @@ if ~finite(feh) or ~finite(ufeh) then begin
             printf, lun, '# Stromgren photometry, Paunzen, 2015'
             printf, lun, '# http://adsabs.harvard.edu/abs/2015A%26A...580A..23P'
             
-            if ubvymags(0) gt -9 then printf, lun,'uStr',ubvymags(0),max([0.02d,ubvymags(1)]), format=fmt
-            if ubvymags(2) gt -9 then printf, lun,'vStr',ubvymags(2),max([0.02d,ubvymags(3)]), format=fmt
-            if ubvymags(4) gt -9 then printf, lun,'bStr',ubvymags(4),max([0.02d,ubvymags(5)]), format=fmt
-            if ubvymags(6) gt -9 then printf, lun,'yStr',ubvymags(6),max([0.02d,ubvymags(7)]), format=fmt
+            if (ubvymags(0) gt -9) and (ubvymags(1) lt 1d0) then printf, lun,'uStr',ubvymags(0),max([0.02d,ubvymags(1)]), format=fmt
+            if (ubvymags(2) gt -9) and (ubvymags(3) lt 1d0) then printf, lun,'vStr',ubvymags(2),max([0.02d,ubvymags(3)]), format=fmt
+            if (ubvymags(4) gt -9) and (ubvymags(5) lt 1d0) then printf, lun,'bStr',ubvymags(4),max([0.02d,ubvymags(5)]), format=fmt
+            if (ubvymags(6) gt -9) and (ubvymags(7) lt 1d0) then printf, lun,'yStr',ubvymags(6),max([0.02d,ubvymags(7)]), format=fmt
          endif
          
          b_y = qpaunzen15.b_y
