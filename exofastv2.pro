@@ -714,7 +714,7 @@ pro exofastv2, priorfile=priorfile, $
                prefix=prefix,$
                circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
                rossiter=rossiter,chen=chen,$
-               fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+               fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
                fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
                nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
                ntemps=ntemps, tf=tf, keephot=keephot, $
@@ -752,7 +752,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              prefix=prefix,$
              circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
              rossiter=rossiter,chen=chen,$
-             fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+             fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
              fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
              nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, ntemps=ntemps, tf=tf, dontstop=dontstop, $
              debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
@@ -843,7 +843,7 @@ ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
           rossiter=rossiter,longcadence=longcadence,rejectflatmodel=rejectflatmodel,$
           ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
-          fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+          fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
           fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
           chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,$
           fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
@@ -935,7 +935,7 @@ if nthreads gt 1 then begin
          'rossiter=rossiter,longcadence=longcadence,rejectflatmodel=rejectflatmodel,'+$
          'ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,'+$
          'fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect,'+ $
-         'fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam,'+ $
+         'fitphase=fitphase, fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam,'+ $
          'chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec,'+$
          'noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,'+$
          'fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet,'+$
@@ -1164,7 +1164,7 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dt
               rossiter=rossiter,longcadence=longcadence, rejectflatmodel=rejectflatmodel,$
               ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
               fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
-              fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
+              fitphase=fitphase, fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
               chen=chen,nvalues=nsteps*nchains,/silent,yy=yy,torres=torres,nomist=nomist,parsec=parsec,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing, logname=logname, best=best,$
               fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $

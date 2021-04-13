@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Fri Apr  2 10:48:34 2021.<P>
+<STRONG>Last modified: </STRONG>Tue Apr 13 15:46:41 2021.<P>
  
 <HR>
  
@@ -93,6 +93,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#TEXTOIDL_TABLE">TEXTOIDL_TABLE</A>
 <LI><A HREF="#TEXTOIDL_TRANS_SUB_SUPER">TEXTOIDL_TRANS_SUB_SUPER</A>
 <LI><A HREF="#TRANSITGIF">TRANSITGIF</A>
+<LI><A HREF="#UPDATETIME">UPDATETIME</A>
 <LI><A HREF="#WAVELETLIKE">WAVELETLIKE</A>
 <LI><A HREF="#WEBGET()">WEBGET()</A>
 </UL><P>
@@ -5527,7 +5528,7 @@ Function value:       1.33000
 <A NAME="TRANSITGIF">
 <H2>TRANSITGIF</H2></A>
 <A HREF="#TEXTOIDL_TRANS_SUB_SUPER">[Previous Routine]</A>
-<A HREF="#WAVELETLIKE">[Next Routine]</A>
+<A HREF="#UPDATETIME">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -5635,9 +5636,82 @@ Function value:       1.33000
 <STRONG>(See transitgif.pro)</STRONG><P>
 <HR>
  
+<A NAME="UPDATETIME">
+<H2>UPDATETIME</H2></A>
+<A HREF="#TRANSITGIF">[Previous Routine]</A>
+<A HREF="#WAVELETLIKE">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   UPDATETIME
+
+ NOTE: READ THE DOCUMENTATION -- ITS USE IS EASY TO GET WRONG!!!!
+
+ PURPOSE:
+   This function updates three files required to maintain the most
+   precise time. These files are used by EXOFAST and related codes.
+
+   1) The leap second file, updates whenever there is a new leap
+      second. Typically every ~6 months. It is requires for ~1 second
+      precision.
+
+   2) The IERS file keeps track of meausured changes in the
+      Earth's rotation and is required for ms precision.
+
+   3) The BIPM file tracks the difference between TT(TAI) and
+      TT(BIPM) and is required for microsecond precison. Note that
+      this can only be done precisely months after the time in
+      question.
+
+ NOTE:
+   There are no requirements that these files are maintained in a
+   backward compatible way. Changes to the source file formats or
+   file locations may occur, which could break this code. Care should
+   be taken to ensure this function is operating as intended. We will
+   update it as required, but may be slow to identify such
+   changes. Please email me (jason.eastman@cfa.harvard.edu) if the
+   most up to date version does not work.
+
+ CALLING SEQUENCE:
+   updatetime
+
+ NOTE: The files this code grabs update regularly. This function
+ should be run at least monthly. The easiest way to ensure this is to
+ set it up as a cronjob by adding a line like this in your crontab:
+
+   0 0 15 * * . /h/onion0/.bashrc ; idl -e "updatetime"
+
+ ****** BE SURE TO TEST THIS! IT IS TRICKIER THAN IT SEEMS ******
+
+ The first part
+   0 0 15 * * 
+ will run it at midnight on the 15th of every month. You may wish to
+ randomize the day and time to distribute the load on their FTP
+ server. The second part
+   . /h/onion0/.bashrc 
+ sources a bashrc file that defines the required environment
+ variables ($ASTRO_DATA, $IDL_PATH, and $PATH). Just because it works
+ in your terminal does not mean it will work inside crontab. You must
+ change it so it sources your profile file. If your crontab shell is
+ different than your usual shell, you may need to write a new profile
+ file for your crontab. The last part
+   idl -e "updatetime"
+ runs this program. idl must be in your $PATH for this to work (or
+ you can specify the full path to IDL in the call). 
+
+ DEPENDENCIES:
+   You must have the $ASTRO_DATA environment variable set. This is
+   the directory where the files will be copied.
+
+ REVISION HISTORY:
+   2021/04/13 - Updated and documented, Jason Eastman (CfA)
+</PRE><P>
+<STRONG>(See updatetime.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="WAVELETLIKE">
 <H2>WAVELETLIKE</H2></A>
-<A HREF="#TRANSITGIF">[Previous Routine]</A>
+<A HREF="#UPDATETIME">[Previous Routine]</A>
 <A HREF="#WEBGET()">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
