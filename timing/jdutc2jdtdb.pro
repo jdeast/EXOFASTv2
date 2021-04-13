@@ -74,55 +74,9 @@ if n_elements(tbase) eq 0 then tbase = 0
 if not keyword_set(TT_IN) then begin
     taifile = find_with_def('tai-utc.dat','ASTRO_DATA')
 
-    ;; --------------------------------------------------------
     ;; UPDATE THE DATA FILE (for leap seconds)
-    ;; --------------------------------------------------------
-    ;; the name of the file that contains the JD_UTC of last update
-    updatefile = file_search(getenv('ASTRO_DATA'),/mark_directory) + $
-      'exofast_lastupdate'
+    updatetime
 
-    ;; if the update file doesn't exist, create one that forces an update
-    if not file_test(updatefile) then begin
-        openw, updatelun, updatefile, /get_lun
-        printf, updatelun, julday(1,1,1950)
-        free_lun, updatelun
-    endif
-
-    ;; see when the last update was
-    lastupdated = read_ascii(updatefile)
-    now = systime(/julian, /utc)
-    caldat, now, month, day, year
-    caldat, lastupdated.field1, monthup, dayup, yearup 
-    if (year gt yearup) or (month ge 6 and monthup lt 6) then begin
-        ;; if Jan 1st or Jul 1st has passed without an update, update
-        spawn, 'wget --timeout=5 -NP ' + getenv('ASTRO_DATA') + $
-          ' ftp://maia.usno.navy.mil/ser7/tai-utc.dat', $
-          output, count=nout, /stderr
-        if strpos(output[nout-1],"Remote file no newer ") ne -1 or $
-          strpos(output[nout-2],"saved") ne -1 then begin
-            ;; if wget was successful, update the lastupdated file
-            openw, updatelun, updatefile, /get_lun
-            printf, updatelun, systime(/julian, /utc)
-            free_lun, updatelun
-        endif else begin
-            ;; if wget was unsuccessful, print ERROR
-            readcol, taifile, year, month, day, format='i,a,i',/silent
-            nlines = n_elements(year)
-            print, 'ERROR: Could not update leap second file.'
-            print, 'Last leap second at ' + string(year[nlines-1],$
-                     month[nlines-1],day[nlines-1], format='(i04,x,a3,x,i1)')
-            print, 'If you do not have an internet connection, ' + $
-              'manually update '+ $
-              file_search(getenv('ASTRO_DATA'),/mark_directory) + taifile + $
-              " and write today's JD_UTC to " + updatefile
-            print, 'or input JD_TT and set the /TT_IN keyword'
-            print, 'JD_TT = JD_UTC + 32.184 + N'
-            print, 'where N is the number of leap seconds' 
-            stop
-        endelse
-    endif
-
-    ;; apply the BIPM-TAI correction if BIPM file supplied (30 us)
     if n_elements(bipmfile) ne 0 then begin
        readcol, bipmfile, mjd, junk, dt, format='d,d,d',/silent
        jd = mjd + 2400000.5d0 - tbase
