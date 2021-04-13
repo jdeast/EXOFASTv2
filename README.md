@@ -41,14 +41,20 @@ with git and git is in your path (i.e., it can be invoked via "git").
 
 define environment variables (bash shell, e.g., .bashrc)
 
-  EXOFAST_PATH="$HOME/idl/EXOFASTv2/" ; export EXOFAST_PATH
+  export EXOFAST_PATH="$HOME/idl/EXOFASTv2/"
   # if IDL_PATH is not defined, add EXOFAST_PATH and subdirectories to the default IDL path
   if [ -z "$IDL_PATH" ]; then 
-     IDL_PATH="<IDL_DEFAULT>:+${EXOFAST_PATH}" ; export IDL_PATH
+     export IDL_PATH="<IDL_DEFAULT>:+${EXOFAST_PATH}"
   else 
      # otherwise, append EXOFAST_PATH and all subdirectories to your IDL_PATH
-     IDL_PATH="${IDL_PATH}:+${EXOFAST_PATH}" ; export IDL_PATH
+     export IDL_PATH="${IDL_PATH}:+${EXOFAST_PATH}"
   fi
+
+  # this is only required if you want to use the BJD timing library
+  # you may already have this defined for other libraries, in which
+  # case you need not redefine it. However, it must contain
+  # JPLEPH.405 and you must have write access here.
+  export ASTRO_DATA="${EXOFAST_PATH}/timing/" 
 
 --- OR ---
 
@@ -63,6 +69,11 @@ define environment variables (c shell, e.g., .tcshrc)
      setenv IDL_PATH "${IDL_PATH}:+${EXOFAST_PATH}"
   endif
 
+  # this is only required if you want to use the BJD timing library
+  # you may already have this defined for other libraries, in which
+  # case you need not redefine it. However, it must contain
+  # JPLEPH.405 and you must have write access here.
+  setenv ASTRO_DATA "${EXOFAST_PATH}/timing/" 
 
 NOTE: If you have used the old version of EXOFAST, you must remove it
 from your IDL_PATH to run correctly.
