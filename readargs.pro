@@ -7,7 +7,7 @@ pro readargs, argfile, priorfile=priorfile, $
               circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
               rossiter=rossiter,chen=chen,$
               fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
-              fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
+              fitphase=fitphase, fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
               nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
               ntemps=ntemps,tf=tf,keephot=keephot,$
               debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
@@ -78,6 +78,8 @@ while not eof(lun) do begin
             fitthermal = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITREFLECT' then begin 
             fitreflect = json_parse(entries[1],/toarray)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITPHASE' then begin 
+            fitphase = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITELLIP' then begin
             fitellip = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITBEAM' then begin
