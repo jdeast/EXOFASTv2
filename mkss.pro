@@ -151,7 +151,7 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                fitslope=fitslope, fitquad=fitquad, $
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
                rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
-               fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+               fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase,$
                fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
                nvalues=nvalues, debug=debug, verbose=verbose, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, $
@@ -238,6 +238,7 @@ endif
 if not keyword_set(longcadence) then longcadence=0B
 if n_elements(fitthermal) eq 0 then fitthermal = ['']
 if n_elements(fitreflect) eq 0 then fitreflect = ['']
+if n_elements(fitphase) eq 0 then fitphase = ['']
 if n_elements(fitellip) eq 0 then fitellip = ['']
 if n_elements(fitdilute) eq 0 then fitdilute = ['']
 if n_elements(tranpath) eq 0 then tranpath = ''
@@ -1623,6 +1624,15 @@ reflect.unit = 'ppm'
 reflect.fit = 0
 reflect.derive = 0
 
+phaseshift = parameter
+phaseshift.description = 'Phase shift of reflection curve'
+phaseshift.latex = '\phi'
+phaseshift.label = 'phaseshift'
+phaseshift.scale = 90d0
+phaseshift.unit = 'deg'
+phaseshift.fit = 0
+phaseshift.derive = 0
+
 ellipsoidal = parameter
 ellipsoidal.description = 'Ellipsoidal variation of the star'
 ellipsoidal.latex = 'A_E'
@@ -1935,6 +1945,7 @@ band = create_struct(u1.label,u1,$ ;; linear limb darkening
                      thermal.label,thermal,$ ;; thermal emission
                      dilute.label,dilute,$   ;; dilution
                      reflect.label,reflect,$ ;; reflection
+                     phaseshift.label,phaseshift,$ ;; reflection
                      ellipsoidal.label,ellipsoidal,$
                      eclipsedepth.label,eclipsedepth,$
                      mag.label,mag,$
@@ -2248,6 +2259,13 @@ for i=0, nband-1 do begin
       ss.band[i].eclipsedepth.derive = 1B
       if ~keyword_set(silent) then printandlog, "Fitting reflected light for " + ss.band[i].name + " band", logname
    endif
+
+;   match = where(fitphase eq ss.band[i].name)
+;   if match[0] ne -1 then begin
+;      ss.band[i].phaseshift.fit = 1B
+;      ss.band[i].phaseshift.derive = 1B
+;      if ~keyword_set(silent) then printandlog, "Fitting phase offset for " + ss.band[i].name + " band", logname
+;   endif
 
    match = where(fitdilute eq ss.band[i].name)
    if match[0] ne -1 then begin
