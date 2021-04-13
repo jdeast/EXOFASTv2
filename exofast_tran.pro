@@ -66,6 +66,7 @@
 ;-
 function exofast_tran, time, inc, ar, tp, period, e, omega, p, u1, u2, f0, $
                        rstar=rstar, thermal=thermal, reflect=reflect, beam=beam, ellipsoidal=ellipsoidal, $
+                       phaseshift=phaseshift, $
                        dilute=dilute, tc=tc, q=q, au=au,c=c;,x1=x1,y1=y1,z1=z1
 
 if n_elements(thermal) eq 0 then thermal = 0d0
@@ -74,6 +75,7 @@ if n_elements(dilute) eq 0 then dilute = 0d0
 if n_elements(ellipsoidal) eq 0 then ellipsoidal = 0d0
 if n_elements(beam) eq 0 then beam = 0d0
 if n_elements(AU) eq 0 then AU = 215.094177d0
+if n_elements(phaseshift) eq 0 then phaseshift = 0d0
 
 ;; if we have the stellar radius, we can convert time to the
 ;; target's barycentric frame
@@ -108,13 +110,24 @@ endif
 ;; thermal emission from planet (isotropic)
 if thermal ne 0d0 then modelflux += 1d-6*thermal*planetvisible
 
+;if hotspot ne 0d0 then begin
+;   ;; This makes flux=0 during primary transit (Thanks Sam Quinn!)
+;   modelflux-=(1d-6*hotspot/2d0)*(cos(2d0*!dpi*(transitbjd-tc0)/period+phaseshift/360d0)-1d0)*planetvisible
+;endif   
+
 ;; phase-dependent reflection off planet
 if reflect ne 0d0 then begin
    if n_elements(tc) eq 0 then begin
       phase = exofast_getphase(e,omega,/primary)  
       tc0 = tp - phase*period
    endif else tc0 = tc
-   modelflux-=1d-6*reflect*cos(2d0*!dpi*(transitbjd-tc0)/period)*planetvisible
+   ;; This is non-physical! negative flux during primary transit
+   ;modelflux-=1d-6*reflect*cos(2d0*!dpi*(transitbjd-tc0)/period)*planetvisible
+
+   ;; This makes flux=0 during primary transit (Thanks Sam Quinn!)
+   modelflux-=(1d-6*reflect/2d0)*(cos(2d0*!dpi*(transitbjd-tc0)/period)-1d0)*planetvisible
+
+   ;;modelflux+=1d-6*reflect*sin(!dpi*(transitbjd-tc0)/period)^2d0*planetvisible
 endif
 
 ;; normalization and dilution due to neighboring star
