@@ -59,10 +59,10 @@ if keyword_set(loadss) then begin
 endif
 
 ;; this is just a time sink for debugging/evaluating multithreading
-;; it should never be uncommented in production code!!
+;; ss.delay should never be > 0 in production code!!
 ;for i=0L, 2.5d6 do t = i ;; this takes 0.05 seconds on my machine
 ;for i=0L, 2.5d7 do t = i ;; this takes 0.5 seconds on my machine
-for i=0L, ss.delay do t = i ;; this takes 0.5 seconds on my machine
+for i=0L, ss.delay do t = i 
 
 if n_elements(pars) ne 0 then pars2str, pars, ss
 
@@ -91,6 +91,13 @@ if (where(ss.planet.fittran))[0] ne -1 then begin
          strtrim(nbad,2) + ' limb darkening parameters are bad (' + strtrim(ss.band[bad[0]].u1.value,2) + ', ' + strtrim(ss.band[bad[0]].u2.value,2) + ')',ss.logname
       return, !values.d_infinity
    endif
+endif
+
+;; -180 < phase shift < 180
+bad = where(abs(ss.band.phaseshift.value) gt 180d0,nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'phase shift is bad (' + strtrim(bad,2) + ')', ss.logname
+   return, !values.d_infinity
 endif
 
 ;; 0.1 < Period < 10^13 (~age of the universe)
@@ -827,6 +834,7 @@ for j=0, ss.ntran-1 do begin
                                     q=ss.star.mstar.value/ss.planet[i].mpsun.value, $
                                     thermal=band.thermal.value, $
                                     reflect=band.reflect.value, $
+                                    phaseshift=band.phaseshift.value, $
                                     beam=ss.planet[i].beam.value,$
                                     dilute=band.dilute.value,$
                                     tc=ss.planet[i].tc.value,$
