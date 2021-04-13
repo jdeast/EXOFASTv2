@@ -172,38 +172,7 @@ if n_elements(tbase) eq 0 then tbase = 0
 ;; --------------------------------------------------------
 ;; UPDATE THE DATA FILE (for leap seconds)
 ;; --------------------------------------------------------
-if keyword_set(update) then begin
-    spawn, 'wget -qNP ' + getenv('ASTRO_DATA') + $
-      ' ftp://maia.usno.navy.mil/ser7/tai-utc.dat' 
-    openw, updatefile, updatelun, /get_lun
-    printf, updatelun, systime(/julian, /utc)
-    free_lun, updatelun
-endif else begin
-    if not keyword_set(noupdate) then begin
-        ;; find out when the last update was
-        updatefile = getenv('ASTRO_DATA') + 'exofast_lastupdate'
-        if not file_test(updatefile) then begin
-            spawn, 'wget -qNP ' + getenv('ASTRO_DATA') + $
-              ' ftp://maia.usno.navy.mil/ser7/tai-utc.dat'
-            openw, updatelun, updatefile, /get_lun
-            printf, updatelun, systime(/julian, /utc)
-            free_lun, updatelun
-        endif else begin    
-            lastupdated = read_ascii(updatefile)
-            now = systime(/julian, /utc)
-            caldat, now, month, day, year
-            caldat, lastupdated.field1, monthup, dayup, yearup 
-            
-            if (year lt yearup) or (month ge 6 and monthup lt 6) then begin
-                spawn, 'wget -qNP ' + getenv('ASTRO_DATA') + $
-                  ' ftp://maia.usno.navy.mil/ser7/tai-utc.dat' 
-                openw, updatefile, updatelun, /get_lun
-                printf, updatelun, systime(/julian, /utc)
-                free_lun, updatelun
-            endif
-        endelse
-    endif
-endelse
+updatetime, forceupdate=update
 
 ;; --------------------------------------------------------
 ;; COMPUTE CLOCK CORRECTION (~1 min)
