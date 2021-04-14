@@ -96,32 +96,32 @@ info = file_info(path+'leap-seconds.list')
 caldat, julday(1,1,1970,0,0,info.mtime), leapmo, leapday, leapyr, leaphr, leapmin, leapsec
 leap_update_str = string(leapyr,leapmo,leapday,leaphr,leapmin,leapsec,format=fmt)
 caldat, julday(1,1,1900,0,0,ntp_time), month, day, year
-openw, lun, path + 'tai-utc.dat',/get_lun
-printf, lun, '; Source: $EXOFAST_PATH/updatetime.pro'
-printf, lun, '; Updated: ' + nowstr
-printf, lun, '; Based on $ASTRO_DATA/leap-seconds.list updated on ' + leap_update_str
-printf, lun, '; Leap Seconds Table - used by CDF'
-printf, lun, '; Update it when a leap second(s) is added.'
-printf, lun, '; Comment lines starts with ";" at column 1.'
-printf, lun, '; Year Month Day Leap Seconds      Drift'
-printf, lun, '  1960   1    1    1.4178180  37300.0  0.001296'
-printf, lun, '  1961   1    1    1.4228180  37300.0  0.001296'
-printf, lun, '  1961   8    1    1.3728180  37300.0  0.001296'
-printf, lun, '  1962   1    1    1.8458580  37665.0  0.0011232'
-printf, lun, '  1963  11    1    1.9458580  37665.0  0.0011232'
-printf, lun, '  1964   1    1    3.2401300  38761.0  0.001296'
-printf, lun, '  1964   4    1    3.3401300  38761.0  0.001296'
-printf, lun, '  1964   9    1    3.4401300  38761.0  0.001296'
-printf, lun, '  1965   1    1    3.5401300  38761.0  0.001296'
-printf, lun, '  1965   3    1    3.6401300  38761.0  0.001296'
-printf, lun, '  1965   7    1    3.7401300  38761.0  0.001296'
-printf, lun, '  1965   9    1    3.8401300  38761.0  0.001296'
-printf, lun, '  1966   1    1    4.3131700  39126.0  0.002592'
-printf, lun, '  1968   2    1    4.2131700  39126.0  0.002592'
+taifile = path + 'tai-utc.dat'
+
+exofast_printf, lun, '; Source: $EXOFAST_PATH/updatetime.pro', filename=taifile,/new
+exofast_printf, lun, '; Updated: ' + nowstr, filename=taifile
+exofast_printf, lun, '; Based on $ASTRO_DATA/leap-seconds.list updated on ' + leap_update_str, filename=taifile
+exofast_printf, lun, '; Leap Seconds Table - used by CDF', filename=taifile
+exofast_printf, lun, '; Update it when a leap second(s) is added.', filename=taifile
+exofast_printf, lun, "; Comment lines starts with ';' at column 1.", filename=taifile
+exofast_printf, lun, '; Year Month Day Leap Seconds      Drift', filename=taifile
+exofast_printf, lun, '  1960   1    1    1.4178180  37300.0  0.001296', filename=taifile
+exofast_printf, lun, '  1961   1    1    1.4228180  37300.0  0.001296', filename=taifile
+exofast_printf, lun, '  1961   8    1    1.3728180  37300.0  0.001296', filename=taifile
+exofast_printf, lun, '  1962   1    1    1.8458580  37665.0  0.0011232', filename=taifile
+exofast_printf, lun, '  1963  11    1    1.9458580  37665.0  0.0011232', filename=taifile
+exofast_printf, lun, '  1964   1    1    3.2401300  38761.0  0.001296', filename=taifile
+exofast_printf, lun, '  1964   4    1    3.3401300  38761.0  0.001296', filename=taifile
+exofast_printf, lun, '  1964   9    1    3.4401300  38761.0  0.001296', filename=taifile
+exofast_printf, lun, '  1965   1    1    3.5401300  38761.0  0.001296', filename=taifile
+exofast_printf, lun, '  1965   3    1    3.6401300  38761.0  0.001296', filename=taifile
+exofast_printf, lun, '  1965   7    1    3.7401300  38761.0  0.001296', filename=taifile
+exofast_printf, lun, '  1965   9    1    3.8401300  38761.0  0.001296', filename=taifile
+exofast_printf, lun, '  1966   1    1    4.3131700  39126.0  0.002592', filename=taifile
+exofast_printf, lun, '  1968   2    1    4.2131700  39126.0  0.002592', filename=taifile
 for i=0L, n_elements(year)-1 do $
-   printf, lun, string(year[i], month[i], day[i], dtai[i], '0.0','0.0', $
-                       format='(i6,i4,i5,f7.1,a15,a5)')
-free_lun, lun
+   exofast_printf, lun, string(year[i], month[i], day[i], dtai[i], '0.0','0.0', $
+                       format='(i6,i4,i5,f7.1,a15,a5)'), filename=taifile
 
 ;; small corrections (ms)
 spawn, 'wget --ftp-user=anonymous -NP ' + path + ' https://datacenter.iers.org/data/latestVersion/finals.all.iau2000.txt'
@@ -134,8 +134,6 @@ spawn, 'wget --ftp-user=anonymous -NP ' + path + ' ' + bipm_url + bipm_filename
 file_copy, path + bipm_filename, path + 'bipmfile', /overwrite
 
 ;; update the "last updated" file to now
-openw, lun, updatefile, /get_lun
-printf, lun, strtrim(now,2)
-free_lun, lun
+exofast_printf, lun, strtrim(now,2), filename=updatefile, /new
 
 end
