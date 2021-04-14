@@ -1208,7 +1208,7 @@ priorfileparts = strsplit(priorfile,'.',/extract,/preserve_null)
 suffix = priorfileparts[n_elements(priorfileparts)-1]
 if valid_num(suffix) then priorfileparts[n_elements(priorfileparts)-1] = strtrim(suffix+1L,2) $
 else priorfileparts = [priorfileparts,'2']
-priorfile2 = strjoin(priorfileparts,'.')
+priorfile2 = file_dirname(prefix) + path_sep() + file_basename(strjoin(priorfileparts,'.'))
 mkprior, mcmcss=mcmcss, priorfilename=priorfile2
 
 ;; GDL compatibility
