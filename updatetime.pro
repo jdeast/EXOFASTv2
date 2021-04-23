@@ -74,7 +74,7 @@ now = systime(/julian,/utc)
 updatefile = path + 'exofast_lastupdate'
 if query_ascii(updatefile) then begin ;; if a valid ascii file
    lastupdated = (double((read_ascii(updatefile)).field1))[0]
-   if ~keyword_set(forceupdate) and (now - lastupdated) lt 27.9d0 then begin
+   if ~keyword_set(forceupdate) and (now - lastupdated) lt 0.9d0 then begin
       print, 'Last updated ' + strtrim(now - lastupdated,2) + ' days ago; skipping update'
       print, 'Use /FORCEUPDATE to update anyway'
       return
@@ -95,33 +95,54 @@ readcol, path + 'leap-seconds.list', ntp_time, dtai, format='d,d', comment='#',/
 info = file_info(path+'leap-seconds.list')
 caldat, julday(1,1,1970,0,0,info.mtime), leapmo, leapday, leapyr, leaphr, leapmin, leapsec
 leap_update_str = string(leapyr,leapmo,leapday,leaphr,leapmin,leapsec,format=fmt)
-caldat, julday(1,1,1900,0,0,ntp_time), month, day, year
+jd = julday(1,1,1900,0,0,ntp_time)
+caldat, jd, month, day, year
+monthstrs = ['','JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
 taifile = path + 'tai-utc.dat'
 
-exofast_printf, lun, '; Source: $EXOFAST_PATH/updatetime.pro', filename=taifile,/new
-exofast_printf, lun, '; Updated: ' + nowstr, filename=taifile
-exofast_printf, lun, '; Based on $ASTRO_DATA/leap-seconds.list updated on ' + leap_update_str, filename=taifile
-exofast_printf, lun, '; Leap Seconds Table - used by CDF', filename=taifile
-exofast_printf, lun, '; Update it when a leap second(s) is added.', filename=taifile
-exofast_printf, lun, "; Comment lines starts with ';' at column 1.", filename=taifile
-exofast_printf, lun, '; Year Month Day Leap Seconds      Drift', filename=taifile
-exofast_printf, lun, '  1960   1    1    1.4178180  37300.0  0.001296', filename=taifile
-exofast_printf, lun, '  1961   1    1    1.4228180  37300.0  0.001296', filename=taifile
-exofast_printf, lun, '  1961   8    1    1.3728180  37300.0  0.001296', filename=taifile
-exofast_printf, lun, '  1962   1    1    1.8458580  37665.0  0.0011232', filename=taifile
-exofast_printf, lun, '  1963  11    1    1.9458580  37665.0  0.0011232', filename=taifile
-exofast_printf, lun, '  1964   1    1    3.2401300  38761.0  0.001296', filename=taifile
-exofast_printf, lun, '  1964   4    1    3.3401300  38761.0  0.001296', filename=taifile
-exofast_printf, lun, '  1964   9    1    3.4401300  38761.0  0.001296', filename=taifile
-exofast_printf, lun, '  1965   1    1    3.5401300  38761.0  0.001296', filename=taifile
-exofast_printf, lun, '  1965   3    1    3.6401300  38761.0  0.001296', filename=taifile
-exofast_printf, lun, '  1965   7    1    3.7401300  38761.0  0.001296', filename=taifile
-exofast_printf, lun, '  1965   9    1    3.8401300  38761.0  0.001296', filename=taifile
-exofast_printf, lun, '  1966   1    1    4.3131700  39126.0  0.002592', filename=taifile
-exofast_printf, lun, '  1968   2    1    4.2131700  39126.0  0.002592', filename=taifile
+exofast_printf, lun, ' 1961 JAN  1 =JD 2437300.5  TAI-UTC=   1.4228180 S + (MJD - 37300.) X 0.001296 S ', filename=taifile, /new
+exofast_printf, lun, ' 1961 AUG  1 =JD 2437512.5  TAI-UTC=   1.3728180 S + (MJD - 37300.) X 0.001296 S ', filename=taifile
+exofast_printf, lun, ' 1962 JAN  1 =JD 2437665.5  TAI-UTC=   1.8458580 S + (MJD - 37665.) X 0.0011232S ', filename=taifile
+exofast_printf, lun, ' 1963 NOV  1 =JD 2438334.5  TAI-UTC=   1.9458580 S + (MJD - 37665.) X 0.0011232S ', filename=taifile
+exofast_printf, lun, ' 1964 JAN  1 =JD 2438395.5  TAI-UTC=   3.2401300 S + (MJD - 38761.) X 0.001296 S ', filename=taifile
+exofast_printf, lun, ' 1964 APR  1 =JD 2438486.5  TAI-UTC=   3.3401300 S + (MJD - 38761.) X 0.001296 S ', filename=taifile
+exofast_printf, lun, ' 1964 SEP  1 =JD 2438639.5  TAI-UTC=   3.4401300 S + (MJD - 38761.) X 0.001296 S ', filename=taifile
+exofast_printf, lun, ' 1965 JAN  1 =JD 2438761.5  TAI-UTC=   3.5401300 S + (MJD - 38761.) X 0.001296 S ', filename=taifile
+exofast_printf, lun, ' 1965 MAR  1 =JD 2438820.5  TAI-UTC=   3.6401300 S + (MJD - 38761.) X 0.001296 S ', filename=taifile
+exofast_printf, lun, ' 1965 JUL  1 =JD 2438942.5  TAI-UTC=   3.7401300 S + (MJD - 38761.) X 0.001296 S ', filename=taifile
+exofast_printf, lun, ' 1965 SEP  1 =JD 2439004.5  TAI-UTC=   3.8401300 S + (MJD - 38761.) X 0.001296 S ', filename=taifile
+exofast_printf, lun, ' 1966 JAN  1 =JD 2439126.5  TAI-UTC=   4.3131700 S + (MJD - 39126.) X 0.002592 S ', filename=taifile
+exofast_printf, lun, ' 1968 FEB  1 =JD 2439887.5  TAI-UTC=   4.2131700 S + (MJD - 39126.) X 0.002592 S ', filename=taifile
+fmt2 = '(i5,x,a3,x,i2," =JD ", f9.1,"  TAI-UTC=",f6.1,"       S + (MJD - 41317.) X 0.0      S ")'
 for i=0L, n_elements(year)-1 do $
-   exofast_printf, lun, string(year[i], month[i], day[i], dtai[i], '0.0','0.0', $
-                       format='(i6,i4,i5,f7.1,a15,a5)'), filename=taifile
+   exofast_printf, lun, string(year[i], monthstrs[month[i]], day[i], jd[i], dtai[i],format=fmt2), filename=taifile
+
+
+
+;exofast_printf, lun, '; Source: $EXOFAST_PATH/updatetime.pro', filename=taifile,/new
+;exofast_printf, lun, '; Updated: ' + nowstr, filename=taifile
+;exofast_printf, lun, '; Based on $ASTRO_DATA/leap-seconds.list updated on ' + leap_update_str, filename=taifile
+;exofast_printf, lun, '; Leap Seconds Table - used by CDF', filename=taifile
+;exofast_printf, lun, '; Update it when a leap second(s) is added.', filename=taifile
+;exofast_printf, lun, "; Comment lines starts with ';' at column 1.", filename=taifile
+;exofast_printf, lun, '; Year Month Day Leap Seconds      Drift', filename=taifile
+;exofast_printf, lun, '  1960   1    1    1.4178180  37300.0  0.001296', filename=taifile
+;exofast_printf, lun, '  1961   1    1    1.4228180  37300.0  0.001296', filename=taifile
+;exofast_printf, lun, '  1961   8    1    1.3728180  37300.0  0.001296', filename=taifile
+;exofast_printf, lun, '  1962   1    1    1.8458580  37665.0  0.0011232', filename=taifile
+;exofast_printf, lun, '  1963  11    1    1.9458580  37665.0  0.0011232', filename=taifile
+;exofast_printf, lun, '  1964   1    1    3.2401300  38761.0  0.001296', filename=taifile
+;exofast_printf, lun, '  1964   4    1    3.3401300  38761.0  0.001296', filename=taifile
+;exofast_printf, lun, '  1964   9    1    3.4401300  38761.0  0.001296', filename=taifile
+;exofast_printf, lun, '  1965   1    1    3.5401300  38761.0  0.001296', filename=taifile
+;exofast_printf, lun, '  1965   3    1    3.6401300  38761.0  0.001296', filename=taifile
+;exofast_printf, lun, '  1965   7    1    3.7401300  38761.0  0.001296', filename=taifile
+;exofast_printf, lun, '  1965   9    1    3.8401300  38761.0  0.001296', filename=taifile
+;exofast_printf, lun, '  1966   1    1    4.3131700  39126.0  0.002592', filename=taifile
+;exofast_printf, lun, '  1968   2    1    4.2131700  39126.0  0.002592', filename=taifile
+;for i=0L, n_elements(year)-1 do $
+;   exofast_printf, lun, string(year[i], month[i], day[i], dtai[i], '0.0','0.0', $
+;                       format='(i6,i4,i5,f7.1,a15,a5)'), filename=taifile
 
 ;; small corrections (ms)
 spawn, 'wget --ftp-user=anonymous -NP ' + path + ' https://datacenter.iers.org/data/latestVersion/finals.all.iau2000.txt'
