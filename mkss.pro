@@ -1959,6 +1959,7 @@ telescope = create_struct(gamma.label,gamma,$
                           jitter.label,jitter,$
                           jittervar.label,jittervar,$
                           'rvptrs', ptr_new(),$
+                          'detrend',ptr_new(/allocate_heap),$ ;; array of detrending parameters
                           'name','',$
                           'chi2',0L,$
                           'rootlabel','Telescope Parameters:',$
@@ -2393,23 +2394,20 @@ if ntel gt 0 then begin
    ss.telescope[*].rvptrs = ptrarr(ntel,/allocate_heap)
    if ~keyword_set(silent) then printandlog, "The index for each RV data set is",logname
    maxpoints = 0
+   detrend.scale = 1d0
    for i=0, ntel-1 do begin
       if ~keyword_set(silent) then printandlog, string(i,rvfiles[i],format='(i2,x,a)'),logname
-      *(ss.telescope[i].rvptrs) = readrv(rvfiles[i])
+      *(ss.telescope[i].rvptrs) = readrv_detrend(rvfiles[i], detrendpar=detrend)
       ss.telescope[i].label = (*(ss.telescope[i].rvptrs)).label
 
       ss.ndata += n_elements((*(ss.telescope[i].rvptrs)).bjd)
 
-      ;; = mean(RVs) and K = sqrt(2)*stdev(RVs)     
-;      if ss.star.quad.fit then begin
-;         coeffs = poly_fit((*(ss.telescope[i].rvptrs)).rv
+      ;; create an array of detrending variables 
+      ;; (one for each extra column in the rv file)
+      nadd = (*(ss.telescope[i].rvptrs)).nadd
+      nmult = (*(ss.telescope[i].rvptrs)).nmult
+      ss.ndata += n_elements((*(ss.telescope[i].rvptrs)).bjd)*(1L+nadd+nmult)
 
-
-;      ss.telescope[i].gamma.value = mean((*(ss.telescope[i].rvptrs)).rv)
-;      if n_elements((*(ss.telescope[i].rvptrs)).rv) gt maxpoints then begin
-;         maxpoints = n_elements((*(ss.telescope[i].rvptrs)).rv) 
-;         ss.planet[*].k.value = sqrt(2d0)*stddev((*(ss.telescope[i].rvptrs)).rv)
-;      endif
    endfor
    if ~keyword_set(silent) then printandlog, '', logname
 endif else begin
@@ -2572,14 +2570,14 @@ while not eof(lun) do begin
                      if (size((*(ss.(i)[priornum].(k))).(l)))[2] eq 8 then begin
 
                         valid = 0
-                        if strpos(strupcase(priorlabel),'C') ne -1 then begin
+                        if strpos(strupcase(priorlabel),'C') eq 0 then begin
                            if strmid((*(ss.(i)[priornum].(k))).(l)[0].label,0,1) eq 'C' then begin ;; if it's the additive variable
                               if (*(ss.(i)[priornum].(k))).nadd gt 0 then begin
                                  detrendnum = long((strsplit(strupcase(priorlabel),'C',/extract))[0])
                                  if detrendnum lt (*(ss.(i)[priornum].(k))).nadd then valid = 1
                               endif
                            endif
-                        endif else if strpos(strupcase(priorlabel),'M') ne -1 then begin
+                        endif else if strpos(strupcase(priorlabel),'M') eq 0 then begin
                            if strmid((*(ss.(i)[priornum].(k))).(l)[0].label,0,1) eq 'M' then begin
                               if (*(ss.(i)[priornum].(k))).nmult gt 0 then begin
                                  detrendnum = long((strsplit(strupcase(priorlabel),'M',/extract))[0])
