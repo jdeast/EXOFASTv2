@@ -1,3 +1,10 @@
+pro printerr, logname
+   printandlog, 'This usually means the transit time ran away and requires some bound', logname
+   printandlog, 'Consider a wide, uniform prior on Tc and/or set REJECTFLATMODEL', logname
+   printandlog, 'Returning without recentering the distribution', logname
+   printandlog, '***THIS RESULT SHOULD ONLY BE USED TO DEBUG THE PROBLEM!***', logname
+end
+
 ;+
 ; NAME:
 ;   EXOFAST_RECENTER
@@ -36,24 +43,35 @@ endelse
 bad = where(mode - period/2d0 - mode eq 0d0, nbad)
 if nbad ne 0 then begin
    printandlog, 'ERROR: the period is negligible compared to the value', logname
-   printandlog, 'This usually means the transit time ran away and requires some bound', logname
-   printandlog, 'Consider a wide, uniform prior on Tc and/or set REJECTFLATMODEL', logname
-   printandlog, 'Returning without recentering the distribution', logname
-   printandlog, '***THIS RESULT SHOULD ONLY BE USED TO DEBUG THE PROBLEM!***', logname
+   printerr,logname
    return, par
 endif
 
 nper = round((mode - par)/per,/L64)
 par -= nper*per
 
+nrepeat=0L
 repeat begin
    toohigh = where(par gt (mode + period/2d0))
    if toohigh[0] ne -1 then par[toohigh] -= per[toohigh]
+   nrepeat++
+   if nrepeat gt 10 then begin
+      printandlog, 'ERROR: recentering about the mode is not converging.', logname
+      printerr,logname
+      return, par
+   endif
 endrep until toohigh[0] eq -1
 
+nrepeat=0L
 repeat begin
    toolow = where(par le (mode - period/2d0))
    if toolow[0] ne -1 then par[toolow] += period[toolow]
+   nrepeat++
+   if nrepeat gt 10 then begin
+      printandlog, 'ERROR: recentering about the mode is not converging.', logname
+      printerr,logname
+      return, par
+   endif
 endrep until toolow[0] eq -1
 
 return, par
