@@ -48,8 +48,8 @@ if keyword_set(mode) then begin
 endif else begin
    ;; median and 68% confidence interval
    medndx = nsteps/2d0
-   lowsigndx = round(nsteps/2.d0 - nsteps*halfsigma)
-   hisigndx = round(nsteps/2.d0 + nsteps*halfsigma)
+   lowsigndx = round(nsteps/2.d0 - nsteps*halfsigma) > 0 
+   hisigndx = round(nsteps/2.d0 + nsteps*halfsigma) < (nsteps-1)
    
 
    medvalue = pars[good[sorted[medndx]]]
