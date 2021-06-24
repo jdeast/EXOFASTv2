@@ -704,8 +704,12 @@ for j=0, ss.ntel-1 do begin
    if (*ss.telescope[j].rvptrs).planet eq -1 then $
       modelrv += ss.star.slope.value*(rv.bjd-ss.rvepoch) + ss.star.quad.value*(rv.bjd-ss.rvepoch)^2
 
+   ;; detrending
+   modelrv += total((*ss.telescope[j].rvptrs).detrendadd*(replicate(1d0,n_elements((*ss.telescope[j].rvptrs).bjd))##(*ss.telescope[j].rvptrs).detrendaddpars.value),1)
+   modelrv *= (1d0+total((*ss.telescope[j].rvptrs).detrendmult*(replicate(1d0,n_elements((*ss.telescope[j].rvptrs).bjd))##(*ss.telescope[j].rvptrs).detrendmultpars.value),1))
+
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
-   
+
    if keyword_set(psname) then begin
       base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
       exofast_forprint, rv.bjd, rv.rv - modelrv, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.telescope_' + strtrim(j,2) + '.txt', /nocomment,/silent
