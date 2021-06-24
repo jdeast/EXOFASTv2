@@ -1,7 +1,7 @@
 ;; runs short versions of all the examples (mostly as a very rough
 ;; unit test to make sure I didn't break anything).
 
-pro runallexamples, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin, nthread=nthread, compareonly=compareonly, threshhold=threshhold
+pro runallexamples, debug=debug, verbose=verbose, maxsteps=maxsteps0, nthin=nthin0, nthread=nthread, compareonly=compareonly, threshhold=threshhold
 
 if n_elements(threshhold) eq 0 then threshhold=1d0
 
@@ -30,6 +30,14 @@ nfits = n_elements(fits[0,*])
 for i=0L, nfits-1 do begin
    print, fits[0,i]
    if not keyword_set(compareonly) then begin
+      ;; exofastv2 can set maxstep and nthin if not set. make sure it
+      ;; uses its defaults each time
+      if n_elements(maxsteps0) ne 0 then begin
+         maxsteps = maxsteps0
+      endif else undefine, maxsteps
+      if n_elements(nthin0) ne 0 then begin
+         nthin = nthin0
+      endif else undefine, nthin
       call_procedure,fits[1,i], maxsteps=maxsteps, nthin=nthin, debug=debug, verbose=verbose, nthread=nthread
    endif
 
