@@ -76,7 +76,8 @@ for j=0L, ss.ntel-1 do begin
    else legendndx[rv.planet,j] = 1B
 
 endfor
-t0 = (allmindate+allmaxdate)/2d0
+;t0 = (allmindate+allmaxdate)/2d0
+t0 = ss.rvepoch
 
 roundto = 10L^(strlen(strtrim(floor(allmaxdate-allmindate),2)));+1L) 
 bjd0 = floor(allmindate/roundto)*roundto
@@ -112,13 +113,15 @@ for j=0, ss.ntel-1 do begin
    mintime = min(rv.bjd,max=maxtime)
 
    ;; subtract gamma, slope, and quadratic terms
-   rv.residuals = rv.rv - (ss.telescope[j].gamma.value[ndx] + ss.star.slope.value[ndx]*(rv.bjd-t0) + ss.star.quad.value[ndx]*(rv.bjd-t0)^2)
+;;   rv.residuals = rv.rv - (ss.telescope[j].gamma.value[ndx] + ss.star.slope.value[ndx]*(rv.bjd-t0) + ss.star.quad.value[ndx]*(rv.bjd-t0)^2)
+   modelrv = (ss.telescope[j].gamma.value[ndx] + ss.star.slope.value[ndx]*(rv.bjd-t0) + ss.star.quad.value[ndx]*(rv.bjd-t0)^2)
 
    for i=0, ss.nplanets-1 do begin
+      
+      if ~ss.planet[i].fitrv then continue ;; skip unfit planets
+      if rv.planet ne -1 then continue     ;; skip direct planet RVs
 
-      if ~ss.planet[i].fitrv then continue
-      if rv.planet ne -1 then continue
-
+      ;; this clause is never executed
       if rv.planet eq i then begin
 ;; this needs to be debugged
          rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value[ndx], $
@@ -142,20 +145,35 @@ for j=0, ss.ntel-1 do begin
                             c=ss.constants.c/ss.constants.au*ss.constants.day,$
                             q=q[i], /primary)
 
-         modelrv = exofast_rv(rvbjd,ss.planet[i].tp.value[ndx],$
-                              ss.planet[i].period.value[ndx],0d0,$
-                              ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
-                              ss.planet[i].omega.value[ndx],slope=0,$
-                              rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
-                              p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star.vsini.value[ndx],$
-                              lambda=ss.planet[i].lambda.value[ndx],$
-                              u1=0d0,deltarv=deltarv)
-         ;; re-populate the residual array
-         rv.residuals -= modelrv
-         *(ss.telescope[j].rvptrs) = rv
-
+         modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value[ndx],$
+                               ss.planet[i].period.value[ndx],0d0,$
+                               ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
+                               ss.planet[i].omega.value[ndx],slope=0,$
+                               rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
+                               p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star.vsini.value[ndx],$
+                               lambda=ss.planet[i].lambda.value[ndx],$
+                               u1=0d0,deltarv=deltarv)
+         
       endelse
+      
    endfor
+
+   if tag_exist(ss.telescope[j],'detrend') then begin
+      detrendadd = total((*ss.telescope[j].rvptrs).detrendadd*(replicate(1d0,n_elements((*ss.telescope[j].rvptrs).bjd))##(*ss.telescope[j].rvptrs).detrendaddpars.value),1)
+      detrendmult = (1d0+total((*ss.telescope[j].rvptrs).detrendmult*(replicate(1d0,n_elements((*ss.telescope[j].rvptrs).bjd))##(*ss.telescope[j].rvptrs).detrendmultpars.value),1))
+   endif else begin
+      detrendadd = 0d0
+      detrendmult = 1d0
+   endelse
+   
+   modelrv += total((*ss.telescope[j].rvptrs).detrendadd*(replicate(1d0,n_elements((*ss.telescope[j].rvptrs).bjd))##(*ss.telescope[j].rvptrs).detrendaddpars.value),1)
+   modelrv *= (1d0+total((*ss.telescope[j].rvptrs).detrendmult*(replicate(1d0,n_elements((*ss.telescope[j].rvptrs).bjd))##(*ss.telescope[j].rvptrs).detrendmultpars.value),1))
+   
+   ;; re-populate the residual array
+   rv.residuals = rv.rv - modelrv
+   
+   *(ss.telescope[j].rvptrs) = rv
+
 endfor
 
 for i=0, ss.nplanets-1 do begin
@@ -292,7 +310,8 @@ endfor
 
 !p.multi=0
 
-;; now plot all planets, unphased, including the slope and quadratic terms
+;; now plot all planets, unphased, including the slope and quadratic
+;; terms (but removing detrending)
 if not keyword_set(psname) then begin
    if win_state[21] eq 1 then wset, 21 $
    else window, 21, retain=2
@@ -329,7 +348,15 @@ for j=0, ss.ntel-1 do begin
    if rv.planet ne -1 then continue
    err = sqrt(rv.err^2 + ss.telescope[j].jittervar.value[ndx])
    plotsym, symbols[j mod nsymbols], symsize, fill=fills[j mod nfills], color=colors[j mod ncolors]
-   oploterr, rv.bjd-bjd0, rv.rv-ss.telescope[j].gamma.value[ndx], err, 8
+
+   if tag_exist(ss.telescope[j],'detrend') then begin
+      detrendadd = total((*ss.telescope[j].rvptrs).detrendadd*(replicate(1d0,n_elements((*ss.telescope[j].rvptrs).bjd))##(*ss.telescope[j].rvptrs).detrendaddpars.value),1)
+      detrendmult = (1d0+total((*ss.telescope[j].rvptrs).detrendmult*(replicate(1d0,n_elements((*ss.telescope[j].rvptrs).bjd))##(*ss.telescope[j].rvptrs).detrendmultpars.value),1))
+   endif else begin
+      detrendadd = 0d0
+      detrendmult = 1d0
+   endelse
+   oploterr, rv.bjd-bjd0, (rv.rv-ss.telescope[j].gamma.value[ndx]-detrendadd)/detrendmult, err, 8
 endfor
 
 use = where(legendndx[ss.nplanets,*],nuse)
@@ -435,7 +462,14 @@ if nplanetrvs gt 0L then begin
                                  slope=0d0)
             
             ;; for residual plot
-            (*(ss.telescope[j].rvptrs)).residuals = rv.rv-modelrv-ss.telescope[j].gamma.value[ndx]
+            if tag_exist(ss.telescope[j],'detrend') then begin
+               detrendadd = total((*ss.telescope[j].rvptrs).detrendadd*(replicate(1d0,n_elements((*ss.telescope[j].rvptrs).bjd))##(*ss.telescope[j].rvptrs).detrendaddpars.value),1)
+               detrendmult = (1d0+total((*ss.telescope[j].rvptrs).detrendmult*(replicate(1d0,n_elements((*ss.telescope[j].rvptrs).bjd))##(*ss.telescope[j].rvptrs).detrendmultpars.value),1))
+            endif else begin
+               detrendadd = 0d0
+               detrendmult = 1d0
+            endelse
+            (*(ss.telescope[j].rvptrs)).residuals = (rv.rv-modelrv-ss.telescope[j].gamma.value[ndx]-detrendadd)/detrendmult
             minoc = min((*(ss.telescope[j].rvptrs)).residuals ,max=maxoc)
             
             if minoc lt allminoc then allminoc = minoc
