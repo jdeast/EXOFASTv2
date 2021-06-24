@@ -11,7 +11,7 @@ hisigndx = round( nsteps/2.d0 + nsteps*halfsigma )
 charsize = 1.5
 
 ;; check for bad values
-bad = where(~finite(pars),complement=good)
+bad = where(~finite(trimpars),complement=good)
 if bad[0] ne -1 then begin
    printandlog, "ERROR: NaNs in " + label + " distribution", logname
    return
@@ -23,7 +23,7 @@ else if unit eq 'RADIANS' then halfrange = !dpi
 if unit eq 'DEGREES' or unit eq 'RADIANS' then begin
    
    ;; find the mode
-   hist = histogram(pars,nbins=100,locations=x,/nan)
+   hist = histogram(trimpars,nbins=100,locations=x,/nan)
    max = max(hist,modendx)
    mode = x[modendx]
    
