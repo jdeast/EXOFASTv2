@@ -64,12 +64,13 @@ chi2 = reform((*(mcmcss.chi2)),mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains)
 burnndx = getburnndx(chi2,goodchains=goodchains)
 
 
-;; **********************************************************************
-PRINT, 'this goes much faster for debugging by only computing a fraction of'
-PRINT, 'the steps -- DO NOT LEAVE THIS IN!!!'
 nsteps = mcmcss.nsteps
-nsteps = mcmcss.nchains*5L ;; must be an integer multiple of nchains
-burnndx = 0
+
+;; **********************************************************************
+;PRINT, 'this goes much faster for debugging by only computing a fraction of'
+;PRINT, 'the steps -- DO NOT LEAVE THIS IN!!!'
+;nsteps = mcmcss.nchains*5L ;; must be an integer multiple of nchains
+;burnndx = 0
 ;; **********************************************************************
 
 ttn = dblarr(nsteps,mcmcss.nplanets,mcmcss.ntran) + !values.d_nan
