@@ -297,9 +297,25 @@ for i=0, ss.nplanets-1 do begin
 
    ;; depth != delta if grazing (ignore limb darkening)
    ss.planet[i].delta.value = ss.planet[i].p.value^2
-   for j=0L, ss.nsteps-1L do begin
-      exofast_occultquad_cel, abs(ss.planet[i].b.value[j]), 0d0, 0d0, ss.planet[i].p.value[j],mu1
-      ss.planet[i].depth.value[j] = 1d0-mu1[0]
+   for k=0L, ss.nband-1L do begin
+      tagnames = tag_names(ss.planet)
+      match = (where(tagnames eq strupcase('depth_' + ss.band[k].name)))[0]
+      if match eq -1 then begin
+         printandlog, 'ERROR: no match for ' + ss.band[k].name + ' ...  this should not be possible'
+         continue
+      endif
+      for j=0L, ss.nsteps-1L do begin
+         
+         u1 = ss.band[k].u1.value[j]
+         u2 = ss.band[k].u1.value[j]
+
+         exofast_occultquad_cel, abs(ss.planet[i].b.value[j]), u1, u2, ss.planet[i].p.value[j],mu1
+         ss.planet[i].(match).value[j] = 1d0-mu1[0]
+
+;         exofast_occultquad_cel, abs(ss.planet[i].b.value[j]), 0d0, 0d0, ss.planet[i].p.value[j],mu1
+;         ss.planet[i].depth.value[j] = 1d0-mu1[0]
+
+      endfor
    endfor
 
    ;; find the ideal Tc that minimizes the Tc uncertainty and the
