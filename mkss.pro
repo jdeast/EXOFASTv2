@@ -1262,8 +1262,8 @@ eclipsedepth75.cgs = 1d6
 if nplanets eq 0 then eclipsedepth75.derive = 0
 
 delta = parameter
-delta.unit = 'fraction'
-delta.description = 'Transit depth'
+;delta.unit = 'fraction'
+delta.description = '$\left(R_P/R_*\right)^2$'
 delta.latex = '\delta'
 delta.label = 'delta'
 if nplanets eq 0 then delta.derive = 0
@@ -1877,8 +1877,22 @@ planet = create_struct($
          logK.label,logk,$              ;; RV parameters
          p.label,p,$              ;; Primary Transit parameters
          ar.label,ar,$
-         delta.label,delta,$
-         depth.label,depth,$
+         delta.label,delta)
+
+;; compute a depth for each observed band
+for i=0L, nband-1 do begin
+   depth = parameter
+   prettyname = prettybands[(where(bands[i] eq allowedbands))[0]]
+   depth.description = 'Transit depth in ' + prettyname
+   depth.latex = '\delta_{\rm ' + prettyname + '}'
+   depth.label = 'depth_' + bands[i]
+   depth.unit = 'fraction'
+   if nplanets eq 0 then depth.derive = 0
+   planet = create_struct(planet, depth.label, depth)
+endfor
+
+planet = create_struct($
+         planet,$
          tau.label,tau,$
          t14.label,t14,$
          tfwhm.label,tfwhm,$
