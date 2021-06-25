@@ -31,8 +31,8 @@ while not eof(lun) do begin
       entries = strsplit(line,'=',/extract)
       if n_elements(entries) eq 2 then begin
 
-         ;; replace '$EXOFAST_PATH' with its value
-         entries[1] = strjoin(strsplit(entries[1],'\$EXOFAST_PATH',/regex,/extract,/preserve_null),getenv('EXOFAST_PATH'))
+         ;; replace environment variables with their values
+         entries[1] = expand_path(entries[1])
 
          if strupcase(strtrim(entries[0],2)) eq 'PRIORFILE' then begin
             priorfile = strtrim(entries[1],2)
