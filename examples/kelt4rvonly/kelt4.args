@@ -1,0 +1,8 @@
+priorfile=$EXOFAST_PATH/examples/kelt4rvonly/kelt4.priors.2
+prefix=$HOME/modeling/kelt4/fitresults/KELT-4Ab.
+rvpath=$EXOFAST_PATH/examples/kelt4rvonly/KELT-4b.*.rv
+nplanets=1
+fitrv=[1]
+circular=[0]
+maxsteps=100
+#debug=0

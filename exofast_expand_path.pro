@@ -10,6 +10,8 @@ function exofast_expand_path, string
      endif
   endfor
 
-  return, strjoin(directories,path_sep())
+  path = strjoin(directories,path_sep())
+  if strmid(string,0,1) eq path_sep() then path = path_sep() + path
+  return, path
 
 end
