@@ -32,7 +32,8 @@ while not eof(lun) do begin
       if n_elements(entries) eq 2 then begin
 
          ;; replace environment variables with their values
-         entries[1] = expand_path(entries[1])
+         entries[1] = exofast_expand_path(entries[1])
+
 
          if strupcase(strtrim(entries[0],2)) eq 'PRIORFILE' then begin
             priorfile = strtrim(entries[1],2)
