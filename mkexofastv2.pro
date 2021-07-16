@@ -16,7 +16,7 @@ save, 'getpriorline','mkprior','strsplit','tag_exist',/routines, filename=path +
 
 ;; create the main EXOFASTv2 executeable
 resolve_all, resolve_procedure='exofastv2',$ ;; the main routine
-             resolve_function=['exofast_chi2v2','exofast_random'],$ ;; these are run with call_function and do not get resolved automatically
+             resolve_function=['exofast_chi2v2','exofast_random','reverse'],$ ;; these are run with call_function and do not get resolved automatically
              /cont,/quiet
 save, /routines, filename=path + 'exofastv2.sav'
 
