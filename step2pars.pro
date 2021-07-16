@@ -223,7 +223,7 @@ for i=0, ss.nplanets-1 do begin
                                     ss.planet[i].e.value,$
                                     ss.planet[i].i.value,$
                                     ss.planet[i].omega.value,$
-                                    ss.planet[i].period.value,/reverse)
+                                    ss.planet[i].period.value,/reverse_correction)
 
    endif else begin
       ;; tc is fit, don't bother computing tt unless it's constrained by a prior

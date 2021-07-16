@@ -194,7 +194,7 @@ for i=0, ss.nplanets-1 do begin
                                     ss.planet[i].e.value,$
                                     ss.planet[i].i.value,$
                                     ss.planet[i].omega.value,$
-                                    ss.planet[i].period.value,/reverse)                                    
+                                    ss.planet[i].period.value,/reverse_correction)                                    
    endif else begin
       if ss.planet[i].tt.derive then begin
          ss.planet[i].tt.value = tc2tt(ss.planet[i].tc.value,$

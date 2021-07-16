@@ -1,4 +1,4 @@
-function tc2tt, time, e, inc, omega, period, tol=tol, reverse=reverse 
+function tc2tt, time, e, inc, omega, period, tol=tol, reverse_correction=reverse_correction 
 
 if n_elements(tol) eq 0 then tol = 1d-15
 
@@ -7,7 +7,7 @@ if n_elements(tol) eq 0 then tol = 1d-15
 ;if nbad eq 0 then return, time
 
 ;; if computing the reverse translation, the input time is T_T
-if keyword_set(reverse) then tt = time $
+if keyword_set(reverse_correction) then tt = time $
 else tc = time
 
 ;; compute the phase at conjunction
@@ -40,7 +40,7 @@ endif
 phase0 = exofast_getphase(e,omega,trueanom=!dpi/2d0 - omega + thetanew)
 
 ;; translate theta into an offset in time
-if keyword_set(reverse) then begin
+if keyword_set(reverse_correction) then begin
    tc = tt - period*(phase0-phase)
 
    toohigh = where(tc gt tt+period/2d0)

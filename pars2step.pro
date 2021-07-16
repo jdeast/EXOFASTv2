@@ -447,7 +447,7 @@ for i=0, ss.nplanets-1 do begin
                                        ss.planet[i].e.value,$
                                        ss.planet[i].i.value,$
                                        ss.planet[i].omega.value,$
-                                       ss.planet[i].period.value,/reverse)
+                                       ss.planet[i].period.value,/reverse_correction)
 
          ;; make tt as close as possible to tc
          nper = round((ss.planet[i].tt.value - ss.planet[i].tc.value)/ss.planet[i].period.value)
