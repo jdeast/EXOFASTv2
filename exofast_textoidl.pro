@@ -134,7 +134,11 @@ FUNCTION textoidl_strtrans, InputString, from, to, ned,  $
     FOR i = 0L, NStrings-1 DO BEGIN
         ned[i] = 0L
         FOR j=0L, NFrom-1 DO BEGIN
-            SepStr = str_sep(strn[i], from[j])
+            ;; swapped obsolete str_sep with strsplit. JDE 2022-02-23
+            ;; isn't this whole loop just repstr?
+            ;SepStr = str_sep(strn[i], from[j])
+            SepStr = strsplit(strn[i], from[j],/extract,/regex)
+
             NSubs = n_elements(SepStr) - 1
             strn[i] = SepStr[0]
             FOR k=1L, NSubs DO strn[i] = strn[i] + To[j] + SepStr[k]
