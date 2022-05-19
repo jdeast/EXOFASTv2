@@ -710,7 +710,9 @@
 ;-
 pro exofastv2, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
-               fluxfile=fluxfile,mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,$
+               fluxfile=fluxfile,mistsedfile=mistsedfile,$
+               fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,fehsedfloor=fehsedfloor, oned=oned,$
+               teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
                prefix=prefix,$
                circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
                rossiter=rossiter,chen=chen,$
@@ -748,7 +750,8 @@ if lmgr(/vm) or lmgr(/runtime) then begin
    if not file_test(argfile) then message, argfile + ', containing desired arguments to EXOFASTv2, does not exist'
    readargs, argfile, priorfile=priorfile, $
              rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
-             fluxfile=fluxfile, mistsedfile=mistsedfile, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,$
+             fluxfile=fluxfile, mistsedfile=mistsedfile, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,$
+             teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
              prefix=prefix,$
              circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
              rossiter=rossiter,chen=chen,$
@@ -765,7 +768,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
              earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
              fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
-             skiptt=skiptt, novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, fittt=fittt, rvepoch=rvepoch
+             skiptt=skiptt, novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, fittt=fittt, rvepoch=rvepoch, logname=logname
 
 endif
 
@@ -825,7 +828,8 @@ if stderr[0] eq '' then printandlog, "Using EXOFASTv2 commit " + output[0], logn
 if nplanets ne 0 and keyword_set(refinestar) then begin
    printandlog, 'Refining stellar parameters', logname
    ss = mkss(fluxfile=fluxfile,mistsedfile=mistsedfile,$
-             fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,nplanet=0,priorfile=priorfile, $
+             fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanet=0,priorfile=priorfile, $
+             teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
              yy=yy, torres=torres, nomist=nomist, parsec=parsec, logname=logname, debug=stardebug, verbose=verbose)
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
    staronlybest = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
@@ -837,7 +841,8 @@ endif
 
 ;; create the master structure
 ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, $
-          mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,nplanets=nplanets, $
+          mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets, $
+          teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
           debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,$
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
@@ -928,7 +933,8 @@ if nthreads gt 1 then begin
 
       ;; create the stellar stucture within each thread
       thread_array[i].obridge->execute,'ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,'+ $
-         'mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,nplanets=nplanets,'+ $
+         'mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets,'+ $
+         'teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,'+$
          'debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,'+$
          'circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,'+$
          'ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,'+$
@@ -1069,8 +1075,6 @@ bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psna
 printandlog, 'The best loglike found by AMOEBA was ' + strtrim(-bestchi2/2d0,2), logname
 printandlog, 'It should only be compared against the loglike of the same model with different starting points', logname
 
-
-
 ;; do the MCMC fit
 if not keyword_set(bestonly) then begin
 
@@ -1096,7 +1100,7 @@ if not keyword_set(bestonly) then begin
    exofast_demcpt_multi, best, chi2func, pars, chi2=chi2,$
                    nthin=nthin,maxsteps=maxsteps, maxtime=maxtime, $
                    ntemps=ntemps, tf=tf, dontstop=dontstop, $
-                   burnndx=burnndx, seed=seed, randomfunc=randomfunc, $
+                   burnndx=burnndx, goodchains=goodchains, seed=seed, randomfunc=randomfunc, $
                    gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
                    stretch=stretch, logname=logname, angular=angular, $
                    keephot=keephot, hotpars=hotpars, hotchi2=hotchi2, thread_array=thread_array
@@ -1157,7 +1161,8 @@ ss.verbose = keyword_set(verbose)
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
 mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, $
-              mistsedfile=mistsedfile, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,nplanets=nplanets, $
+              mistsedfile=mistsedfile, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets, $
+              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
               debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
               circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
@@ -1172,6 +1177,7 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dt
 
 mcmcss.nchains = nchains
 mcmcss.burnndx = burnndx
+*(mcmcss.goodchains) = goodchains
 *(mcmcss.chi2) = chi2
 
 pars2str, pars, mcmcss
@@ -1228,7 +1234,8 @@ if (keyword_set(mcmcss.ttvs) or ~keyword_set(skiptt)) and mcmcss.ntran ne 0 then
    printandlog, 'Now generating a table of the numerically solved times of ', logname
    printandlog, 'minimum projected separation, depth, and impact parameters for',logname
    printandlog, 'each transit file. This may take a while, but can be done at any',logname
-   printandlog, 'point with the idl file and exofast_gettt', logname
+   printandlog, 'point with the following command:', logname
+   printandlog, "junk = exofast_gettt(filename='" + idlfile + "', filebase='" + prefix + "')", logname
    junk = exofast_gettt(mcmcss, filebase=prefix)
 
    if total(mcmcss.ttvs) gt 1 then begin
@@ -1241,10 +1248,16 @@ if (keyword_set(mcmcss.ttvs) or ~keyword_set(skiptt)) and mcmcss.ntran ne 0 then
       sorted = sort(planet)
       uniqplanets = planet[sorted[uniq(planet[sorted])]]
       for i=0L, n_elements(uniqplanets)-1 do begin
-         match = where(planet eq uniqplanets[i] and mcmcss.ttvs[*,i])
+         match = where(planet eq uniqplanets[i]); and mcmcss.ttvs[*,i])
          omc, time[match], err[match], telescope=telescope[match], epsname=prefix + uniqplanets[i] + '.ttv.eps', $
               period=median(mcmcss.planet[i].period.value), t0=median(mcmcss.planet[i].tc.value)
       endfor
+   endif
+   
+   ;; generate a plot of the tdeltavs 
+   ;; *** I think this breaks for multiple planets***
+   if total(mcmcss.tdeltavs) gt 1 then begin
+      plot_tdeltav, prefix + 'transits.csv'
    endif
 
 endif
