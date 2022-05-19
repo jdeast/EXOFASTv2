@@ -102,7 +102,7 @@ endif
 if thermal ne 0d0 or reflect ne 0d0 then begin
    planetvisible = dblarr(n_elements(time)) + 1d0
    if secondary[0] ne - 1 then begin
-      exofast_occultquad_cel, z[secondary]/p, 0, 0, 1d0/p, mu1
+      exofast_occultquad_cel, z[secondary]/abs(p), 0, 0, 1d0/p, mu1
       planetvisible[secondary] = mu1
    endif
 endif
