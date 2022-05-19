@@ -149,6 +149,10 @@ if nexpmeter ne 0 then begin
       message, "ERROR: The number of exposure meter values must be equal to the number of input times"
 endif
 
+;; Convert to JD_TDB (this will also update the time files)
+jdtdb = jdutc2jdtdb(jdutc, jd_tt=jd_tt, tbase=tbase)
+if keyword_set(tt) then jdtdb = jdutc + 67.184d0/86400
+
 ;; If SKIP_EOP not set, make sure iers_final_a.dat is correctly installed
 if not keyword_set(SKIP_EOP) then begin
    USE_EOP=1
@@ -159,19 +163,14 @@ if not keyword_set(SKIP_EOP) then begin
       if fileage gt 1.5d0 then begin
          print, 'WARNING: $ASTRO_DATA/iers_final_a.dat is out of date (' + $
                   strtrim(fileage,2) + $
-                  ' days old); see dependences. May cause errors up to 2 cm/s.'
+                  ' days old). May cause errors up to 2 cm/s'
       endif
    endif else begin
       print, 'WARNING: $ASTRO_DATA/iers_final_a.dat does not exist; '+$
-             'see dependencies. Will cause errors up to 2 cm/s'
+             'May cause errors up to 2 cm/s.'      
       USE_EOP=0
-   endelse 
+   endelse
 endif else USE_EOP=0
-
-;; Convert to JD_TDB
-jdtdb = jdutc2jdtdb(jdutc, jd_tt=jd_tt, tbase=tbase)
-
-if keyword_set(tt) then jdtdb = jdutc + 67.184d0/86400
 
 ;; retrieve the lat/lon/alt by name
 if keyword_set(obsname) then begin
