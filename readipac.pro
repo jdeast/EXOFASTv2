@@ -60,11 +60,13 @@ function readipac, update=update
 path = getenv('EXOFAST_PATH')
 if path eq '' then path = './'
 filename = path + 'planets.csv'
+url = 'https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+*+from+ps&format=csv'
+
 if not file_test(filename) or keyword_set(update) then begin
-   wgetname = 'nph-nstedAPI?table=exoplanets&format=csv&select=*'
     spawn, 'wget -P ' + path + $
-      ' "http://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/' + wgetname + '"',output,err,exit_status=status
+      ' "' + url + '"',output,err,exit_status=status
     if status ne 0 then message, strjoin(err,string(10B))
+    wgetname = 'sync?query=select+*+from+ps&format=csv'
     spawn, 'mv "' + path + wgetname + '" ' + filename
 endif
 
