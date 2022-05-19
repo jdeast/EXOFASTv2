@@ -63,7 +63,7 @@
 ; REVISION HISTORY:
 ;   2021/04/13 - Updated and documented, Jason Eastman (CfA)
 ;-
-pro updatetime, forceupdate=forceupdate
+pro updatetime, forceupdate=forceupdate, verbose=verbose
 
 path = getenv("ASTRO_DATA") + path_sep()
 
@@ -75,8 +75,10 @@ updatefile = path + 'exofast_lastupdate'
 if query_ascii(updatefile) then begin ;; if a valid ascii file
    lastupdated = (double((read_ascii(updatefile)).field1))[0]
    if ~keyword_set(forceupdate) and (now - lastupdated) lt 0.9d0 then begin
-      print, 'Last updated ' + strtrim(now - lastupdated,2) + ' days ago; skipping update'
-      print, 'Use /FORCEUPDATE to update anyway'
+      if keyword_set(verbose) then begin
+         print, 'Last updated ' + strtrim(now - lastupdated,2) + ' days ago; skipping update'
+         print, 'Use /FORCEUPDATE to update anyway'
+      endif
       return
    endif
 endif
@@ -90,7 +92,15 @@ bipm_filename = 'TTBIPM.' + strtrim(year-1,2)
 ;; Craig Markwardt's TAI_UTC was written around the USNO
 ;; format, which is no longer available
 ;; Recreate it based on the file maintained and hosted by IERS
-spawn, 'wget -NP $ASTRO_DATA https://hpiers.obspm.fr/iers/bul/bulc/ntp/leap-seconds.list'
+spawn, 'wget -NP $ASTRO_DATA https://hpiers.obspm.fr/iers/bul/bulc/ntp/leap-seconds.list', output,err
+for i=0L, n_elements(err)-1 do begin
+   if strpos(err[i], "Not Found") ne -1 then begin
+      message, '************************************************************************************************************',/continue
+      message, 'Error updating leap second data. They probably moved it. Again. Please contact jason.eastman@cfa.harvard.edu',/continue
+      message, '************************************************************************************************************'
+   endif
+endfor
+
 readcol, path + 'leap-seconds.list', ntp_time, dtai, format='d,d', comment='#',/silent
 info = file_info(path+'leap-seconds.list')
 caldat, julday(1,1,1970,0,0,info.mtime), leapmo, leapday, leapyr, leaphr, leapmin, leapsec
@@ -116,8 +126,6 @@ exofast_printf, lun, ' 1968 FEB  1 =JD 2439887.5  TAI-UTC=   4.2131700 S + (MJD 
 fmt2 = '(i5,x,a3,x,i2," =JD ", f9.1,"  TAI-UTC=",f6.1,"       S + (MJD - 41317.) X 0.0      S ")'
 for i=0L, n_elements(year)-1 do $
    exofast_printf, lun, string(year[i], monthstrs[month[i]], day[i], jd[i], dtai[i],format=fmt2), filename=taifile
-
-
 
 ;exofast_printf, lun, '; Source: $EXOFAST_PATH/updatetime.pro', filename=taifile,/new
 ;exofast_printf, lun, '; Updated: ' + nowstr, filename=taifile
@@ -145,13 +153,28 @@ for i=0L, n_elements(year)-1 do $
 ;                       format='(i6,i4,i5,f7.1,a15,a5)'), filename=taifile
 
 ;; small corrections (ms)
-spawn, 'wget --ftp-user=anonymous -NP ' + path + ' https://datacenter.iers.org/data/latestVersion/finals.all.iau2000.txt'
-file_copy, path + 'finals.all.iau2000.txt', path + 'iers_final_a.dat', /overwrite
+url = 'https://datacenter.iers.org/data/latestVersion/9_FINALS.ALL_IAU2000_V2013_019.txt'
+spawn, 'wget --ftp-user=anonymous -NP ' + path + ' ' + url, output, err
+for i=0L, n_elements(err)-1 do begin
+   if strpos(err[i], "Not Found") ne -1 then begin
+      message, '****************************************************************************************************',/continue
+      message, 'Error updating EOP data. They probably moved it. Again. Please contact jason.eastman@cfa.harvard.edu',/continue
+      message, '****************************************************************************************************'
+   endif
+endfor
+file_copy, path + file_basename(url), path + 'iers_final_a.dat', /overwrite
 
 ;; smallest correction from TT(TAI) to TT(BIPM) (microseconds)
 ;; only available months after the time in question
 bipm_url = 'https://webtai.bipm.org/ftp/pub/tai/ttbipm/'
-spawn, 'wget --ftp-user=anonymous -NP ' + path + ' ' + bipm_url + bipm_filename
+spawn, 'wget --ftp-user=anonymous -NP ' + path + ' ' + bipm_url + bipm_filename, output, err
+for i=0L, n_elements(err)-1 do begin
+   if strpos(err[i], "Not Found") ne -1 then begin
+      message, '*****************************************************************************************************',/continue
+      message, 'Error updating BIPM data. They probably moved it. Again. Please contact jason.eastman@cfa.harvard.edu',/continue
+      message, '*****************************************************************************************************'
+   endif
+endfor
 file_copy, path + bipm_filename, path + 'bipmfile', /overwrite
 
 ;; update the "last updated" file to now
