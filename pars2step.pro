@@ -17,9 +17,12 @@ if ss.star.mstar.userchanged then begin
 endif
 ss.star.mstar.value = 10^ss.star.logmstar.value
 
-;; derive teff, teffsed
+;; derive teff, teffsed, feh, fehsed
 if ss.star.teffsed.userchanged and ~ss.star.teff.userchanged then ss.star.teff.value = ss.star.teffsed.value
 if ss.star.teff.userchanged and ~ss.star.teffsed.userchanged then ss.star.teffsed.value = ss.star.teff.value
+if ss.star.fehsed.userchanged and ~ss.star.feh.userchanged then ss.star.feh.value = ss.star.fehsed.value
+if ss.star.feh.userchanged and ~ss.star.fehsed.userchanged then ss.star.fehsed.value = ss.star.feh.value
+if ss.star.feh.userchanged and ~ss.star.initfeh.userchanged then ss.star.initfeh.value = ss.star.feh.value
 
 ;; derive rstar, rstarsed
 if ss.star.rstarsed.userchanged and ~ss.star.rstar.userchanged then begin
@@ -171,20 +174,19 @@ for i=0, ss.nplanets-1 do begin
       ss.planet[i].omega.userchanged = 1B
    endif
 
-
-
    ;; how did the user seed omega?
    if ss.planet[i].omega.userchanged then begin
       ;; do nothing
    endif else if ss.planet[i].omegadeg.userchanged then begin
+      ;; translate degrees to radians
       ss.planet[i].omega.value = ss.planet[i].omegadeg.value*!pi/180d0
       if ss.planet[i].omegadeg.scale ne 0d0 then $
          ss.planet[i].omega.scale = ss.planet[i].omegadeg.scale*!pi/180d0
-   endif else if ss.planet[i].lsinw.userchanged or ss.planet[i].lsinw2.userchanged or ss.planet[i].lcosw.userchanged then begin
-      if ss.planet[i].lsinw2.userchanged then begin
-         if ss.planet[i].vcve.value lt 1d0 then ss.planet[i].lsinw.value = -ss.planet[i].lsinw2.value $
-         else ss.planet[i].lsinw.value = ss.planet[i].lsinw2.value
-      endif
+   endif else if ss.planet[i].lsinw.userchanged or ss.planet[i].lcosw.userchanged then begin
+      ;; translate Lcosw/Lsinw to omega
+;      if ss.planet[i].lsinw2.userchanged then begin
+;         ss.planet[i].lsinw.value = ss.planet[i].lsinw2.value
+;      endif
       ss.planet[i].omega.value = atan(ss.planet[i].lsinw.value,ss.planet[i].lcosw.value)
       ss.planet[i].omega.userchanged = 1B
    endif
@@ -193,6 +195,7 @@ for i=0, ss.nplanets-1 do begin
    if ss.planet[i].e.userchanged then begin
       ;; do nothing
    endif else if ss.planet[i].vcve.userchanged then begin
+
       ;; pick the omega that maximizes the range of vcve
       if ~ss.planet[i].omega.userchanged then begin
          if ss.planet[i].vcve.value le 1d0 then ss.planet[i].omega.value = !dpi/2d0 $
@@ -200,17 +203,9 @@ for i=0, ss.nplanets-1 do begin
          ss.planet[i].omega.userchanged = 1B
       endif
 
+;      if ss.planet[i].sign2.userchanged then begin
       if ss.planet[i].sign.userchanged then begin
          sign = floor(ss.planet[i].sign.value)
-         if ss.planet[i].vcve.value lt 1d0 then sign = ~sign
-      endif
-
-      ;; derive e (pick the sign if not chosen)
-      ss.planet[i].e.value = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=sign)
-      if ~ss.planet[i].sign.userchanged then begin
-         sign = floor(sign)
-         if ss.planet[i].vcve.value lt 1d0 then sign = ~sign
-         ss.planet[i].sign.value = sign + 0.5d0
       endif
 
       ;; rederive lsinw/lcosw
@@ -218,11 +213,12 @@ for i=0, ss.nplanets-1 do begin
          if floor(ss.planet[i].sign.value) then L = sqrt(0.75d0) $
          else L = sqrt(0.25d0)
          ss.planet[i].lsinw.value = L*sin(ss.planet[i].omega.value)
-         if ss.planet[i].vcve.value - 1d0 lt 0d0 then begin
-            ss.planet[i].lsinw2.value = -L*sin(ss.planet[i].omega.value)
-         endif else ss.planet[i].lsinw2.value = L*sin(ss.planet[i].omega.value)
          ss.planet[i].lcosw.value = L*cos(ss.planet[i].omega.value)
       endif
+
+      ;; derive e (pick the sign if not chosen)
+      ss.planet[i].e.value = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=sign)
+      ss.planet[i].sign.value = sign
 
    endif 
 
@@ -239,32 +235,45 @@ for i=0, ss.nplanets-1 do begin
    if ~ss.planet[i].esinw.userchanged then ss.planet[i].esinw.value = ss.planet[i].e.value*sin(ss.planet[i].omega.value)
    if ~ss.planet[i].vcve.userchanged then ss.planet[i].vcve.value = sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
 
-   ;; need to set the sign to recover desired e
-   if ~ss.planet[i].sign.userchanged then begin
+   ;; if the user sets e or omega, 
+   ;; we need to make sure our combination of vcve/lcosw/lsinw/lsinw2/sign will recover it
+   e1 = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=0B)
+   e2 = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=1B)
+  
+   if abs(ss.planet[i].e.value - e1) lt 1d-8 then ss.planet[i].sign.value = 0.5 $
+   else if abs(ss.planet[i].e.value - e2) lt 1d-8 then ss.planet[i].sign.value = 1.5 $
+   else begin
+      printandlog, 'ERROR translating staring e and omega to parameterization', ss.logname
+      stop
+   endelse
 
-      e1 = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=0B)
-      e2 = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=1B)
-
-      if abs(ss.planet[i].e.value - e1) lt 1d-8 then ss.planet[i].sign.value = 0.5 $
-      else if abs(ss.planet[i].e.value - e2) lt 1d-8 then ss.planet[i].sign.value = 1.5 $
-      else begin
-         printandlog, 'ERROR translating staring e and omega to parameterization', ss.logname
-         stop
-      endelse
-      if ss.planet[i].vcve.value lt 1d0 then ss.planet[i].sign.value = ~floor(ss.planet[i].sign.value) + 0.5
-
-   endif
-
-   ;; rederive lsinw/lcosw
    if ~ss.planet[i].lsinw.userchanged and ~ss.planet[i].lcosw.userchanged then begin
       if floor(ss.planet[i].sign.value) then L = sqrt(0.75d0) $
       else L = sqrt(0.25d0)
       ss.planet[i].lsinw.value = L*sin(ss.planet[i].omega.value)
-      if ss.planet[i].vcve.value -1d0 lt 0d0 then begin
-         ss.planet[i].lsinw2.value = -L*sin(ss.planet[i].omega.value)
-      endif else ss.planet[i].lsinw2.value = L*sin(ss.planet[i].omega.value)
       ss.planet[i].lcosw.value = L*cos(ss.planet[i].omega.value)
    endif
+
+if 0 then begin
+   sign = floor(ss.planet[i].sign2.value)
+   if ss.planet[i].vcve.value lt 1d0 and ss.planet[i].lsinw.value le 0d0 and sign then begin
+      ;; then I need lsinw to be negative and lsinw2 to be positive
+      ss.planet[i].lsinw2.value = -ss.planet[i].lsinw.value
+      ;; and I need sign to be > 1
+      ss.planet[i].sign2.value = 0.5d0
+   endif else if ss.planet[i].vcve.value ge 1d0 and ss.planet[i].lsinw.value gt 0d0 and ~sign then begin
+      ;; then I need lsinw to be positive and lsinw2 to be negative
+      ss.planet[i].lsinw2.value = -ss.planet[i].lsinw.value
+      ;; and I need sign to be > 1
+      ss.planet[i].sign2.value = 0.5d0
+   endif else begin
+      ss.planet[i].sign2.value = ss.planet[i].sign.value
+      ss.planet[i].lsinw2.value = ss.planet[i].lsinw.value
+   endelse
+endif else begin
+      ss.planet[i].sign2.value = ss.planet[i].sign.value
+      ss.planet[i].lsinw2.value = ss.planet[i].lsinw.value
+endelse
 
    ;; how did the user seed rp/rstar?
    if ss.planet[i].p.userchanged then begin
