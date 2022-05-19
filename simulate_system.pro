@@ -3,14 +3,19 @@ pro simulate_system, minecc=minecc, maxecc=maxecc, ecc=ecc,$
                      mininitfeh=mininitfeh, maxinitfeh=maxinitfeh, initfeh=initfeh,$
                      mineep=mineep, maxeep=maxeep, eep=eep,$
                      minmstar=minmstar, maxmstar=maxmstar, mstar=mstar,$
+                     rstar=rstar,$
                      minmp=minmp, maxmp=maxmp, mp=mp,$
-                     minlogp=minlogp, maxlogp=maxlogp, logp=logp,$
+                     rp=rp,$
+                     minperiod=minperiod, maxperiod=maxperiod, period=period,$
                      mintc=mintc, maxtc=maxtc, tc=tc, $
                      mincosi=mincosi, maxcosi=maxcosi, cosi=cosi,$
                      nograzing=nograzing, neednottransit=neednottransit, i180=i180, $
                      mintime=mintime, maxtime=maxtime, cadence=cadence,$
-                     maxiter=maxiter, prefix=prefix
+                     maxiter=maxiter, prefix=prefix, err=err
 
+;; j85 
+;simulate_system, ecc=0d0, omega=!dpi/2d0, initfeh=0.05d0,eep=353.4d0,mstar=1d0,mp=1d0,period=13d00,tc=0d0,cosi=0.037111069d0, err=0.010854d0
+;simulate_system, ecc=0d0,omega=!dpi/2d0,initfeh=0.05d0,eep=353.4d0,mstar=1d0,mp=1d0,tc=0d0,err=0.01d0, mintime=-0.17361111d0, maxtime=0.17361111d0, cadence=1d0, period=29.433d00,cosi=0.021523324d0
 
 ;; define some physical constants
 constants = mkconstants()
@@ -85,7 +90,7 @@ if n_elements(maxtime) ne 1 then maxtime = mintime + 365.25d0
 if n_elements(mintc) ne 1 then mintc = mintime
 if n_elements(maxtc) ne 1 then maxtc = maxtime
 if n_elements(tc) ne 1 then tc0 = (mintime+maxtime)/2d0 + (randomu(seed)-0.5d0)*period $
-else t0 = tc
+else tc0 = tc
 
 ;; create a filename
 if n_elements(filename) ne 1 then begin
@@ -100,7 +105,10 @@ tp = tc0 - period0*phase
 
 ;; derive Rstar, Teff, [Fe/H] based on MIST stellar evolutionary models
 junk = massradius_mist(eep0, mstar0, initfeh0, 0.5d0, 6000d0, 1d0, 0d0, $
-                       mistrstar=rstar, mistteff=teff, mistfeh=feh, mistage=age)
+                       mistrstar=mistrstar, mistteff=teff, mistfeh=feh, mistage=age)
+;print, rstar, teff, feh, age
+if n_elements(rstar) ne 0 then rstar0 = rstar $
+else rstar0 = mistrstar
 
 ;; if the star is older than the universe, draw again
 if age gt 13.86d0 then goto, restart
@@ -108,19 +116,22 @@ if age gt 13.86d0 then goto, restart
 ;; derive quadratic limb darkening parameters in TESS band based on
 ;; Claret tables and stellar values
 if n_elements(band) ne 1 then band = 'TESS'
-logg = alog10(mstar0/(rstar^2)*constants.gravitysun)
+logg = alog10(mstar0/(rstar0^2)*constants.gravitysun)
 coeffs = quadld(logg, teff, feh, band)
 u1 = coeffs[0]
 u2 = coeffs[1]
 
 ;; derive Rplanet based on Chen & Kipping and Mplanet
 mpsun = mp0*mjup                              ;; m_sun
-rpsun = massradius_chen(mpsun/mearth)*rearth  ;; in r_sun
-p = rpsun/rstar
+
+if n_elements(rp) eq 0 then rpsun = massradius_chen(mpsun/mearth)*rearth $ ;; in r_sun
+else rpsun = rp*rjup
+p = rpsun/rstar0
 
 ;; derive semi-major axis based on Kepler's law
+print, mpsun, period0, mstar0
 a = (period0^2*G*(mpsun+mstar0)/(4d0*!dpi^2))^(1d0/3d0) ;; r_sun
-ar = a/rstar
+ar = a/rstar0
 
 ;; not physical -- collides with star
 if ecc0 gt 1d0 - (rstar+rpsun)/a then goto, restart
@@ -147,6 +158,7 @@ inc = acos(cosi0)
 ;; transit duration
 b = ar*cosi0*(1d0-ecc0^2)/(1d0+ecc0*sin(omega0))
 t14 = period0/!dpi*asin(sqrt((1d0+p)^2 - b^2)/(sin(inc)*ar))*sqrt(1d0-ecc0^2)/(1d0+ecc0*sin(omega0))
+tfwhm = period0/!dpi*asin(sqrt(1d0 - b^2)/(sin(inc)*ar))*sqrt(1d0-ecc0^2)/(1d0+ecc0*sin(omega0))
 
 ;; derive RV semi-amplitude (m/s)
 k = (2d0*!dpi*Gmsun/(period0*86400d0*(mstar0+mpsun)^2))^(1d0/3d0)*mpsun*sin(inc)/sqrt(1d0-ecc0^2) ;; m/s
@@ -182,17 +194,23 @@ printf, lun, f0, format='("f0 ",f0.8)'
 free_lun, lun
 
 ;; create a tess 2-minute cadence LC
-npoints = (maxtime-mintime)*24d0*30d0+1
+if n_elements(cadence) eq 0 then cadence = 2d0
+npoints = (maxtime-mintime)*24d0*60d0/cadence+1
 
 ;; this is the emitted time
-emitted_time = mintime + dindgen(npoints)/(npoints-1)*365.25d0 ;; 1 year of 2 minute cadence continuously
+;emitted_time = mintime + dindgen(npoints)/(npoints-1)*365.25d0 ;; 1 year of 2 minute cadence continuously
+emitted_time = mintime + (maxtime-mintime)*dindgen(npoints)/(npoints-1) ;; 1 year of 2 minute cadence continuously
 q = mstar0/mpsun
 
 ;; convert times from target frame to observed (SSB) frame 
 ;; (they'll be converted back by exofast_tran)
 observed_time = target2bjd(emitted_time, inc=inc, a=a,tp=tp, period=period0, e=ecc0, omega=omega0, q=q)
+observed_time = observed_time - (observed_time[0]-emitted_time[0])
 
 lc = exofast_tran(observed_time, inc, ar, tp, period0, ecc0, omega0, p, u1, u2, f0, rstar=rstar/au, q=q, au=au, c=c, tc=tc0, reflect=0d0, dilute=0d0, thermal=0d0)
+
+;print, inc*180d0/!dpi, ar, tp, ecc0, omega0, p, u1, u2, f0, rstar
+;print, ar*cosi
 
 ;; add scatter to the LC                                                                                                           
 if n_elements(err) eq 0 then err = 20d0/1d6
@@ -203,14 +221,17 @@ filename = path + 'n20190101.TESS.TESS.dat'
 forprint, observed_time, lc, replicate(err,npoints), format='(f0.6,x,f0.9,x,f0.9)', /nocomment, textout=filename
          
 ;; chop out the regions around the transit and save that
-phase = (tesstime - tc) mod period
-toohigh = where(phase gt period/2d0)
-if toohigh[0] ne -1 then phase[toohigh] -= period
-toolow = where(phase lt -period/2d0)
-if toolow[0] ne -1 then phase[toolow] += period
+phase = (observed_time - tc) mod period0
+toohigh = where(phase gt period0/2d0)
+if toohigh[0] ne -1 then phase[toohigh] -= period0
+toolow = where(phase lt -period0/2d0)
+if toolow[0] ne -1 then phase[toolow] += period0
 keep = where(abs(phase) lt t14)
 forprint, observed_time[keep], lc[keep], replicate(err,n_elements(keep)), format='(f0.6,x,f0.9,x,f0.9)', /nocomment, textout=filename+'.chopped'
 
-;; TODO: make simulated RV/astrometric/SED/DT models...
+print, t14*24d0, tfwhm*24d0, ar*cosi, 0.85/ar
 
+
+;; TODO: make simulated RV/astrometric/SED/DT models...
+stop
 end
