@@ -208,7 +208,7 @@ pro exofast_demcpt_multi, bestpars,chi2func,pars,chi2=chi2, tofit=tofit,$
                     keephot=keephot, hotpars=hotpars, allhotpars=allhotpars, hotchi2=hotchi2, $
                     dontstop=dontstop,$
                     nchains=nchains, angular=angular,$
-                    burnndx=burnndx, removeburn=removeburn, $
+                    burnndx=burnndx, removeburn=removeburn, goodchains=goodchains,$
                     gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
                     derived=derived, resumendx=resumendx,stretch=stretch, logname=logname, acceptancerate=acceptancerate,$
                     thread_array=thread_array
@@ -307,7 +307,6 @@ endif else begin
    ;; get the MCMC step scale for each parameter
    if n_elements(scale) eq 0 then $
       scale = exofast_getmcmcscale(bestpars,chi2func,tofit=tofit,angular=angular,/skipiter,logname=logname)
-
    if scale[0] eq -1 then begin
       printandlog, 'No scale found',logname
       pars = -1
@@ -325,7 +324,8 @@ endif else begin
             ;; start 5 steps from best value. If that's not allowed
             ;; (infinite chi^2), slowly approach 0 steps away from the best value
             ;; niter should never be larger than ~5000
-            if j eq 0 then factor = 0d0 else factor = (sqrt(500d0/nfit) > 3d0) ;; first chain starts at best fit
+;            if j eq 0 then factor = 0d0 else factor = (sqrt(500d0/nfit) > 3d0) ;; first chain starts at best fit
+            if j eq 0 then factor = 0d0 else factor = (sqrt(500d0/nfit) < 3d0) ;; first chain starts at best fit
             oldpars[*,j,m] = bestpars[tofit] + $
                              factor/exp(niter/1000d)*scale*call_function(randomfunc,seed,nfit,/normal)
             
@@ -333,7 +333,6 @@ endif else begin
             ;; find the chi^2
             oldchi2[j,m] = call_function(chi2func, newpars, determinant=det, derived=dpar)
             niter += 1
-
          endrep until finite(oldchi2[j,m])
 
          if n_elements(dpar) ne 0 then oldderived[*,j,m] = dpar
@@ -435,6 +434,7 @@ for i=resumendx,maxsteps-1L do begin
                                           (call_function(randomfunc,seed,nfit)-0.5d0)*scale/10d0)
                   
                   fac = 1d0
+
                endelse 
                
                ;; calculate the chi^2 of the new step
@@ -504,6 +504,12 @@ for i=resumendx,maxsteps-1L do begin
                   exofast_callback, olddet, oldpars, oldchi2, oldderived, nderived, $
                                     nswap, naccept, temps, randomfunc, swapped, det=det, $
                                     dpar=dpar, newchi2=newchi2, fac=fac, j=j, m=m, newpars=newpars
+
+;                  print, newpars
+;                  print, oldpars[*,j]
+;                  print, newchi2, oldchi2[j]
+;stop
+
                endelse
                nattempt++
             endelse
@@ -622,6 +628,7 @@ for i=resumendx,maxsteps-1L do begin
       ;; must pass 6 consecutive times
       if converged then begin
          if nstop eq 0 then nstop = i
+         nstop = i
          nextrecalc = long(nstop/(1.d0-npass/100.d0))
          npass++
          if npass eq 6 then begin
@@ -657,8 +664,10 @@ for i=resumendx,maxsteps-1L do begin
    endif
 
    ;; Windows formatting is messy, only output every 1%
-   if !version.os_family ne 'Windows' or $
-      i mod round(maxsteps/1000d0) eq 0 then begin
+if 1 then begin
+;   if !version.os_family ne 'Windows' or (i eq resumendx) then begin
+;   if !version.os_family ne 'Windows' or $
+;      ((i+1) mod round(maxsteps/1000d0) eq 0) or (i eq resumendx) then begin
 
       if ntemps gt 1 then begin
          format='("EXOFAST_DEMC: ",f0.2,"% done; acceptance rate = ",a,"%; swap rate = ",a,"%; ' + $ 
@@ -684,25 +693,30 @@ for i=resumendx,maxsteps-1L do begin
          endif
       endelse
    endif
-
+   
 endfor
 printandlog, '', logname ;; don't overwrite the final line
 printandlog, '', logname ;; now just add a space
 
-;; it doesn't necessarily stop at MAXSTEPS if it was interrupted or converged early
-nstop = i-1L
+;; JDE 4/1/2022 -- this isn't right. 
+;; if nstop < maxsteps (typical), it breaks the loop without incrementing i
+;; this line would remove the last step in most cases
+;nstop = i-1L 
+nstop = (i < (maxsteps-1))
 
-burnndx = getburnndx(chi2[0:nstop,*],goodchains=goodchains, /silent)
+burnndx = getburnndx(chi2[0:nstop,*],goodchains=goodchains, logname=logname)
 ngood = n_elements(goodchains)
 
 ;; if there are bad chains, is it better without them?
 ;; (it usually is unless it's a very short run)
 if ngood ne nchains or npass ne 6 then begin
+
    ;; are all the chains mixed?
    converged = exofast_gelmanrubin(pars[0:nfit-1,burnndx:nstop,*],$
                                    gelmanrubin1,tz1,angular=gelmanangular, $
                                    maxgr=maxgr, mintz=mintz)
    
+   ;; ngood is required to be > 2....
    if ngood gt 2 then begin
       converged2 = exofast_gelmanrubin(pars[0:nfit-1,burnndx:nstop,goodchains],$
                                        gelmanrubin2,tz2,angular=gelmanangular, $
@@ -711,16 +725,20 @@ if ngood ne nchains or npass ne 6 then begin
       if bad[0] ne -1 then extrabad = where(tz2[bad] lt tz1[bad] or $
                                             gelmanrubin2[bad] gt gelmanrubin1[bad]) $
       else extrabad = -1
-
+      
    endif else begin
+      ;; this should never execute
       bad = where(tz1 lt mintz or gelmanrubin1 gt maxgr)
       extrabad = -1
+      printandlog, 'There were less than three bad chains, which should not be possible.',logname 
    endelse
-
+   
    if bad[0] eq -1 then begin
       if npass ne 6 then printandlog, 'Chains are marginally well-mixed',logname $
-      else printandlog,'All chains are mixed, but some chains never got below '+$
-            'the median chi^2. Is this even possible?',logname
+      else begin
+         printandlog,'Some chains never got below the median chi^2 and have been discarded before inference.',logname
+         printandlog,'Starting a new fit at the best-fit found here may remove this message.',logname
+      endelse
    endif else if extrabad[0] eq -1 and ngood ne nchains and ngood gt 2 then begin
       ;; without errant chains, it's better
       printandlog, 'Discarding ' + strtrim(round(nchains-ngood),2) + '/'+$
@@ -746,9 +764,10 @@ if ngood ne nchains or npass ne 6 then begin
    if n_elements(tz) eq 0 then tz=tz1
 endif
 
-;; remove the burn-in/uncalculated parameters
-;; keep them by default so people can do their own analysis
+;; remove the uncalculated parameters if terminated early
+;; we keep the burn in by default so people can do their own analysis
 if keyword_set(removeburn) then begin
+   ;; but remove the burn-in if /REMOVEBURN is set
    pars = pars[*,burnndx:nstop,*]
    chi2 = chi2[burnndx:nstop,*]
    if n_elements(derived) ne 0 then derived = derived[*,burnndx:nstop,*]
