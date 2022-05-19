@@ -35,10 +35,10 @@ return,[u,sigu,v,sigv,b,sigb,y,sigy]
 
 end
 
-pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile, france=france
+pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile, france=france, ra=ra, dec=dec
 
-if keyword_set(france) then cfa = 0B $
-else cfa = 1B
+if !version.os_family eq 'Windows' then $
+   message,'This program relies on queryvizier, which is not supported in Windows'
 
 ;; for use without a license
 if lmgr(/vm) or lmgr(/runtime) then begin
@@ -50,10 +50,28 @@ if lmgr(/vm) or lmgr(/runtime) then begin
          entries = strsplit(par[i],'=',/extract)
          if strupcase(entries[0]) eq 'PRIORFILE' then priorfile = strtrim(entries[1],2)
          if strupcase(entries[0]) eq 'SEDFILE' then sedfile = strtrim(entries[1],2)
+         if strupcase(entries[0]) eq 'FRANCE' then france = long(entries[1])
+         if strupcase(entries[0]) eq 'RA' then ra = double(entries[1])
+         if strupcase(entries[0]) eq 'DEC' then dec = double(entries[1])
       endif
    endfor
 endif
 
+if keyword_set(france) then cfa = 0B $
+else cfa = 1B
+
+;; match RA/Dec to TICv8 (closest)
+if n_elements(ra) ne 0 and n_elements(dec) ne 0 then begin
+   print, 'WARNING: querying by RA/Dec is less robust than querying by TIC ID and may lead to misidentification'   
+   qtic = exofast_queryvizier('IV/38/tic',[ra,dec],2d0, /silent, /all, cfa=cfa)
+   if (size(qtic))[2] ne 8 then begin
+      print, 'No match to ' + string(ra,dec,format='(f0.8,",",f0.8)')
+      return
+   endif
+   junk = min(qtic._r,ndx)
+   ticid = qtic[ndx].tic
+   print, 'Matching TIC ID is ' + strtrim(ticid,2)
+endif
 
 if n_elements(ticid) eq 0 then message, 'TICID is required'
 if n_elements(priorfile) eq 0 then priorfile = ticid + '.priors'
@@ -158,7 +176,20 @@ if (size(qgaia))[2] eq 8 then begin
             sigma_s = 0.043d0
          endelse
          printf, priorlun, "# NOTE: the Gaia DR2 parallax (" + strtrim(qgaia.plx,2) + ") and uncertainty (" + strtrim(qgaia.e_plx,2) + ") has been corrected as prescribed in Lindegren+ (2018)"
-         printf, priorlun, qgaia.plx + 0.030d0, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("parallax",x,f0.5,x,f0.5)'
+         corrected_plx = qgaia.plx + 0.030d0
+         if corrected_plx gt 0d0 then begin
+            printf, priorlun, corrected_plx, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("parallax",x,f0.5,x,f0.5)'
+         endif else begin
+            printf, priorlun, '# WARNING: Negative parallax is not allowed. This is the corrected (but disallowed) parallax'
+            printf, priorlun, corrected_plx, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("#parallax",x,f0.5,x,f0.5)'
+            upperlimit = corrected_plx + 3d0*sqrt((k*qgaia.e_plx)^2 + sigma_s^2)
+            if upperlimit gt 1d-3 then begin
+               printf, priorlun, '# Applying a 3-sigma upper limit instead'
+               printf, priorlun, upperlimit, format='("parallax 0.001 -1 0 ",f0.5)'
+            endif else begin
+               printf, priorlun, '# 3-sigma upper limit is still negative, ignoring parallax'
+            endelse
+         endelse
       endif      
 
       if qgaia.gmag gt -9 and finite(qgaia.e_gmag) and (qgaia.e_gmag lt 1d0) then printf, lun,'Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
