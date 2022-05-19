@@ -28,6 +28,9 @@ if i ge maxiter then begin
    good = where(abs(thetanew - thetaold) lt tol,complement=bad)
    if bad[0] ne -1 then begin
       nbad = n_elements(bad)
+      print, "these parameter combinations are not converging after " + strtrim(maxiter,2) + " iterations:"
+      
+      print, '       BJD_TDB                          e                 inc (radians)          omega (radians)         period (days)          theta_new              theta_old                diff'
       for j=0L, nbad-1 do begin
          print, time[bad[j]], e[bad[j]], inc[bad[j]], omega[bad[j]], $
                 period[bad[j]], thetanew[bad[j]], thetaold[bad[j]],$
