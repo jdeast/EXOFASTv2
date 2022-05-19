@@ -69,30 +69,45 @@ for i=0, ss.nplanets-1 do begin
       ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
    endif else if ss.planet[i].vcve.fit then begin
 
-      if ss.planet[i].lsinw2.fit then begin
-         if (ss.planet[i].vcve.value-1d0 lt 0) then $
-            ss.planet.lsinw.value = -ss.planet.lsinw2.value $
-         else ss.planet.lsinw.value = ss.planet.lsinw2.value
-      endif
-
-      ;; based on L*cos(omega) and L*sin(omega)
-      if (ss.planet[i].lsinw2.fit or ss.planet[i].lsinw.fit) and ss.planet[i].lcosw.fit then begin
-         ss.planet[i].omega.value = atan(ss.planet[i].lsinw.value, ss.planet[i].lcosw.value)
-      endif
-
       ;; what sign of the quadratic solution?
+;      if ss.planet[i].sign2.fit then begin
       if ss.planet[i].sign.fit then begin
          ;; we fit for it
          sign = floor(ss.planet[i].sign.value)
-         ;; ****** this flips the sign of the sign and is experimental*******
-         if ss.planet[i].vcve.value lt 1d0 then sign = ~sign
       endif else begin
          ;; L implicitly defines it
          lsq = ss.planet[i].lsinw.value^2 + ss.planet[i].lcosw.value^2
          sign = (lsq ge 0.5d0) ;; if L^2 >= 0.5, use the positive solution to the quadratic!
       endelse
 
-      ss.planet[i].e.value = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=sign)
+if 0 then begin
+      ;; this ensures continuity across the vcve=1 boundary 
+      ;; (as much as physically possible)
+      if ss.planet[i].lsinw2.fit then begin
+         if ss.planet[i].vcve.value gt 1d0 and ss.planet[i].lsinw2.value ge 0 and ~sign then begin
+            ss.planet[i].lsinw.value = -ss.planet[i].lsinw2.value
+            ss.planet[i].sign.value = ss.planet[i].sign2.value + 1d0
+         endif else if ss.planet[i].vcve.value le 1d0 and ss.planet[i].lsinw2.value lt 0 and sign then begin
+            ss.planet[i].lsinw.value = -ss.planet[i].lsinw2.value
+            ss.planet[i].sign.value = ss.planet[i].sign2.value - 1d0
+         endif else begin 
+            ss.planet[i].lsinw.value = ss.planet[i].lsinw2.value
+            ss.planet[i].sign.value = ss.planet[i].sign2.value
+         endelse
+      endif
+endif else begin
+;   ss.planet[i].lsinw.value = ss.planet[i].lsinw2.value
+;   ss.planet[i].sign.value = ss.planet[i].sign2.value
+endelse
+
+      ;; based on L*cos(omega) and L*sin(omega)
+;if (ss.planet[i].lsinw2.fit or ss.planet[i].lsinw.fit) and ss.planet[i].lcosw.fit then begin
+      if ss.planet[i].lsinw.fit and ss.planet[i].lcosw.fit then begin
+         ss.planet[i].omega.value = atan(ss.planet[i].lsinw.value, ss.planet[i].lcosw.value)
+      endif
+
+      ss.planet[i].e.value = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=floor(ss.planet[i].sign.value))
+
       if ~finite(ss.planet[i].e.value) or ss.planet[i].e.value lt 0d0 or ss.planet[i].e.value ge 1d0 then begin
          if keyword_set(verbose) then printandlog, 'e is not in range', logname
          return, -1   
@@ -185,7 +200,9 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].bs.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value)  ;; eq 8, Winn 2010
 
    ;; TC2TT can fail at weird inclinations; do this rejection here (instead of exofast_chi2v2.pro) 
-   if ss.fittran[i] and (abs(ss.planet[i].b.value) gt (1d0 + ss.planet[i].p.value)) and (abs(ss.planet[i].bs.value) gt (1d0 + ss.planet[i].p.value)) then begin
+   ;; if fitting TT, a primary transit is required (TT->TC conversion may fail if there is no transit). 
+   ;; Otherwise, we need a primary or secondary transit (or the MCMC will be hopelessly lost)
+   if ss.fittran[i] and (abs(ss.planet[i].b.value) gt (1d0 + ss.planet[i].p.value)) and ((abs(ss.planet[i].bs.value) gt (1d0 + ss.planet[i].p.value) or ss.planet[i].tt.fit)) then begin
       if keyword_set(verbose) then printandlog, 'planet does not transit; rejecting step', logname
       return, -1
    endif else if ss.planet[i].cosi.value lt 0 and ~ss.planet[i].i180 then begin
