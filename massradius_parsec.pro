@@ -66,7 +66,13 @@ function massradius_parsec, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=v
                             epsname=epsname, debug=debug,gravitysun=gravitysun,$
                             fitage=fitage, ageweight=ageweight, $
                             verbose=verbose, logname=logname, $
-                            trackfile=trackfile, allowold=allowold, zxsun=zxsun
+                            trackfile=trackfile, allowold=allowold, zxsun=zxsun,$
+                            tefffloor=tefffloor, fehfloor=fehfloor, rstarfloor=rstarfloor, agefloor=agefloor
+
+if n_elements(tefffloor) eq 0 then tefffloor = -1
+if n_elements(fehfloor) eq 0 then fehfloor = -1
+if n_elements(rstarfloor) eq 0 then rstarfloor = -1
+if n_elements(agefloor) eq 0 then agefloor = -1
 
 ;massradius_parsec(398.26676d,1d0,0d0,4.593d0,5800d0,1d0,parsec_age=parsec_age, parsec_rstar=parsec_rstar, parsec_teff=parsec_teff) & print, parsec_age, parsec_teff, parsec_rstar
 
@@ -253,12 +259,19 @@ endif
 ;; assume 3% model errors at 1 msun, 5% at 0.1 msun, 5% at 10 msun
 percenterror = 0.03d0 + 0.02d0*alog10(mstar)^2
 
-chi2 = ((parsec_rstar - rstar)/(percenterror*parsec_rstar))^2
-chi2 += ((parsec_teff - teff)/(percenterror*parsec_teff))^2
-;chi2 += ((parsec_teff - teff)/100d0^2)
+if rstarfloor gt 0 then chi2 = ((parsec_rstar - rstar)/(percenterror*parsec_rstar))^2 $
+else chi2 = ((parsec_rstar - rstar)/(rstarfloor*parsec_rstar))^2
 
-if keyword_set(fitage) then chi2 += ((parsec_age - age)/(percenterror*parsec_age))^2
-chi2 += ((parsec_feh - feh)/(percenterror))^2
+if tefffloor gt 0 then chi2 += ((parsec_teff - teff)/(percenterror*parsec_teff))^2 $
+else chi2 += ((parsec_teff - teff)/(tefffloor*parsec_teff))^2 
+
+if fehfloor gt 0 then chi2 += ((parsec_feh - feh)/(percenterror))^2 $
+else chi2 += ((parsec_feh - feh)/(fehfloor))^2 
+              
+if keyword_set(fitage) then begin
+   if agefloor gt 0 then chi2 += ((parsec_age - age)/(percenterror*parsec_age))^2 $
+   else chi2 += ((parsec_age - age)/(agefloor*parsec_age))^2           
+endif
 
 ;; plot it
 if keyword_set(debug) or keyword_set(epsname) then begin
