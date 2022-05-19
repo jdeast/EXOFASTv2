@@ -147,7 +147,7 @@ if nbad gt 0 then begin
 endif
 
 ;; check sign
-bad = where(ss.planet.sign.value lt 0 or ss.planet.sign.value ge 2, nbad)
+bad = where(ss.planet.sign.value lt 0 or ss.planet.sign.value ge 2 or ss.planet.sign2.value lt 0 or ss.planet.sign2.value ge 2, nbad)
 if nbad gt 0 then begin
    if ss.debug or ss.verbose then printandlog, 'sign is bad (' + strtrim(ss.planet[bad].sign.value,2) + ')', ss.logname
    return, !values.d_infinity
@@ -223,6 +223,12 @@ endif
 ;; 100 < Teff < 50000 
 if ss.star.teff.value lt 100 or ss.star.teff.value gt 250000 then begin
    if ss.debug or ss.verbose then printandlog, 'teff is bad (' + strtrim(ss.star.teff.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; 100 < Teff < 50000 
+if ss.star.teffsed.value lt 100 or ss.star.teffsed.value gt 250000 then begin
+   if ss.debug or ss.verbose then printandlog, 'teffsed is bad (' + strtrim(ss.star.teffsed.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
@@ -511,7 +517,9 @@ if ss.parsec then begin
                                   ss.star.age.value, ss.star.teff.value,$
                                   ss.star.rstar.value, ss.star.feh.value, debug=ss.debug, $
                                   epsname=epsname, gravitysun=ss.constants.gravitysun, $
-                                  fitage=ss.star.age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose)
+                                  fitage=ss.star.age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose,$
+                                  tefffloor=ss.teffemfloor, fehfloor=ss.fehemfloor, rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+
    
    chi2 += parsecchi2
    if ss.verbose then printandlog, 'PARSEC penalty = ' + strtrim(parsecchi2,2), ss.logname
@@ -531,7 +539,9 @@ if ss.mist then begin
                               ss.star.age.value, ss.star.teff.value,$
                               ss.star.rstar.value, ss.star.feh.value, debug=ss.debug, $
                               epsname=epsname, gravitysun=ss.constants.gravitysun, $
-                              fitage=ss.star.age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose)
+                              fitage=ss.star.age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose,$
+                              tefffloor=ss.teffemfloor, fehfloor=ss.fehemfloor, rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+
    
    chi2 += mistchi2
    if ss.verbose then printandlog, 'MIST penalty = ' + strtrim(mistchi2,2), ss.logname
@@ -600,26 +610,31 @@ if file_test(ss.star.mistsedfile) or file_test(ss.star.fluxfile) then begin
       sedchi2 += ((ss.star.teff.value - ss.star.teffsed.value)/(ss.teffsedfloor*ss.star.teffsed.value))^2
    endif else teffsed = ss.star.teff.value
 
+   if ss.star.fehsed.fit then begin
+      fehsed = ss.star.fehsed.value
+      sedchi2 += ((ss.star.feh.value - ss.star.fehsed.value)/ss.fehsedfloor)^2
+   endif else fehsed = ss.star.feh.value
+
    ;; the SED can constrain FBol too precisely
    ;; Add a floor for the Fbol used everywhere else
    if ss.star.rstarsed.fit then begin
       rstarsed = ss.star.rstarsed.value
-      lstarsed = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+      lstarsed = 4d0*!dpi*rstarsed^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
       sedchi2 += ((lstarsed - ss.star.lstar.value)/(ss.fbolsedfloor*lstarsed))^2
    endif else begin
       rstarsed = ss.star.rstar.value
-      lstarsed = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+      lstarsed = 4d0*!dpi*rstarsed^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
    endelse
 
    if file_test(ss.star.mistsedfile) then begin
       ;; MIST BC SED
-      sedchi2 += mistsed(teffsed, ss.star.logg.value,ss.star.feh.value, ss.star.av.value, ss.star.distance.value, lstarsed, ss.star.errscale.value, ss.star.mistsedfile, debug=ss.debug, psname=epsname)
+      sedchi2 += mistsed(teffsed, ss.star.logg.value,fehsed, ss.star.av.value, ss.star.distance.value, lstarsed, ss.star.errscale.value, ss.star.mistsedfile, debug=ss.debug, psname=epsname)
    endif else begin
       ;; Keivan Stassun's SED
       junk = exofast_sed(ss.star.fluxfile, teffsed, $
                          rstarsed,$
                          ss.star.av.value, ss.star.distance.value, $
-                         logg=ss.star.logg.value,met=ss.star.feh.value,$
+                         logg=ss.star.logg.value,met=fehsed,$
                          alpha=ss.star.alpha.value,verbose=ss.verbose, $
                          f0=f, fp0=fp, ep0=ep, psname=epsname, $
                          pc=ss.constants.pc, rsun=ss.constants.rsun, $
@@ -712,8 +727,8 @@ for j=0, ss.ntel-1 do begin
 
    if keyword_set(psname) then begin
       base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
-      exofast_forprint, rv.bjd, rv.rv - modelrv, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.telescope_' + strtrim(j,2) + '.txt', /nocomment,/silent
-      exofast_forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6)', textout=base + '.model.telescope_' + strtrim(j,2) + '.txt', /nocomment,/silent
+      exofast_forprint, rv.bjd, rv.rv - modelrv, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.telescope_' + string(j,format='(i02)') + '.txt', /nocomment,/silent
+      exofast_forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6)', textout=base + '.model.telescope_' + string(j,format='(i02)') + '.txt', /nocomment,/silent
    endif
 
    rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jittervar.value,rv.err,/chi2)
@@ -733,7 +748,7 @@ endif
 
 ;; Doppler Tomography Model
 for i=0, ss.ndt-1 do begin
-   if keyword_set(psname) then epsname = psname + '.dt_' + strtrim(i,2) + '.eps'
+   if keyword_set(psname) then epsname = psname + '.dt_' + string(i,format='(i02)') + '.eps'
 
    dtchi2 = dopptom_chi2(*(ss.doptom[i].dtptrs),$
                          ss.planet[(*(ss.doptom[i].dtptrs)).planetndx].tc.value, $
@@ -855,7 +870,7 @@ for j=0, ss.ntran-1 do begin
    if ss.transit[j].rejectflatmodel then begin
       minmodel = min(modelflux,max=maxmodel)
       if minmodel eq maxmodel then begin
-         if ss.verbose then printandlog, ss.transit[j].label + ' transit model has no signal! Rejecting this step a priori, but this may artificially enhance the significance of the signal', ss.logname
+         if ss.verbose then printandlog, ss.transit[j].label + ' transit model is a flat line, which is not allowed by the REJECTFLATMODEL input! This may artificially enhance the significance of the signal', ss.logname
          return, !values.d_infinity
       endif
    endif
@@ -889,7 +904,7 @@ for j=0, ss.ntran-1 do begin
          norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, ndays=ss.transit[j].splinespace) $
       else norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, breakp=transit.breakpts, ndays=ss.transit[j].splinespace)
       modelflux *= norm
-   endif
+   endif else norm = 1d0
 
 phase = (transitbjd - ss.planet[0].tc.value) mod ss.planet[0].period.value
 toohigh = where(phase gt ss.planet[0].period.value/2d0)
@@ -920,12 +935,12 @@ if toolow[0] ne -1 then phase[toohigh] += ss.planet[0].period.value
 
    if keyword_set(psname) then begin
       base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
-      exofast_forprint, transit.bjd, transit.flux - modelflux, transit.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.transit_' + strtrim(j,2) + '.txt', /nocomment,/silent
-      exofast_forprint, transit.bjd, modelflux, format='(f0.8,x,f0.6)', textout=base + '.model.transit_' + strtrim(j,2) + '.txt', /nocomment,/silent
+      exofast_forprint, transit.bjd, transit.flux - modelflux, transit.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.transit_' + string(j,format='(i03)') + '.txt', /nocomment,/silent
+      exofast_forprint, transit.bjd, modelflux, format='(f0.8,x,f0.6)', textout=base + '.model.transit_' + string(j,format='(i03)')+ '.txt', /nocomment,/silent
       
       if ss.transit[j].fitspline then $
          exofast_forprint, transit.bjd, norm, format='(f0.8,x,f0.6)',$
-                           textout=base+'.spline.transit_' + strtrim(j,2) + '.txt', /nocomment,/silent
+                           textout=base+'.spline.transit_' + string(j,format='(i03)') + '.txt', /nocomment,/silent
       
    endif
 
@@ -988,6 +1003,7 @@ for i=0L, ss.nplanets-1L do begin
    endif
    
    time = ss.epochs[good,i]*ss.planet[i].period.value+ss.transit[good].ttv.value
+   ;time = ss.planet[i].tt.value + ss.epochs[good,i]*ss.planet[i].period.value+ss.transit[good].ttv.value
    
 ;      fit = bytarr(ss.ntran)
 ;      epochs = dblarr(ss.ntran)
