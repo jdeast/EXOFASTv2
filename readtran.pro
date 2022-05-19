@@ -83,6 +83,7 @@ endelse
 
 entries = double(strsplit(line,/extract))
 ncol = n_elements(entries)
+
 ;; if no header, assume all additive
 if not header then begin
    if ncol le 3 then begin
@@ -93,8 +94,11 @@ if not header then begin
       add = [-1,3L + lindgen(nadd)]
    endelse
 endif
-
 if ncol lt 3 then message, 'Transit file (' + filename + ') must contain at least 3 white-space delimited columns (BJD_TDB flux err). Comments are not allowed. The first line is ' + line
+
+if nadd+nmult+3 ne ncol then begin
+   message, 'Mismatch between header line and data lines for ' + filename + '. The header MUST have one white-space delimited entry per column.'
+endif
 
 nrow = file_lines(filename) - header - breakptline
 
