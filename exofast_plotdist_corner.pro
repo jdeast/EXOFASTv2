@@ -59,9 +59,9 @@ if n_elements(probs) eq 0 then probs = erf([1d,2d]/sqrt(2d0))
 
 nsteps = ss.nsteps/ss.nchains
 chi2 = reform((*ss.chi2),nsteps,ss.nchains)
-burnndx = getburnndx(chi2,goodchains=goodchains)
+burnndx = ss.burnndx
+goodchains=(*ss.goodchains)
 ngoodchains = n_elements(goodchains)
-;;burnndx = ss.burnndx
 
 ;; prepare the postscript device
 mydevice=!d.name
