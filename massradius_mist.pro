@@ -63,7 +63,13 @@
 function massradius_mist, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvcrit, alpha=alpha, $
                           mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
                           epsname=epsname, debug=debug, gravitysun=gravitysun, fitage=fitage, $
-                          ageweight=ageweight, verbose=verbose, logname=logname, trackfile=trackfile, allowold=allowold
+                          ageweight=ageweight, verbose=verbose, logname=logname, trackfile=trackfile, allowold=allowold,$
+                          tefffloor=tefffloor, fehfloor=fehfloor, rstarfloor=rstarfloor, agefloor=agefloor
+
+if n_elements(tefffloor) eq 0 then tefffloor = -1
+if n_elements(fehfloor) eq 0 then fehfloor = -1
+if n_elements(rstarfloor) eq 0 then rstarfloor = -1
+if n_elements(agefloor) eq 0 then agefloor = -1
 
 if n_elements(gravitysun) eq 0 then $                                           
    gravitysun = 27420.011d0 ;; cm/s^2                                           
@@ -203,6 +209,7 @@ for i=0, 1 do begin
       neep = n_elements(ages)
       if eep gt neep then begin
          if keyword_set(verbose) then printandlog, 'EEP (' + strtrim(eep,2) + ') is out of range [1,' + strtrim(neep,2) + ']', logname
+         if keyword_set(verbose) then printandlog, '   NOTE: The EEP may be only be invalid for the other stellar parameters. You may wish to tweak mstar, rstar, or Teff instead', logname
          return, !values.d_infinity
       endif
 
@@ -217,6 +224,7 @@ for i=0, 1 do begin
       
    endfor
 endfor
+
 
 x_eep = (eep-eepbox[0])/(eepbox[1]-eepbox[0])
 y_mass = (mstar-mstarbox[0])/(mstarbox[1]-mstarbox[0])
@@ -245,12 +253,19 @@ endif
 ;; assume 3% model errors at 1 msun, 10% at 0.1 msun, 5% at 10 msun
 percenterror = 0.03d0 -0.025d0*alog10(mstar) + 0.045d0*alog10(mstar)^2
 
-chi2 = ((mistrstar - rstar)/(percenterror*mistrstar))^2
-chi2 += ((mistteff - teff)/(percenterror*mistteff))^2
-;chi2 += ((mistteff - teff)/100d0^2)
+if rstarfloor gt 0 then chi2 = ((mistrstar - rstar)/(percenterror*mistrstar))^2 $
+else chi2 = ((mistrstar - rstar)/(rstarfloor*mistrstar))^2
 
-if keyword_set(fitage) then chi2 += ((mistage - age)/(percenterror*mistage))^2
-chi2 += ((mistfeh - feh)/(percenterror))^2
+if tefffloor gt 0 then chi2 += ((mistteff - teff)/(percenterror*mistteff))^2 $
+else chi2 += ((mistteff - teff)/(tefffloor*mistteff))^2 
+
+if fehfloor gt 0 then chi2 += ((mistfeh - feh)/(percenterror))^2 $
+else chi2 += ((mistfeh - feh)/(fehfloor))^2 
+              
+if keyword_set(fitage) then begin
+   if agefloor gt 0 then chi2 += ((mistage - age)/(percenterror*mistage))^2 $
+   else chi2 += ((mistage - age)/(agefloor*mistage))^2           
+endif
 
 ;; plot it
 if keyword_set(debug) or keyword_set(epsname) then begin
@@ -275,28 +290,37 @@ if keyword_set(debug) or keyword_set(epsname) then begin
 ;      set_plot, 'X'
       red = '0000ff'x
       symsize = 1
-      ;device,window_state=win_state
-      ;if win_state[29] eq 1 then wset, 29 $
-      ;else window, 29, retain=2
+      device,window_state=win_state
+      if win_state[28] eq 1 then wset, 28 $
+      else window, 28, retain=2
       xtitle='T_eff'
       ytitle='log g'
    endelse
 
    ;; interpolate the entire track to plot the isochrone
    mineep = min([202,eep])
+   mineep = 1
    maxeep = 808
    neep = maxeep - mineep + 1
    eepplot = mineep + dindgen(neep)
-   mistrstariso = dblarr(neep)
-   mistteffiso = dblarr(neep)
-   mistageiso = dblarr(neep)
+   mistrstariso = dblarr(neep) + !values.d_nan
+   mistteffiso = dblarr(neep) + !values.d_nan
+   mistageiso = dblarr(neep) + !values.d_nan
 
    for i=0, neep-1 do begin
       junk = massradius_mist(eepplot[i],mstar,initfeh,age,teff,rstar,feh,mistrstar=mistrstar,mistteff=mistteff,mistage=mistage)
-      mistrstariso[i] = mistrstar
-      mistteffiso[i] = mistteff
-      mistageiso[i] = mistage
+      if finite(junk) then begin
+         mistrstariso[i] = mistrstar
+         mistteffiso[i] = mistteff
+         mistageiso[i] = mistage
+      endif
    endfor
+   
+   good = where(finite(mistrstariso))
+   eepplot = eepplot[good]
+   mistrstariso = mistrstariso[good]
+   mistteffiso = mistteffiso[good]
+   mistageiso = mistageiso[good]
 
    if n_elements(trackfile) ne 0 then $
       exofast_forprint, mistteffiso, mistrstariso, mistageiso, format='(f0.5,x,f0.5,x,f0.5)', comment='#teff, rstar, age', textout=trackfile
@@ -306,8 +330,11 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    teffplottrack = mistteffiso
    loggplot =  alog10(mstar/(rstar^2)*gravitysun)
 
-   use = where(loggplottrack gt 3 and loggplottrack lt 5 and eepplot ge min([202,eep]))
-   xmin=max([teffplottrack[use],teff],min=xmax) ;; plot range backwards
+   if (eep + 3) gt max(eepplot) then mineep = 1 $
+   else mineep = 202
+   use = where(loggplottrack gt 3 and loggplottrack lt 5 and eepplot ge min([mineep,eep]))
+   if use[0] eq -1 then use = indgen(n_elements(teffplottrack))
+   xmin=max([teffplottrack[use],teff*1.1, teff*0.9],min=xmax) ;; plot range backwards
 
    ;; increase xrange so there are 4 equally spaced ticks that land on 100s
    xticks = 3
@@ -323,11 +350,11 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    xminor = spacing/100d0
   
    ymax = min([loggplot,3,5,loggplottrack[use]],max=ymin) ;; plot range backwards
-   plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor
+   plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor,/xlog
    plotsym,0,/fill
-   oplot, [teff], [loggplot], psym=8,symsize=0.5 ;; the model point
+   oplot, [teff], [loggplot], psym=8,symsize=0.5 ;; the input point
    junk = min(abs(eepplot-eep),ndx)
-   oplot, [teffplottrack[ndx]],[loggplottrack[ndx]], psym=2, color=red ;; overplot the time 
+   oplot, [teffplottrack[ndx]],[loggplottrack[ndx]], psym=2, color=red ;; the track point 
    if keyword_set(epsname) then begin
       !p.font=-1
       !p.multi=0
