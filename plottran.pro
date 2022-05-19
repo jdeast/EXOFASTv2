@@ -609,6 +609,8 @@ for jj=0L, 2 do begin
          ymin = min([0,residuals*1.1],max=ymax)
          if ymin lt -ymax then ymax = -ymin
          if ymax gt -ymin then ymin = -ymax
+;         ymax = stdev(residuals)*3d0
+;         ymin = -stdev(residuals)*3d0
          yrange = [ymin,ymax] 
          plot, [0],[0], position=position2, /noerase, $
                xrange=xrange, xtitle=xtitle,$
