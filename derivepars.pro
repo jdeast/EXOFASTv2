@@ -99,31 +99,42 @@ for i=0, ss.nplanets-1 do begin
       ss.planet[i].omega.value = atan(ss.planet[i].sesinw.value,ss.planet[i].secosw.value)
    endif else if ss.planet[i].vcve.fit then begin
 
-      if ss.planet[i].lsinw2.fit then begin
-         flip = where(ss.planet[i].vcve.value-1d0 lt 0d0,complement=noflip)
-         if flip[0] ne -1 then ss.planet[i].lsinw.value[flip] = -ss.planet[i].lsinw2.value[flip]
-         if noflip[0] ne -1 then ss.planet[i].lsinw.value[noflip] = ss.planet[i].lsinw2.value[noflip]
-      endif
-
-      ;; based on L*cos(omega) and L*sin(omega)
-      if (ss.planet[i].lsinw2.fit or ss.planet[i].lsinw.fit) and ss.planet[i].lcosw.fit then begin
-         ss.planet[i].omega.value = atan(ss.planet[i].lsinw.value, ss.planet[i].lcosw.value)
-      endif
-
       ;; what sign of the quadratic solution?
       if ss.planet[i].sign.fit then begin
          ;; we fit for it
          sign = floor(ss.planet[i].sign.value)
-
-         ;; ****** this flips the sign of the sign and is experimental*******
-         flip = where(ss.planet[i].vcve.value lt 1d0)
-         if flip[0] ne -1 then sign[flip] = ~sign[flip]
       endif else begin
          ;; L implicitly defines it
          lsq = ss.planet[i].lsinw.value^2 + ss.planet[i].lcosw.value^2
          sign = (lsq lt 0.5d0)
       endelse
-      ss.planet[i].e.value = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=sign)
+
+if 0 then begin
+      if ss.planet[i].lsinw2.fit then begin
+         ss.planet[i].sign.value = ss.planet[i].sign2.value
+         ss.planet[i].lsinw.value = ss.planet[i].lsinw2.value
+         flip = where(ss.planet[i].vcve.value gt 1d0 and ss.planet[i].lsinw2.value ge 0d0 and ~sign)
+         if flip[0] ne -1 then begin
+            ss.planet[i].lsinw.value[flip] = -ss.planet[i].lsinw2.value[flip]
+            ss.planet[i].sign.value[flip] = ss.planet[i].sign2.value[flip] + 1d0
+         endif
+         flip = where(ss.planet[i].vcve.value le 1d0 and ss.planet[i].lsinw2.value lt 0d0 and sign)
+         if flip[0] ne -1 then begin
+            ss.planet[i].lsinw.value[flip] = -ss.planet[i].lsinw2.value[flip]
+            ss.planet[i].sign.value[flip] = ss.planet[i].sign2.value[flip] - 1d0
+         endif
+      endif
+endif else begin
+;   ss.planet[i].sign.value = ss.planet[i].sign2.value
+;   ss.planet[i].lsinw.value = ss.planet[i].lsinw2.value
+endelse
+
+      ;; based on L*cos(omega) and L*sin(omega)
+      if ss.planet[i].lsinw.fit and ss.planet[i].lcosw.fit then begin
+         ss.planet[i].omega.value = atan(ss.planet[i].lsinw.value, ss.planet[i].lcosw.value)
+      endif
+
+      ss.planet[i].e.value = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=floor(ss.planet[i].sign.value))
 
    endif else if ss.planet[i].e.fit and ss.planet[i].omega.fit then begin
       ;; do nothing
@@ -322,9 +333,21 @@ for i=0, ss.nplanets-1 do begin
    ;; covariance between Tc and Period
    minepoch = floor((minbjd - median(ss.planet[i].tc.value))/median(ss.planet[i].period.value))-1
    maxepoch =  ceil((maxbjd - median(ss.planet[i].tc.value))/median(ss.planet[i].period.value))+1
+   bestepoch = (minepoch+maxepoch)/2d0
    mincovar = !values.d_infinity
+   burnndx = ss.burnndx
+   goodchains = *(ss.goodchains)
    for epoch=minepoch, maxepoch do begin
-      corr = correlate(transpose([[ss.planet[i].tc.value+epoch*ss.planet[i].period.value],[ss.planet[i].period.value]]))
+
+      ;; trim the burn in and remove bad chains before computing covariances
+      tc     = (reform(ss.planet[i].tc.value+epoch*ss.planet[i].period.value,$
+                       ss.nsteps/ss.nchains,ss.nchains))[burnndx:*,goodchains]
+      period = (reform(ss.planet[i].period.value,$
+                       ss.nsteps/ss.nchains,ss.nchains))[burnndx:*,goodchains]
+      tc = reform(tc,n_elements(tc))
+      period = reform(period,n_elements(period))
+      
+      corr = correlate(transpose([[tc],[period]]))
       if abs(corr[0,1]) lt mincovar then begin
          mincovar = abs(corr[0,1])
          bestepoch = epoch
