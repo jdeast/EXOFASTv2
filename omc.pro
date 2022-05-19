@@ -50,7 +50,7 @@
 ;  2011/07 -- Written, Jason Eastman (OSU)
 ;
 ;-
-pro omc, time, err, telescope=telescope, chi2=chi2, period=period, t0=t0, ps=ps, epsname=epsname
+pro omc, time, err, telescope=telescope, chi2=chi2, period=period, t0=t0, ps=ps, epsname=epsname, nogaps=nogaps
 
 ;; read in the times
 ;openr, lun, filename, /get_lun
@@ -141,11 +141,23 @@ ncolors = n_elements(colors)
 
 ;; plot the times, errors, and 0 line
 ymin = min(omc-err) & ymax = max(omc+err)
-xmin = min(epoch)-1 & xmax = max(epoch)+1
+
 ;xmin = -75 & xmax = 75
-plot, fix(epoch), omc,psym=3, yrange=[ymin,ymax],xrange=[xmin,xmax],$
-  xtitle='Epoch',ytitle='O-C (min)';, /xstyle;,xticks=4
-oploterr, epoch, omc, err, 3
+
+if keyword_set(nogaps) then begin
+   x = dindgen(n_elements(omc))
+   xtitle = 'Transit number'
+   xmin = -1 
+   xmax = n_elements(omc)+1
+endif else begin
+   x = epoch
+   xtitle= 'Epoch'
+   xmin = min(epoch)-1 & xmax = max(epoch)+1
+endelse
+
+plot, x, omc,psym=3, yrange=[ymin,ymax],xrange=[xmin,xmax],$
+  xtitle=xtitle,ytitle='O-C (min)';, /xstyle;,xticks=4
+oploterr, x, omc, err, 3
 oplot, [-9d9,9d9],[0,0],linestyle=1
 
 syms = [0,3,8,5,0,3,8,5]
@@ -160,7 +172,7 @@ if n_elements(telescope) ge 1 then begin
       observed = where(telescope eq tnames[i])
       if observed[0] ne -1 then begin
          plotsym, syms[i mod nsyms], color=colors[i mod ncolors],fill=fill[i mod nsyms]
-         oplot, epoch[observed],omc[observed],psym=8
+         oplot, x[observed],omc[observed],psym=8
          xsize = (!x.crange[1] - !x.crange[0])
          ysize = (!y.crange[1] - !y.crange[0])
          xyouts, !x.crange[0] + xlegend*xsize,!y.crange[0]+(ylegend - i*charsizelegend)*ysize, $
