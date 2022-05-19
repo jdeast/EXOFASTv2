@@ -160,12 +160,20 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                earth=earth, silent=silent, yy=yy, torres=torres, nomist=nomist, parsec=parsec, $
                noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
                logname=logname, best=best, tides=tides, $
-               mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,oned=oned,$
+               teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
+               mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,fehsedfloor=fehsedfloor, oned=oned,$
                fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
                novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, chi2func=chi2func, fittt=fittt,delay=delay, rvepoch=rvepoch
 
 if n_elements(fbolsedfloor) eq 0 then fbolsedfloor = 0.02d0
-if n_elements(teffsedfloor) eq 0 then teffsedfloor = 0.015d0
+if n_elements(teffsedfloor) eq 0 then teffsedfloor = 0.024d0
+if n_elements(fehsedfloor) eq 0 then fehsedfloor = 0d0
+
+if n_elements(teffemfloor) eq 0 then teffemfloor = -1d0
+if n_elements(fehemfloor) eq 0 then fehemfloor = -1d0
+if n_elements(rstaremfloor) eq 0 then rstaremfloor = -1d0
+if n_elements(ageemfloor) eq 0 then ageemfloor = -1d0
+
 if n_elements(delay) eq 0 then delay = 0L $
 else begin
    if delay ne 0 then $
@@ -567,6 +575,16 @@ feh.label = 'feh'
 feh.unit = 'dex'
 feh.fit=1
 feh.scale = 0.5d0
+
+fehsed = parameter
+fehsed.value = 0d0
+fehsed.description = 'Metallicity'
+fehsed.latex = '[{\rm Fe/H}]_{SED}'
+fehsed.label = 'fehsed'
+fehsed.unit = 'dex'
+fehsed.fit=0
+fehsed.derive=0
+fehsed.scale = 0.5d0
 
 initfeh = parameter
 initfeh.value = 0d0
@@ -1743,6 +1761,7 @@ star = create_struct(mstar.label,mstar,$
                      teff.label,teff,$
                      teffsed.label,teffsed,$
                      feh.label,feh,$
+                     fehsed.label,fehsed,$
                      initfeh.label,initfeh,$
                      age.label,age,$
                      eep.label,eep,$
@@ -1803,6 +1822,10 @@ if n_elements(fluxfile) ne 0 then begin
          star.rstarsed.fit = 1
          star.rstarsed.derive = 1
       endif
+      if fehsedfloor ne 0d0 then begin
+         star.fehsed.fit = 1
+         star.fehsed.derive = 1
+      endif
 
       ;; overwrite the common block, in case it's been called
       ;; before then updated
@@ -1835,6 +1858,10 @@ if n_elements(mistsedfile) ne 0 then begin
       if fbolsedfloor ne 0d0 then begin
          star.rstarsed.fit = 1
          star.rstarsed.derive = 1
+      endif
+      if fehsedfloor ne 0d0 then begin
+         star.fehsed.fit = 1
+         star.fehsed.derive = 1
       endif
 
       ;; overwrite the common block, in case it's been called
@@ -2055,6 +2082,11 @@ ss = create_struct('star',star,$
                    'parsec', keyword_set(parsec),$
                    'fbolsedfloor', fbolsedfloor,$
                    'teffsedfloor', teffsedfloor,$
+                   'fehsedfloor', fehsedfloor,$
+                   'teffemfloor', teffemfloor,$
+                   'fehemfloor', fehemfloor,$
+                   'rstaremfloor', rstaremfloor,$
+                   'ageemfloor', ageemfloor,$
                    'oned', keyword_set(oned),$
                    'yy', keyword_set(yy),$
                    'torres', keyword_set(torres),$
@@ -2067,7 +2099,7 @@ ss = create_struct('star',star,$
                    'npars',0L,$
                    'burnndx',0L,$
                    'nchains',1L,$
-                   'goodchains',1L,$
+                   'goodchains',ptr_new(1),$
                    'amoeba',0L,$
                    'logname','',$
                    'chi2',ptr_new(1),$
@@ -2171,8 +2203,8 @@ for i=0, nplanets-1 do begin
       ss.planet[i].lcosw.fit = 0
 
       ;; reparameterize secosw, sesinw => vcve, lsinw, lcosw
-      ss.planet[i].lsinw.fit = 0
-      ss.planet[i].lsinw2.fit = 1
+      ss.planet[i].lsinw.fit = 1
+      ss.planet[i].lsinw2.fit = 0
       ss.planet[i].lcosw.fit = 1
       ss.planet[i].vcve.fit = 1
       ss.planet[i].vcve.derive = 1
@@ -2305,6 +2337,9 @@ if nband eq 0 then begin
    ss.band[0].u2.derive=0B
 endif
 
+minallbjd = !values.d_infinity
+maxallbjd = -!values.d_infinity
+
 ;; read in the transit files
 if ntran gt 0 then begin
    if n_elements(ninterp) eq 1 and n_elements(exptime) eq 1 then begin
@@ -2352,6 +2387,11 @@ if ntran gt 0 then begin
 ;      if nmult ge 1 then *(ss.transit[i].detrendmult) = replicate(detrendmult,nmult)
 
       ss.ndata += n_elements((*(ss.transit[i].transitptrs)).bjd)*(1L+nadd+nmult)
+
+      minbjd = min((*(ss.transit[i].transitptrs)).bjd,max=maxbjd)
+      if minbjd lt minallbjd then minallbjd = minbjd
+      if maxbjd gt maxallbjd then maxallbjd = maxbjd
+
 
       ss.transit[i].exptime = exptime[i]
       ss.transit[i].ninterp = ninterp[i]
@@ -2415,6 +2455,10 @@ if ntel gt 0 then begin
       ss.telescope[i].label = (*(ss.telescope[i].rvptrs)).label
 
       ss.ndata += n_elements((*(ss.telescope[i].rvptrs)).bjd)
+
+      minbjd = min((*(ss.telescope[i].rvptrs)).bjd,max=maxbjd)
+      if minbjd lt minallbjd then minallbjd = minbjd
+      if maxbjd gt maxallbjd then maxallbjd = maxbjd
 
       ;; create an array of detrending variables 
       ;; (one for each extra column in the rv file)
@@ -2755,12 +2799,39 @@ while not eof(lun) do begin
                 
 endwhile
 
+changed = where(ss.planet.tc.userchanged)
+if changed[0] ne -1 then begin
+   minbjd = min(ss.planet[changed].tc.prior,maxbjd)
+   if minbjd lt minallbjd then minallbjd = minbjd
+   if maxbjd gt maxallbjd then maxallbjd = maxbjd
+endif
+changed = where(ss.planet.tp.userchanged)
+if changed[0] ne -1 then begin
+   minbjd = min(ss.planet[changed].tp.prior,maxbjd)
+   if minbjd lt minallbjd then minallbjd = minbjd
+   if maxbjd gt maxallbjd then maxallbjd = maxbjd
+endif
+changed = where(ss.planet.tt.userchanged)
+if changed[0] ne -1 then begin
+   minbjd = min(ss.planet[changed].tt.prior,maxbjd)
+   if minbjd lt minallbjd then minallbjd = minbjd
+   if maxbjd gt maxallbjd then maxallbjd = maxbjd
+endif
+
+dataspan = (maxallbjd - minallbjd)
+if dataspan gt 1d5 then begin
+   printandlog, '', logname
+   printandlog, "WARNING: data/priors span " + strtrim(dataspan/365.25d0,2) + " years. Make sure all data have a consistent epoch (e.g., you're not using a mix of MJD and JD).", logname
+   printandlog, "type '.con' to ignore and continue", logname
+   stop
+endif
+
+
 free_lun, lun
 if ~keyword_set(silent) then printandlog, '', logname
 
 ;; do we have enough information to derive the distance?
 ;if (where(priorname eq 'distance'))[0] ne -1 
-
 priors = priors[*,1:*]
 *(ss.priors) = priors
 
