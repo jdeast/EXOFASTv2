@@ -71,7 +71,9 @@ pro exofast_plotchains, ss, chainfile=chainfile, logname=logname
 if n_elements(chainfile) eq 0 then chainfile = 'chain.ps'
 
 chi2 = reform((*ss.chi2),ss.nsteps/ss.nchains,ss.nchains)
-burnndx = getburnndx(chi2,goodchains=goodchains, logname=logname)
+burnndx = ss.burnndx
+goodchains = (*ss.goodchains)
+;burnndx = getburnndx(chi2,goodchains=goodchains, logname=logname)
 
 ;; prepare the postscript device
 mydevice=!d.name
