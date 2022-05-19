@@ -2,7 +2,8 @@
 ;; Required for virtual machine (free) use
 pro readargs, argfile, priorfile=priorfile, $
               rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
-              fluxfile=fluxfile,mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, oned=oned,$
+              fluxfile=fluxfile,mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,$
+              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
               prefix=prefix,$
               circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
               rossiter=rossiter,chen=chen,$
@@ -20,7 +21,7 @@ pro readargs, argfile, priorfile=priorfile, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
               earth=earth, i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch,$
               fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
-              skiptt=skiptt, novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, fittt=fittt, rvepoch=rvepoch
+              skiptt=skiptt, novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, fittt=fittt, rvepoch=rvepoch, logname=logname
 
 line = ''
 openr, lun, argfile, /get_lun
@@ -33,7 +34,6 @@ while not eof(lun) do begin
 
          ;; replace environment variables with their values
          entries[1] = exofast_expand_path(entries[1])
-
 
          if strupcase(strtrim(entries[0],2)) eq 'PRIORFILE' then begin
             priorfile = strtrim(entries[1],2)
@@ -53,8 +53,18 @@ while not eof(lun) do begin
             fbolsedfloor = double(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'TEFFSEDFLOOR' then begin
             teffsedfloor = double(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FEHSEDFLOOR' then begin
+            fehsedfloor = double(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'ONED' then begin
             oned = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'TEFFEMFLOOR' then begin
+            teffemfloor = double(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FEHEMFLOOR' then begin
+            fehemfloor = double(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'RSTAREMFLOOR' then begin
+            rstaremfloor = double(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'AGEEMFLOOR' then begin
+            ageemfloor = double(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'PREFIX' then begin
             prefix = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'CIRCULAR' then begin
