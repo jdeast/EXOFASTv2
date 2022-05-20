@@ -1,5 +1,5 @@
 priorfile=$EXOFAST_PATH/examples/wasp18/wasp18.priors.2
-prefix=$EXOFAST_PATH/examples/wasp18/fitresults/WASP-18b.
+prefix=$HOME/modeling/wasp18/fitresults/WASP-18b.
 tranpath=$EXOFAST_PATH/examples/wasp18/n*.dat
 rvpath=$EXOFAST_PATH/examples/wasp18/*.rv
 mistsedfile=$EXOFAST_PATH/examples/wasp18/wasp18.sed
