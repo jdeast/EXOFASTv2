@@ -136,8 +136,10 @@ FUNCTION textoidl_strtrans, InputString, from, to, ned,  $
         FOR j=0L, NFrom-1 DO BEGIN
             ;; swapped obsolete str_sep with strsplit. JDE 2022-02-23
             ;; isn't this whole loop just repstr?
-            ;SepStr = str_sep(strn[i], from[j])
-            SepStr = strsplit(strn[i], from[j],/extract,/regex)
+           SepStr = str_sep(strn[i], from[j])
+           ;; this breaks in GDL when the delimiter is "\'"
+           ;; reverted 2022-05-23
+;            SepStr = strsplit(strn[i], from[j],/extract,/regex)
 
             NSubs = n_elements(SepStr) - 1
             strn[i] = SepStr[0]
@@ -654,7 +656,6 @@ FUNCTION textoidl_nexttok, strn, tokens, $
     Position = Matches(SortInd(0))
 
     Tok = string(TmpTok(MatchIdx(SortInd(0))))
-    
     return, Tok
 END
 
@@ -1397,7 +1398,7 @@ FUNCTION exofast_Textoidl, InputString, $
 ; PostScript has been set to 1 if PostScript fonts are desired.
     strn = InputString
     table = textoidl_table(POSTSCRIPT=PostScript)
-    
+
 ;   Greek sub/superscripts need to be protected by putting braces
 ;   around them if they are unbraced.  This will have the result the
 ;   it will be difficult to use \ as a sub/superscript.  Get over it.
