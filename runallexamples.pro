@@ -49,7 +49,7 @@ endfor
 
 mkexofastv2
 
-;; test license free uses (doesn't work on my local machine)
+;; test license free uses
 spawn, 'gdl -e "fithat3, maxsteps=' + strtrim(maxsteps,2) + '"'
 
 argfile = filepath('hat3.args',$
