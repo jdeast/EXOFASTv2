@@ -3,7 +3,7 @@ pro fitgj9827, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin, nth
 path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','gj9827'])
 
 if n_elements(outpath) eq 0 then $
-   outpath = 'modeling' + path_sep() + 'gj9827' + path_sep() + 'fitresults' + path_sep()
+   outpath = filepath('',root_dir=getenv('HOME'),subdir=['modeling','gj9827','fitresults'])
 
 exofastv2, nplanets=3, tranpath=path+'n20090101.Kepler.K2.dat',$
            mistsedfile=path+'gj9827.flux',$

@@ -4,7 +4,7 @@ pro fitwasp76, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin, nth
 path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','wasp76'])
 
 if n_elements(outpath) eq 0 then $
-   outpath = 'modeling' + path_sep() + 'wasp76' + path_sep() + 'fitresults' + path_sep()
+   outpath = filepath('',root_dir=getenv('HOME'),subdir=['modeling','wasp76','fitresults'])
 
 exofastv2, nplanets=1, rvpath=path+'WASP-76b.*.rv',tranpath=path+'n20*.dat',$
            priorfile=path+'wasp76.priors',$

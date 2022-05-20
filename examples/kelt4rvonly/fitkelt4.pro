@@ -3,7 +3,7 @@ pro fitkelt4, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin, nthr
 path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','kelt4rvonly'])
 
 if n_elements(outpath) eq 0 then $
-   outpath = 'modeling' + path_sep() + 'kelt4' + path_sep() + 'fitresults' + path_sep()
+   outpath = filepath('',root_dir=getenv('HOME'),subdir=['modeling','kelt4','fitresults'])
 
 ;; NOTE: kelt4.priors.2 was created using mkprior on an initial run
 ;; using kelt4.priors.

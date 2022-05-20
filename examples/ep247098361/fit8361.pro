@@ -3,7 +3,7 @@ pro fit8361, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin, nthre
 path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','ep247098361'])
 
 if n_elements(outpath) eq 0 then $
-   outpath = 'modeling' + path_sep() + 'ep8361' + path_sep() + 'fitresults' + path_sep()
+   outpath = filepath('',root_dir=getenv('HOME'),subdir=['modeling','ep8361','fitresults'])
 
 exofastv2, nplanets=1, tranpath=path+'ep247098361.Kepler.dat',rvpath=path+'ep247098361.APF.rv',$
            priorfile=path+'ep247098361.priors',debug=debug, verbose=verbose, $

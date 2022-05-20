@@ -4,7 +4,7 @@ pro fithat3_staronly, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nth
 path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','hat3_staronly'])
 
 if n_elements(outpath) eq 0 then $
-   outpath = 'modeling' + path_sep() + 'hat3_staronly' + path_sep() + 'fitresults' + path_sep()
+   outpath = filepath('',root_dir=getenv('HOME'),subdir=['modeling','hat3_staronly','fitresults'])
 
 ;; the SED and prior files were created with this command:
 ;; we won't do it here so as not to pollute the EXOFASTv2 repo

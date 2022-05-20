@@ -17,8 +17,7 @@ path = filepath('',root_dir=getenv('EXOFAST_PATH'),subdir=['examples','kelt17'])
 ;'kelt17.priors.2'
 
 if n_elements(outpath) eq 0 then $
-   outpath = 'modeling' + path_sep() + 'kelt17' + path_sep() + 'fitresults' + path_sep()
-
+   outpath = filepath('',root_dir=getenv('HOME'),subdir=['modeling','kelt17','fitresults'])
 
 ;; rerun the fit starting at the previous best fit
 exofastv2, nplanets=1, tranpath=path + 'n20??????.*.dat',$
