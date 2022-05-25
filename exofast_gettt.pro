@@ -62,14 +62,18 @@ if n_elements(nthin) eq 0 then nthin = 1
 if n_elements(tol) eq 0 then tol = 0.1d0/86400d0 ;; accurate to 0.1 seconds
 
 chi2 = reform((*(mcmcss.chi2)),mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains)
-burnndx = mcmcss.burnndx
-goodchains = (*mcmcss.goodchains)
+if (size(mcmcss.goodchains))[0] ne 10 then begin
+   burnndx = getburnndx(chi2,goodchains=goodchains)
+endif else begin
+   burnndx = mcmcss.burnndx
+   goodchains = (*mcmcss.goodchains)
+endelse
 
 ;; nthin has to be a factor of the number of steps
 nstepsperchain = mcmcss.nsteps/mcmcss.nchains
 bestdiff = !values.d_infinity
 for i=1L, nstepsperchain do begin
-   if double(fix(nstepsperchain/i)) eq double(nstepsperchain/i) then begin
+   if double(long(nstepsperchain/i)) eq double(nstepsperchain/i) then begin
       if abs(i-nthin) lt bestdiff then begin
          bestnthin = i
          bestdiff = abs(i-nthin)
@@ -193,11 +197,10 @@ for i=0L, nsteps-1 do begin
             
          endif
 
-
       endfor
    endfor
 
-   if ((i+1d0) mod fix(nsteps/10d0)) eq 0 then printandlog, strtrim(round((i+1d0)/nsteps*100),2) + '% done computing transit times', logname
+   if ((i+1d0) mod long(nsteps/10d0)) eq 0 then printandlog, strtrim(round((i+1d0)/nsteps*100,/L64),2) + '% done computing transit times', logname
 
 endfor
 

@@ -223,8 +223,15 @@ for i=0, ss.nplanets-1 do begin
    endif 
 
    ;; error checking on e/omega
-   if ss.planet[i].e.value ge 1d0 or ss.planet[i].e.value lt 0d0 or ~finite(ss.planet[i].e.value) then stop;return, 0
-   if ~finite(ss.planet[i].omega.value) then stop;return, 0
+   if ss.planet[i].e.value ge 1d0 or ss.planet[i].e.value lt 0d0 or ~finite(ss.planet[i].e.value) then begin
+      printandlog, 'The starting value for eccentricity_' + strtrim(i,2) + ' is not physical. If you are seeing this with an automatically generated prior file after updating EXOFASTv2, delete the starting points for sign, vcve, lsinw, lcosw in the prior file and use the median e, omegadeg (from the previous .tex file) instead.', ss.logname
+      stop
+   endif
+
+   if ~finite(ss.planet[i].omega.value) then begin
+      printandlog, 'The starting value for omega_' + strtrim(i,2) + ' is not physical. If you are seeing this with an automatically generated prior file after updating EXOFASTv2, delete the the starting points for sign, vcve, lsinw, lcosw in the prior file and use the median e, omegadeg (from the previous .tex file) instead.', ss.logname
+      stop
+   endif
 
    ;; translate from e/omega to various e/omega parameterizations
    if ~ss.planet[i].qecosw.userchanged then ss.planet[i].qecosw.value = (ss.planet[i].e.value)^(0.25d0)*cos(ss.planet[i].omega.value)
@@ -243,7 +250,7 @@ for i=0, ss.nplanets-1 do begin
    if abs(ss.planet[i].e.value - e1) lt 1d-8 then ss.planet[i].sign.value = 0.5 $
    else if abs(ss.planet[i].e.value - e2) lt 1d-8 then ss.planet[i].sign.value = 1.5 $
    else begin
-      printandlog, 'ERROR translating staring e and omega to parameterization', ss.logname
+      printandlog, 'ERROR translating starting e and omega to parameterization', ss.logname
       stop
    endelse
 
