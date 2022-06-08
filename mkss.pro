@@ -2559,6 +2559,11 @@ priors = [-1,-1,-1,-1,-1]
 if ~keyword_set(silent) then printandlog, 'These are the priors that will be applied to the fit.', logname
 if ~keyword_set(silent) then printandlog, 'Those with "no prior constraint" only affect the starting values of the fit:', logname
 if ~keyword_set(silent) then printandlog, '', logname
+if ~file_test(priorfile) then begin
+   printandlog, "A priorfile must be specified. " + priorfile + " not found.", logname
+   stop
+endif
+
 openr, lun, priorfile, /get_lun
 line = ''
 lineno=0
