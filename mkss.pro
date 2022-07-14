@@ -163,7 +163,8 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
                mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,fehsedfloor=fehsedfloor, oned=oned,$
                fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
-               novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, chi2func=chi2func, fittt=fittt,delay=delay, rvepoch=rvepoch
+               novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, $
+               chi2func=chi2func, fittt=fittt,delay=delay, rvepoch=rvepoch
 
 if n_elements(fbolsedfloor) eq 0 then fbolsedfloor = 0.02d0
 if n_elements(teffsedfloor) eq 0 then teffsedfloor = 0.024d0
