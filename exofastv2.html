@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Wed May 25 09:21:09 2022.<P>
+<STRONG>Last modified: </STRONG>Wed Jul 13 23:33:26 2022.<P>
  
 <HR>
  
@@ -27,6 +27,8 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#CALCB[1]">CALCB[1]</A>
 <LI><A HREF="#CALCB[2]">CALCB[2]</A>
 <LI><A HREF="#COMPARESTARS">COMPARESTARS</A>
+<LI><A HREF="#COMPARESTARS_CORNER[1]">COMPARESTARS_CORNER[1]</A>
+<LI><A HREF="#COMPARESTARS_CORNER[2]">COMPARESTARS_CORNER[2]</A>
 <LI><A HREF="#CONVERT_TRANSIT_TIMES">CONVERT_TRANSIT_TIMES</A>
 <LI><A HREF="#CROSSREF">CROSSREF</A>
 <LI><A HREF="#ELLKE">ELLKE</A>
@@ -73,7 +75,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#LINLD">LINLD</A>
 <LI><A HREF="#MASSRADIUS_MIST[1]">MASSRADIUS_MIST[1]</A>
 <LI><A HREF="#MASSRADIUS_MIST[2]">MASSRADIUS_MIST[2]</A>
-<LI><A HREF="#MASSRADIUS_MIST[3]">MASSRADIUS_MIST[3]</A>
+<LI><A HREF="#MASSRADIUS_PARSEC">MASSRADIUS_PARSEC</A>
 <LI><A HREF="#MASSRADIUS_TORRES">MASSRADIUS_TORRES</A>
 <LI><A HREF="#MKCONSTANTS">MKCONSTANTS</A>
 <LI><A HREF="#MKPRIOR">MKPRIOR</A>
@@ -83,6 +85,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#PLOTIMAGE">PLOTIMAGE</A>
 <LI><A HREF="#QUADLD">QUADLD</A>
 <LI><A HREF="#READIPAC">READIPAC</A>
+<LI><A HREF="#REMAKE_CORNER">REMAKE_CORNER</A>
 <LI><A HREF="#SETDEFAULTVALUE">SETDEFAULTVALUE</A>
 <LI><A HREF="#SPLITPDF">SPLITPDF</A>
 <LI><A HREF="#STROM_CONV[1]">STROM_CONV[1]</A>
@@ -398,7 +401,7 @@ at the IDL command line prompt.<P>
 <A NAME="COMPARESTARS">
 <H2>COMPARESTARS</H2></A>
 <A HREF="#CALCB[2]">[Previous Routine]</A>
-<A HREF="#CONVERT_TRANSIT_TIMES">[Next Routine]</A>
+<A HREF="#COMPARESTARS_CORNER[1]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -423,9 +426,98 @@ at the IDL command line prompt.<P>
 <STRONG>(See /h/onion0/scratch/EXOFASTv2/comparestars.pro)</STRONG><P>
 <HR>
  
+<A NAME="COMPARESTARS_CORNER[1]">
+<H2>COMPARESTARS_CORNER[1]</H2></A>
+<A HREF="#COMPARESTARS">[Previous Routine]</A>
+<A HREF="#COMPARESTARS_CORNER[2]">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   COMPARESTARS_CORNER
+
+ PURPOSE: 
+   Creates a corner plot of several different fits overlaid on top
+   of each other using the IDL save files as output by exofastv2.pro.
+
+ CALLING SEQUENCE:
+   comparestars, 'savpath' [,TAGS=,LATEXNAMES=,LEGENDTXT=,PSNAME=]
+
+ INPUTS:
+  SAVPATH    - A string resolved by file_search or an array of
+               filenames specifying the names of all the idl save
+               files to compare.  
+               See NSAMPLE if files are large
+  TAGS       - A string array specifying the tagnames (parameters) to
+               compare. Default is
+               ['mstar','rstar','rhostar','logg','teff','feh','initfeh','age','lstar','eep']
+  LATEXNAMES - A string array specifying the textoidl axis labels
+               that corresponds to each of the tags above. If not the
+               same length as TAGS, it will use the structure's latex
+               property, but that doesn't always look pretty in
+               textoidl. Empty strings will use the the structure's
+               latex property.
+  PSNAME     - A string specifying the name of the postscript file to
+               output. If not specified, the plots are made to the
+               screen.
+  LEGENDTXT  - A string array corresponding to each save file that
+               specifies the legend txt. Default is the filenames.
+  NSAMPLE    - A scalar that specifies how many (random) samples to
+               take from each parameter. Default uses all. Useful for
+               memory management if plotting data from many large files
+  POSITION   - A 2-element array specifying the normalized X and Y
+               coordinates of the top left corner of the legend
+
+</PRE><P>
+<STRONG>(See /h/onion0/scratch/EXOFASTv2/comparestars_corner.pro)</STRONG><P>
+<HR>
+ 
+<A NAME="COMPARESTARS_CORNER[2]">
+<H2>COMPARESTARS_CORNER[2]</H2></A>
+<A HREF="#COMPARESTARS_CORNER[1]">[Previous Routine]</A>
+<A HREF="#CONVERT_TRANSIT_TIMES">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   COMPARESTARS_CORNER
+
+ PURPOSE: 
+   Creates a corner plot of several different fits overlaid on top
+   of each other using the IDL save files as output by exofastv2.pro.
+
+ CALLING SEQUENCE:
+   comparestars, 'savpath' [,TAGS=,LATEXNAMES=,LEGENDTXT=,PSNAME=]
+
+ INPUTS:
+  SAVPATH    - A string resolved by file_search or an array of
+               filenames specifying the names of all the idl save
+               files to compare.  
+               NOTE: All of these will be loaded into memory at once,
+               and multiple large save files may crash
+  TAGS       - A string array specifying the tagnames (parameters) to
+               compare. Default is
+               ['mstar','rstar','rhostar','logg','teff','feh','initfeh','age','lstar','eep']
+  LATEXNAMES - A string array specifying the textoidl axis labels
+               that corresponds to each of the tags above. If not the
+               same length as TAGS, it will use the structure's latex
+               property, but that doesn't always look pretty in
+               textoidl. Empty strings will use the the structure's
+               latex property.
+  PSNAME     - A string specifying the name of the postscript file to
+               output. If not specified, the plots are made to the
+               screen.
+  LEGENDTXT  - A string array corresponding to each save file that
+               specifies the legend txt. Default is the filenames.
+  NSAMPLE    - A scalar that specifies how many (random) samples to
+               take from each parameter. Default is all. Useful for
+               memory management if the input has many large files
+
+</PRE><P>
+<STRONG>(See /h/onion0/scratch/EXOFASTv2/comparestars_corner2.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="CONVERT_TRANSIT_TIMES">
 <H2>CONVERT_TRANSIT_TIMES</H2></A>
-<A HREF="#COMPARESTARS">[Previous Routine]</A>
+<A HREF="#COMPARESTARS_CORNER[2]">[Previous Routine]</A>
 <A HREF="#CROSSREF">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -4078,77 +4170,7 @@ Function value:       1.33000
 <A NAME="MASSRADIUS_MIST[2]">
 <H2>MASSRADIUS_MIST[2]</H2></A>
 <A HREF="#MASSRADIUS_MIST[1]">[Previous Routine]</A>
-<A HREF="#MASSRADIUS_MIST[3]">[Next Routine]</A>
-<A HREF="#ROUTINELIST">[List of Routines]</A>
-<PRE>
- NAME:
-   massradius_mist
-
- PURPOSE: 
-   Interpolate the MIST stellar evolutionary models to derive Teff
-   and Rstar from mass, metallicity, and age. Intended to be a drop in
-   replacement for the Yonsie Yale model interpolation
-   (massradius_yy3.pro).
-
- CALLING SEQUENCE:
-   chi2 = massradius_mist(mstar, feh, age, teff, rstar, $
-                          VVCRIT=vvcrit, ALPHA=alpha, SPAN=span,$
-                          MISTRSTAR=mistrstar, MISTTEFF=mistteff)
- INPUTS:
-
-    MSTAR  - The mass of the star, in m_sun
-    FEH    - The metallicity of the star [Fe/H]
-    AGE    - The age of the star, in Gyr
-    RSTAR  - The radius you expect; used to calculate a chi^2
-    TEFF   - The Teff you expect; used to calculate a chi^2
-    
- OPTIONAL INPUTS:
-   VVCRIT    - The rotational velocity normalized by the critical
-               rotation speed. Must be 0.0d0 or 0.4d0 (default 0.0d0).
-   ALPHA     - The alpha abundance. Must be 0.0 (default 0.0). A
-               placeholder for future improvements to MIST models.
-   SPAN      - The interpolation is done at the closest value +/-
-               SPAN grid points in the evolutionary tracks in mass,
-               age, metallicity. The larger this number, the longer it
-               takes. Default=1. Change with care.
-   EPSNAME   - A string specifying the name of postscript file to plot
-               the evolutionary track. If not specified, no plot is
-               generated.
-
- OPTIONAL KEYWORDS:
-   DEBUG     - If set, will plot the teff and rstar over the MIST
-               Isochrone.
-
- OPTIONAL OUTPUTS:
-   MISTRSTAR - The rstar interpolated from the MIST models.
-   MISTTEFF  - The Teff interpolated from the MIST models.
-
- RESULT:
-   The chi^2 penalty due to the departure from the MIST models,
-   assuming 3% errors in the MIST model values.
-
- COMMON BLOCKS:
-   MIST_BLOCK:
-     Loading EEPs (model tracks) is very slow. This common block
-     allows us to store the tracks in memory between calls. The first
-     call will take ~3 seconds. Subsequent calls that use the same
-     EEP files take 1 ms.
-
- EXAMPLE: 
-   ;; penalize a model for straying from the MIST models 
-   chi2 += massradius_mist(mstar, feh, age, rstar=rstar, teff=teff)
-
- MODIFICATION HISTORY
- 
-  2018/01 -- Written, JDE
-</PRE><P>
-<STRONG>(See /h/onion0/scratch/EXOFASTv2/massradius_parsec.pro)</STRONG><P>
-<HR>
- 
-<A NAME="MASSRADIUS_MIST[3]">
-<H2>MASSRADIUS_MIST[3]</H2></A>
-<A HREF="#MASSRADIUS_MIST[2]">[Previous Routine]</A>
-<A HREF="#MASSRADIUS_TORRES">[Next Routine]</A>
+<A HREF="#MASSRADIUS_PARSEC">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4215,9 +4237,79 @@ Function value:       1.33000
 <STRONG>(See /h/onion0/scratch/EXOFASTv2/massradius_parsec_rosen.pro)</STRONG><P>
 <HR>
  
+<A NAME="MASSRADIUS_PARSEC">
+<H2>MASSRADIUS_PARSEC</H2></A>
+<A HREF="#MASSRADIUS_MIST[2]">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_TORRES">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   massradius_parsec
+
+ PURPOSE: 
+   Interpolate the MIST stellar evolutionary models to derive Teff
+   and Rstar from mass, metallicity, and age. Intended to be a drop in
+   replacement for the Yonsie Yale model interpolation
+   (massradius_yy3.pro).
+
+ CALLING SEQUENCE:
+   chi2 = massradius_parsec(mstar, feh, age, teff, rstar, $
+                          VVCRIT=vvcrit, ALPHA=alpha, SPAN=span,$
+                          PARSEC_RSTAR=mistrstar, PARSEC_TEFF=mistteff)
+ INPUTS:
+
+    MSTAR  - The mass of the star, in m_sun
+    FEH    - The metallicity of the star [Fe/H]
+    AGE    - The age of the star, in Gyr
+    RSTAR  - The radius you expect; used to calculate a chi^2
+    TEFF   - The Teff you expect; used to calculate a chi^2
+    
+ OPTIONAL INPUTS:
+   VVCRIT    - The rotational velocity normalized by the critical
+               rotation speed. Must be 0.0d0 or 0.4d0 (default 0.0d0).
+   ALPHA     - The alpha abundance. Must be 0.0 (default 0.0). A
+               placeholder for future improvements to MIST models.
+   SPAN      - The interpolation is done at the closest value +/-
+               SPAN grid points in the evolutionary tracks in mass,
+               age, metallicity. The larger this number, the longer it
+               takes. Default=1. Change with care.
+   EPSNAME   - A string specifying the name of postscript file to plot
+               the evolutionary track. If not specified, no plot is
+               generated.
+
+ OPTIONAL KEYWORDS:
+   DEBUG     - If set, will plot the teff and rstar over the MIST
+               Isochrone.
+
+ OPTIONAL OUTPUTS:
+   PARSEC_RSTAR - The rstar interpolated from the MIST models.
+   PARSEC_TEFF  - The Teff interpolated from the MIST models.
+
+ RESULT:
+   The chi^2 penalty due to the departure from the MIST models,
+   assuming 3% errors in the MIST model values.
+
+ COMMON BLOCKS:
+   MIST_BLOCK:
+     Loading EEPs (model tracks) is very slow. This common block
+     allows us to store the tracks in memory between calls. The first
+     call will take ~3 seconds. Subsequent calls that use the same
+     EEP files take 1 ms.
+
+ EXAMPLE: 
+   ;; penalize a model for straying from the MIST models 
+   chi2 += massradius_parsec(mstar, feh, age, rstar=rstar, teff=teff)
+
+ MODIFICATION HISTORY
+ 
+  2018/01 -- Written, JDE
+</PRE><P>
+<STRONG>(See /h/onion0/scratch/EXOFASTv2/massradius_parsec.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="MASSRADIUS_TORRES">
 <H2>MASSRADIUS_TORRES</H2></A>
-<A HREF="#MASSRADIUS_MIST[3]">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_PARSEC">[Previous Routine]</A>
 <A HREF="#MKCONSTANTS">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -4804,7 +4896,7 @@ Function value:       1.33000
 <A NAME="READIPAC">
 <H2>READIPAC</H2></A>
 <A HREF="#QUADLD">[Previous Routine]</A>
-<A HREF="#SETDEFAULTVALUE">[Next Routine]</A>
+<A HREF="#REMAKE_CORNER">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4864,9 +4956,54 @@ Function value:       1.33000
 <STRONG>(See /h/onion0/scratch/EXOFASTv2/readipac.pro)</STRONG><P>
 <HR>
  
+<A NAME="REMAKE_CORNER">
+<H2>REMAKE_CORNER</H2></A>
+<A HREF="#READIPAC">[Previous Routine]</A>
+<A HREF="#SETDEFAULTVALUE">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   REMAKE_CORNER
+
+ PURPOSE: 
+   Creates a corner plot of several different fits overlaid on top
+   of each other using the IDL save files as output by exofastv2.pro.
+
+ CALLING SEQUENCE:
+   remake_corner, 'savpath' [,TAGS=,LATEXNAMES=,LEGENDTXT=,PSNAME=]
+
+ INPUTS:
+  SAVPATH    - A string resolved by file_search or an array of
+               filenames specifying the names of all the idl save
+               files to compare.  
+               See NSAMPLE if files are large
+  TAGS       - A string array specifying the tagnames (parameters) to
+               compare. Default is
+               ['mstar','rstar','rhostar','logg','teff','feh','initfeh','age','lstar','eep']
+  LATEXNAMES - A string array specifying the textoidl axis labels
+               that corresponds to each of the tags above. If not the
+               same length as TAGS, it will use the structure's latex
+               property, but that doesn't always look pretty in
+               textoidl. Empty strings will use the the structure's
+               latex property.
+  PSNAME     - A string specifying the name of the postscript file to
+               output. If not specified, the plots are made to the
+               screen.
+  LEGENDTXT  - A string array corresponding to each save file that
+               specifies the legend txt. Default is the filenames.
+  NSAMPLE    - A scalar that specifies how many (random) samples to
+               take from each parameter. Default uses all. Useful for
+               memory management if plotting data from many large files
+  POSITION   - A 2-element array specifying the normalized X and Y
+               coordinates of the top left corner of the legend
+
+</PRE><P>
+<STRONG>(See /h/onion0/scratch/EXOFASTv2/remake_corner.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="SETDEFAULTVALUE">
 <H2>SETDEFAULTVALUE</H2></A>
-<A HREF="#READIPAC">[Previous Routine]</A>
+<A HREF="#REMAKE_CORNER">[Previous Routine]</A>
 <A HREF="#SPLITPDF">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
