@@ -20,7 +20,10 @@ if ss.mist and not ss.star.age.fit then begin
       mistchi2 = massradius_mist(ss.star.eep.value[i],ss.star.mstar.value[i],$
                                  ss.star.initfeh.value[i],ss.star.age.value[i],$
                                  ss.star.teff.value[i],ss.star.rstar.value[i],$
-                                 ss.star.feh.value[i],mistage=mistage,fitage=ss.star.age.fit)
+                                 ss.star.feh.value[i],mistage=mistage,fitage=ss.star.age.fit,$
+                                 tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
+                                 rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+
       ss.star.age.value[i] = mistage
    endfor
 endif else if ss.parsec and not ss.star.age.fit then begin
@@ -28,7 +31,9 @@ endif else if ss.parsec and not ss.star.age.fit then begin
       parsecchi2 = massradius_parsec(ss.star.eep.value[i],ss.star.mstar.value[i],$
                                      ss.star.initfeh.value[i],ss.star.age.value[i],$
                                      ss.star.teff.value[i],ss.star.rstar.value[i],$
-                                     ss.star.feh.value[i],parsec_age=parsec_age,fitage=ss.star.age.fit)
+                                     ss.star.feh.value[i],parsec_age=parsec_age,fitage=ss.star.age.fit,$
+                                     tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
+                                     rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
       ss.star.age.value[i] = parsec_age
    endfor
 endif
