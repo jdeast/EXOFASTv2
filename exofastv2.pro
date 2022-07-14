@@ -1078,33 +1078,14 @@ printandlog, 'It should only be compared against the loglike of the same model w
 ;; do the MCMC fit
 if not keyword_set(bestonly) then begin
 
-;   if nthreads gt 1 then begin
-;      thread_array = replicate(create_struct('obridge',obj_new("IDL_IDLBridge", output=''),'j',0L, 'm',0L, 'newpars',dblarr(nfit),'status',0B, 'fac', 1d0),nthreads)
-;      for i=0L, nthreads-1 do begin
-;         ss_json = json_serialize(ss)
-;         thread_array[i].obridge->execute, 'COMMON chi2_block, ss_json' ;; share the structure to each thread
-;         thread_array[i].obridge->execute,'call_myfunc, det'
-;         print, thread_array[i].obridge->getvar('det')
-;         thread_array[i].obridge->execute, 'HELP, /full, output=x'
-;         print, thread_array[i].obridge->getvar('x')
-;         stop
-
-
-
- ;     endfor
-
-;   endif
-
-;   ss.debug=1
-;   ss.verbose=1
    exofast_demcpt_multi, best, chi2func, pars, chi2=chi2,$
-                   nthin=nthin,maxsteps=maxsteps, maxtime=maxtime, $
-                   ntemps=ntemps, tf=tf, dontstop=dontstop, $
-                   burnndx=burnndx, goodchains=goodchains, seed=seed, randomfunc=randomfunc, $
-                   gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
-                   stretch=stretch, logname=logname, angular=angular, $
-                   keephot=keephot, hotpars=hotpars, hotchi2=hotchi2, thread_array=thread_array
-
+                         nthin=nthin,maxsteps=maxsteps, maxtime=maxtime, $
+                         ntemps=ntemps, tf=tf, dontstop=dontstop, $
+                         burnndx=burnndx, goodchains=goodchains, seed=seed, randomfunc=randomfunc, $
+                         gelmanrubin=gelmanrubin, tz=tz, maxgr=maxgr, mintz=mintz, $
+                         stretch=stretch, logname=logname, angular=angular, $
+                         keephot=keephot, hotpars=hotpars, hotchi2=hotchi2, thread_array=thread_array
+   
    if pars[0] eq -1 then begin
       printandlog, 'MCMC Failed to find a stepping scale. This usually means one or more parameters are unconstrained by the data or priors.', logname
    endif
