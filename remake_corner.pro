@@ -139,7 +139,7 @@ for j=0L, nfiles-1 do begin
       *pars[j,i] = par
 
    endfor
-
+   undefine, mcmcss ;; free up memory before we load the next one
 endfor
 
 if n_elements(legendtxt) ne nfiles then legendtxt = labels
