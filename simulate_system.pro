@@ -3,7 +3,9 @@ pro simulate_system, minecc=minecc, maxecc=maxecc, ecc=ecc,$
                      mininitfeh=mininitfeh, maxinitfeh=maxinitfeh, initfeh=initfeh,$
                      mineep=mineep, maxeep=maxeep, eep=eep,$
                      minmstar=minmstar, maxmstar=maxmstar, mstar=mstar,$
-                     rstar=rstar,$
+                     minrstar=minrstar, maxrstar=maxrstar, rstar=rstar,$
+                     minu1=minu1, maxu1=maxu1, u1=u1,$
+                     minu2=minu2, maxu2=maxu2, u2=u2,$
                      minmp=minmp, maxmp=maxmp, mp=mp,$
                      rp=rp,$
                      minperiod=minperiod, maxperiod=maxperiod, period=period,$
@@ -11,7 +13,9 @@ pro simulate_system, minecc=minecc, maxecc=maxecc, ecc=ecc,$
                      mincosi=mincosi, maxcosi=maxcosi, cosi=cosi,$
                      nograzing=nograzing, neednottransit=neednottransit, i180=i180, $
                      mintime=mintime, maxtime=maxtime, cadence=cadence,$
-                     maxiter=maxiter, prefix=prefix, err=err
+                     maxiter=maxiter, prefix=prefix, err=err, $
+                     band=band, filename=filename, id=id
+
 
 ;; j85 
 ;simulate_system, ecc=0d0, omega=!dpi/2d0, initfeh=0.05d0,eep=353.4d0,mstar=1d0,mp=1d0,period=13d00,tc=0d0,cosi=0.037111069d0, err=0.010854d0
@@ -97,7 +101,11 @@ if n_elements(filename) ne 1 then begin
    vcve = sqrt(1d0-ecc0^2)/(1d0+ecc0*sin(omega0))
    id = string(round(vcve*100d0),format='(i03)') + string(round(randomu(seed)*1d7),format='(i07)')
    path = dir + id + path_sep()
-endif
+endif else begin
+   path = file_dirname(filename) + path_sep()
+   if n_elements(id) eq 0 then id = 'planet'
+endelse
+
 
 ;; derive Tp
 phase=exofast_getphase(ecc0,omega0,/pri)  
@@ -117,9 +125,15 @@ if age gt 13.86d0 then goto, restart
 ;; Claret tables and stellar values
 if n_elements(band) ne 1 then band = 'TESS'
 logg = alog10(mstar0/(rstar0^2)*constants.gravitysun)
-coeffs = quadld(logg, teff, feh, band)
-u1 = coeffs[0]
-u2 = coeffs[1]
+
+if n_elements(u1) ne 0 and n_elements(u2) ne 0 then begin
+   u10 = u1
+   u20 = u2
+endif else begin
+   coeffs = quadld(logg, teff, feh, band)
+   u10 = coeffs[0]
+   u20 = coeffs[1]
+endelse
 
 ;; derive Rplanet based on Chen & Kipping and Mplanet
 mpsun = mp0*mjup                              ;; m_sun
@@ -187,8 +201,8 @@ printf, lun, mpsun, mpsun*0.05d0, format='("mpsun ",f0.8, x, f0.8)'
 printf, lun, p, format='("p ",f0.8)' 
 printf, lun, cosi0, format='("cosi ",f0.8)' 
 printf, lun, period0, format='("period ",f0.10)' 
-printf, lun, u1, format='("u1 ",f0.8)' 
-printf, lun, u2, format='("u2 ",f0.8)' 
+printf, lun, u10, format='("u1 ",f0.8)' 
+printf, lun, u20, format='("u2 ",f0.8)' 
 printf, lun, variance, format='("variance ",f0.8)' 
 printf, lun, f0, format='("f0 ",f0.8)'
 free_lun, lun
@@ -207,7 +221,7 @@ q = mstar0/mpsun
 observed_time = target2bjd(emitted_time, inc=inc, a=a,tp=tp, period=period0, e=ecc0, omega=omega0, q=q)
 observed_time = observed_time - (observed_time[0]-emitted_time[0])
 
-lc = exofast_tran(observed_time, inc, ar, tp, period0, ecc0, omega0, p, u1, u2, f0, rstar=rstar/au, q=q, au=au, c=c, tc=tc0, reflect=0d0, dilute=0d0, thermal=0d0)
+lc = exofast_tran(observed_time, inc, ar, tp, period0, ecc0, omega0, p, u10, u20, f0, rstar=rstar/au, q=q, au=au, c=c, tc=tc0, reflect=0d0, dilute=0d0, thermal=0d0)
 
 ;print, inc*180d0/!dpi, ar, tp, ecc0, omega0, p, u1, u2, f0, rstar
 ;print, ar*cosi
@@ -217,7 +231,8 @@ if n_elements(err) eq 0 then err = 20d0/1d6
 lc += randomn(seed,npoints)*err
 
 ;; save the full LC to a file 
-filename = path + 'n20190101.TESS.TESS.dat'
+caldat, tc, month, day, year
+filename = path + 'n' + string(year,month,day,format='(i04,i02,i02)') + '.' + band + '.TESS.dat'
 forprint, observed_time, lc, replicate(err,npoints), format='(f0.6,x,f0.9,x,f0.9)', /nocomment, textout=filename
          
 ;; chop out the regions around the transit and save that
@@ -233,5 +248,5 @@ print, t14*24d0, tfwhm*24d0, ar*cosi, 0.85/ar
 
 
 ;; TODO: make simulated RV/astrometric/SED/DT models...
-stop
+;stop
 end
