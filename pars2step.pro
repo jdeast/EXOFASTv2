@@ -74,7 +74,9 @@ if (ss.mist or ss.parsec) and ~ss.star.eep.userchanged and (ss.star.mstar.userch
       if ss.mist then begin
          mistchi2 =  massradius_mist(eeps[i],ss.star.mstar.value,ss.star.initfeh.value,$
                                      ss.star.age.value,ss.star.teff.value,$
-                                     ss.star.rstar.value,ss.star.feh.value,mistage=mistage,/allowold)
+                                     ss.star.rstar.value,ss.star.feh.value,mistage=mistage,fitage=ss.star.age.fit,$
+                                     /allowold,tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
+                                     rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
          if finite(mistchi2) then begin
             if mistage gt 13.82d0 then break
             chi2[i] = mistchi2
@@ -84,7 +86,9 @@ if (ss.mist or ss.parsec) and ~ss.star.eep.userchanged and (ss.star.mstar.userch
          parsecchi2 =  massradius_parsec(eeps[i],ss.star.mstar.value,ss.star.initfeh.value,$
                                          ss.star.age.value,ss.star.teff.value,$
                                          ss.star.rstar.value,ss.star.feh.value,$
-                                         parsec_age=parsec_age,/allowold)
+                                         parsec_age=parsec_age,fitage=ss.star.age.fit,/allowold,$
+                                         tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
+                                         rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
          if finite(parsecchi2) then begin
             if parsec_age gt 13.82d0 then break
             chi2[i] = parsecchi2
