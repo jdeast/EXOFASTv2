@@ -534,13 +534,20 @@ endif
 ;; apply MIST penalty to constrain stellar parameters
 if ss.mist then begin
    if keyword_set(psname) then epsname = psname+'.mist.eps'
-   
+
+;************************************
+;print, 'this is for making pretty animated gifs. Do not leave it here!
+;filebase = "HAT-3b.MIST."
+;files = file_search(filebase+'*.png',count=index)
+;pngname = string(filebase, index+1,format='(a,i04,".png")')
+;************************************
+
    mistchi2 = massradius_mist(ss.star.eep.value, ss.star.mstar.value, ss.star.initfeh.value, $
                               ss.star.age.value, ss.star.teff.value,$
                               ss.star.rstar.value, ss.star.feh.value, debug=ss.debug, $
                               epsname=epsname, gravitysun=ss.constants.gravitysun, $
                               fitage=ss.star.age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose,$
-                              tefffloor=ss.teffemfloor, fehfloor=ss.fehemfloor, rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+                              tefffloor=ss.teffemfloor, fehfloor=ss.fehemfloor, rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor, pngname=pngname)
 
    
    chi2 += mistchi2
@@ -619,11 +626,13 @@ if file_test(ss.star.mistsedfile) or file_test(ss.star.fluxfile) then begin
    ;; Add a floor for the Fbol used everywhere else
    if ss.star.rstarsed.fit then begin
       rstarsed = ss.star.rstarsed.value
-      lstarsed = 4d0*!dpi*rstarsed^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+;      lstarsed = 4d0*!dpi*rstarsed^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+      lstarsed = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
       sedchi2 += ((lstarsed - ss.star.lstar.value)/(ss.fbolsedfloor*lstarsed))^2
    endif else begin
       rstarsed = ss.star.rstar.value
-      lstarsed = 4d0*!dpi*rstarsed^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+;      lstarsed = 4d0*!dpi*rstarsed^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+      lstarsed = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
    endelse
 
    if file_test(ss.star.mistsedfile) then begin
