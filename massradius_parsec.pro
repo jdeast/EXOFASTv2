@@ -1,6 +1,6 @@
 ;+
 ; NAME:
-;   massradius_mist
+;   massradius_parsec
 ;
 ; PURPOSE: 
 ;   Interpolate the MIST stellar evolutionary models to derive Teff
@@ -9,9 +9,9 @@
 ;   (massradius_yy3.pro).
 ;
 ; CALLING SEQUENCE:
-;   chi2 = massradius_mist(mstar, feh, age, teff, rstar, $
+;   chi2 = massradius_parsec(mstar, feh, age, teff, rstar, $
 ;                          VVCRIT=vvcrit, ALPHA=alpha, SPAN=span,$
-;                          MISTRSTAR=mistrstar, MISTTEFF=mistteff)
+;                          PARSEC_RSTAR=mistrstar, PARSEC_TEFF=mistteff)
 ; INPUTS:
 ;
 ;    MSTAR  - The mass of the star, in m_sun
@@ -38,8 +38,8 @@
 ;               Isochrone.
 ;
 ; OPTIONAL OUTPUTS:
-;   MISTRSTAR - The rstar interpolated from the MIST models.
-;   MISTTEFF  - The Teff interpolated from the MIST models.
+;   PARSEC_RSTAR - The rstar interpolated from the MIST models.
+;   PARSEC_TEFF  - The Teff interpolated from the MIST models.
 ;
 ; RESULT:
 ;   The chi^2 penalty due to the departure from the MIST models,
@@ -54,7 +54,7 @@
 ;
 ; EXAMPLE: 
 ;   ;; penalize a model for straying from the MIST models 
-;   chi2 += massradius_mist(mstar, feh, age, rstar=rstar, teff=teff)
+;   chi2 += massradius_parsec(mstar, feh, age, rstar=rstar, teff=teff)
 ;
 ; MODIFICATION HISTORY
 ; 
@@ -259,18 +259,19 @@ endif
 ;; assume 3% model errors at 1 msun, 5% at 0.1 msun, 5% at 10 msun
 percenterror = 0.03d0 + 0.02d0*alog10(mstar)^2
 
-if rstarfloor gt 0 then chi2 = ((parsec_rstar - rstar)/(percenterror*parsec_rstar))^2 $
-else chi2 = ((parsec_rstar - rstar)/(rstarfloor*parsec_rstar))^2
+;; or overwrite with user supplied floors
+if rstarfloor gt 0 then chi2 = ((parsec_rstar - rstar)/(rstarfloor*parsec_rstar))^2 $
+else chi2 = ((parsec_rstar - rstar)/(percenterror*parsec_rstar))^2
 
-if tefffloor gt 0 then chi2 += ((parsec_teff - teff)/(percenterror*parsec_teff))^2 $
-else chi2 += ((parsec_teff - teff)/(tefffloor*parsec_teff))^2 
+if tefffloor gt 0 then chi2 += ((parsec_teff - teff)/(tefffloor*parsec_teff))^2 $
+else chi2 += ((parsec_teff - teff)/(percenterror*parsec_teff))^2 
 
-if fehfloor gt 0 then chi2 += ((parsec_feh - feh)/(percenterror))^2 $
-else chi2 += ((parsec_feh - feh)/(fehfloor))^2 
+if fehfloor gt 0 then chi2 += ((parsec_feh - feh)/(fehfloor))^2 $
+else chi2 += ((parsec_feh - feh)/(percenterror))^2 
               
 if keyword_set(fitage) then begin
-   if agefloor gt 0 then chi2 += ((parsec_age - age)/(percenterror*parsec_age))^2 $
-   else chi2 += ((parsec_age - age)/(agefloor*parsec_age))^2           
+   if agefloor gt 0 then chi2 += ((parsec_age - age)/(agefloor*parsec_age))^2 $
+   else chi2 += ((parsec_age - age)/(percenterror*parsec_age))^2
 endif
 
 ;; plot it
