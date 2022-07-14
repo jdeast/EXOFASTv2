@@ -64,7 +64,7 @@ function massradius_mist, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvc
                           mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
                           epsname=epsname, debug=debug, gravitysun=gravitysun, fitage=fitage, $
                           ageweight=ageweight, verbose=verbose, logname=logname, trackfile=trackfile, allowold=allowold,$
-                          tefffloor=tefffloor, fehfloor=fehfloor, rstarfloor=rstarfloor, agefloor=agefloor
+                          tefffloor=tefffloor, fehfloor=fehfloor, rstarfloor=rstarfloor, agefloor=agefloor, pngname=pngname
 
 if n_elements(tefffloor) eq 0 then tefffloor = -1
 if n_elements(fehfloor) eq 0 then fehfloor = -1
@@ -253,22 +253,23 @@ endif
 ;; assume 3% model errors at 1 msun, 10% at 0.1 msun, 5% at 10 msun
 percenterror = 0.03d0 -0.025d0*alog10(mstar) + 0.045d0*alog10(mstar)^2
 
-if rstarfloor gt 0 then chi2 = ((mistrstar - rstar)/(percenterror*mistrstar))^2 $
-else chi2 = ((mistrstar - rstar)/(rstarfloor*mistrstar))^2
+;; or overwrite with user supplied floors
+if rstarfloor gt 0 then chi2 = ((mistrstar - rstar)/(rstarfloor*mistrstar))^2 $
+else chi2 = ((mistrstar - rstar)/(percenterror*mistrstar))^2
 
-if tefffloor gt 0 then chi2 += ((mistteff - teff)/(percenterror*mistteff))^2 $
-else chi2 += ((mistteff - teff)/(tefffloor*mistteff))^2 
+if tefffloor gt 0 then chi2 += ((mistteff - teff)/(tefffloor*mistteff))^2 $
+else chi2 += ((mistteff - teff)/(percenterror*mistteff))^2 
 
-if fehfloor gt 0 then chi2 += ((mistfeh - feh)/(percenterror))^2 $
-else chi2 += ((mistfeh - feh)/(fehfloor))^2 
+if fehfloor gt 0 then chi2 += ((mistfeh - feh)/(fehfloor))^2 $
+else chi2 += ((mistfeh - feh)/(percenterror))^2 
               
 if keyword_set(fitage) then begin
-   if agefloor gt 0 then chi2 += ((mistage - age)/(percenterror*mistage))^2 $
-   else chi2 += ((mistage - age)/(agefloor*mistage))^2           
+   if agefloor gt 0 then chi2 += ((mistage - age)/(agefloor*mistage))^2 $
+   else chi2 += ((mistage - age)/(percenterror*mistage))^2           
 endif
 
 ;; plot it
-if keyword_set(debug) or keyword_set(epsname) then begin
+if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then begin
    mydevice=!d.name
 
    ;; prepare the plotting device
@@ -283,9 +284,24 @@ if keyword_set(debug) or keyword_set(epsname) then begin
       device, xsize=xsize,ysize=ysize
       loadct, 39, /silent
       red = 254
-      symsize = 0.33
+      symsize = 0.5
       xtitle=exofast_textoidl('T_{eff}')
       ytitle=exofast_textoidl('log g_*')
+   endif else if n_elements(pngname) ne 0 then begin
+      set_plot, 'Z'
+      xsize=1000
+      ysize=1000
+      device, set_resolution=[xsize,ysize],set_pixel_depth=24
+      device, set_font='Times',/tt_font
+      charsize=xsize/299d0
+      thick=xsize/299d0
+      red = '0000ff'x;255;254
+      xtitle=exofast_textoidl('T_{eff}')
+      ytitle=exofast_textoidl('log g_*') 
+      white='ffffff'x
+      black='000000'x
+      font=1
+      symsize=1
    endif else begin
 ;      set_plot, 'X'
       red = '0000ff'x
@@ -350,18 +366,26 @@ if keyword_set(debug) or keyword_set(epsname) then begin
    xminor = spacing/100d0
   
    ymax = min([loggplot,3,5,loggplottrack[use]],max=ymin) ;; plot range backwards
-   plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor,/xlog
+   plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor,/xlog,color=black,background=white,font=font,charsize=charsize,thick=thick,xthick=thick,charthick=thick,ythick=thick
    plotsym,0,/fill
-   oplot, [teff], [loggplot], psym=8,symsize=0.5 ;; the input point
+   oplot, [teff], [loggplot], psym=8,symsize=symsize,color=black ;; the input point
    junk = min(abs(eepplot-eep),ndx)
-   oplot, [teffplottrack[ndx]],[loggplottrack[ndx]], psym=2, color=red ;; the track point 
+   oplot, [teffplottrack[ndx]],[loggplottrack[ndx]], psym=2, symsize=symsize*2, color=red ;; the track point 
+
    if keyword_set(epsname) then begin
       !p.font=-1
       !p.multi=0
       device, /close
       device, encapsulated=0
-   endif
-
+   endif else if n_elements(pngname) ne 0 then begin
+;      tv, rnow, 0, ysize-npoints-1, 1
+;      tv, gnow, 0, ysize-npoints-1, 2 
+;      tv, bnow, 0, ysize-npoints-1, 3
+      write_png, pngname, tvrd(/true)
+      device, /close
+      !p.font=-1
+      !p.multi=0
+   endif    
    set_plot, mydevice
 
 endif
