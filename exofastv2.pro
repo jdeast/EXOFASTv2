@@ -378,7 +378,11 @@
 ;                 planets should be fit with a transit model. 
 ;                 If TRANPATH is specified, default is bytarr(nplanets) + 1B.
 ;                 If TRANPATH is not specified, default is bytarr(nplanets). 
-;                 At least one of FITRV and FITTRAN should be true for each planet
+;                 At least one of FITRV and FITTRAN should be true for
+;                 each planet
+;   STARNDX     - An NPLANETS long array that specifies the index of
+;                 the star each planet orbits. The default is 0 for
+;                 all.
 ;   CIRCULAR    - An NPLANETS boolean array that specifies which planets
 ;                 should be fixed to be circular (1) or left with
 ;                 eccentricity free (0). 
@@ -404,6 +408,14 @@
 ;             fitting a full phase curve. It will be modeled as a
 ;             sinusoid with the orbital period, a minimum at the
 ;             primary transit, and a fitted amplitude (in PPM).
+;  DILUTED  - An NTRANSITSxNSTARS boolean array specifying which
+;             transits are blended with which stars. These will
+;             automatically be deblended according to an SED model of
+;             all stars specified here, assuming an error of 10%. 
+;             NOTE: TESS lightcurves from SPOC are already deblended
+;             with known companions (in TICv8.1). 
+
+
 ;  FITDILUTE- A string array specifying which bands to fit a dilution
 ;             term for. It will fit the fractional contribution from
 ;             the companion. This should be set if the star is blended
@@ -716,7 +728,7 @@ pro exofastv2, priorfile=priorfile, $
                prefix=prefix,$
                circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
                rossiter=rossiter,chen=chen,$
-               fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
+               diluted=diluted, fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
                fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
                nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
                ntemps=ntemps, tf=tf, keephot=keephot, $
@@ -725,7 +737,7 @@ pro exofastv2, priorfile=priorfile, $
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                rejectflatmodel=rejectflatmodel,$
                maxgr=maxgr, mintz=mintz, $
-               yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+               yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, nstars=nstars, starndx=starndx, $
                fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
                earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
@@ -755,7 +767,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              prefix=prefix,$
              circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
              rossiter=rossiter,chen=chen,$
-             fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
+             diluted=diluted, fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
              fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
              nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, ntemps=ntemps, tf=tf, dontstop=dontstop, $
              debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
@@ -763,7 +775,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
              rejectflatmodel=rejectflatmodel,$
              maxgr=maxgr, mintz=mintz, $
-             yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+             yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, nstars=nstars, starndx=starndx, $
              fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
              earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
@@ -841,14 +853,14 @@ endif
 
 ;; create the master structure
 ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, $
-          mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets, $
+          mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets, nstars=nstars, starndx=starndx,$
           teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
           debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,$
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
           rossiter=rossiter,longcadence=longcadence,rejectflatmodel=rejectflatmodel,$
           ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
-          fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
+          diluted=diluted, fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
           fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
           chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,$
           fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
@@ -930,17 +942,16 @@ if nthreads gt 1 then begin
 ;      print, thread_array[i].obridge->getvar('astrompath')
 ;      print, thread_array[i].obridge->getvar('fbolsedfloor')
          
-
       ;; create the stellar stucture within each thread
       thread_array[i].obridge->execute,'ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,'+ $
-         'mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets,'+ $
+         'mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets,nstars=nstars,starndx=starndx,'+ $
          'teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,'+$
          'debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,'+$
          'circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,'+$
          'ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,'+$
          'rossiter=rossiter,longcadence=longcadence,rejectflatmodel=rejectflatmodel,'+$
          'ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,'+$
-         'fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect,'+ $
+         'diluted=diluted, fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect,'+ $
          'fitphase=fitphase, fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam,'+ $
          'chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec,'+$
          'noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,'+$
@@ -1032,7 +1043,7 @@ printandlog, '*** THE FITTED PARAMETERIZATION BY                         ***', l
 printandlog, '*** $EXOFAST_PATH/pars2step.pro. NOT ALL PARAMETER         ***', logname
 printandlog, '*** COMBINATIONS ARE ALLOWED/SUPPORTED.                    ***', logname
 printandlog, '*** WHEN IN DOUBT, SET PRIORS/CHANGE STARTING VALUES       ***', logname
-printandlog, '*** DIRECTLY IN THESE FITTED PARAMETERS.                    ***', logname
+printandlog, '*** DIRECTLY IN THESE FITTED PARAMETERS.                   ***', logname
 printandlog, '**************************************************************', logname
 printandlog, '', logname
 printandlog, 'Par #      Par Name    Par Value       Amoeba Scale', logname
@@ -1142,14 +1153,14 @@ ss.verbose = keyword_set(verbose)
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
 mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, $
-              mistsedfile=mistsedfile, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets, $
+              mistsedfile=mistsedfile, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets, nstars=nstars,starndx=starndx, $
               teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
               debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
               circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
               rossiter=rossiter,longcadence=longcadence, rejectflatmodel=rejectflatmodel,$
               ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
-              fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+              diluted=diluted, fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
               fitphase=fitphase, fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
               chen=chen,nvalues=nsteps*nchains,/silent,yy=yy,torres=torres,nomist=nomist,parsec=parsec,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing, logname=logname, best=best,$
@@ -1196,7 +1207,7 @@ suffix = priorfileparts[n_elements(priorfileparts)-1]
 if valid_num(suffix) then priorfileparts[n_elements(priorfileparts)-1] = strtrim(suffix+1L,2) $
 else priorfileparts = [priorfileparts,'2']
 priorfile2 = file_dirname(prefix) + path_sep() + file_basename(strjoin(priorfileparts,'.'))
-mkprior, mcmcss=mcmcss, priorfilename=priorfile2
+mkprior2, mcmcss=mcmcss, priorfilename=priorfile2
 
 ;; GDL compatibility
 if runninggdl then begin

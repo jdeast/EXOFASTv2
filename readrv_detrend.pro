@@ -94,8 +94,8 @@ else dm = 0d0
 detrendaddpar = detrend
 detrendaddpar.description = 'Additive detrending coeff'
 detrendaddpars = replicate(detrendaddpar,nadd > 1)
-detrendaddpars.label = 'C' + strtrim(indgen(nadd > 1),2)
-detrendaddpars.latex = 'C_{' + strtrim(indgen(nadd > 1),2) + '}'
+detrendaddpars.label = 'RVC' + strtrim(indgen(nadd > 1),2)
+detrendaddpars.latex = 'RVC_{' + strtrim(indgen(nadd > 1),2) + '}'
 if nadd eq 0 then begin
    detrendaddpars.fit = 0
    detrendaddpars.derive = 0
@@ -104,8 +104,8 @@ endif
 detrendmultpar = detrend
 detrendmultpar.description = 'Multiplicative detrending coeff'
 detrendmultpars = replicate(detrendmultpar,nmult > 1)
-detrendmultpars.label = 'M' + strtrim(indgen(nmult > 1),2)
-detrendmultpars.latex = 'M_{' + strtrim(indgen(nmult > 1),2) + '}'
+detrendmultpars.label = 'RVM' + strtrim(indgen(nmult > 1),2)
+detrendmultpars.latex = 'RVM_{' + strtrim(indgen(nmult > 1),2) + '}'
 if nmult eq 0 then begin
    detrendmultpars.fit = 0
    detrendmultpars.derive = 0

@@ -1,6 +1,6 @@
 ;+
 ; NAME:
-;   EXOFAST_LATEXTAB
+;   EXOFAST_LATEXTAB2
 ;
 ; PURPOSE:
 ;   Prints the latex source to create a deluxe table of parameter values and
@@ -137,7 +137,7 @@ if ss.ntran eq 0 then begin
 endif
 
 ;; these notes are only neccesary if a slope is fit
-if ss.star.slope.fit then begin
+if ss.star[0].slope.fit then begin
    notendx = [[notendx],$
               ['gamma','2'],$
               ['slope','2'],$

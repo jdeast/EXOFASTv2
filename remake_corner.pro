@@ -33,10 +33,14 @@
 ;               memory management if plotting data from many large files
 ;  POSITION   - A 2-element array specifying the normalized X and Y
 ;               coordinates of the top left corner of the legend
+;  POSTERIORS - When this keyword is set, text files of the posteriors
+;               will be output with the same name as the input files,
+;               replacing 'idl' with 'txt'.
 ;
 ;-
 pro remake_corner, savpath, tags=tags, latexnames=latexnames, psname=psname, $
-                   legendtxt=legendtxt, nsample=nsample, position=position
+                   legendtxt=legendtxt, nsample=nsample, position=position, $
+                   posteriors=posteriors, nxbin=nxbin, nybin=nybin, optimizeorder=optimizeorder
 
 if n_elements(position) ne 2 then position = [0.533d0,0.903d0]
 
@@ -88,7 +92,7 @@ if n_elements(psname) ne 0 then begin
    orange = 208      ; 4
    redorange = 224   ; 7
    red = 254         ; 1
-   colors = [black,red,green,blue,orange,cyan,purple,redorange,yellowgreen,$
+   colors = [black,red,blue, green,orange,cyan,purple,redorange,yellowgreen,$
              darkpurple,lightgreen,greenblue,darkblue,bluegreen,lightblue,yellow]
    legendsize = 0.5
    thick=2
@@ -109,6 +113,7 @@ ncolors = n_elements(colors)
 labels = strarr(nfiles)
 pars = ptrarr(nfiles,npars,/allocate_heap)
 extrema = dblarr(2,nfiles,npars) + !values.d_nan
+
 for j=0L, nfiles-1 do begin
    restore, files[j]
 
@@ -124,6 +129,8 @@ for j=0L, nfiles-1 do begin
    if n_elements(nsample) ne 0 then sample = long(randomu(seed,nsample)*ngoodsteps) $
    else sample = lindgen(ngoodsteps) ;; or not
 
+   if keyword_set(posteriors) then pars2txt = dblarr(npars,ngoodsteps)
+
    ;; extract the relevant values from the structure
    for i=0L, npars-1 do begin
 
@@ -137,10 +144,50 @@ for j=0L, nfiles-1 do begin
       if latexnames[i] eq '' then latexnames[i] = parstr.latex
 
       *pars[j,i] = par
+      if keyword_set(posteriors) then pars2txt[i,*] = par
 
    endfor
    undefine, mcmcss ;; free up memory before we load the next one
+
+   if keyword_set(posteriors) then begin
+      openw, lun, file_basename(files[j],'.idl') + '.txt',/get_lun
+      printf, lun, tags, format='("#"' + strtrim( npars,2) + '(a27,x))'
+      printf, lun, pars2txt, format='(' + strtrim( npars,2) + '(f27.20,x))'
+      free_lun, lun
+      undefine, pars2txt
+   endif
 endfor
+
+if keyword_set(optimizeorder) then begin
+   area = dblarr(nfiles,npars,npars)
+   area2 = dblarr(nfiles,npars,npars)
+   if n_elements(nxbin) eq 0 then nxbin = 100
+   if n_elements(nybin) eq 0 then nybin = nxbin
+   
+   for j=0L, nfiles-1 do begin   
+      for i=0L, npars-1 do begin
+         xpar = *pars[j,i]
+         xmin = min(extrema[0,*,i])
+         xmax = max(extrema[1,*,i])
+         for k=0L, npars-1 do begin
+            ypar = *pars[j,k]
+            ymin = min(extrema[0,*,k])
+            ymax = max(extrema[1,*,k])
+            xbinsz = double(xmax-xmin)/(nxbin-1)
+            ybinsz = double(ymax-ymin)/(nybin-1)
+            hist2d = hist_2d(xpar,ypar,$
+                             bin1=xbinsz,min1=xmin,max1=xmax,$
+                             bin2=ybinsz,min2=ymin,max2=ymax)
+            hist2d = hist2d/total(hist2d)
+            sorted = sort(hist2d)
+            thresh = hist2d[sorted[n_elements(hist2d)*0.05]]
+;            area[j,i,k] = total(1d0/hist2d^2,/nan)
+            area[j,i,k] = n_elements(where(hist2d gt thresh))
+         endfor
+      endfor
+   endfor
+endif
+;stop
 
 if n_elements(legendtxt) ne nfiles then legendtxt = labels
 
@@ -184,6 +231,8 @@ for i=0L, n_elements(tags)-1 do begin
                par = *pars[j,k]
                if n_elements(par) eq 0 then continue
 
+;xmin = 1.6
+;xmax = 1.9
                hist = histogram(par,nbin=100,locations=x,min=xmin, max=xmax)
                hists[j,*] = hist/total(hist)
                ;; zero out singular arrays (e.g., age when age isn't fit)
@@ -213,18 +262,24 @@ for i=0L, n_elements(tags)-1 do begin
             /ystyle,/xstyle,xminor=1, yminor=1,$ 
             xtickname=replicate(" ",60),ytickname=replicate(" ",60), xtitle=xtitle, ytitle=ytitle
       
+      ;; plot them from largest are to smallest, so they don't
+      ;; cover each other up
+      if keyword_set(optimizeorder) then begin
+         order = reverse(sort(area[*,i,k]))
+      endif else order = lindgen(nfiles)
+
       ;; overplot get the covariance contours for each save file
       for j=0, nfiles-1 do begin
 
-         x = *pars[j,i]
-         y = *pars[j,k]
+         x = *pars[order[j],i]
+         y = *pars[order[j],k]
 
          if min(x) ne max(x) and min(y) ne max(y) then begin
             exofast_errell,x,y,xpath=xpath,ypath=ypath,$
-                           prob=probs,nxbin=100, nybin=100,$
+                           prob=probs,nxbin=nxbin, nybin=nybin,$
                            xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,logname=logname
             if n_elements(xpath) gt 0 and n_elements(ypath) eq n_elements(xpath) then $
-               oplot, xpath, ypath, color=colors[j mod ncolors], thick=thick
+               oplot, xpath, ypath, color=colors[order[j] mod ncolors], thick=thick
          endif
       endfor
       exofast_multiplot ;; next plot

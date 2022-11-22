@@ -212,14 +212,14 @@ for j=0, ss.ntran-1 do begin
                                     band.u1.value[ndx], $
                                     band.u2.value[ndx], $
                                     1d0, $
-                                    q=ss.star.mstar.value[ndx]/ss.planet[i].mpsun.value[ndx], $
+                                    q=ss.star[ss.planet[i].starndx].mstar.value[ndx]/ss.planet[i].mpsun.value[ndx], $
                                     thermal=band.thermal.value[ndx], $
                                     reflect=band.reflect.value[ndx], $
-                                    dilute=band.dilute.value[ndx],$
+                                    dilute=ss.transit[j].dilute.value[ndx],$
                                     ellipsoidal=band.ellipsoidal.value[ndx],$
                                     beam=ss.planet[i].beam.value[ndx],$
                                     tc=ss.planet[i].tc.value[ndx],$
-                                    rstar=ss.star.rstar.value[ndx]/AU,$
+                                    rstar=ss.star[ss.planet[i].starndx].rstar.value[ndx]/AU,$
                                     au=au,$
                                     c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0) 
       prettytmpflux = reform(prettytmpflux,npretty,ninterp)
@@ -237,14 +237,14 @@ for j=0, ss.ntran-1 do begin
                               band.u1.value[ndx], $
                               band.u2.value[ndx], $
                               1d0, $
-                              q=ss.star.mstar.value[ndx]/ss.planet[i].mpsun.value[ndx], $
+                              q=ss.star[ss.planet[i].starndx].mstar.value[ndx]/ss.planet[i].mpsun.value[ndx], $
                               thermal=band.thermal.value[ndx], $
                               reflect=band.reflect.value[ndx], $
-                              dilute=band.dilute.value[ndx],$
+                              dilute=ss.transit[j].dilute.value[ndx],$
                               ellipsoidal=band.ellipsoidal.value[ndx],$
                               beam=ss.planet[i].beam.value[ndx],$
                               tc=ss.planet[i].tc.value[ndx],$
-                              rstar=ss.star.rstar.value[ndx]/AU,$
+                              rstar=ss.star[ss.planet[i].starndx].rstar.value[ndx]/AU,$
                               au=au,$
                               c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0) 
       tmpflux = reform(tmpflux,n_elements(trandata.bjd),ninterp)
@@ -397,14 +397,14 @@ for jj=0L, 1 do begin
                                        band.u1.value[ndx], $
                                        band.u2.value[ndx], $
                                        1d0, $
-                                       q=ss.star.mstar.value[ndx]/ss.planet[i].mpsun.value[ndx], $
+                                       q=ss.star[ss.planet[i].starndx].mstar.value[ndx]/ss.planet[i].mpsun.value[ndx], $
                                        thermal=band.thermal.value[ndx], $
                                        reflect=band.reflect.value[ndx], $
-                                       dilute=band.dilute.value[ndx],$
+                                       dilute=ss.transit[j].dilute.value[ndx],$
                                        ellipsoidal=band.ellipsoidal.value[ndx],$
                                        beam=ss.planet[i].beam.value[ndx],$                                      
                                        tc=ss.planet[i].tc.value[ndx],$
-                                       rstar=ss.star.rstar.value[ndx]/AU,$
+                                       rstar=ss.star[ss.planet[i].starndx].rstar.value[ndx]/AU,$
                                        au=au,$
                                        c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0) 
          prettytmpflux = reform(prettytmpflux,npretty,ninterp)
@@ -422,14 +422,14 @@ for jj=0L, 1 do begin
                                  band.u1.value[ndx], $
                                  band.u2.value[ndx], $
                                  1d0, $
-                                 q=ss.star.mstar.value[ndx]/ss.planet[i].mpsun.value[ndx], $
+                                 q=ss.star[ss.planet[i].starndx].mstar.value[ndx]/ss.planet[i].mpsun.value[ndx], $
                                  thermal=band.thermal.value[ndx], $
                                  reflect=band.reflect.value[ndx], $
-                                 dilute=band.dilute.value[ndx],$
+                                 dilute=ss.transit[j].dilute.value[ndx],$
                                  ellipsoidal=band.ellipsoidal.value[ndx],$
                                  beam=ss.planet[i].beam.value[ndx],$
                                  tc=ss.planet[i].tc.value[ndx],$
-                                 rstar=ss.star.rstar.value[ndx]/AU,$
+                                 rstar=ss.star[ss.planet[i].starndx].rstar.value[ndx]/AU,$
                                  au=au,$
                                  c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0) 
          tmpflux = reform(tmpflux,n_elements(trandata.bjd),ninterp)

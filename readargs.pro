@@ -7,7 +7,7 @@ pro readargs, argfile, priorfile=priorfile, $
               prefix=prefix,$
               circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
               rossiter=rossiter,chen=chen,$
-              fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
+              diluted=diluted,fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
               fitphase=fitphase, fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
               nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
               ntemps=ntemps,tf=tf,keephot=keephot,$
@@ -16,7 +16,7 @@ pro readargs, argfile, priorfile=priorfile, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               rejectflatmodel=rejectflatmodel,$
               maxgr=maxgr, mintz=mintz, $
-              yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, $
+              yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, nstars=nstars,starndx=starndx, $
               fitrv=fitrv, fittran=fittran,fitdt=fitdt,fitlogmp=fitlogmp,$
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
               earth=earth, i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch,$
@@ -83,6 +83,8 @@ while not eof(lun) do begin
             rossiter = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'CHEN' then begin
             chen = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'DILUTED' then begin
+            diluted = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITDILUTE' then begin
             fitdilute = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITTHERMAL' then begin
@@ -151,6 +153,10 @@ while not eof(lun) do begin
             tides = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NPLANETS' then begin
             nplanets = long(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'NSTARS' then begin
+            nstars = long(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'STARNDX' then begin
+            starndx = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITRV' then begin
             fitrv = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITTRAN' then begin

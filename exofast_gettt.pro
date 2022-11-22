@@ -223,7 +223,7 @@ printf, csvlun, '# Transit, Planet, Epoch, T_T, sigma_tt_high, sigma_tt_low, b, 
 printf, texlun, '\documentclass{aastex62}'
 printf, texlun, '\begin{document}'
 printf, texlun, '\startlongtable'
-printf, texlun, '\begin{deluxetable*}{lccccc}'
+printf, texlun, '\begin{deluxetable*}{lcccccc}'
 printf, texlun, '\tablecaption{Median values and 68\% confidence interval for transit times, impact parameters, and depths}'
 printf, texlun, '\tablehead{\colhead{Transit} & \colhead{Planet} & \colhead{Epoch} & \colhead{$T_T$} & \colhead{$b$} & \colhead{Depth} & \colhead{$R_P/R_*$}}'
 printf, texlun, '\startdata'

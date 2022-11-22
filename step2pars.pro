@@ -10,28 +10,51 @@ mearth = ss.constants.gmearth/ss.constants.gmsun ;; m_sun
 rearth = ss.constants.rearth/ss.constants.rsun  ;; r_sun
 sigmaB = ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; Stefan-Boltzmann constant
 
-;;; these are the default guesses... why are these here?
-;if keyword_set(changedefaults) then begin
-;   if ss.star.rstar.value ne 1d0 and ss.star.rstarsed.value eq 1d0 then ss.star.rstarsed.value = ss.star.rstar.value 
-;   if ss.star.rstar.value eq 1d0 and ss.star.rstarsed.value ne 1d0 then ss.star.rstar.value = ss.star.rstarsed.value 
-;   
-;   if ss.star.teff.value ne 5778d0 and ss.star.teffsed.value eq 5778d0 then ss.star.teffsed.value = ss.star.teff.value 
-;   if ss.star.teff.value eq 5778d0 and ss.star.teffsed.value ne 5778d0 then ss.star.teff.value = ss.star.teffsed.value 
-;endif
+;; if value is a map, and the variable is fixed, we must propagate it here
+for i=0L, n_elements(*ss.priors)-1 do begin
+
+   ;; Skip priors with penalties -- the penalties will guide them to agree
+   prior = (*ss.priors)[i]
+
+   ;; if it's not fixed to a linked parameter, skip it. The penalties will sort it out
+   if prior.gaussian_width ne 0d0 or prior.value[1] eq -1 then continue
+   
+   ;; the prior is linked to another variable -- get its value
+   if prior.value[4] ne -1 then begin
+      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].(prior.value[4])[prior.value[5]].value
+   endif else if prior.value[2] ne -1 then begin
+      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].value
+   endif else begin
+      value = ss.(prior.value[0])[prior.value[1]].value
+   endelse
+
+   ;; assign the value
+   if prior.map[4] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].(prior.map[4])[prior.map[5]].value = value
+   endif else if prior.map[2] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].value = value
+   endif else if prior.map[0] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].value = value
+   endif     
+
+endfor
 
 ;; derive stellar parameters
-ss.star.mstar.value = 10^ss.star.logmstar.value
-ss.star.logg.value = alog10(ss.constants.gravitysun*ss.star.mstar.value/(ss.star.rstar.value^2)) ;; cgs
+for i=0L, ss.nstars-1 do begin
+   ss.star[i].mstar.value = 10^ss.star[i].logmstar.value
+   ss.star[i].logg.value = alog10(ss.constants.gravitysun*ss.star[i].mstar.value/(ss.star[i].rstar.value^2)) ;; cgs
 ;; derive the distance from lstar
-ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*sigmaB ;; L_sun
-if ss.star.distance.fit then ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
-if ss.star.parallax.fit then ss.star.distance.value = 1d3/ss.star.parallax.value ;; mas
-ss.star.fbol.value = (ss.star.lstar.value/ss.constants.lsun)/(4d0*!dpi*(ss.star.distance.value/ss.constants.pc)^2) ;; cgs
-ss.star.rhostar.value = ss.star.mstar.value/(ss.star.rstar.value^3)*ss.constants.rhosun ;; rho_sun
+   ss.star[i].lstar.value = 4d0*!dpi*ss.star[i].rstar.value^2*ss.star[i].teff.value^4*sigmaB                                ;; L_sun
+   if ss.star[i].distance.fit then ss.star[i].parallax.value = 1d3/ss.star[i].distance.value                                ;; mas
+   if ss.star[i].parallax.fit then ss.star[i].distance.value = 1d3/ss.star[i].parallax.value                                ;; mas
+   ss.star[i].fbol.value = (ss.star[i].lstar.value*ss.constants.lsun)/(4d0*!dpi*(ss.star[i].distance.value*ss.constants.pc)^2) ;; cgs
+   ss.star[i].rhostar.value = ss.star[i].mstar.value/(ss.star[i].rstar.value^3)*ss.constants.rhosun                            ;; rho_sun
+endfor   
 
 for j=0, ss.ntel-1 do begin
    if ss.telescope[j].jittervar.value gt 0 then $
-      ss.telescope[j].jitter.value = sqrt(ss.telescope[j].jittervar.value)
+      ss.telescope[j].jitter.value = sqrt(ss.telescope[j].jittervar.value) $
+   else ss.telescope[j].jitter.value = 0d0
 endfor
 
 for i=0, ss.nplanets-1 do begin
@@ -43,12 +66,12 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth ;; m_earth
 
    ;; derive the radius of the planet   
-   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value ;; r_sun
+   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star[ss.planet[i].starndx].rstar.value ;; r_sun
    ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup ;; r_jupiter
    ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth ;; r_earth
 
    ;; allow neg planet mass to avoid boundary bias, but can't have neg total mass
-   if ss.star.mstar.value + ss.planet[i].mpsun.value le 0d0 then begin
+   if ss.star[ss.planet[i].starndx].mstar.value + ss.planet[i].mpsun.value le 0d0 then begin
       if keyword_set(verbose) then printandlog, 'Net mass (Mstar + Mp) must be positive; rejecting step', logname
       return, -1
    endif
@@ -139,9 +162,9 @@ endelse
    if ~ss.planet[i].vcve.fit then ss.planet[i].vcve.value = sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
 
    ;; derive a/rstar, a
-   ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
+   ss.planet[i].arsun.value=(G*(ss.star[ss.planet[i].starndx].mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
                              (4d0*!dpi^2))^(1d0/3d0)                       ;; semi-major axis in r_sun
-   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value    ;; a/rstar (unitless)
+   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star[ss.planet[i].starndx].rstar.value    ;; a/rstar (unitless)
    ss.planet[i].a.value = ss.planet[i].arsun.value/AU ;; semi major axis in AU
 
    ;; limit eccentricity to avoid collision with star during periastron
@@ -155,7 +178,7 @@ endelse
                       'e= ' + strtrim(ss.planet[i].e.value,2) + $
                       '; a/Rstar=' + strtrim(ss.planet[i].ar.value,2) + $
                       '; Rp/Rstar=' + strtrim(ss.planet[i].p.value,2) + $
-                      '; Rstar=' + strtrim(ss.star.rstar.value,2), logname
+                      '; Rstar=' + strtrim(ss.star[ss.planet[i].starndx].rstar.value,2), logname
          printandlog, "a/Rstar is derived using Kepler's law; adjust starting values " + $
                       'for mstar, mp, or period to change it', logname
       endif
@@ -175,6 +198,7 @@ endelse
                                 (ss.planet[i].ar.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value))
 
 ;***** debugging ********
+if 0 then begin
       if ss.planet[i].cosi.value lt 0d0 then begin
          printandlog, string(ss.planet[i].b.value,format='("b=",f0.20)'), logname
          printandlog, string(ss.planet[i].ar.value,format='("a/r=",f0.20)'), logname
@@ -186,6 +210,7 @@ endelse
          printandlog, string(ss.planet[i].lsinw2.value,format='("lsinw2=",f0.20)'), logname
          printandlog, string(ss.planet[i].lcosw.value,format='("lcosw=",f0.20)'), logname
       endif
+endif
 ;*************************
 
    endif else if ss.planet[i].b.fit then begin
@@ -218,7 +243,7 @@ endelse
    ss.planet[i].ideg.value = ss.planet[i].i.value*180d0/!dpi
 
    ;; derive RV semi-amplitude
-   ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mpsun.value)^2d0))^(1d0/3d0) * $
+   ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star[ss.planet[i].starndx].mstar.value + ss.planet[i].mpsun.value)^2d0))^(1d0/3d0) * $
                           ss.planet[i].mpsun.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value^2)*ss.constants.rsun/ss.constants.meter/ss.constants.day ;; m/s
    
    ;; Faigler & Mazeh, 2011
@@ -227,7 +252,7 @@ endelse
    if ss.planet[i].beam.derive and ~ss.planet[i].beam.fit then $
       ss.planet[i].beam.value = 4d0*ss.planet[i].k.value/(ss.constants.c/ss.constants.meter) ;; eq 1
 ;   if ss.planet[i].ellipsoidal.derive then $
-;      ss.planet[i].ellipsoidal.value = ss.planet[i].mpsun.value/ss.star.mstar.value*sin(ss.planet[i].i.value)/ss.planet.ar.value^3*sin(ss.planet[i].i.value) ;; eq 2
+;      ss.planet[i].ellipsoidal.value = ss.planet[i].mpsun.value/ss.star[ss.planet[i].starndx].mstar.value*sin(ss.planet[i].i.value)/ss.planet.ar.value^3*sin(ss.planet[i].i.value) ;; eq 2
 
    ;; derive lambda and bigomega
    ss.planet[i].lambda.value = atan(ss.planet[i].lsinlambda.value,ss.planet[i].lcoslambda.value)
@@ -279,11 +304,11 @@ endelse
 
 endfor
 
-for i=0L, ss.nband-1 do begin  
-   massfraction = ss.planet[0].mpsun.value/(ss.star.mstar.value + ss.planet[0].mpsun.value)
-   fluxfraction = ss.band[i].dilute.value
-   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
-endfor
+;for i=0L, ss.nband-1 do begin  
+;   massfraction = ss.planet[0].mpsun.value/(ss.star[ss.band[i].starndx].mstar.value + ss.planet[0].mpsun.value)
+;   fluxfraction = ss.band[i].dilute.value
+;   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
+;endfor
 
 return, 1
 end

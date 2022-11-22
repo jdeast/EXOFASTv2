@@ -10,118 +10,104 @@ rearth = ss.constants.rearth/ss.constants.rsun  ;; r_sun
 sigmaB = ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; Stefan-Boltzmann constant
 
 ;; derive the stellar mass
-if ss.star.mstar.userchanged then begin
-   ss.star.logmstar.value = alog10( ss.star.mstar.value )
-   if ss.star.mstar.scale ne 0d0 then $
-      ss.star.logmstar.scale = ss.star.mstar.scale/(alog(10d0)*ss.star.mstar.value)
-endif
-ss.star.mstar.value = 10^ss.star.logmstar.value
+for i=0, ss.nstars-1 do begin
+   if ss.star[i].mstar.userchanged then begin
+      ss.star[i].logmstar.value = alog10( ss.star[i].mstar.value )
+      if ss.star[i].mstar.scale ne 0d0 then $
+         ss.star[i].logmstar.scale = ss.star[i].mstar.scale/(alog(10d0)*ss.star[i].mstar.value)
+   endif
+   ss.star[i].mstar.value = 10^ss.star[i].logmstar.value
 
-;; derive teff, teffsed, feh, fehsed
-if ss.star.teffsed.userchanged and ~ss.star.teff.userchanged then ss.star.teff.value = ss.star.teffsed.value
-if ss.star.teff.userchanged and ~ss.star.teffsed.userchanged then ss.star.teffsed.value = ss.star.teff.value
-if ss.star.fehsed.userchanged and ~ss.star.feh.userchanged then ss.star.feh.value = ss.star.fehsed.value
-if ss.star.feh.userchanged and ~ss.star.fehsed.userchanged then ss.star.fehsed.value = ss.star.feh.value
-if ss.star.feh.userchanged and ~ss.star.initfeh.userchanged then ss.star.initfeh.value = ss.star.feh.value
+   ;; derive teff, teffsed, feh, fehsed
+   if ss.star[i].teffsed.userchanged and ~ss.star[i].teff.userchanged then ss.star[i].teff.value = ss.star[i].teffsed.value
+   if ss.star[i].teff.userchanged and ~ss.star[i].teffsed.userchanged then ss.star[i].teffsed.value = ss.star[i].teff.value
+   if ss.star[i].fehsed.userchanged and ~ss.star[i].feh.userchanged then ss.star[i].feh.value = ss.star[i].fehsed.value
+   if ss.star[i].feh.userchanged and ~ss.star[i].fehsed.userchanged then ss.star[i].fehsed.value = ss.star[i].feh.value
+   if ss.star[i].feh.userchanged and ~ss.star[i].initfeh.userchanged then ss.star[i].initfeh.value = ss.star[i].feh.value
+   
+   ;; derive rstar, rstarsed
+   if ss.star[i].rstarsed.userchanged and ~ss.star[i].rstar.userchanged then begin
+      ss.star[i].rstar.value = ss.star[i].rstarsed.value
+      ss.star[i].rstar.userchanged = 1B
+   endif
+   if ss.star[i].rstar.userchanged and ~ss.star[i].rstarsed.userchanged then ss.star[i].rstarsed.value = ss.star[i].rstar.value
 
-;; derive rstar, rstarsed
-if ss.star.rstarsed.userchanged and ~ss.star.rstar.userchanged then begin
-   ss.star.rstar.value = ss.star.rstarsed.value
-   ss.star.rstar.userchanged = 1B
-endif
-if ss.star.rstar.userchanged and ~ss.star.rstarsed.userchanged then ss.star.rstarsed.value = ss.star.rstar.value
-
-;; derive the distance from the parallax, if given
-if ~ss.star.distance.userchanged and ss.star.parallax.userchanged then $
-   ss.star.distance.value = 1d3/ss.star.parallax.value
-
-;; if a starting value for the stellar radius was given, 
-;; use it to derive a starting point for the age
-if ss.star.rstar.userchanged and ss.yy then begin
-   ntries = 100
-   age = dindgen(ntries)/(ntries-1)*13.82
-   rstars = dblarr(ntries)
-   for i=0, ntries-1 do begin
-      junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, age[i], $
-                            ss.star.teff.value,yyrstar=rstar, $
+   ;; derive the distance from the parallax, if given
+   if ~ss.star[i].distance.userchanged and ss.star[i].parallax.userchanged then $
+      ss.star[i].distance.value = 1d3/ss.star[i].parallax.value
+   
+   ;; if a starting value for the stellar radius was given, 
+   ;; use it to derive a starting point for the age
+   if ss.star[i].rstar.userchanged and ss.yy[i] then begin
+      ntries = 100
+      age = dindgen(ntries)/(ntries-1)*13.82
+      rstars = dblarr(ntries)
+      for j=0L, ntries-1 do begin
+         junk = massradius_yy3(ss.star[i].mstar.value, ss.star[i].feh.value, age[i], $
+                               ss.star[i].teff.value,yyrstar=rstar, $
+                               sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
+                               gravitysun=ss.constants.gravitysun)
+         if ~finite(junk) then stop ;return, 0
+         rstars[j] = rstar
+      endfor
+      junk = min(abs(rstars-ss.star[i].rstar.value),ndx)
+      ss.star[i].age.value = age[ndx]
+   endif else if ss.yy[i] then begin
+      ;; otherwise derive the stellar radius
+      junk = massradius_yy3(ss.star[i].mstar.value, ss.star[i].feh.value, ss.star[i].age.value, $
+                            ss.star[i].teff.value,yyrstar=rstar, $
                             sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
                             gravitysun=ss.constants.gravitysun)
-      if ~finite(junk) then stop;return, 0
-      rstars[i] = rstar
-   endfor
-   junk = min(abs(rstars-ss.star.rstar.value),ndx)
-   ss.star.age.value = age[ndx]
-endif else if ss.yy then begin
-   ;; otherwise derive the stellar radius
-   junk = massradius_yy3(ss.star.mstar.value, ss.star.feh.value, ss.star.age.value, $
-                         ss.star.teff.value,yyrstar=rstar, $
-                         sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
-                         gravitysun=ss.constants.gravitysun)
-   if ~finite(junk) then stop;return, 0
-   ss.star.rstar.value = rstar
-endif
-
-;; if not specified, refine the starting value for eep (max out at 808)
-if (ss.mist or ss.parsec) and ~ss.star.eep.userchanged and (ss.star.mstar.userchanged or ss.star.rstar.userchanged or ss.star.teff.userchanged) then begin  
-   maxeep = 808d0
-   mineep = 0d0
-   neep = 30d0
-   eeps = mineep + (maxeep-mineep)/(neep-1)*dindgen(neep)
-   chi2 = dblarr(neep) + !values.d_infinity
-   ages = dblarr(neep) + !values.d_infinity
-
-   for i=0L, neep-1 do begin
-      if ss.mist then begin
-         mistchi2 =  massradius_mist(eeps[i],ss.star.mstar.value,ss.star.initfeh.value,$
-                                     ss.star.age.value,ss.star.teff.value,$
-                                     ss.star.rstar.value,ss.star.feh.value,mistage=mistage,fitage=ss.star.age.fit,$
-                                     /allowold,tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
-                                     rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
-         if finite(mistchi2) then begin
-            if mistage gt 13.82d0 then break
-            chi2[i] = mistchi2
-            ages[i] = mistage
-         endif
-      endif else if ss.parsec then begin
-         parsecchi2 =  massradius_parsec(eeps[i],ss.star.mstar.value,ss.star.initfeh.value,$
-                                         ss.star.age.value,ss.star.teff.value,$
-                                         ss.star.rstar.value,ss.star.feh.value,$
-                                         parsec_age=parsec_age,fitage=ss.star.age.fit,/allowold,$
-                                         tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
-                                         rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
-         if finite(parsecchi2) then begin
-            if parsec_age gt 13.82d0 then break
-            chi2[i] = parsecchi2
-            ages[i] = parsec_age
-         endif
-      endif
-   endfor
-   minchi2 = min(chi2,ndx)
-   if ~finite(minchi2) then begin
-      printandlog, 'No EEP between 0 and 808 produces a physical star. Adjust starting stellar parameters', ss.logname
-      stop
+      if ~finite(junk) then stop ;return, 0
+      ss.star[i].rstar.value = rstar
    endif
-   ss.star.eep.value = eeps[ndx]
-   if ~ss.star.age.userchanged then ss.star.age.value = ages[ndx]
+   
+   ;; if not specified, refine the starting value for eep (max out at 808)
+   if (ss.mist[i] or ss.parsec[i]) and ~ss.star[i].eep.userchanged and (ss.star[i].mstar.userchanged or ss.star[i].rstar.userchanged or ss.star[i].teff.userchanged) then begin  
+      maxeep = 808d0
+      mineep = 0d0
+      neep = 30d0
+      eeps = mineep + (maxeep-mineep)/(neep-1)*dindgen(neep)
+      chi2 = dblarr(neep) + !values.d_infinity
+      ages = dblarr(neep) + !values.d_infinity
 
-;; why did I do this? this was reallllly dumb
-;; for high mass stars, the default age (4.6 Gyr) will select stars at
-;; the end of their lifetimes (capped at carbon burning)
-;   repeat begin
-;      eep = (mineep + maxeep)/2d0
-;      chi2 = massradius_mist(eep,ss.star.mstar.value,ss.star.initfeh.value,$
-;                             ss.star.age.value,ss.star.teff.value,$
-;                             ss.star.rstar.value,ss.star.feh.value,mistage=mistage,/allowold)
-;      if ~finite(chi2) then begin
-;         maxeep -= 1
-;      endif else begin
-;         if mistage gt ss.star.age.value then maxeep = eep $
-;         else mineep = eep
-;      endelse
-;   endrep until abs(maxeep - mineep) lt 0.01
-;   if ~finite(chi2) then stop; return, 0 
-;   ss.star.eep.value = eep
-endif
+      for j=0L, neep-1 do begin
+         if ss.mist[i] then begin
+            mistchi2 =  massradius_mist(eeps[j],ss.star[i].mstar.value,ss.star[i].initfeh.value,$
+                                        ss.star[i].age.value,ss.star[i].teff.value,$
+                                        ss.star[i].rstar.value,ss.star[i].feh.value,mistage=mistage,fitage=ss.star[i].age.fit,$
+                                        /allowold,tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
+                                        rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+            if finite(mistchi2) then begin
+               if mistage gt 13.82d0 then break
+               chi2[j] = mistchi2
+               ages[j] = mistage
+            endif
+         endif else if ss.parsec[i] then begin
+            parsecchi2 =  massradius_parsec(eeps[j],ss.star[i].mstar.value,ss.star[i].initfeh.value,$
+                                            ss.star[i].age.value,ss.star[i].teff.value,$
+                                            ss.star[i].rstar.value,ss.star[i].feh.value,$
+                                            parsec_age=parsec_age,fitage=ss.star[i].age.fit,/allowold,$
+                                            tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
+                                            rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+            if finite(parsecchi2) then begin
+               if parsec_age gt 13.82d0 then break
+               chi2[j] = parsecchi2
+               ages[j] = parsec_age
+            endif
+         endif
+      endfor
+      minchi2 = min(chi2,ndx)
+      if ~finite(minchi2) then begin
+         printandlog, 'No EEP between 0 and 808 produces a physical star. Adjust starting stellar parameters', ss.logname
+         stop
+      endif
+      ss.star[i].eep.value = eeps[ndx]
+      if ~ss.star[i].age.userchanged then ss.star[i].age.value = ages[ndx]
+      
+   endif
+endfor
+
 ;; calculate the span of the data
 minbjd=!values.d_infinity
 maxbjd=-!values.d_infinity
@@ -139,7 +125,7 @@ endif else begin
    endfor
 endelse
 
-if ~ss.star.vsini.userchanged and (where(ss.doptom.dtscale.fit))[0] ne -1 then begin
+if ~ss.star[0].vsini.userchanged and (where(ss.doptom.dtscale.fit))[0] ne -1 then begin
    printandlog, 'You must set a prior on vsini', ss.logname
 endif
 
@@ -289,26 +275,28 @@ endelse
    ;; how did the user seed rp/rstar?
    if ss.planet[i].p.userchanged then begin
       if ~ss.planet[i].rpearth.userchanged then $
-         ss.planet[i].rpearth.value = ss.planet[i].p.value*ss.star.rstar.value/rearth
+         ss.planet[i].rpearth.value = ss.planet[i].p.value*ss.star[ss.planet[i].starndx].rstar.value/rearth
       ss.planet[i].rpearth.userchanged = 1B
    endif else if ss.planet[i].rpearth.userchanged then begin
-      ss.planet[i].p.value = ss.planet[i].rpearth.value*rearth/ss.star.rstar.value
+      ss.planet[i].p.value = ss.planet[i].rpearth.value*rearth/ss.star[ss.planet[i].starndx].rstar.value
    endif else if ss.planet[i].rp.userchanged then begin
-      ss.planet[i].p.value = ss.planet[i].rp.value*rjup/ss.star.rstar.value
+      ss.planet[i].p.value = ss.planet[i].rp.value*rjup/ss.star[ss.planet[i].starndx].rstar.value
       if ~ss.planet[i].rpearth.userchanged then $
-         ss.planet[i].rpearth.value = ss.planet[i].p.value*ss.star.rstar.value/rearth
+         ss.planet[i].rpearth.value = ss.planet[i].p.value*ss.star[ss.planet[i].starndx].rstar.value/rearth
       ss.planet[i].rpearth.userchanged = 1B
    endif else if ss.planet[i].mpearth.userchanged then begin 
       ss.planet[i].rpearth.value = massradius_chen(ss.planet[i].mpearth.value)
-      ss.planet[i].p.value = ss.planet[i].rpearth.value*rearth/ss.star.rstar.value
+      ss.planet[i].p.value = ss.planet[i].rpearth.value*rearth/ss.star[ss.planet[i].starndx].rstar.value
    endif
 
    ;; how did the user seed the inclination?
    if ss.planet[i].i.userchanged then begin
       sini = sin(ss.planet[i].i.value)
+      ss.planet[i].cosi.value = cos(ss.planet[i].i.value)
    endif else if ss.planet[i].ideg.userchanged then begin      
-     ss.planet[i].i.value = ss.planet[i].ideg.value*!dpi/180d0     
-     sini = sin(ss.planet[i].i.value)
+      ss.planet[i].i.value = ss.planet[i].ideg.value*!dpi/180d0     
+      sini = sin(ss.planet[i].i.value)
+      ss.planet[i].cosi.value = cos(ss.planet[i].i.value)
    endif else if ss.planet[i].chord.userchanged then begin
       if ~ss.planet[i].chord.fit then $
          printandlog, 'changing starting value for chord when not fitting chord is not supported', ss.logname
@@ -362,17 +350,17 @@ endelse
       ;; now convert from K to mpsun
       ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
                                        ss.planet[i].i.value, ss.planet[i].period.value, $
-                                       ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
+                                       ss.star[ss.planet[i].starndx].mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
       ss.planet[i].logmp.value = alog10(ss.planet[i].mpsun.value)
    endif else if ss.planet[i].k.userchanged then begin
       if ss.planet[i].k.value lt 0d0 then begin
          ss.planet[i].mpsun.value = -ktom2(-ss.planet[i].K.value, ss.planet[i].e.value,$
                                            ss.planet[i].i.value, ss.planet[i].period.value, $
-                                           ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
+                                           ss.star[ss.planet[i].starndx].mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
       endif else begin
          ss.planet[i].mpsun.value = ktom2(ss.planet[i].K.value, ss.planet[i].e.value,$
                                           ss.planet[i].i.value, ss.planet[i].period.value, $
-                                          ss.star.mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
+                                          ss.star[ss.planet[i].starndx].mstar.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun
       endelse
       ss.planet[i].logmp.value = alog10(ss.planet[i].mpsun.value)
    endif else if ss.planet[i].rpearth.userchanged then begin
@@ -381,9 +369,9 @@ endelse
    endif
 
    ;; how did the user seed a/rstar?
-   ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
+   ss.planet[i].arsun.value=(G*(ss.star[ss.planet[i].starndx].mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/$
                              (4d0*!dpi^2))^(1d0/3d0)                       ;; semi-major axis in r_sun
-   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value    ;; a/rstar (unitless)
+   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star[ss.planet[i].starndx].rstar.value    ;; a/rstar (unitless)
    ss.planet[i].a.value = ss.planet[i].arsun.value/AU ;; semi major axis in AU
    ss.planet[i].cosi.scale = 1d0/ss.planet[i].ar.value
 

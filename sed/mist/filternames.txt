@@ -1,228 +1,228 @@
-# Keivan's filter names, MIST filter names
-H2M 2MASS_H
-J2M 2MASS_J
-K2M 2MASS_Ks
-Unsupported ACS_HRC_F220W
-Unsupported ACS_HRC_F250W
-Unsupported ACS_HRC_F330W
-Unsupported ACS_HRC_F344N
-Unsupported ACS_HRC_F435W
-Unsupported ACS_HRC_F475W
-Unsupported ACS_HRC_F502N
-Unsupported ACS_HRC_F550M
-Unsupported ACS_HRC_F555W
-Unsupported ACS_HRC_F606W
-Unsupported ACS_HRC_F625W
-Unsupported ACS_HRC_F658N
-Unsupported ACS_HRC_F660N
-Unsupported ACS_HRC_F775W
-Unsupported ACS_HRC_F814W
-Unsupported ACS_HRC_F850LP
-Unsupported ACS_HRC_F892N
-Unsupported ACS_WFC_F435W
-Unsupported ACS_WFC_F475W
-Unsupported ACS_WFC_F502N
-Unsupported ACS_WFC_F550M
-Unsupported ACS_WFC_F555W
-Unsupported ACS_WFC_F606W
-Unsupported ACS_WFC_F625W
-Unsupported ACS_WFC_F658N
-Unsupported ACS_WFC_F660N
-Unsupported ACS_WFC_F775W
-Unsupported ACS_WFC_F814W
-Unsupported ACS_WFC_F850LP
-Unsupported ACS_WFC_F892N
-B Bessell_B
-I Bessell_I
-R Bessell_R
-U Bessell_U
-V Bessell_V
-Unsupported CFHT_g
-Unsupported CFHT_i_new
-Unsupported CFHT_i_old
-Unsupported CFHT_r
-Unsupported CFHT_u
-Unsupported CFHT_z
-Unsupported DDO51_f31
-Unsupported DDO51_vac
-Unsupported DECam_Y
-Unsupported DECam_g
-Unsupported DECam_i
-Unsupported DECam_r
-Unsupported DECam_u
-Unsupported DECam_z
-Unsupported F070W
-Unsupported F090W
-Unsupported F115W
-Unsupported F140M
-Unsupported F150W
-Unsupported F150W2
-Unsupported F162M
-Unsupported F164N
-Unsupported F182M
-Unsupported F184
-Unsupported F187N
-Unsupported F200W
-Unsupported F210M
-Unsupported F212N
-Unsupported F250M
-Unsupported F277W
-Unsupported F300M
-Unsupported F322W2
-Unsupported F323N
-Unsupported F335M
-Unsupported F356W
-Unsupported F360M
-Unsupported F405N
-Unsupported F410M
-Unsupported F430M
-Unsupported F444W
-Unsupported F460M
-Unsupported F466N
-Unsupported F470N
-Unsupported F480M
-galFUV GALEX_FUV
-galNUV GALEX_NUV
-GaiaBP Gaia_BP_DR2Rev
-Gaia Gaia_G_DR2Rev
-GaiaRP Gaia_RP_DR2Rev
-Unsupported Gaia_BP_EDR3
-Unsupported Gaia_G_EDR3
-Unsupported Gaia_RP_EDR3
-Unsupported Gaia_BP_MAWf
-Unsupported Gaia_BP_MAWb
-Unsupported Gaia_G_MAW
-Unsupported Gaia_RP_MAW
-Unsupported H158
-Unsupported Hipparcos_Hp
-Unsupported IRAC_3.6
-Unsupported IRAC_4.5
-Unsupported IRAC_5.8
-Unsupported IRAC_8.0
-Unsupported J129
-Unsupported Kepler_D51
-Unsupported Kepler_Kp
-Unsupported LSST_g
-Unsupported LSST_i
-Unsupported LSST_r
-Unsupported LSST_u
-Unsupported LSST_y
-Unsupported LSST_z
-gPS PS_g
-iPS PS_i
-Unsupported PS_open
-rPS PS_r
-iPS PS_w
-yPS PS_y
-zPS PS_z
-Unsupported R062
-gSDSS SDSS_g
-iSDSS SDSS_i
-rSDSS SDSS_r
-uSDSS SDSS_u
-zSDSS SDSS_z
-Unsupported SkyMapper_g
-Unsupported SkyMapper_i
-Unsupported SkyMapper_r
-Unsupported SkyMapper_u
-Unsupported SkyMapper_v
-Unsupported SkyMapper_z
-Unsupported Stromgren_b
-Unsupported Stromgren_u
-Unsupported Stromgren_v
-Unsupported Stromgren_y
-Unsupported Swift_B
-Unsupported Swift_U
-Unsupported Swift_UVM2
-Unsupported Swift_UVW1
-Unsupported Swift_UVW2
-Unsupported Swift_V
-Unsupported TESS
-BT Tycho_B
-VT Tycho_V
-Unsupported UKIDSS_H
-Unsupported UKIDSS_J
-Unsupported UKIDSS_K
-Unsupported UKIDSS_Y
-Unsupported UKIDSS_Z
-Unsupported W146
-Unsupported WFC3_IR_F098M
-Unsupported WFC3_IR_F105W
-Unsupported WFC3_IR_F110W
-Unsupported WFC3_IR_F125W
-Unsupported WFC3_IR_F126N
-Unsupported WFC3_IR_F127M
-Unsupported WFC3_IR_F128N
-Unsupported WFC3_IR_F130N
-Unsupported WFC3_IR_F132N
-Unsupported WFC3_IR_F139M
-Unsupported WFC3_IR_F140W
-Unsupported WFC3_IR_F153M
-Unsupported WFC3_IR_F160W
-Unsupported WFC3_IR_F164N
-Unsupported WFC3_IR_F167N
-Unsupported WFC3_UVIS_F200LP
-Unsupported WFC3_UVIS_F218W
-Unsupported WFC3_UVIS_F225W
-Unsupported WFC3_UVIS_F275W
-Unsupported WFC3_UVIS_F280N
-Unsupported WFC3_UVIS_F300X
-Unsupported WFC3_UVIS_F336W
-Unsupported WFC3_UVIS_F343N
-Unsupported WFC3_UVIS_F350LP
-Unsupported WFC3_UVIS_F373N
-Unsupported WFC3_UVIS_F390M
-Unsupported WFC3_UVIS_F390W
-Unsupported WFC3_UVIS_F395N
-Unsupported WFC3_UVIS_F410M
-Unsupported WFC3_UVIS_F438W
-Unsupported WFC3_UVIS_F467M
-Unsupported WFC3_UVIS_F469N
-Unsupported WFC3_UVIS_F475W
-Unsupported WFC3_UVIS_F475X
-Unsupported WFC3_UVIS_F487N
-Unsupported WFC3_UVIS_F502N
-Unsupported WFC3_UVIS_F547M
-Unsupported WFC3_UVIS_F555W
-Unsupported WFC3_UVIS_F600LP
-Unsupported WFC3_UVIS_F606W
-Unsupported WFC3_UVIS_F621M
-Unsupported WFC3_UVIS_F625W
-Unsupported WFC3_UVIS_F631N
-Unsupported WFC3_UVIS_F645N
-Unsupported WFC3_UVIS_F656N
-Unsupported WFC3_UVIS_F657N
-Unsupported WFC3_UVIS_F658N
-Unsupported WFC3_UVIS_F665N
-Unsupported WFC3_UVIS_F673N
-Unsupported WFC3_UVIS_F680N
-Unsupported WFC3_UVIS_F689M
-Unsupported WFC3_UVIS_F763M
-Unsupported WFC3_UVIS_F775W
-Unsupported WFC3_UVIS_F814W
-Unsupported WFC3_UVIS_F845M
-Unsupported WFC3_UVIS_F850LP
-Unsupported WFC3_UVIS_F953N
-Unsupported WFPC2_F218W
-Unsupported WFPC2_F255W
-Unsupported WFPC2_F300W
-Unsupported WFPC2_F336W
-Unsupported WFPC2_F439W
-Unsupported WFPC2_F450W
-Unsupported WFPC2_F555W
-Unsupported WFPC2_F606W
-Unsupported WFPC2_F622W
-Unsupported WFPC2_F675W
-Unsupported WFPC2_F791W
-Unsupported WFPC2_F814W
-Unsupported WFPC2_F850LP
-WISE1 WISE_W1
-WISE2 WISE_W2
-WISE3 WISE_W3
-WISE4 WISE_W4
-Unsupported Washington_C
-Unsupported Washington_M
-Unsupported Washington_T1
-Unsupported Washington_T2
-Unsupported Y106
-Unsupported Z087
+# Keivan's filter names, MIST filter names, Claret Filter names
+H2M 2MASS_H H
+J2M 2MASS_J J
+K2M 2MASS_Ks K
+Unsupported ACS_HRC_F220W Unsupported
+Unsupported ACS_HRC_F250W Unsupported
+Unsupported ACS_HRC_F330W Unsupported
+Unsupported ACS_HRC_F344N Unsupported
+Unsupported ACS_HRC_F435W Unsupported
+Unsupported ACS_HRC_F475W Unsupported
+Unsupported ACS_HRC_F502N Unsupported
+Unsupported ACS_HRC_F550M Unsupported
+Unsupported ACS_HRC_F555W Unsupported
+Unsupported ACS_HRC_F606W Unsupported
+Unsupported ACS_HRC_F625W Unsupported
+Unsupported ACS_HRC_F658N Unsupported
+Unsupported ACS_HRC_F660N Unsupported
+Unsupported ACS_HRC_F775W Unsupported
+Unsupported ACS_HRC_F814W Unsupported
+Unsupported ACS_HRC_F850LP Unsupported
+Unsupported ACS_HRC_F892N Unsupported
+Unsupported ACS_WFC_F435W Unsupported
+Unsupported ACS_WFC_F475W Unsupported
+Unsupported ACS_WFC_F502N Unsupported
+Unsupported ACS_WFC_F550M Unsupported
+Unsupported ACS_WFC_F555W Unsupported
+Unsupported ACS_WFC_F606W Unsupported
+Unsupported ACS_WFC_F625W Unsupported
+Unsupported ACS_WFC_F658N Unsupported
+Unsupported ACS_WFC_F660N Unsupported
+Unsupported ACS_WFC_F775W Unsupported
+Unsupported ACS_WFC_F814W Unsupported
+Unsupported ACS_WFC_F850LP Unsupported
+Unsupported ACS_WFC_F892N Unsupported
+B Bessell_B B
+I Bessell_I I
+R Bessell_R R
+U Bessell_U U
+V Bessell_V V
+Unsupported CFHT_g Unsupported
+Unsupported CFHT_i_new Unsupported
+Unsupported CFHT_i_old Unsupported
+Unsupported CFHT_r Unsupported
+Unsupported CFHT_u Unsupported
+Unsupported CFHT_z Unsupported
+Unsupported DDO51_f31 Unsupported
+Unsupported DDO51_vac Unsupported
+Unsupported DECam_Y Unsupported
+Unsupported DECam_g Unsupported
+Unsupported DECam_i Unsupported
+Unsupported DECam_r Unsupported
+Unsupported DECam_u Unsupported
+Unsupported DECam_z Unsupported
+Unsupported F070W Unsupported
+Unsupported F090W Unsupported
+Unsupported F115W Unsupported
+Unsupported F140M Unsupported
+Unsupported F150W Unsupported
+Unsupported F150W2 Unsupported
+Unsupported F162M Unsupported
+Unsupported F164N Unsupported
+Unsupported F182M Unsupported
+Unsupported F184 Unsupported
+Unsupported F187N Unsupported
+Unsupported F200W Unsupported
+Unsupported F210M Unsupported
+Unsupported F212N Unsupported
+Unsupported F250M Unsupported
+Unsupported F277W Unsupported
+Unsupported F300M Unsupported
+Unsupported F322W2 Unsupported
+Unsupported F323N Unsupported
+Unsupported F335M Unsupported
+Unsupported F356W Unsupported
+Unsupported F360M Unsupported
+Unsupported F405N Unsupported
+Unsupported F410M Unsupported
+Unsupported F430M Unsupported
+Unsupported F444W Unsupported
+Unsupported F460M Unsupported
+Unsupported F466N Unsupported
+Unsupported F470N Unsupported
+Unsupported F480M Unsupported
+galFUV GALEX_FUV Unsupported
+galNUV GALEX_NUV Unsupported
+GaiaBP Gaia_BP_DR2Rev Unsupported
+Gaia Gaia_G_DR2Rev Unsupported
+GaiaRP Gaia_RP_DR2Rev Unsupported
+Unsupported Gaia_BP_EDR3 Unsupported
+Unsupported Gaia_G_EDR3 Unsupported
+Unsupported Gaia_RP_EDR3 Unsupported
+Unsupported Gaia_BP_MAWf Unsupported
+Unsupported Gaia_BP_MAWb Unsupported
+Unsupported Gaia_G_MAW Unsupported
+Unsupported Gaia_RP_MAW Unsupported
+Unsupported H158 Unsupported
+Unsupported Hipparcos_Hp Unsupported
+Unsupported IRAC_3.6 Spit36
+Unsupported IRAC_4.5 Spit45
+Unsupported IRAC_5.8 Spit58
+Unsupported IRAC_8.0 Spit80
+Unsupported J129 Unsupported
+Unsupported Kepler_D51 Unsupported
+Unsupported Kepler_Kp Kepler
+Unsupported LSST_g Unsupported
+Unsupported LSST_i Unsupported
+Unsupported LSST_r Unsupported
+Unsupported LSST_u Unsupported
+Unsupported LSST_y Unsupported
+Unsupported LSST_z Unsupported
+gPS PS_g Unsupported
+iPS PS_i Unsupported
+Unsupported PS_open Unsupported
+rPS PS_r Unsupported
+iPS PS_w Unsupported
+yPS PS_y Unsupported
+zPS PS_z Unsupported
+Unsupported R062 Unsupported
+gSDSS SDSS_g Sloang
+iSDSS SDSS_i Sloani
+rSDSS SDSS_r Sloanr
+uSDSS SDSS_u Sloanu
+zSDSS SDSS_z Sloanz
+Unsupported SkyMapper_g Unsupported
+Unsupported SkyMapper_i Unsupported
+Unsupported SkyMapper_r Unsupported
+Unsupported SkyMapper_u Unsupported
+Unsupported SkyMapper_v Unsupported
+Unsupported SkyMapper_z Unsupported
+Unsupported Stromgren_b Stromb
+Unsupported Stromgren_u Stromu
+Unsupported Stromgren_v Stromv
+Unsupported Stromgren_y Stromy
+Unsupported Swift_B Unsupported
+Unsupported Swift_U Unsupported
+Unsupported Swift_UVM2 Unsupported
+Unsupported Swift_UVW1 Unsupported
+Unsupported Swift_UVW2 Unsupported
+Unsupported Swift_V Unsupported
+Unsupported TESS TESS
+BT Tycho_B Unsupported
+VT Tycho_V Unsupported
+Unsupported UKIDSS_H Unsupported
+Unsupported UKIDSS_J Unsupported
+Unsupported UKIDSS_K Unsupported
+Unsupported UKIDSS_Y Unsupported
+Unsupported UKIDSS_Z Unsupported
+Unsupported W146 Unsupported
+Unsupported WFC3_IR_F098M Unsupported
+Unsupported WFC3_IR_F105W Unsupported
+Unsupported WFC3_IR_F110W Unsupported
+Unsupported WFC3_IR_F125W Unsupported
+Unsupported WFC3_IR_F126N Unsupported
+Unsupported WFC3_IR_F127M Unsupported
+Unsupported WFC3_IR_F128N Unsupported
+Unsupported WFC3_IR_F130N Unsupported
+Unsupported WFC3_IR_F132N Unsupported
+Unsupported WFC3_IR_F139M Unsupported
+Unsupported WFC3_IR_F140W Unsupported
+Unsupported WFC3_IR_F153M Unsupported
+Unsupported WFC3_IR_F160W Unsupported
+Unsupported WFC3_IR_F164N Unsupported
+Unsupported WFC3_IR_F167N Unsupported
+Unsupported WFC3_UVIS_F200LP Unsupported
+Unsupported WFC3_UVIS_F218W Unsupported
+Unsupported WFC3_UVIS_F225W Unsupported
+Unsupported WFC3_UVIS_F275W Unsupported
+Unsupported WFC3_UVIS_F280N Unsupported
+Unsupported WFC3_UVIS_F300X Unsupported
+Unsupported WFC3_UVIS_F336W Unsupported
+Unsupported WFC3_UVIS_F343N Unsupported
+Unsupported WFC3_UVIS_F350LP Unsupported
+Unsupported WFC3_UVIS_F373N Unsupported
+Unsupported WFC3_UVIS_F390M Unsupported
+Unsupported WFC3_UVIS_F390W Unsupported
+Unsupported WFC3_UVIS_F395N Unsupported
+Unsupported WFC3_UVIS_F410M Unsupported
+Unsupported WFC3_UVIS_F438W Unsupported
+Unsupported WFC3_UVIS_F467M Unsupported
+Unsupported WFC3_UVIS_F469N Unsupported
+Unsupported WFC3_UVIS_F475W Unsupported
+Unsupported WFC3_UVIS_F475X Unsupported
+Unsupported WFC3_UVIS_F487N Unsupported
+Unsupported WFC3_UVIS_F502N Unsupported
+Unsupported WFC3_UVIS_F547M Unsupported
+Unsupported WFC3_UVIS_F555W Unsupported
+Unsupported WFC3_UVIS_F600LP Unsupported
+Unsupported WFC3_UVIS_F606W Unsupported
+Unsupported WFC3_UVIS_F621M Unsupported
+Unsupported WFC3_UVIS_F625W Unsupported
+Unsupported WFC3_UVIS_F631N Unsupported
+Unsupported WFC3_UVIS_F645N Unsupported
+Unsupported WFC3_UVIS_F656N Unsupported
+Unsupported WFC3_UVIS_F657N Unsupported
+Unsupported WFC3_UVIS_F658N Unsupported
+Unsupported WFC3_UVIS_F665N Unsupported
+Unsupported WFC3_UVIS_F673N Unsupported
+Unsupported WFC3_UVIS_F680N Unsupported
+Unsupported WFC3_UVIS_F689M Unsupported
+Unsupported WFC3_UVIS_F763M Unsupported
+Unsupported WFC3_UVIS_F775W Unsupported
+Unsupported WFC3_UVIS_F814W Unsupported
+Unsupported WFC3_UVIS_F845M Unsupported
+Unsupported WFC3_UVIS_F850LP Unsupported
+Unsupported WFC3_UVIS_F953N Unsupported
+Unsupported WFPC2_F218W Unsupported
+Unsupported WFPC2_F255W Unsupported
+Unsupported WFPC2_F300W Unsupported
+Unsupported WFPC2_F336W Unsupported
+Unsupported WFPC2_F439W Unsupported
+Unsupported WFPC2_F450W Unsupported
+Unsupported WFPC2_F555W Unsupported
+Unsupported WFPC2_F606W Unsupported
+Unsupported WFPC2_F622W Unsupported
+Unsupported WFPC2_F675W Unsupported
+Unsupported WFPC2_F791W Unsupported
+Unsupported WFPC2_F814W Unsupported
+Unsupported WFPC2_F850LP Unsupported
+WISE1 WISE_W1 Unsupported
+WISE2 WISE_W2 Unsupported
+WISE3 WISE_W3 Unsupported
+WISE4 WISE_W4 Unsupported
+Unsupported Washington_C Unsupported
+Unsupported Washington_M Unsupported
+Unsupported Washington_T1 Unsupported
+Unsupported Washington_T2 Unsupported
+Unsupported Y106 Unsupported
+Unsupported Z087 Unsupported

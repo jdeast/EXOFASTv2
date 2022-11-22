@@ -37,8 +37,8 @@ i=0
 for lc in lcs:
 
     lc = lc.remove_nans()
-    lc = lc.remove_outliers()
-    lc = lc.flatten()
+#    lc = lc.remove_outliers()
+#    lc = lc.flatten()
     lc = lc.normalize()
     
     time = np.array(lc.time.value) + 2457000.0

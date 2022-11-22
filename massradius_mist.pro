@@ -225,7 +225,6 @@ for i=0, 1 do begin
    endfor
 endfor
 
-
 x_eep = (eep-eepbox[0])/(eepbox[1]-eepbox[0])
 y_mass = (mstar-mstarbox[0])/(mstarbox[1]-mstarbox[0])
 z_feh = (initfeh-initfehbox[0])/(initfehbox[1]-initfehbox[0])
@@ -324,14 +323,14 @@ if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then b
    mistageiso = dblarr(neep) + !values.d_nan
 
    for i=0, neep-1 do begin
-      junk = massradius_mist(eepplot[i],mstar,initfeh,age,teff,rstar,feh,mistrstar=mistrstar,mistteff=mistteff,mistage=mistage)
+      junk = massradius_mist(eepplot[i],mstar,initfeh,age,teff,rstar,feh,mistrstar=mistrstar,mistteff=mistteff,mistage=mistage,/allowold)
       if finite(junk) then begin
          mistrstariso[i] = mistrstar
          mistteffiso[i] = mistteff
          mistageiso[i] = mistage
       endif
    endfor
-   
+
    good = where(finite(mistrstariso))
    eepplot = eepplot[good]
    mistrstariso = mistrstariso[good]
@@ -363,10 +362,14 @@ if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then b
          xmax -= 100d0
       endif
    endrep until (xmin-xmax)/spacing eq xticks
-   xminor = spacing/100d0
+   xminor = long(spacing/100d0)
   
    ymax = min([loggplot,3,5,loggplottrack[use]],max=ymin) ;; plot range backwards
-   plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor,/xlog,color=black,background=white,font=font,charsize=charsize,thick=thick,xthick=thick,charthick=thick,ythick=thick
+   plot, teffplottrack[use], loggplottrack[use],$
+         xrange=[xmin,xmax], xtitle=xtitle, xstyle=1, xticks=xticks, xminor=xminor,$
+         yrange=[ymin,ymax], ytitle=ytitle,$ 
+         font=font,charsize=charsize,thick=thick,xthick=thick,charthick=thick,ythick=thick,$
+         color=black,background=white
    plotsym,0,/fill
    oplot, [teff], [loggplot], psym=8,symsize=symsize,color=black ;; the input point
    junk = min(abs(eepplot-eep),ndx)
