@@ -40,6 +40,8 @@ pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile, france=france, ra=ra,
 if !version.os_family eq 'Windows' then $
    message,'This program relies on queryvizier, which is not supported in Windows'
 
+!except=0
+
 ;; for use without a license
 if lmgr(/vm) or lmgr(/runtime) then begin
    par = command_line_args(count=numargs)
@@ -178,14 +180,14 @@ if (size(qgaia))[2] eq 8 then begin
          printf, priorlun, "# NOTE: the Gaia DR2 parallax (" + strtrim(qgaia.plx,2) + ") and uncertainty (" + strtrim(qgaia.e_plx,2) + ") has been corrected as prescribed in Lindegren+ (2018)"
          corrected_plx = qgaia.plx + 0.030d0
          if corrected_plx gt 0d0 then begin
-            printf, priorlun, corrected_plx, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("parallax",x,f0.5,x,f0.5)'
+            printf, priorlun, corrected_plx, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("#parallax",x,f0.5,x,f0.5)'
          endif else begin
             printf, priorlun, '# WARNING: Negative parallax is not allowed. This is the corrected (but disallowed) parallax'
             printf, priorlun, corrected_plx, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("#parallax",x,f0.5,x,f0.5)'
             upperlimit = corrected_plx + 3d0*sqrt((k*qgaia.e_plx)^2 + sigma_s^2)
             if upperlimit gt 1d-3 then begin
                printf, priorlun, '# Applying a 3-sigma upper limit instead'
-               printf, priorlun, upperlimit, format='("parallax 0.001 -1 0 ",f0.5)'
+               printf, priorlun, upperlimit, format='("#parallax 0.001 -1 0 ",f0.5)'
             endif else begin
                printf, priorlun, '# 3-sigma upper limit is still negative, ignoring parallax'
             endelse
@@ -214,16 +216,22 @@ if (size(qgaia3))[2] eq 8 then begin
          ecl_lat = qgaia3.elat
          astrometric_params_solved = qgaia3.solved
 
-         ;; is it within range of the Lindegren+ 2020 prescription?
+         ;; is the EDR3 error below the floor? If so, round up
+         if qgaia3.e_plx lt 0.03d0 then begin
+            printf, priorlun, "# NOTE: the Gaia EDR3 parallax error (" + strtrim(qgaia3.e_plx,2) + ") has been rounded up to 30 uas to account for systematic floors described in Lindegren+ 2021"
+            uplx = 0.03d0
+         endif else uplx = qgaai3.e_plx
+
+         ;; is it within range of the Lindegren+ 2021 prescription?
          if ( (astrometric_params_solved eq 31 and nu_eff_used_in_astrometry ge 1.1d0 and nu_eff_used_in_astrometry le 1.9d0) or $
               (astrometric_params_solved eq 95 and pseudocolor ge 1.24d0 and pseudocolor le 1.72d0)) and $
             phot_g_mean_mag ge 6d0 and phot_g_mean_mag le 21d0 then begin
             zpt = get_zpt(phot_g_mean_mag, nu_eff_used_in_astrometry, pseudocolor, ecl_lat, astrometric_params_solved)
-            printf, priorlun, "# NOTE: the Gaia EDR3 parallax (" + strtrim(qgaia3.plx,2) + ") has been corrected by subtracting " + strtrim(zpt,2) + " mas according to the Lindegren+ 2020 prescription"
-            printf, priorlun, qgaia3.plx-zpt, qgaia.e_plx, format='("#parallax",x,f0.5,x,f0.5)'            
+            printf, priorlun, "# NOTE: the Gaia EDR3 parallax (" + strtrim(qgaia3.plx,2) + ") has been corrected by subtracting " + strtrim(zpt,2) + " mas according to the Lindegren+ 2021 prescription"
+            printf, priorlun, qgaia3.plx-zpt, uplx, format='("parallax",x,f0.5,x,f0.5)'            
          endif else begin
             printf, priorlun, "# NOTE: the Gaia EDR3 parallax could not be corrected and is raw from the catalog"
-            printf, priorlun, qgaia3.plx, qgaia.e_plx, format='("#parallax",x,f0.5,x,f0.5)'
+            printf, priorlun, qgaia3.plx, uplx, format='("parallax",x,f0.5,x,f0.5)'
          endelse
 
 
@@ -341,5 +349,7 @@ endif
 
 free_lun, priorlun
 free_lun, lun
+
+print, 'Successfully retrieved SED and prior information. See ' + priorfile + ' and ' + sedfile
 
 end
