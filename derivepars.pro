@@ -415,8 +415,8 @@ endfor
 
 for i=0L, ss.nband-1 do begin  
    massfraction = ss.planet[0].mpsun.value/(ss.star[ss.planet[0].starndx].mstar.value + ss.planet[0].mpsun.value)
-   fluxfraction = ss.band[i].dilute.value
-   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
+;   fluxfraction = ss.band[i].dilute.value
+;   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
    ss.band[i].eclipsedepth.value = ss.band[i].thermal.value + ss.band[i].reflect.value
 endfor
 
