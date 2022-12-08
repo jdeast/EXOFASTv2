@@ -1015,7 +1015,9 @@ if ~finite(bestchi2) then begin
    bestchi2 = call_function(chi2func, pars, psname=modelfile)
    printandlog, 'Starting model is out of bounds; cannot recover. You must change the starting parameter(s) via the prior file.', logname
    return
-endif
+endif else begin
+   printandlog, 'The loglike of the starting model was ' + strtrim(-bestchi2/2d0,2), logname
+endelse
 
 if keyword_set(display) then spawn, 'gv ' + modelfile + ' &'
 if keyword_set(plotonly) then return
