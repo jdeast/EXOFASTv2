@@ -233,8 +233,8 @@ endif else begin
    stop
 endelse
 
-if n_elements(fbolsedfloor) eq 0 then fbolsedfloor = 0.02d0
-if n_elements(teffsedfloor) eq 0 then teffsedfloor = 0.024d0
+if n_elements(fbolsedfloor) eq 0 then fbolsedfloor = 0.024d0
+if n_elements(teffsedfloor) eq 0 then teffsedfloor = 0.020d0
 if n_elements(fehsedfloor) eq 0 then fehsedfloor = 0d0
 
 if n_elements(teffemfloor) eq 0 then teffemfloor = -1d0
