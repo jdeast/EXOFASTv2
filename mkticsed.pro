@@ -65,7 +65,8 @@ else cfa = 1B
 ;; match RA/Dec to TICv8 (closest)
 if n_elements(ra) ne 0 and n_elements(dec) ne 0 then begin
    print, 'WARNING: querying by RA/Dec is less robust than querying by TIC ID and may lead to misidentification'   
-   qtic = exofast_queryvizier('IV/38/tic',[ra,dec],2d0, /silent, /all, cfa=cfa)
+;   qtic = exofast_queryvizier('IV/38/tic',[ra,dec],2d0, /silent, /all, cfa=cfa)
+   qtic = exofast_queryvizier('IV/39/tic82',[ra,dec],2d0, /silent, /all, cfa=cfa)
    if (size(qtic))[2] ne 8 then begin
       print, 'No match to ' + string(ra,dec,format='(f0.8,",",f0.8)')
       return
@@ -83,11 +84,13 @@ dist = 120d0
 
 ;; query TICv8 for the TIC ID
 if strtrim(long(ticid),2) eq ticid then begin
-   qtic = Exofast_Queryvizier('IV/38/tic','TIC ' + strtrim(ticid,2),/allcolumns,cfa=cfa)
+;   qtic = Exofast_Queryvizier('IV/38/tic','TIC ' + strtrim(ticid,2),/allcolumns,cfa=cfa)
+   qtic = Exofast_Queryvizier('IV/39/tic82','TIC ' + strtrim(ticid,2),/allcolumns,cfa=cfa)
 endif else begin
    ;; query by supplied name (less robust)
    print, 'WARNING: querying by name is less robust than querying by TIC ID and may lead to misidentification'
-   qtic = Exofast_Queryvizier('IV/38/tic',ticid,2d0,/allcolumns,cfa=cfa)
+;   qtic = Exofast_Queryvizier('IV/38/tic',ticid,2d0,/allcolumns,cfa=cfa)
+   qtic = Exofast_Queryvizier('IV/39/tic82',ticid,2d0,/allcolumns,cfa=cfa)
    qgaia = Exofast_Queryvizier('I/345/gaia2',ticid,2d0,/allcolumns,cfa=cfa)   
 
    sorted = sort(qgaia.gmag)
@@ -194,15 +197,16 @@ if (size(qgaia))[2] eq 8 then begin
          endelse
       endif      
 
-      if qgaia.gmag gt -9 and finite(qgaia.e_gmag) and (qgaia.e_gmag lt 1d0) then printf, lun,'Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
-      if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) and (qgaia.e_bpmag lt 1d0) then printf, lun,'GaiaBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
-      if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag)  and (qgaia.e_rpmag lt 1d0) then printf, lun,'GaiaRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt      
+      if qgaia.gmag gt -9 and finite(qgaia.e_gmag) and (qgaia.e_gmag lt 1d0) then printf, lun,'#Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
+      if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) and (qgaia.e_bpmag lt 1d0) then printf, lun,'#GaiaBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
+      if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag)  and (qgaia.e_rpmag lt 1d0) then printf, lun,'#GaiaRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt      
 
    endif
 endif
 
 ;; EDR3 (print it, but leave it commented out)
-qgaia3=Exofast_Queryvizier('I/350/gaiaedr3',star,dist/60.,/silent,cfa=cfa,/all)
+;qgaia3=Exofast_Queryvizier('I/350/gaiaedr3',star,dist/60.,/silent,cfa=cfa,/all)
+qgaia3=Exofast_Queryvizier('I/355/gaiadr3',star,dist/60.,/silent,cfa=cfa,/all)
 if (size(qgaia3))[2] eq 8 then begin
    match = (where(qgaia3.source eq gaiaid))[0]
    if match ne -1 then begin
@@ -217,29 +221,32 @@ if (size(qgaia3))[2] eq 8 then begin
          astrometric_params_solved = qgaia3.solved
 
          ;; is the EDR3 error below the floor? If so, round up
-         if qgaia3.e_plx lt 0.03d0 then begin
-            printf, priorlun, "# NOTE: the Gaia EDR3 parallax error (" + strtrim(qgaia3.e_plx,2) + ") has been rounded up to 30 uas to account for systematic floors described in Lindegren+ 2021"
-            uplx = 0.03d0
-         endif else uplx = qgaai3.e_plx
+;         if qgaia3.e_plx lt 0.03d0 then begin
+;            printf, priorlun, "# NOTE: the Gaia EDR3 parallax error (" + strtrim(qgaia3.e_plx,2) + ") has been rounded up to 30 uas to account for systematic floors described in Lindegren+ 2021"
+;            uplx = 0.03d0
+;         endif else uplx = qgaai3.e_plx
+
+         uplx = sqrt(qgaia3.e_plx^2 + 0.01d0^2)
 
          ;; is it within range of the Lindegren+ 2021 prescription?
          if ( (astrometric_params_solved eq 31 and nu_eff_used_in_astrometry ge 1.1d0 and nu_eff_used_in_astrometry le 1.9d0) or $
               (astrometric_params_solved eq 95 and pseudocolor ge 1.24d0 and pseudocolor le 1.72d0)) and $
             phot_g_mean_mag ge 6d0 and phot_g_mean_mag le 21d0 then begin
             zpt = get_zpt(phot_g_mean_mag, nu_eff_used_in_astrometry, pseudocolor, ecl_lat, astrometric_params_solved)
-            printf, priorlun, "# NOTE: the Gaia EDR3 parallax (" + strtrim(qgaia3.plx,2) + ") has been corrected by subtracting " + strtrim(zpt,2) + " mas according to the Lindegren+ 2021 prescription"
+            printf, priorlun, "# NOTE: the Gaia DR3 parallax (" + strtrim(qgaia3.plx,2) + ") has been corrected by subtracting " + strtrim(zpt,2) + " mas as prescribed in Lindegren+ 2021"
+            printf, priorlun, "# NOTE: the Gaia DR3 parallax uncertainty (" + strtrim(qgaia3.e_plx,2) + ") has been added in quadrature with 0.01 to account for remaining systematic residuals"
             printf, priorlun, qgaia3.plx-zpt, uplx, format='("parallax",x,f0.5,x,f0.5)'            
          endif else begin
-            printf, priorlun, "# NOTE: the Gaia EDR3 parallax could not be corrected and is raw from the catalog"
+            printf, priorlun, "# NOTE: the Gaia DR3 parallax could not be corrected and is raw from the catalog"
             printf, priorlun, qgaia3.plx, uplx, format='("parallax",x,f0.5,x,f0.5)'
          endelse
 
 
 
       endif      
-      if qgaia3.gmag gt -9 and finite(qgaia3.e_gmag) and (qgaia3.e_gmag lt 1d0)  then printf, lun,'# Gaia_G_EDR3',qgaia3.gmag,max([0.02d,qgaia3.e_gmag]),qgaia3.e_gmag, format=fmt
-      if qgaia3.bpmag gt -9 and finite(qgaia3.e_bpmag) and (qgaia3.e_bpmag lt 1d0) then printf, lun,'#Gaia_BP_EDR3',qgaia3.bpmag,max([0.02d,qgaia3.e_bpmag]),qgaia3.e_bpmag, format=fmt
-      if qgaia3.rpmag gt -9 and finite(qgaia3.e_rpmag) and (qgaia3.e_rpmag lt 1d0) then printf, lun,'#Gaia_RP_EDR3',qgaia3.rpmag,max([0.02d,qgaia3.e_rpmag]),qgaia3.e_rpmag, format=fmt      
+      if qgaia3.gmag gt -9 and finite(qgaia3.e_gmag) and (qgaia3.e_gmag lt 1d0)  then printf, lun,'Gaia_G_EDR3',qgaia3.gmag,max([0.02d,qgaia3.e_gmag]),qgaia3.e_gmag, format=fmt
+      if qgaia3.bpmag gt -9 and finite(qgaia3.e_bpmag) and (qgaia3.e_bpmag lt 1d0) then printf, lun,'Gaia_BP_EDR3',qgaia3.bpmag,max([0.02d,qgaia3.e_bpmag]),qgaia3.e_bpmag, format=fmt
+      if qgaia3.rpmag gt -9 and finite(qgaia3.e_rpmag) and (qgaia3.e_rpmag lt 1d0) then printf, lun,'Gaia_RP_EDR3',qgaia3.rpmag,max([0.02d,qgaia3.e_rpmag]),qgaia3.e_rpmag, format=fmt      
    endif
 endif
 
