@@ -83,7 +83,8 @@ if query_ascii(updatefile) then begin ;; if a valid ascii file
    endif
 endif
 
-caldat, now, month, day, year, hour, minute, second
+;; takes ~4 months to update
+caldat, now-120, month, day, year, hour, minute, second
 fmt = '(i04,"-",i02,"-",i02,x,i02,":",i02,":",f06.3)'
 nowstr = string(year,month,day,hour,minute,second,format=fmt)
 bipm_filename = 'TTBIPM.' + strtrim(year-1,2)
