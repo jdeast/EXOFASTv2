@@ -196,7 +196,7 @@ for i=0, ss.nplanets-1 do begin
 ;      if ss.planet[i].sign2.userchanged then begin
       if ss.planet[i].sign.userchanged then begin
          sign = floor(ss.planet[i].sign.value)
-      endif
+      endif else undefine, sign ;; can't have it defined from previous planets or it will fail if it changes
 
       ;; rederive lsinw/lcosw
       if ~ss.planet[i].lsinw.userchanged and ~ss.planet[i].lcosw.userchanged then begin
