@@ -47,7 +47,7 @@ for i=0, ss.nstars-1 do begin
                                ss.star[i].teff.value,yyrstar=rstar, $
                                sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
                                gravitysun=ss.constants.gravitysun)
-         if ~finite(junk) then stop ;return, 0
+         if ~finite(junk) then return, 0
          rstars[j] = rstar
       endfor
       junk = min(abs(rstars-ss.star[i].rstar.value),ndx)
@@ -58,7 +58,7 @@ for i=0, ss.nstars-1 do begin
                             ss.star[i].teff.value,yyrstar=rstar, $
                             sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
                             gravitysun=ss.constants.gravitysun)
-      if ~finite(junk) then stop ;return, 0
+      if ~finite(junk) then return, 0
       ss.star[i].rstar.value = rstar
    endif
    
@@ -472,8 +472,16 @@ endelse
    ss.planet[i].b.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)  ;; eq 7, Winn 2010
    ss.planet[i].t14.value = ss.planet[i].period.value/!dpi*asin(sqrt((1d0+abs(ss.planet[i].p.value))^2 - ss.planet[i].b.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
 
-
    if ~ss.planet[i].chord.userchanged then ss.planet[i].chord.value = sqrt((1d0+ss.planet[i].p.value)^2 - ss.planet[i].b.value^2)
+
+   if ss.planet[i].fittran then begin
+      if ~finite(ss.planet[i].chord.value) or $
+         (ss.planet[i].b.value gt (1d0+ss.planet[i].p.value)) or $
+         ~finite(ss.planet[i].cosi.value) then begin
+         printandlog, 'ERROR: the starting values for planet ' + strtrim(i,2) + ' does not transit, but a transit is fit. Revise i, ideg, cosi, b, or chord in the prior file', ss.logname
+         return, 0
+      endif
+   endif
 
 endfor
 
