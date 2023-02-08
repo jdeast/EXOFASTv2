@@ -612,6 +612,7 @@ for jj=0L, 2 do begin
 ;         ymax = stdev(residuals)*3d0
 ;         ymin = -stdev(residuals)*3d0
          yrange = [ymin,ymax] 
+
          plot, [0],[0], position=position2, /noerase, $
                xrange=xrange, xtitle=xtitle,$
                yrange=yrange, ytitle='O-C', $
