@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Wed Jul 13 23:33:26 2022.<P>
+<STRONG>Last modified: </STRONG>Wed Feb  8 14:10:52 2023.<P>
  
 <HR>
  
@@ -50,8 +50,8 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_GETTT[1]">EXOFAST_GETTT[1]</A>
 <LI><A HREF="#EXOFAST_GETTT[2]">EXOFAST_GETTT[2]</A>
 <LI><A HREF="#EXOFAST_KEPLEREQ">EXOFAST_KEPLEREQ</A>
-<LI><A HREF="#EXOFAST_LATEXTAB[1]">EXOFAST_LATEXTAB[1]</A>
-<LI><A HREF="#EXOFAST_LATEXTAB[2]">EXOFAST_LATEXTAB[2]</A>
+<LI><A HREF="#EXOFAST_LATEXTAB">EXOFAST_LATEXTAB</A>
+<LI><A HREF="#EXOFAST_LATEXTAB2">EXOFAST_LATEXTAB2</A>
 <LI><A HREF="#EXOFAST_LIKE">EXOFAST_LIKE</A>
 <LI><A HREF="#EXOFAST_MULTIPLOT">EXOFAST_MULTIPLOT</A>
 <LI><A HREF="#EXOFAST_OCCULTQUAD">EXOFAST_OCCULTQUAD</A>
@@ -78,7 +78,8 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#MASSRADIUS_PARSEC">MASSRADIUS_PARSEC</A>
 <LI><A HREF="#MASSRADIUS_TORRES">MASSRADIUS_TORRES</A>
 <LI><A HREF="#MKCONSTANTS">MKCONSTANTS</A>
-<LI><A HREF="#MKPRIOR">MKPRIOR</A>
+<LI><A HREF="#MKPRIOR[1]">MKPRIOR[1]</A>
+<LI><A HREF="#MKPRIOR[2]">MKPRIOR[2]</A>
 <LI><A HREF="#MKSED">MKSED</A>
 <LI><A HREF="#OMC">OMC</A>
 <LI><A HREF="#PARS2STR">PARS2STR</A>
@@ -1178,7 +1179,11 @@ with a diff
                  planets should be fit with a transit model. 
                  If TRANPATH is specified, default is bytarr(nplanets) + 1B.
                  If TRANPATH is not specified, default is bytarr(nplanets). 
-                 At least one of FITRV and FITTRAN should be true for each planet
+                 At least one of FITRV and FITTRAN should be true for
+                 each planet
+   STARNDX     - An NPLANETS long array that specifies the index of
+                 the star each planet orbits. The default is 0 for
+                 all.
    CIRCULAR    - An NPLANETS boolean array that specifies which planets
                  should be fixed to be circular (1) or left with
                  eccentricity free (0). 
@@ -1204,6 +1209,14 @@ with a diff
              fitting a full phase curve. It will be modeled as a
              sinusoid with the orbital period, a minimum at the
              primary transit, and a fitted amplitude (in PPM).
+  DILUTED  - An NTRANSITSxNSTARS boolean array specifying which
+             transits are blended with which stars. These will
+             automatically be deblended according to an SED model of
+             all stars specified here, assuming an error of 10%. 
+             NOTE: TESS lightcurves from SPOC are already deblended
+             with known companions (in TICv8.1). 
+
+
   FITDILUTE- A string array specifying which bands to fit a dilution
              term for. It will fit the fractional contribution from
              the companion. This should be set if the star is blended
@@ -2405,7 +2418,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_KEPLEREQ">
 <H2>EXOFAST_KEPLEREQ</H2></A>
 <A HREF="#EXOFAST_GETTT[2]">[Previous Routine]</A>
-<A HREF="#EXOFAST_LATEXTAB[1]">[Next Routine]</A>
+<A HREF="#EXOFAST_LATEXTAB">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2472,10 +2485,10 @@ Function value:       1.33000
 <STRONG>(See /h/onion0/scratch/EXOFASTv2/exofast_keplereq.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_LATEXTAB[1]">
-<H2>EXOFAST_LATEXTAB[1]</H2></A>
+<A NAME="EXOFAST_LATEXTAB">
+<H2>EXOFAST_LATEXTAB</H2></A>
 <A HREF="#EXOFAST_KEPLEREQ">[Previous Routine]</A>
-<A HREF="#EXOFAST_LATEXTAB[2]">[Next Routine]</A>
+<A HREF="#EXOFAST_LATEXTAB2">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2529,14 +2542,14 @@ Function value:       1.33000
 <STRONG>(See /h/onion0/scratch/EXOFASTv2/exofast_latextab.pro)</STRONG><P>
 <HR>
  
-<A NAME="EXOFAST_LATEXTAB[2]">
-<H2>EXOFAST_LATEXTAB[2]</H2></A>
-<A HREF="#EXOFAST_LATEXTAB[1]">[Previous Routine]</A>
+<A NAME="EXOFAST_LATEXTAB2">
+<H2>EXOFAST_LATEXTAB2</H2></A>
+<A HREF="#EXOFAST_LATEXTAB">[Previous Routine]</A>
 <A HREF="#EXOFAST_LIKE">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
-   EXOFAST_LATEXTAB
+   EXOFAST_LATEXTAB2
 
  PURPOSE:
    Prints the latex source to create a deluxe table of parameter values and
@@ -2588,7 +2601,7 @@ Function value:       1.33000
  
 <A NAME="EXOFAST_LIKE">
 <H2>EXOFAST_LIKE</H2></A>
-<A HREF="#EXOFAST_LATEXTAB[2]">[Previous Routine]</A>
+<A HREF="#EXOFAST_LATEXTAB2">[Previous Routine]</A>
 <A HREF="#EXOFAST_MULTIPLOT">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -4345,7 +4358,7 @@ Function value:       1.33000
 <A NAME="MKCONSTANTS">
 <H2>MKCONSTANTS</H2></A>
 <A HREF="#MASSRADIUS_TORRES">[Previous Routine]</A>
-<A HREF="#MKPRIOR">[Next Routine]</A>
+<A HREF="#MKPRIOR[1]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4364,10 +4377,10 @@ Function value:       1.33000
 <STRONG>(See /h/onion0/scratch/EXOFASTv2/mkconstants.pro)</STRONG><P>
 <HR>
  
-<A NAME="MKPRIOR">
-<H2>MKPRIOR</H2></A>
+<A NAME="MKPRIOR[1]">
+<H2>MKPRIOR[1]</H2></A>
 <A HREF="#MKCONSTANTS">[Previous Routine]</A>
-<A HREF="#MKSED">[Next Routine]</A>
+<A HREF="#MKPRIOR[2]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4405,9 +4418,50 @@ Function value:       1.33000
 <STRONG>(See /h/onion0/scratch/EXOFASTv2/mkprior.pro)</STRONG><P>
 <HR>
  
+<A NAME="MKPRIOR[2]">
+<H2>MKPRIOR[2]</H2></A>
+<A HREF="#MKPRIOR[1]">[Previous Routine]</A>
+<A HREF="#MKSED">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   mkprior
+ PURPOSE:
+
+   Prints the contents of an EXOFASTv2 prior file so the next fit
+   starts at the most likely model from a previous EXOFASTv2
+   run. Often times such iteration can be helpful to make the fit
+   converge faster, since it is often difficult to find a good best
+   fit of complex fits with strong covariances and many parameters.
+
+   Note: If priors widths or bounds were supplied in the original
+   fit, these will be preserved and override the best-fit values.
+
+ INPUTS:
+
+   FILENAME - The name of an IDL save file containing an MCMCSS
+              structure output by EXOFASTv2. Takes precendence over
+              MCMCSS.
+
+              Hint: a poorly behaving run can be terminated and still
+              generate this file by typing "ctrl+c", then
+              "!stopnow=1" and ".con" in the window.
+
+   MCMCSS   - The stellar stucture output by EXOFASTv2.
+
+   PRIORFILENAME - If specified, create a new priorfile with this
+                   name. Otherwise, output to the screen.
+
+ REVISION HISTORY:
+   2018/03 - Public Release - Jason Eastman (CfA)
+
+</PRE><P>
+<STRONG>(See /h/onion0/scratch/EXOFASTv2/mkprior2.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="MKSED">
 <H2>MKSED</H2></A>
-<A HREF="#MKPRIOR">[Previous Routine]</A>
+<A HREF="#MKPRIOR[2]">[Previous Routine]</A>
 <A HREF="#OMC">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
@@ -4996,6 +5050,9 @@ Function value:       1.33000
                memory management if plotting data from many large files
   POSITION   - A 2-element array specifying the normalized X and Y
                coordinates of the top left corner of the legend
+  POSTERIORS - When this keyword is set, text files of the posteriors
+               will be output with the same name as the input files,
+               replacing 'idl' with 'txt'.
 
 </PRE><P>
 <STRONG>(See /h/onion0/scratch/EXOFASTv2/remake_corner.pro)</STRONG><P>
