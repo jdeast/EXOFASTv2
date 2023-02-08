@@ -188,7 +188,7 @@ endif else if n_elements(nomist) eq nstars then begin
    mist = ~nomist
 endif else begin
    printandlog, 'NOMIST mist have 0, 1, or NSTARS elements', lognname
-   stop
+   return, -1
 endelse
 
 if n_elements(parsec0) eq 0 then begin
@@ -202,7 +202,7 @@ endif else if n_elements(parsec) eq nstars then begin
    parsec = parsec0
 endif else begin
    printandlog, 'PARSEC mist have 0, 1, or NSTARS elements', lognname
-   stop
+   return, -1
 endelse
 
 if n_elements(torres0) eq 0 then begin
@@ -216,7 +216,7 @@ endif else if n_elements(torres) eq nstars then begin
    torres = torres0
 endif else begin
    printandlog, 'TORRES mist have 0, 1, or NSTARS elements', lognname
-   stop
+   return, -1
 endelse
 
 if n_elements(yy0) eq 0 then begin
@@ -230,7 +230,7 @@ endif else if n_elements(yy) eq nstars then begin
    yy = yy0
 endif else begin
    printandlog, 'YY mist have 0, 1, or NSTARS elements', lognname
-   stop
+   return, -1
 endelse
 
 if n_elements(fbolsedfloor) eq 0 then fbolsedfloor = 0.024d0
@@ -250,72 +250,72 @@ endelse
 
 if max(mist + yy + parsec + torres) gt 1 then begin
    printandlog, 'You are **STRONGLY** advised to disable all but one evolutionary model (they are not independent), but type ".con" to proceed', logname
-   stop
+   return, -1
 endif
 
 if n_elements(nplanets) eq 0 then nplanets = 1
 if n_elements(circular) ne nplanets and n_elements(circular) gt 1 then begin
    printandlog, "CIRCULAR must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(fittran) ne nplanets and n_elements(fittran) gt 1 then begin
    printandlog, "FITTRAN must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(fitrv) ne nplanets and n_elements(fitrv) gt 1 then begin
    printandlog, "FITRV must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(chen) ne nplanets and n_elements(chen) gt 1 then begin
    printandlog, "CHEN must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(i180) ne nplanets and n_elements(i180) gt 1 then begin
    printandlog, "I180 must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(rossiter) ne nplanets and n_elements(rossiter) gt 1 then begin
    printandlog, "ROSSITER must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(fitdt) ne nplanets and n_elements(fitdt) gt 1 then begin
    printandlog, "FITDT must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(fitlogmp) ne nplanets and n_elements(fitlogmp) gt 1 then begin
    printandlog, "FITLOGMP must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(novcve) ne nplanets and n_elements(novcve) gt 1 then begin
    printandlog, "NOVCVE must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(nochord) ne nplanets and n_elements(nochord) gt 1 then begin
    printandlog, "NOCHORD must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(fitsign) ne nplanets and n_elements(fitsign) gt 1 then begin
    printandlog, "FITSIGN must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(fitbeam) ne nplanets and n_elements(fitbeam) gt 1 then begin
    printandlog, "FITBEAM must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(derivebeam) ne nplanets and n_elements(derivebeam) gt 1 then begin
    printandlog, "DERIVEBEAM must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 if n_elements(fittt) ne nplanets and n_elements(fittt) gt 1 then begin
    printandlog, "FITTT must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
 
 if n_elements(starndx) eq 0 then starndx = lonarr(nplanets>1)
 
 if n_elements(starndx) ne nplanets and nplanets gt 0 then begin
    printandlog, "STARNDX must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
-   stop
+   return, -1
 endif
    
 
@@ -335,7 +335,7 @@ if tranpath ne '' or astrompath ne '' then begin
       tranfiles=file_search(tranpath,count=ntran)
       if ntran eq 0 then begin
          printandlog, "No transit files files found matching " + strtrim(tranpath,2) + "; please check TRANPATH", logname
-         stop
+         return, -1
       endif
    endif else begin
       ntran = 0
@@ -346,7 +346,7 @@ if tranpath ne '' or astrompath ne '' then begin
       astromfiles=file_search(astrompath,count=nastrom)
       if nastrom eq 0 then begin
          printandlog, "No astrometry files files found matching " + strtrim(astrompath,2) + "; please check ASTROMPATH", logname
-         stop
+         return, -1
       endif
    endif else begin
       nastrom = 0
@@ -380,7 +380,7 @@ if tranpath ne '' or astrompath ne '' then begin
       if (where(allowedbands eq bands[i]))[0] eq -1 then begin
          printandlog, 'ERROR: band (' + bands[i] + ') not recognized; please select one of the following:'
          printandlog, string(allowedbands)
-         stop
+         return, -1
       endif
    endfor
    bands = bands[uniq(bands, sort(bands))]
@@ -413,12 +413,12 @@ if total(diluted) gt 0 then begin
    if sz[0] eq 1 and nstars eq 1 and sz[2] eq ntran then begin  
       ;; only 1 star, cannot compute dilution
       printandlog, 'DILUTED cannot be used with only one star. Either model multiple stars or impose external priors on dilution parameters and remove DILUTED argument', logname
-      stop
+      return, -1
    endif else if sz[0] eq 2 and ntran eq sz[1] and nstars eq sz[2] then begin
       ;; good (multiple stars), do nothing
    endif else begin
       printandlog, 'DILUTED (' + strtrim(sz[2],2) + ' x ' + strtrim(sz[1],2) + ') must be an NTRANxNSTARS (' + strtrim(ntran,2) + ' x ' + strtrim(nstars,2) + ') array', logname
-      stop
+      return, -1
    endelse
 endif
 dilutestarndx = where(total(diluted,1)) ;; this specifies which stars should be computed for deblending
@@ -429,7 +429,7 @@ if nplanets ge 1 and ntran ge 1 then begin
    else if n_elements(ttvs) eq 1 then ttvs = bytarr(ntran,nplanets)+ttvs[0] $
    else if n_elements(ttvs) ne ntran*nplanets then begin
       printandlog, 'TTVs must be an NTRANSITSxNPLANETS (' + string(ntran,nplanets,format='(i,"x",i)') + ') array', logname
-      stop
+      return, -1
    endif
    if nplanets gt 1 then begin
       if max(total(ttvs,2)) gt 1 then begin
@@ -442,7 +442,7 @@ if nplanets ge 1 and ntran ge 1 then begin
    else if n_elements(tivs) eq 1 then tivs = bytarr(ntran,nplanets)+tivs[0] $
    else if n_elements(tivs) ne ntran*nplanets then begin
       printandlog, 'TIVs must be an NTRANSITSxNPLANETS (' + string(ntran,nplanets,format='(i,"x",i)') + ') array', logname
-      stop
+      return, -1
    endif
    if nplanets gt 1 then begin
       if max(total(tivs,2)) gt 1 then begin
@@ -455,7 +455,7 @@ if nplanets ge 1 and ntran ge 1 then begin
    else if n_elements(tdeltavs) eq 1 then tdeltavs = bytarr(ntran,nplanets)+tdeltavs[0] $
    else if n_elements(tdeltavs) ne ntran*nplanets then begin
       printandlog, 'Tdeltavs must be an NTRANSITSxNPLANETS (' + string(ntran,nplanets,format='(i,"x",i)') + ') array', logname
-      stop
+      return, -1
    endif
    if nplanets gt 1 then begin
       if max(total(tdeltavs,2)) gt 1 then begin
@@ -470,25 +470,25 @@ endelse
 
 if n_elements(rejectflatmodel) ne ntran and n_elements(rejectflatmodel) ne 0 then begin
    printandlog, 'REJECTFLATMODEL must be an NTRANSITS element array', logname
-   stop
+   return, -1
 end
 if n_elements(rejectflatmodel) eq 0 and ntran gt 0 then rejectflatmodel = bytarr(ntran)
 
 if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 then begin
    printandlog, 'FITSPLINE has ' + strtrim(n_elements(fitspline),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
-   stop
+   return, -1
 end
 if n_elements(fitspline) eq 0 and ntran gt 0 then fitspline = bytarr(ntran)
 
 if n_elements(splinespace) ne ntran and n_elements(splinespace) ne 0 then begin
    printandlog, 'SPLINESPACE must be an NTRANSITS element array', logname
-   stop
+   return, -1
 end
 if n_elements(splinespace) eq 0 and ntran gt 0 then splinespace = dblarr(ntran) + 0.75d0
 
 if n_elements(fitwavelet) ne ntran and n_elements(fitwavelet) ne 0 then begin
    printandlog, 'FITWAVELET must be an NTRANSITS element array', logname
-   stop
+   return, -1
 end
 if n_elements(fitwavelet) eq 0 and ntran gt 0 then fitwavelet = bytarr(ntran)
 
@@ -510,7 +510,7 @@ endelse
 ;; was it specifed and not found?
 if ntel eq 0 and rvpath ne '' then begin
    printandlog, "RV path (" + rvpath + ") not found! Make sure the file exists or remove the argument to proceed without it." , logname
-   stop
+   return, -1
 endif
 
 ;; same for DT path
@@ -560,18 +560,18 @@ if n_elements(i180) ne nplanets or nplanets eq 0 then i180 = bytarr(nplanets>1)
 
 if n_elements(fittran) ne nplanets and nplanets ne 0 then begin
    printandlog, "FITTRAN must have NPLANETS elements", logname
-   stop
+   return, -1
 endif
 
 if n_elements(fitrv) ne nplanets and nplanets ne 0 then begin
    printandlog, "FITRV must have NPLANETS elements", logname
-   stop
+   return, -1
 endif
 
 if nplanets ne 0 then begin
    if (where((~fitrv) and (~fittran)))[0] ne -1 and astrompath eq '' then begin
       printandlog, 'Either a transit or RV must be fit for each planet', logname
-      stop
+      return, -1
    end
 endif
 
@@ -586,7 +586,7 @@ endif
 if rvpath eq '' and nrvfit ne 0 then begin
    printandlog, 'ERROR: a RVPATH was not specified, but RVs were requested to be fit (FITRV != 0).'
    printandlog, 'Remove FITRV or specify a RVPATH'
-   stop
+   return, -1
 endif
 
 ;; was tranpath specified but no planets are fit? (ignore it)
@@ -600,7 +600,7 @@ endif
 if tranpath eq '' and ntranfit ne 0 then begin
    printandlog, 'ERROR: a TRANPATH was not specified, but transits were requested to be fit (FITTRAN != 0).'
    printandlog, 'Remove FITTRAN or specify a TRANPATH'
-   stop
+   return, -1
 endif
 
 ;; each parameter is a structure, as defined here
@@ -1916,7 +1916,7 @@ if n_elements(fluxfile) ne 0 then begin
       sedchi2 = exofast_sed(fluxfile, 6000d0,1d0,0d0,10d0,logg=4.41d0,met=0d0,alpha=0d0,/redo)
    endif else begin
       printandlog, 'Could not find ' + fluxfile, logname
-      stop
+      return, -1
    endelse
 endif
 
@@ -2216,7 +2216,7 @@ if n_elements(mistsedfile) ne 0 then begin
       endfor
    endif else begin
       printandlog, 'Could not find ' + mistsedfile, logname
-      stop
+      return, -1
    endelse
 endif
 
@@ -2483,7 +2483,7 @@ if ntran gt 0 then begin
          endelse
       endif else if n_elements(longcadence) ne ntran then begin
          printandlog, 'LONGCADENCE must be byte or an NTRANSITS (' + strtrim(ntran,2) + ') byte array', logname
-         stop
+         return, -1
       endif else begin
          exptime = dblarr(ntran) + 29.425d0
          ninterp = dblarr(ntran) + 1
@@ -2492,7 +2492,7 @@ if ntran gt 0 then begin
       endelse
    endif else begin
       printandlog, 'NINTERP and EXPTIME must be unspecified or an NTRANSITS (' + strtrim(ntran,2) + ') array', logname
-      stop
+      return, -1
    endelse
 
    if ~keyword_set(silent) then printandlog, 'The index for each transit is',logname
@@ -2705,7 +2705,7 @@ if ~keyword_set(silent) then printandlog, 'Those with "no prior constraint" only
 if ~keyword_set(silent) then printandlog, '', logname
 if ~file_test(priorfile) then begin
    printandlog, "A priorfile must be specified. " + priorfile + " not found.", logname
-   stop
+   return, -1
 endif
 
 openr, lun, priorfile, /get_lun
@@ -3083,8 +3083,6 @@ while not eof(lun) do begin
                         if ~keyword_set(silent) then printandlog, "WARNING: Prior supplied on '" + $
                             priorname + "' but it is neither fitted or derived. Not applying prior, " + $
                             'but it will be used to derive the starting parameters if possible.', logname
-                     stop
-
                   endif else begin
                      
                      ;; found it! change the default starting guess to the value
@@ -3171,7 +3169,6 @@ if dataspan gt 1d5 then begin
    printandlog, '', logname
    printandlog, "WARNING: data/priors span " + strtrim(dataspan/365.25d0,2) + " years. Make sure all data have a consistent epoch (e.g., you're not using a mix of MJD and JD).", logname
    printandlog, "type '.con' to ignore and continue", logname
-   stop
 endif
 
 free_lun, lun
@@ -3282,8 +3279,8 @@ if n_elements(ss.star[0].mstar.value) eq 1 then begin
 
    ;; derive all step parameters
    if not pars2step(ss) then begin
-      printandlog, 'ERROR: The isochrones are not applicable here; refine your priors.', logname
-      stop
+;;      printandlog, 'ERROR: The isochrones are not applicable here; refine your priors.', logname
+      return, 0
    endif
 
    ;; use this to require planets to stay in the same order as they start
@@ -3296,7 +3293,7 @@ if n_elements(ss.star[0].mstar.value) eq 1 then begin
    ;; return an error if the starting stellar system is not allowed
    if step2pars(ss,/verbose,/changedefaults) eq -1 then begin
       printandlog, 'ERROR: starting values for stellar system not allowed; refine priors', logname
-      stop
+      return, -1
    endif
 
    ;; calculate the right period stepping scale for AMOEBA based on the
