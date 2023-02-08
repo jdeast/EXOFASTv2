@@ -1034,7 +1034,7 @@ for j=0L, ss.ntran-1 do begin
 
    for i=0, ss.nplanets-1 do begin
       if ss.planet[i].fittran then begin
-        
+
          tmpmodelflux = (exofast_tran(transitbjd, $
                                     ss.planet[i].i.value + ss.transit[j].tiv.value, $
                                     ss.planet[i].ar.value, $
