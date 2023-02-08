@@ -743,7 +743,7 @@ pro exofastv2, priorfile=priorfile, $
                earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
                fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
                skiptt=skiptt, novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, $
-               nthreads=nthreads, delay=delay, fittt=fittt, rvepoch=rvepoch
+               nthreads=nthreads, delay=delay, fittt=fittt, rvepoch=rvepoch, checkstart=checkstart,badstart=badstart
 
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -843,6 +843,8 @@ if nplanets ne 0 and keyword_set(refinestar) then begin
              fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanet=0,priorfile=priorfile, $
              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
              yy=yy, torres=torres, nomist=nomist, parsec=parsec, logname=logname, debug=stardebug, verbose=verbose)
+   if (size(ss))[2] ne 8 then return
+
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
    staronlybest = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
    if staronlybest[0] eq -1 then begin
@@ -865,6 +867,11 @@ ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath
           chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,$
           fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
           novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, chi2func=chi2func, fittt=fittt, rvepoch=rvepoch,delay=delay)
+if (size(ss))[2] ne 8 then begin
+   badstart=1
+   return
+endif else badstart=0
+if keyword_set(checkstart) then return
 
 npars = ss.npars
 nfit = n_elements((*(ss.tofit))[0,*])
@@ -1014,10 +1021,12 @@ if ~finite(bestchi2) then begin
    ss.verbose=1B
    bestchi2 = call_function(chi2func, pars, psname=modelfile)
    printandlog, 'Starting model is out of bounds; cannot recover. You must change the starting parameter(s) via the prior file.', logname
+   badstart=1
    return
 endif else begin
    printandlog, 'The loglike of the starting model was ' + strtrim(-bestchi2/2d0,2), logname
 endelse
+if keyword_set(checkstart) then return
 
 if keyword_set(display) then spawn, 'gv ' + modelfile + ' &'
 if keyword_set(plotonly) then return
@@ -1168,6 +1177,7 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dt
               alloworbitcrossing=alloworbitcrossing, logname=logname, best=best,$
               fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
               novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, fittt=fittt,rvepoch=rvepoch,delay=delay)
+if (size(mcmcss))[2] ne 8 then return
 
 mcmcss.nchains = nchains
 mcmcss.burnndx = burnndx
