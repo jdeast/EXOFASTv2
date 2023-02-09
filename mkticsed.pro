@@ -35,6 +35,53 @@ return,[u,sigu,v,sigv,b,sigb,y,sigy]
 
 end
 
+;+
+; NAME:
+;   MKTICSED
+;
+; PURPOSE: 
+;   Create the SED input file for EXOFASTv2 based on TICv8.2. It also
+;   creates a minimal prior file that includes Gaia DR3 parallax,
+;   upper limits from Galactic dust maps, and starting values for the
+;   star from TICv8.2.
+;
+; CALLING SEQUENCE:
+;   mkticsed, ticid [, PRIORFILE=, SEDFILE=, /FRANCE, RA=, DEC=]
+; 
+; INPUTS:
+;
+;  TICID - A string representing the numerical portion of the TICID
+;          for your target. This can be retrived from EXOFOP.
+;          https://exofop.ipac.caltech.edu/tess/
+;
+; OPTIONAL INPUTS:
+;
+;  PRIORFILE - The name of the output prior file. By default, it will
+;              be TICID.priors
+;  SEDFILE   - The name of the output SED file. By default, it will be
+;              TICID.sed 
+;  RA/DEC    - The right ascension and declination of the object, in
+;              decimal degrees. If RA/DEC are provided, we find the
+;              TICID closest to the provided RA/Dec. This can be
+;              problematic for high proper motion stars or stars in
+;              crowded fields, so it is strongly recommended to use
+;              the TICID instead.
+;
+; OPTIONAL KEYWORDS:
+;
+;  FRANCE    - Use the FRANCE mirror when querying vizier. By default,
+;              we use the CfA mirror.
+;  
+; EXAMPLES:
+;
+;  ;; make an sed and prior file for WASP-4:
+;  mkticsed, '402026209', priorfile='wasp4.priors', sedfile='wasp4.sed'
+;
+; MODIFICATION HISTORY
+; 
+;  2023/02 -- Documented.
+;-
+
 pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile, france=france, ra=ra, dec=dec
 
 if !version.os_family eq 'Windows' then $

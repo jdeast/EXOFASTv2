@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Thu Feb  9 09:31:24 2023.<P>
+<STRONG>Last modified: </STRONG>Thu Feb  9 10:53:57 2023.<P>
  
 <HR>
  
@@ -81,6 +81,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#MKPRIOR[1]">MKPRIOR[1]</A>
 <LI><A HREF="#MKPRIOR[2]">MKPRIOR[2]</A>
 <LI><A HREF="#MKSED">MKSED</A>
+<LI><A HREF="#MKTICSED">MKTICSED</A>
 <LI><A HREF="#OMC">OMC</A>
 <LI><A HREF="#PARS2STR">PARS2STR</A>
 <LI><A HREF="#PLOTIMAGE">PLOTIMAGE</A>
@@ -4462,7 +4463,7 @@ Function value:       1.33000
 <A NAME="MKSED">
 <H2>MKSED</H2></A>
 <A HREF="#MKPRIOR[2]">[Previous Routine]</A>
-<A HREF="#OMC">[Next Routine]</A>
+<A HREF="#MKTICSED">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4490,9 +4491,63 @@ Function value:       1.33000
 <STRONG>(See /h/onion0/scratch/EXOFASTv2/mksed.pro)</STRONG><P>
 <HR>
  
+<A NAME="MKTICSED">
+<H2>MKTICSED</H2></A>
+<A HREF="#MKSED">[Previous Routine]</A>
+<A HREF="#OMC">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   MKTICSED
+
+ PURPOSE: 
+   Create the SED input file for EXOFASTv2 based on TICv8.2. It also
+   creates a minimal prior file that includes Gaia DR3 parallax,
+   upper limits from Galactic dust maps, and starting values for the
+   star from TICv8.2.
+
+ CALLING SEQUENCE:
+   mkticsed, ticid [, PRIORFILE=, SEDFILE=, /FRANCE, RA=, DEC=]
+ 
+ INPUTS:
+
+  TICID - A string representing the numerical portion of the TICID
+          for your target. This can be retrived from EXOFOP.
+          https://exofop.ipac.caltech.edu/tess/
+
+ OPTIONAL INPUTS:
+
+  PRIORFILE - The name of the output prior file. By default, it will
+              be TICID.priors
+  SEDFILE   - The name of the output SED file. By default, it will be
+              TICID.sed 
+  RA/DEC    - The right ascension and declination of the object, in
+              decimal degrees. If RA/DEC are provided, we find the
+              TICID closest to the provided RA/Dec. This can be
+              problematic for high proper motion stars or stars in
+              crowded fields, so it is strongly recommended to use
+              the TICID instead.
+
+ OPTIONAL KEYWORDS:
+
+  FRANCE    - Use the FRANCE mirror when querying vizier. By default,
+              we use the CfA mirror.
+  
+ EXAMPLES:
+
+  ;; make an sed and prior file for WASP-4:
+  mkticsed, '402026209', priorfile='wasp4.priors', sedfile='wasp4.sed'
+
+ MODIFICATION HISTORY
+ 
+  2023/02 -- Documented.
+</PRE><P>
+<STRONG>(See /h/onion0/scratch/EXOFASTv2/mkticsed.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="OMC">
 <H2>OMC</H2></A>
-<A HREF="#MKSED">[Previous Routine]</A>
+<A HREF="#MKTICSED">[Previous Routine]</A>
 <A HREF="#PARS2STR">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
