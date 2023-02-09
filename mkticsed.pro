@@ -123,7 +123,7 @@ star = [qtic.raj2000,qtic.dej2000]
 
 ;; prior file
 openw, priorlun, priorfile, /get_lun
-printf, priorlun, '#### TICv8 ####'
+printf, priorlun, '#### TICv8.2 ####'
 if finite(qtic.mass) and finite(qtic.rad) and finite(qtic.teff) then begin
    ;; require all three. starting hybrid
    ;; values is less robust than starting at solar
