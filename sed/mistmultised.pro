@@ -31,7 +31,7 @@ end
 
 ;; BLEND is an NSTARSxNBANDS boolean specifying which stars each magnitude applies to
 
-function mistmultised, teff, logg, feh, av, distance, lstar, errscale, sedfile, redo=redo, psname=psname, debug=debug, atmospheres=atmospheres, wavelength=wavelength, logname=logname
+function mistmultised, teff, logg, feh, av, distance, lstar, errscale, sedfile, redo=redo, psname=psname, debug=debug, atmospheres=atmospheres, wavelength=wavelength, logname=logname,range=range
 
 nstars = n_elements(teff)
 if n_elements(logg) ne nstars then message, 'TEFF and LOGG must have the same number of elements'
@@ -57,13 +57,16 @@ if n_elements(teffgrid) eq 0 or keyword_set(redo) then begin
    openr, lun, sedfile, /get_lun
    for i=0L, nlines-1 do begin
       readf, lun, line
-      if strpos(line,'#') eq 0 then continue
+      line = (strsplit(line,'#',/extract,/preserve_null))[0] ;; remove comments
+      ;if strpos(line,'#') eq 0 then continue
       entries = strsplit(line,/extract)
-      if n_elements(entries) ge 3 then begin
+      if n_elements(entries) lt 3 then begin
+         continue ;; not a legal line
+      endif else begin
          sedbands[i] = entries[0]
          mags[i] = double(entries[1])
          errs[i] = double(entries[2])
-      endif
+      endelse
       if n_elements(entries) eq 5 then begin
          starndx = long(strsplit(entries[4],',',/extract))
          good = where(starndx lt nstars and starndx ge 0,complement=bad)
@@ -78,6 +81,7 @@ if n_elements(teffgrid) eq 0 or keyword_set(redo) then begin
          blend[i,*] = 1
       endelse
    endfor
+   free_lun, lun
 
 ;   readcol, sedfile, sedbands, mags, errs, format='a,d,d', comment='#', /silent
    good = where(errs lt 1d0, ngood)
@@ -226,8 +230,12 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    xmin = min(wp, max=xmax)
    xmax = 30
    xmin = 0.1
-   ymin = alog10(min([modelflux,flux-fluxerr]));,reform(atmospheres,n_elements(atmospheres))]))
+   ymin = alog10(min([modelflux,flux-fluxerr])) ;,reform(atmospheres,n_elements(atmospheres))]))
    ymax = alog10(max([modelflux,flux+fluxerr,total(atmospheres,1)]))
+   if finite(range[0]) then xmin = range[0]
+   if finite(range[1]) then xmax = range[1]
+   if finite(range[2]) then ymin = range[2]
+   if finite(range[3]) then ymax = range[3]
 
    plot, [0], [0], /xlog, ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs, position=position1, xtickformat='(A1)'
 
@@ -311,9 +319,12 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    if abs(ymin) gt abs(ymax) then ymax =  abs(ymin)
    if abs(ymax) gt abs(ymin) then ymin = -abs(ymax)
 
+   if finite(range[4]) then ymin = range[4]
+   if finite(range[5]) then ymax = range[5]
+
    plot, [0],[0], position=position2, /noerase, $
          xrange=[xmin,xmax], xtitle=xtitle, /xlog, $
-         yrange=[ymin,ymax]/0.7d0, ytitle=ytitle2,$;ytitle='O-C',$;ytitle=textoidl('O-C (\sigma)'), $
+         yrange=[ymin,ymax]/0.7, ytitle=ytitle2,$;ytitle='O-C',$;ytitle=textoidl('O-C (\sigma)'), $
          /xstyle, /ystyle, yminor=2,yticks=2,ytickv=[ymin,0d0,ymax]
    oplot, [xmin,xmax], [0d0,0d0], linestyle=1,color=colors[1]
    for i=0L, nbands-1 do begin
@@ -325,6 +336,16 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       ebw = !d.y_vsize/100d0 ;; error bar width = 1% of device size
       xy1 = convert_coord(wp[i]-widthhm[i],residuals[i],/to_device)
       xy2 = convert_coord(wp[i]+widthhm[i],residuals[i],/to_device)
+
+      if xy1[0] lt 0 then xy1[0] = 0d0
+      if xy1[0] gt !d.x_size then xy1[0] = !d.x_size
+      if xy1[1] lt 0 then xy1[1] = 0d0
+      if xy1[1] gt !d.y_size then xy1[1] = !d.y_size
+      if xy2[0] lt 0 then xy2[0] = 0d0
+      if xy2[0] gt !d.x_size then xy2[0] = !d.x_size
+      if xy2[1] lt 0 then xy2[1] = 0d0
+      if xy2[1] gt !d.y_size then xy2[1] = !d.y_size
+
       plots, [xy1[0],xy1[0]], [xy1[1]-ebw,xy1[1]+ebw], color=pointcolors[i],/device
       plots, [xy2[0],xy2[0]], [xy2[1]-ebw,xy2[1]+ebw], color=pointcolors[i],/device
 
