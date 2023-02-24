@@ -244,14 +244,14 @@ if (size(qgaia))[2] eq 8 then begin
          endelse
       endif      
 
-      if qgaia.gmag gt -9 and finite(qgaia.e_gmag) and (qgaia.e_gmag lt 1d0) then printf, lun,'#Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
-      if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) and (qgaia.e_bpmag lt 1d0) then printf, lun,'#GaiaBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
-      if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag)  and (qgaia.e_rpmag lt 1d0) then printf, lun,'#GaiaRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt      
+      if qgaia.gmag gt -9 and finite(qgaia.e_gmag) and (qgaia.e_gmag lt 1d0) then printf,     lun,'#        Gaia',qgaia.gmag,max([0.02d,qgaia.e_gmag]),qgaia.e_gmag, format=fmt
+      if qgaia.bpmag gt -9 and finite(qgaia.e_bpmag) and (qgaia.e_bpmag lt 1d0) then printf,  lun,'#      GaiaBP',qgaia.bpmag,max([0.02d,qgaia.e_bpmag]),qgaia.e_bpmag, format=fmt
+      if qgaia.rpmag gt -9 and finite(qgaia.e_rpmag)  and (qgaia.e_rpmag lt 1d0) then printf, lun,'#      GaiaRP',qgaia.rpmag,max([0.02d,qgaia.e_rpmag]),qgaia.e_rpmag, format=fmt      
 
    endif
 endif
 
-;; EDR3 (print it, but leave it commented out)
+;; EDR3 
 ;qgaia3=Exofast_Queryvizier('I/350/gaiaedr3',star,dist/60.,/silent,cfa=cfa,/all)
 qgaia3=Exofast_Queryvizier('I/355/gaiadr3',star,dist/60.,/silent,cfa=cfa,/all)
 if (size(qgaia3))[2] eq 8 then begin
