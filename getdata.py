@@ -1,6 +1,8 @@
 import lightkurve as lk
 import numpy as np
 import sys
+import datetime
+import ipdb
 
 # this uses lightkurve to extract QLP/SPOC TESS data and format it for EXOFASTv2
 # call it like this (python 3)
@@ -28,6 +30,8 @@ import sys
 #   adsurl = {http://adsabs.harvard.edu/abs/2018ascl.soft12013L},
 #}
 
+t0 = datetime.datetime(2000,1,1)
+jd0 = 2451544.5
 
 ticid = 'TIC ' + str(sys.argv[1])
 search_result = lk.search_lightcurve(ticid,mission='TESS',author=('SPOC','QLP'))
@@ -37,15 +41,22 @@ i=0
 for lc in lcs:
 
     lc = lc.remove_nans()
-#    lc = lc.remove_outliers()
-#    lc = lc.flatten()
+#    lc = lc.remove_outliers() # this often clips the transits
+#    lc = lc.flatten() # this can remove transit signals
     lc = lc.normalize()
     
     time = np.array(lc.time.value) + 2457000.0
     flux = np.array(lc.flux.value)
     err = np.array(lc.flux_err.value)
 
-    filename = 'n20000101.TESS.TESS.' + 'TIC' + str(search_result[i].target_name.data[0]) + '.S' + str(lc.sector).zfill(2) + '.' + str(int(search_result[i].exptime[0].value)).zfill(4) + '.' + lc.author + '.dat'
+    datestr = (t0 + datetime.timedelta(days=time[0]-jd0)).strftime('n%Y%m%d')
+
+    # create the filename in EXOFASTv2 format
+    filename = datestr + '.TESS.TESS.' +\ # nYYYYMMDD.filter.telescope
+               'TIC' + str(search_result[i].target_name.data[0]) +\ # TIC ID
+               '.S' + str(lc.sector).zfill(2) + '.' +\ # 2-digit sector
+               str(int(search_result[i].exptime[0].value)).zfill(4) + '.' +\ 
+               lc.author + '.dat' # SPOC, QLP, etc
 
     np.savetxt(filename,np.column_stack([time,flux,err]))
 
