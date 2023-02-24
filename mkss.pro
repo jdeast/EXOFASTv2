@@ -165,7 +165,14 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
                novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, $
                chi2func=chi2func, fittt=fittt,delay=delay, rvepoch=rvepoch,$
-               nstars=nstars, starndx=starndx, noavprior=noavprior, diluted=diluted
+               nstars=nstars, starndx=starndx, noavprior=noavprior, diluted=diluted,prefix=prefix,mkgif=mkgif,$
+               transitrange=transitrange,rvrange=rvrange,$
+               sedrange=sedrange,emrange=emrange
+
+if n_elements(transitrange) eq 0 then transitrange=dblarr(6)+!values.d_nan
+if n_elements(rvrange) eq 0 then rvrange=dblarr(6) + !values.d_nan
+if n_elements(sedrange) eq 0 then sedrange=dblarr(6) + !values.d_nan
+if n_elements(emrange) eq 0 then emrange=dblarr(4) + !values.d_nan
 
 if n_elements(nstars) eq 0 then nstars = 1L
 
@@ -180,37 +187,49 @@ endif
 if n_elements(nomist) eq 0 then begin
    ;; default uses MIST for all stars
    mist = bytarr(nstars)+1B
-endif else if n_elements(nomist) eq 1 and keyword_set(nomist) then begin
-   ;; if set as a keyword, disable for all stars
-   mist = bytarr(nstars)
+endif else if n_elements(nomist) eq 1 then begin
+   if keyword_set(nomist) then begin
+      ;; if set as a keyword, disable for all stars
+      mist = bytarr(nstars)
+   endif else begin
+      mist = bytarr(nstars)+1B
+   endelse
 endif else if n_elements(nomist) eq nstars then begin
    ;; if set as an NSTARS array, use array
    mist = ~nomist
 endif else begin
-   printandlog, 'NOMIST mist have 0, 1, or NSTARS elements', lognname
+   printandlog, 'NOMIST must have 0, 1, or NSTARS elements', lognname
    return, -1
 endelse
 
 if n_elements(parsec0) eq 0 then begin
    ;; don't use PARSEC by default
    parsec = bytarr(nstars)
-endif else if n_elements(parsec0) eq 1 and keyword_set(parsec0) then begin
-   ;; if set as a keyword, disable for all stars
-   parsec = bytarr(nstars) + 1B
+endif else if n_elements(parsec0) eq 1 then begin
+   if keyword_set(parsec0) then begin
+      ;; if set as a keyword, disable for all stars
+      parsec = bytarr(nstars) + 1B
+   endif else begin
+      parsec = bytarr(nstars)
+   endelse
 endif else if n_elements(parsec) eq nstars then begin
    ;; if set as an NSTARS array, use array
    parsec = parsec0
 endif else begin
-   printandlog, 'PARSEC mist have 0, 1, or NSTARS elements', lognname
+   printandlog, 'PARSEC must have 0, 1, or NSTARS elements', lognname
    return, -1
 endelse
 
 if n_elements(torres0) eq 0 then begin
    ;; don't use TORRES by default
    torres = bytarr(nstars)
-endif else if n_elements(torres0) eq 1 and keyword_set(torres0) then begin
-   ;; if set as a keyword, disable for all stars
-   torres = bytarr(nstars) + 1B
+endif else if n_elements(torres0) eq 1 then begin
+   if keyword_set(torres0) then begin
+      ;; if set as a keyword, disable for all stars
+      torres = bytarr(nstars) + 1B
+   endif else begin
+      torres = bytarr(nstars)      
+   endelse
 endif else if n_elements(torres) eq nstars then begin
    ;; if set as an NSTARS array, use array
    torres = torres0
@@ -222,9 +241,13 @@ endelse
 if n_elements(yy0) eq 0 then begin
    ;; don't use YY by default
    yy = bytarr(nstars)
-endif else if n_elements(yy0) eq 1 and keyword_set(yy0) then begin
-   ;; if set as a keyword, disable for all stars
-   yy = bytarr(nstars) + 1B
+endif else if n_elements(yy0) eq 1 then begin
+   if keyword_set(yy0) then begin
+      ;; if set as a keyword, disable for all stars
+      yy = bytarr(nstars) + 1B
+   endif else begin
+      yy = bytarr(nstars)
+   endelse
 endif else if n_elements(yy) eq nstars then begin
    ;; if set as an NSTARS array, use array
    yy = yy0
@@ -326,7 +349,11 @@ if n_elements(fitphase) eq 0 then fitphase = ['']
 if n_elements(fitellip) eq 0 then fitellip = ['']
 if n_elements(fitdilute) eq 0 then fitdilute = ['']
 if n_elements(tranpath) eq 0 then tranpath = ''
+if n_elements(rvpath) eq 0 then rvpath = ''
 if n_elements(astrompath) eq 0 then astrompath = ''
+if n_elements(dtpath) eq 0 then dtpath = ''
+if n_elements(fluxfile) eq 0 then fluxfile = ''
+if n_elements(mistsedfile) eq 0 then mistsedfile = ''
 
 ;; read in the transit files
 if tranpath ne '' or astrompath ne '' then begin
@@ -423,6 +450,42 @@ if total(diluted) gt 0 then begin
 endif
 dilutestarndx = where(total(diluted,1)) ;; this specifies which stars should be computed for deblending
 
+if ntran eq 0 then begin
+   exptime = [1]
+   ninterp = [1]
+endif else begin
+   if n_elements(ninterp) eq 1 and n_elements(exptime) eq 1 then begin
+      exptime = dblarr(ntran) + exptime
+      ninterp = dblarr(ntran) + ninterp
+   endif else if n_elements(ninterp) eq ntran and n_elements(exptime) eq ntran then begin
+      ;; do nothing (use exptime and ninterp as is)
+   endif else if n_elements(ninterp) eq 0 and n_elements(exptime) eq 0 then begin
+      if n_elements(longcadence) eq 0 then begin
+         exptime = dblarr(ntran) + 1
+         ninterp = dblarr(ntran) + 1
+      endif else if n_elements(longcadence) eq 1 then begin
+         if longcadence[0] eq 1 then begin
+            exptime = dblarr(ntran) + 29.425d0
+            ninterp = dblarr(ntran) + 10
+         endif else begin
+            exptime = dblarr(ntran) + 1
+            ninterp = dblarr(ntran) + 1
+         endelse
+      endif else if n_elements(longcadence) ne ntran then begin
+         printandlog, 'LONGCADENCE must be byte or an NTRANSITS (' + strtrim(ntran,2) + ') byte array', logname
+         return, -1
+      endif else begin
+         exptime = dblarr(ntran) + 29.425d0
+         ninterp = dblarr(ntran) + 1
+         match = where(longcadence)
+         if match[0] ne -1 then ninterp[match] = 10
+      endelse
+   endif else begin
+      printandlog, 'NINTERP and EXPTIME must be unspecified or an NTRANSITS (' + strtrim(ntran,2) + ') array', logname
+      return, -1
+   endelse
+endelse
+
 if nplanets ge 1 and ntran ge 1 then begin
    ;; some error checking on TTVs
    if n_elements(ttvs) eq 0 then ttvs = bytarr(ntran,nplanets) $
@@ -492,29 +555,24 @@ if n_elements(fitwavelet) ne ntran and n_elements(fitwavelet) ne 0 then begin
 end
 if n_elements(fitwavelet) eq 0 and ntran gt 0 then fitwavelet = bytarr(ntran)
 
-
-;; if RVPATH not specified or empty, don't use any telescope
-if n_elements(rvpath) eq 0 then begin
+;; if RVPATH empty, don't use any telescope
+if rvpath eq '' then begin
    ntel = 0
    rvpath = ''
    if keyword_set(fitslope) or keyword_set(fitquad) then begin
       printandlog, "WARNING: RV path not specified. Ignoring FITSLOPE and FITQUAD keywords." , logname
    endif
-endif else if rvpath eq '' then begin
-   ntel = 0
-   rvpath = ''
 endif else begin
    rvfiles = file_search(rvpath,count=ntel)
+   ;; was it specifed and not found?
+   if ntel eq 0 then begin
+      printandlog, "RV path (" + rvpath + ") not found! Make sure the file exists or remove the argument to proceed without it." , logname
+      return, -1
+   endif
 endelse
 
-;; was it specifed and not found?
-if ntel eq 0 and rvpath ne '' then begin
-   printandlog, "RV path (" + rvpath + ") not found! Make sure the file exists or remove the argument to proceed without it." , logname
-   return, -1
-endif
-
 ;; same for DT path
-if n_elements(dtpath) ne 0 then begin
+if dtpath ne '' then begin
    dtfiles = file_search(dtpath,count=ndt)
    if ndt eq 0 then message, 'DTPATH specified (' + dtpath + ') but no files found'
 endif else begin
@@ -1880,7 +1938,7 @@ constants = mkconstants()
 
 ndata = 0L
 ;; if we're fitting an SED, fit the distance, extinction, and error scale
-if n_elements(fluxfile) ne 0 then begin
+if fluxfile ne '' then begin
    printandlog, 'WARNING: FLUXFILE has been deprecated. MISTSEDFILE should be used instead.', logname
    printandlog, 'NOTE: When using MISTSEDFILE, the atmosphere is not computed directly or plotted.', logname
    if file_test(fluxfile) then begin
@@ -2158,27 +2216,58 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'amoeba',0L,$
                    'logname','',$
                    'chi2',ptr_new(1),$
-                   'fluxfile',' ',$
-                   'mistsedfile',' ',$
+                   'fluxfile',fluxfile,$
+                   'mistsedfile',mistsedfile,$
                    ;; metadata to be able to restart fit
                    'circular', circular,$
                    'fitrv',fitrv,$
                    'fittran',fittran,$
+                   'fitdt',fitdt,$
+                   'rossiter',rossiter,$
+                   'fitlogmp',fitlogmp,$
+                   'rejectflatmodel',rejectflatmodel,$
                    'longcadence',longcadence,$
                    'tranpath',tranpath,$
                    'rvpath',rvpath,$
+                   'astrompath',astrompath,$
+                   'fitslope',keyword_set(fitslope),$
+                   'fitquad',keyword_set(fitquad),$
+                   'fitspline',fitspline,$
+                   'splinespace',splinespace,$
+                   'fitwavelet',fitwavelet,$
+                   'ninterp',ninterp,$
+                   'exptime',exptime,$
+                   'novcve',novcve,$
+                   'nochord',nochord,$
+                   'fitsign',fitsign,$
+                   'chi2func',chi2func,$
+                   'fittt',fittt,$
+                   'i180',i180,$
                    'chen',chen,$
+                   'fitdilute',fitdilute,$
+                   'fitthermal',fitthermal,$
+                   'fitreflect',fitreflect,$
+                   'fitphase',fitphase,$
+                   'fitellip',fitellip,$
+                   'fitbeam',fitbeam,$
+                   'derivebeam',derivebeam,$
                    'planetorder',lindgen(nplanets > 1),$
-;                   'dtpath',dtpath,$
-;                   'fluxfile',fluxfile,$
+                   'dtpath',dtpath,$
                    'delay',delay,$
-                   'earth',keyword_set(earth));,$
-;                   'prefix',prefix $
+                   'mkgif',keyword_set(mkgif),$
+                   'prefix',prefix, $
+                   'earth',keyword_set(earth),$
+                   'priorfile',priorfile,$
+                   'transitrange',transitrange,$
+                   'rvrange',rvrange,$
+                   'sedrange',sedrange,$
+                   'emrange',emrange)
+
 ;)
 
 common BC_block, bcarrays, teffgrid, logggrid, fehgrid, avgrid, sedbands, mags, errs, filterprops, blend
 
-if n_elements(mistsedfile) ne 0 then begin
+if mistsedfile ne '' then begin
    if file_test(mistsedfile) then begin
 
       ;; overwrite the common block, in case it's been called
@@ -2187,6 +2276,7 @@ if n_elements(mistsedfile) ne 0 then begin
       sedchi2 = mistmultised(replicate(6000d0,nstars), replicate(4.41d0,nstars), replicate(0d0,nstars), $
                              replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
                              replicate(1d0,nstars), mistsedfile, /redo)
+
       ss.ndata += n_elements(mags) +2d0 ;; two more because of links between rstar and rstarsed, teff and teffsed
       ss.mistsedfile = mistsedfile
       starsused = where(total(blend,1) ne 0,nused)
@@ -2464,36 +2554,6 @@ dilutebandndx = [-1]
 
 ;; read in the transit files
 if ntran gt 0 then begin
-   if n_elements(ninterp) eq 1 and n_elements(exptime) eq 1 then begin
-      exptime = dblarr(ntran) + exptime
-      ninterp = dblarr(ntran) + ninterp
-   endif else if n_elements(ninterp) eq ntran and n_elements(exptime) eq ntran then begin
-      ;; do nothing (use exptime and ninterp as is)
-   endif else if n_elements(ninterp) eq 0 and n_elements(exptime) eq 0 then begin
-      if n_elements(longcadence) eq 0 then begin
-         exptime = dblarr(ntran) + 1
-         ninterp = dblarr(ntran) + 1
-      endif else if n_elements(longcadence) eq 1 then begin
-         if longcadence[0] eq 1 then begin
-            exptime = dblarr(ntran) + 29.425d0
-            ninterp = dblarr(ntran) + 10
-         endif else begin
-            exptime = dblarr(ntran) + 1
-            ninterp = dblarr(ntran) + 1
-         endelse
-      endif else if n_elements(longcadence) ne ntran then begin
-         printandlog, 'LONGCADENCE must be byte or an NTRANSITS (' + strtrim(ntran,2) + ') byte array', logname
-         return, -1
-      endif else begin
-         exptime = dblarr(ntran) + 29.425d0
-         ninterp = dblarr(ntran) + 1
-         match = where(longcadence)
-         if match[0] ne -1 then ninterp[match] = 10
-      endelse
-   endif else begin
-      printandlog, 'NINTERP and EXPTIME must be unspecified or an NTRANSITS (' + strtrim(ntran,2) + ') array', logname
-      return, -1
-   endelse
 
    if ~keyword_set(silent) then printandlog, 'The index for each transit is',logname
    ss.transit[*].transitptrs = ptrarr(ntran,/allocate_heap)
@@ -2772,7 +2832,6 @@ while not eof(lun) do begin
       ss.(prior.map[0])[prior.map[1]].distance.fit = 1B
       ss.(prior.map[0])[prior.map[1]].parallax.derive = 1B
    endif
-
    
    ;; if the circular flag is set, don't apply priors on e/omega
    if prior.map[3] ne -1 then begin
@@ -2780,9 +2839,10 @@ while not eof(lun) do begin
          if prior.name eq 'e' or prior.name eq 'omega' or prior.name eq 'omegadeg' or $
             prior.name eq 'secosw' or prior.name eq 'sesinw' or prior.name eq 'esinw' or $
             prior.name eq 'ecosw' and circular[prior.map[3]] then begin
-            if ~keyword_set(silent) then $
+            if ~keyword_set(silent) then begin
                printandlog, "WARNING: Prior supplied on '" + $
                             prior.name + "' but planet is specified to be circular; not applying prior", logname
+            endif
             continue
          endif
       endif
@@ -2897,254 +2957,6 @@ while not eof(lun) do begin
 endwhile
 if n_elements(priors) gt 0 then (*ss.priors) = priors
 
-if 0 then begin
-while not eof(lun) do begin
-   lineno+=1
-   readf, lun, line
-
-   ;; skip commented lines
-   if strpos(line,'#') eq 0 then continue
-
-   ;; strip everything after comments
-   entries = strsplit((strsplit(line,'#',/extract))[0],/extract)
-
-   nentries = n_elements(entries)
-   ;; each line must have at least a name and value
-   if nentries lt 2 or nentries gt 6 then begin
-      if line ne '' and ~keyword_set(silent) then printandlog, 'WARNING: line ' + strtrim(lineno,2) + ' in ' + priorfile + ' is not legal syntax (NAME VALUE [UNCERTAINTY] [LOWERBOUND] [UPPERBOUND] [START]); ignoring: ' + line, logname
-      continue
-   endif 
-
-   ;; extract Name, value, uncertainty, lowerbound, and upper bound
-   ;; (or default to Name, Value, no uncertainty, -Inf, +Inf)
-   priorname = entries[0]
-
-   ;; for MIST models, age is derived after the fact, which wouldn't allow a prior. 
-   ;; So if a prior is supplied, make sure we fit it.
-   if strupcase(priorname) eq 'AGE' and n_elements(entries) gt 2 then ss.star[0].age.fit = 1B
-
-   priorval = double(entries[1])
-   if nentries ge 3 then priorwidth = double(entries[2]) $
-   else priorwidth = -1
-   if priorwidth gt 0d0 then ss.ndata++
-   if nentries ge 4 then begin
-      if strupcase(entries[3]) eq '-INF' then lowerbound = -!values.d_infinity $
-      else lowerbound = double(entries[3])
-   endif else lowerbound = -!values.d_infinity
-   if nentries ge 5 then begin
-      if strupcase(entries[4]) eq 'INF' then upperbound = !values.d_infinity $
-      else upperbound = double(entries[4])
-   endif else upperbound = !values.d_infinity
-   if nentries ge 6 then begin
-      startval = double(entries[5])
-   endif else startval = priorval
-
-   ;; determine the subscript
-   tmp = strsplit(priorname,'_',/extract)
-   if n_elements(tmp) eq 2 then priornum = tmp[1] $
-   else priornum = '0'
-   priorlabel = tmp[0]
-
-   ;; allow labels 'b','c','d', etc.
-   numndx = (where(plabels eq strtrim(priornum,2)))[0]
-   if numndx ne -1 then priornum = numndx
-   priornum = long(priornum)
-
-   found=0
-   ;; look for the name in the structure
-   for i=0L, n_tags(ss)-1 do begin
-      if (n_elements(ss.(i))-1) ge priornum then begin
-         for k=0, n_tags(ss.(i)[priornum])-1 do begin
-
-            ;; this captures the detrending variables
-            if (size(ss.(i)[priornum].(k)))[1] eq 10 then begin ;; if it's a pointer
-               if ptr_valid(ss.(i)[priornum].(k)) then begin
-                  for l=0L, n_tags(*(ss.(i)[priornum].(k)))-1 do begin
-
-                     if (size((*(ss.(i)[priornum].(k))).(l)))[2] eq 8 then begin
-
-                        valid = 0
-                        if strpos(strupcase(priorlabel),'C') eq 0 then begin
-                           if strmid((*(ss.(i)[priornum].(k))).(l)[0].label,0,1) eq 'C' then begin ;; if it's the additive variable
-                              if (*(ss.(i)[priornum].(k))).nadd gt 0 then begin
-                                 detrendnum = long((strsplit(strupcase(priorlabel),'C',/extract))[0])
-                                 if detrendnum lt (*(ss.(i)[priornum].(k))).nadd then valid = 1
-                              endif
-                           endif
-                        endif else if strpos(strupcase(priorlabel),'M') eq 0 then begin
-                           if strmid((*(ss.(i)[priornum].(k))).(l)[0].label,0,1) eq 'M' then begin
-                              if (*(ss.(i)[priornum].(k))).nmult gt 0 then begin
-                                 detrendnum = long((strsplit(strupcase(priorlabel),'M',/extract))[0])
-                                 if detrendnum lt (*(ss.(i)[priornum].(k))).nmult then valid = 1
-                              endif
-                           endif
-                        endif
-                           
-                        if valid then begin
-
-                           if (*(ss.(i)[priornum].(k))).(l)[detrendnum].label eq strupcase(priorlabel) then begin
-
-                              if not (*(ss.(i)[priornum].(k))).(l)[detrendnum].fit and not (*(ss.(i)[priornum].(k))).(l)[detrendnum].derive then begin
-                                 ;; it's not fit or derived; 
-                                 ;; only use it to derive the starting parameters
-                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].value = startval
-                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].userchanged = 1B
-
-                                 if nplanets ne 0 then $
-                                    if ~keyword_set(silent) then printandlog, "WARNING: Prior supplied on '" + $
-                                      priorname + "' but it is neither fitted or derived. Not applying prior, " + $
-                                      'but it will be used to derive the starting parameters if possible.', logname
-                                 
-                              endif else begin
-                              
-                                 ;; found it! change the default starting guess to the value
-                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].prior = priorval
-                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].value = startval
-                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].upperbound = upperbound
-                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].lowerbound = lowerbound
-                                 (*(ss.(i)[priornum].(k))).(l)[detrendnum].userchanged = 1B
-                                 
-                                 if priorwidth eq 0d0 then begin
-                                    if ~(*(ss.(i)[priornum].(k))).(l)[detrendnum].fit then begin
-                                       if ~keyword_set(silent) then printandlog, priorname + ' is not fit. Only fitted parameters can be fixed. Ignoring constraint', logname
-                                    endif else begin
-                                       ;; priorwidth = 0 => fix it at the prior value
-                                       (*(ss.(i)[priornum].(k))).(l)[detrendnum].fit = 0d0
-                                       (*(ss.(i)[priornum].(k))).(l)[detrendnum].derive = 0d0
-                                       (*(ss.(i)[priornum].(k))).(l)[detrendnum].priorwidth = 0d0
-
-                                       if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)', logname
-                                    endelse
-                                 endif else if finite(priorwidth) and priorwidth gt 0d0 or finite(lowerbound) or finite(upperbound) then begin
-                                    ;; apply a Gaussian prior with width = priorwidth
-                                    priors=[[priors],[i,priornum,k,l,detrendnum]]
-                                    
-                                    if priorwidth gt 0 and finite(priorwidth) then begin
-                                       (*(ss.(i)[priornum].(k))).(l)[detrendnum].scale = priorwidth*3d0
-                                       (*(ss.(i)[priornum].(k))).(l)[detrendnum].priorwidth = priorwidth
-                                    endif
-                                    
-                                    if ~keyword_set(silent) then begin
-                                       if priorwidth lt 0d0 then printandlog, priorname + ' = ' + strtrim(startval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname $
-                                       else begin
-                                          printandlog, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
-                                          if startval ne priorval then begin
-                                             printandlog, 'NOTE: ' + priorname + ' starts at ' + strtrim(startval,2), logname
-                                          endif
-                                       endelse
-                                    endif
-                                    
-                                 endif else begin
-                                    ;; else no prior, just change the default starting value
-                                    if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(startval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
-                                 endelse
-                                 
-                              endelse
-                              found=1
-                              break
-                           endif ; else found=0
-                           
-                           if found then break
-                           
-                        endif
-                        
-                     endif
-                     
-                  endfor
-               endif          
-            endif else if n_tags(ss.(i)[priornum].(k)) ne 0 then begin
-               ;; and this captures everything else
-               if tag_exist(ss.(i)[priornum],priorlabel,index=ndx) then begin
-                  
-                  circ = 0
-                  if tag_exist(ss.(i),'e') then if circular[priornum] then circ = 1
-                  
-                  ;; if fbol prior is supplied, then I must fit the distance
-                  if ss.(i)[priornum].(ndx).label eq 'fbol' then begin
-                     if ~keyword_set(silent) then printandlog, 'Fbol prior supplied, fitting distance', logname
-                     ss.star[0].distance.fit = 1d0
-                     ss.star[0].fbol.derive = 1d0
-                     ss.star[0].parallax.derive = 1d0
-                  endif
-
-                  ;; if circular flag set, ignore priors on any eccentricity-derived parameter
-                  if ss.(i)[priornum].(ndx).label eq 'e' or ss.(i)[priornum].(ndx).label eq 'omega' or $
-                     ss.(i)[priornum].(ndx).label eq 'omegadeg' or $
-                     ss.(i)[priornum].(ndx).label eq 'secosw' or ss.(i)[priornum].(ndx).label eq 'sesinw' or $
-                     ss.(i)[priornum].(ndx).label eq 'ecosw' or ss.(i)[priornum].(ndx).label eq 'esinw' and circ then begin                        
-                     if ~keyword_set(silent) then printandlog, "WARNING: Prior supplied on '" + $
-                         priorname + "' but planet is specified to be circular; not applying prior", logname
-                  endif else if not ss.(i)[priornum].(ndx).fit and not ss.(i)[priornum].(ndx).derive then begin
-                     ;; it's not fit or derived; 
-                     ;; only use it to derive the starting parameters
-                     ss.(i)[priornum].(ndx).value = startval
-                     ss.(i)[priornum].(ndx).userchanged = 1B
-                     if nplanets ne 0 then $
-                        if ~keyword_set(silent) then printandlog, "WARNING: Prior supplied on '" + $
-                            priorname + "' but it is neither fitted or derived. Not applying prior, " + $
-                            'but it will be used to derive the starting parameters if possible.', logname
-                  endif else begin
-                     
-                     ;; found it! change the default starting guess to the value
-                     ss.(i)[priornum].(ndx).prior = priorval
-                     ss.(i)[priornum].(ndx).value = startval
-                     ss.(i)[priornum].(ndx).upperbound = upperbound
-                     ss.(i)[priornum].(ndx).lowerbound = lowerbound
-                     ss.(i)[priornum].(ndx).userchanged = 1B
-                     
-                     if priorwidth eq 0d0 then begin
-                        if ~ss.(i)[priornum].(ndx).fit then begin
-                           if ~keyword_set(silent) then printandlog, priorname + ' is not fit. Only fitted parameters can be fixed. Ignoring constraint', logname
-                        endif else begin
-                           ;; priorwidth = 0 => fix it at the prior value
-                           ss.(i)[priornum].(ndx).fit = 0d0
-                           ss.(i)[priornum].(ndx).derive = 0d0
-                           ss.(i)[priornum].(ndx).priorwidth = 0d0
-                           if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(priorval,2) + ' (fixed)', logname
-                        endelse
-                     endif else if finite(priorwidth) and priorwidth gt 0d0 or finite(lowerbound) or finite(upperbound) then begin
-                        ;; apply a Gaussian prior with width = priorwidth
-                        priors=[[priors],[i,priornum,ndx,-1,-1]]
-                        
-                        if priorwidth gt 0 and finite(priorwidth) then begin
-                           ss.(i)[priornum].(ndx).scale = priorwidth*3d0
-                           ss.(i)[priornum].(ndx).priorwidth = priorwidth
-                        endif                  
-                        
-                        if ~keyword_set(silent) then begin
-                           if priorwidth lt 0 then printandlog, priorname + ' = ' + strtrim(startval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname $
-                           else begin
-                              printandlog, priorname + ' = ' + strtrim(priorval,2) + ' +/- ' + strtrim(priorwidth,2) + '; bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
-                              if startval ne priorval then begin
-                                 printandlog, 'NOTE: ' + priorname + ' starts at ' + strtrim(startval,2), logname
-                              endif
-                           endelse
-                        endif
-                        
-                     endif else begin
-                        ;; else no prior, just change the default starting value
-                        if ~keyword_set(silent) then printandlog, priorname + ' = ' + strtrim(startval,2) + ' (no prior constraint); bounded between ' + strtrim(lowerbound,2) + ' and ' +  strtrim(upperbound,2), logname
-                     endelse
-                  endelse
-
-                  found=1
-                  i = n_tags(ss)-1L
-                  break
-               endif; else found=0
-            endif
-
-         endfor
-      endif
-   endfor
-
-   ;; didn't find it, warn user
-   if not found and nplanets ne 0 and ~keyword_set(silent) then printandlog, "WARNING: No parameter matches '" + $
-      priorname + "' from " + priorfile + "; not applying prior", logname
-                
-endwhile
-endif
-
-
 changed = where(ss.planet.tc.userchanged)
 if changed[0] ne -1 then begin
    minbjd = min(ss.planet[changed].tc.prior,maxbjd)
@@ -3170,8 +2982,8 @@ if dataspan gt 1d5 then begin
    printandlog, "WARNING: data/priors span " + strtrim(dataspan/365.25d0,2) + " years. Make sure all data have a consistent epoch (e.g., you're not using a mix of MJD and JD).", logname
    printandlog, "type '.con' to ignore and continue", logname
 endif
-
 free_lun, lun
+
 if ~keyword_set(silent) then printandlog, '', logname
 
 ;; do we have enough information to derive the distance?
@@ -3308,7 +3120,7 @@ endelse
 ;; must do it here because threads can't pass structures
 if n_elements(chi2func) eq 1 then junk = call_function(chi2func, /loadss, ss0=ss)
 
-if (ss.mistsedfile ne ' ' or ss.fluxfile ne ' ') and $
+if (ss.mistsedfile ne '' or ss.fluxfile ne '') and $
    (nastrom eq 0 and ~finite(ss.star[0].parallax.priorwidth)) then  begin
    printandlog, 'WARNING: Fitting an SED without providing parallax information will essentially determine a photometric parallax.', logname
 endif
