@@ -1,4 +1,4 @@
-pro plotrv, ss, psname=psname, ndx=ndx, yrange=yrange, savfile=savfile
+pro plotrv, ss, psname=psname, ndx=ndx, range=range, savfile=savfile
 
 if n_elements(savfile) ne 0 then begin
    restore, savfile
@@ -217,37 +217,40 @@ for i=0, ss.nplanets-1 do begin
                    ss.planet[i].period.value[ndx])/ss.planet[i].period.value[ndx] + $
                   1.25d0) mod 1
    sorted = sort(prettyphase)
-   
-   if n_elements(yrange) eq 0 then begin
-      allminrv = min(allprettymodel,max=allmaxrv)
-      for j=0, ss.ntel-1 do begin
-         rv = *(ss.telescope[j].rvptrs)
-         if rv.planet ne -1 then continue
 
-         err = sqrt(rv.err^2 + ss.telescope[j].jittervar.value[ndx])
-         modelrv = exofast_rv(rv.bjd,ss.planet[i].tp.value[ndx],$
-                              ss.planet[i].period.value[ndx],0d0,$
-                              ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
-                              ss.planet[i].omega.value[ndx],slope=0,$
-                              rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
-                              p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star[ss.planet[i].starndx].vsini.value[ndx],$
-                              lambda=ss.planet[i].lambda.value[ndx],$
-                              u1=0d0, t0=0d0,deltarv=deltarv)
-         
-         mintime = min(rv.bjd,max=maxtime)
-         minrv = min(rv.residuals-err+modelrv)
-         maxrv = max(rv.residuals+err+modelrv)
-         
-         if minrv lt allminrv then allminrv = minrv
-         if maxrv gt allmaxrv then allmaxrv = maxrv
-      endfor
-   endif else begin
-      allminrv = yrange[0]
-      allmaxrv = yrange[1]
-   endelse
-   
+   allminrv = min(allprettymodel,max=allmaxrv)
+   for j=0, ss.ntel-1 do begin
+      rv = *(ss.telescope[j].rvptrs)
+      if rv.planet ne -1 then continue
+      
+      err = sqrt(rv.err^2 + ss.telescope[j].jittervar.value[ndx])
+      modelrv = exofast_rv(rv.bjd,ss.planet[i].tp.value[ndx],$
+                           ss.planet[i].period.value[ndx],0d0,$
+                           ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
+                           ss.planet[i].omega.value[ndx],slope=0,$
+                           rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value[ndx],a=ss.planet[i].ar.value[ndx],$
+                           p=abs(ss.planet[i].p.value[ndx]),vsini=ss.star[ss.planet[i].starndx].vsini.value[ndx],$
+                           lambda=ss.planet[i].lambda.value[ndx],$
+                           u1=0d0, t0=0d0,deltarv=deltarv)
+      
+      mintime = min(rv.bjd,max=maxtime)
+      minrv = min(rv.residuals-err+modelrv)
+      maxrv = max(rv.residuals+err+modelrv)
+      
+      if minrv lt allminrv then allminrv = minrv
+      if maxrv gt allmaxrv then allmaxrv = maxrv
+   endfor
+   xmin = 0d0
+   xmax = 1d0
+
+   if finite(range[0]) then xmin = range[0]
+   if finite(range[1]) then xmax = range[1]
+   if finite(range[2]) then allminrv = range[2]
+   if finite(range[3]) then allmaxrv = range[3]
+   xrange = [xmin,xmax]
+
    xtitle1='!3' + exofast_textoidl('Phase + (T_P - T_C)/P + 0.25',font=font)
-   plot, [0], [0], xrange=[0,1], yrange=[allminrv,allmaxrv], $
+   plot, [0], [0], xrange=xrange, yrange=[allminrv,allmaxrv], $
          ytitle='!3RV (m/s)', charsize=charsize, title=title[i],position=position1,xtickformat='(A1)'
    for j=0, ss.ntel-1 do begin 
       rv = *(ss.telescope[j].rvptrs)
@@ -285,11 +288,13 @@ for i=0, ss.nplanets-1 do begin
    ;; make the plot symmetric about 0
    if ymin lt -ymax then ymax = -ymin
    if ymax gt -ymin then ymin = -ymax
+   if finite(range[4]) then ymin = range[4]
+   if finite(range[5]) then ymax = range[5]
 
    plot, [0],[0], position=position2, /noerase, $
          xrange=xrange, xtitle=xtitle1,$
-         yrange=[ymin,ymax], ytitle='O-C (m/s)', $
-         /xstyle, /ystyle, yminor=2,yticks=2, ytickv=[ymin*0.7,0,ymax*0.7]
+         yrange=[ymin,ymax]/0.7d0, ytitle='O-C (m/s)', $
+         /xstyle, /ystyle, yminor=2,yticks=2, ytickv=[ymin,0,ymax]
    oplot, [-9d9,9d9],[0,0],linestyle=2,color=red  
    
    for j=0L, ss.ntel-1 do begin
@@ -327,12 +332,7 @@ for i=0, ss.nplanets-1 do begin
    for j=0, ss.ntel-1 do begin
       rv = *(ss.telescope[j].rvptrs)
       if rv.planet eq -1 then begin
-         time = (rv.bjd - ss.planet[i].tc.value[ndx]) mod period
-         toohigh = where(time gt period/2d0)
-         toolow = where(time lt -period/2d0)
-         if toohigh[0] ne -1 then time[toohigh] -= period
-         if toolow[0] ne -1 then time[toolow] -= period
-         time = time*24d0
+         time = exofast_mod(rv.bjd - ss.planet[i].tc.value[ndx],period,/negative)*24d0
          inrange = where(time ge xrange[0] and time le xrange[1])
          if inrange[0] ne -1 then begin
             modelrv = exofast_rv(rv.bjd[inrange],ss.planet[i].tp.value[ndx],$
@@ -358,14 +358,8 @@ for i=0, ss.nplanets-1 do begin
    for j=0, ss.ntel-1 do begin 
       rv = *(ss.telescope[j].rvptrs)
       if rv.planet eq -1 then begin        
-
-         time = (rv.bjd - ss.planet[i].tc.value[ndx]) mod period
-         toohigh = where(time gt period/2d0)
-         toolow = where(time lt -period/2d0)
-         if toohigh[0] ne -1 then time[toohigh] -= period
-         if toolow[0] ne -1 then time[toolow] -= period
-         time = time*24d0
-
+         
+         time = exofast_mod(rv.bjd - ss.planet[i].tc.value[ndx], period,/negative)*24d0
          modelrv = exofast_rv(rv.bjd,ss.planet[i].tp.value[ndx],$
                               ss.planet[i].period.value[ndx],0d0,$
                               ss.planet[i].K.value[ndx],ss.planet[i].e.value[ndx],$
@@ -380,13 +374,7 @@ for i=0, ss.nplanets-1 do begin
       endif
    endfor
 
-   prettyrmtime = (prettytime - ss.planet[i].tc.value[ndx]) mod period
-   toohigh = where(prettyrmtime gt period/2d0)
-   toolow = where(prettyrmtime lt -period/2d0)
-   if toohigh[0] ne -1 then prettyrmtime[toohigh] -= period
-   if toolow[0] ne -1 then prettyrmtime[toolow] -= period
-   prettyrmtime = prettyrmtime*24d0
-
+   prettyrmtime = exofast_mod(prettytime - ss.planet[i].tc.value[ndx],period,/negative)*24d0
    sorted = sort(prettyrmtime)
    oplot, prettyrmtime[sorted], prettydeltarv[sorted], color=red
 
@@ -401,12 +389,7 @@ for i=0, ss.nplanets-1 do begin
 
       if rv.planet eq -1 then begin
 
-         time = (rv.bjd - ss.planet[i].tc.value[ndx]) mod period
-         toohigh = where(time gt period/2d0)
-         toolow = where(time lt -period/2d0)
-         if toohigh[0] ne -1 then time[toohigh] -= period
-         if toolow[0] ne -1 then time[toolow] -= period
-         time = time*24d0
+         time = exofast_mod(rv.bjd - ss.planet[i].tc.value[ndx],period,/negative)*24d0
          inrange = where(time ge xrange[0] and time le xrange[1])
          
          if inrange[0] ne -1 then begin
@@ -424,8 +407,8 @@ for i=0, ss.nplanets-1 do begin
 
    plot, [0],[0], position=position2, /noerase, $
          xrange=xrange, xtitle=xtitle1,$
-         yrange=[ymin,ymax], ytitle='O-C (m/s)', $
-         /xstyle, /ystyle, yminor=2,yticks=2, ytickv=[ymin*0.7,0,ymax*0.7]
+         yrange=[ymin,ymax]/0.7, ytitle='O-C (m/s)', $
+         /xstyle, /ystyle, yminor=2,yticks=2, ytickv=[ymin,0,ymax]
    oplot, [-9d9,9d9],[0,0],linestyle=2,color=red  
    
    for j=0L, ss.ntel-1 do begin
@@ -433,12 +416,7 @@ for i=0, ss.nplanets-1 do begin
       if rv.planet ne -1 then continue
       err = sqrt(rv.err^2 + ss.telescope[j].jittervar.value[ndx])
 
-      time = (rv.bjd - ss.planet[i].tc.value[ndx]) mod period
-      toohigh = where(time gt period/2d0)
-      toolow = where(time lt -period/2d0)
-      if toohigh[0] ne -1 then time[toohigh] -= period
-      if toolow[0] ne -1 then time[toolow] -= period
-      time = time*24d0
+      time = exofast_mod(rv.bjd - ss.planet[i].tc.value[ndx],period,/negative)*24d0
       plotsym, symbols[j mod nsymbols], symsize, fill=fills[j mod nfills], color=colors[j mod ncolors]
       oploterr, time, rv.residuals, err, 8
    endfor
@@ -509,8 +487,8 @@ if nuse gt 1 then exofast_legend, ss.telescope[use].label, color=colors[(indgen(
 ;; plot the residuals below
 plot, [0],[0], position=position2, /noerase, $
       xrange=[allmindate,allmaxdate]-bjd0, xtitle=xtitle2,$
-      yrange=[ymin,ymax], ytitle='O-C (m/s)', $
-      /xstyle, /ystyle, yminor=2,yticks=2, ytickv=[ymin*0.7,0,ymax*0.7]
+      yrange=[ymin,ymax]/0.7, ytitle='O-C (m/s)', $
+      /xstyle, /ystyle, yminor=2,yticks=2, ytickv=[ymin,0,ymax]
 oplot, [-9d9,9d9],[0,0],linestyle=2,color=red  
 
 for j=0L, ss.ntel-1 do begin
@@ -634,8 +612,8 @@ if nplanetrvs gt 0L then begin
          ;; residual plot
          plot, [0],[0], position=position2, /noerase, $
                xrange=[allminphase,allmaxphase], xtitle=xtitle1,$
-               yrange=[allminoc,allmaxoc], ytitle='O-C (m/s)', $
-               /xstyle, /ystyle, yminor=2,yticks=2, ytickv=[allminoc*0.7,0,allmaxoc*0.7]
+               yrange=[allminoc,allmaxoc]/0.7d0, ytitle='O-C (m/s)', $
+               /xstyle, /ystyle, yminor=2,yticks=2, ytickv=[allminoc,0,allmaxoc]
          oplot, [-9d9,9d9],[0,0],linestyle=2,color=red  
       endif
       
