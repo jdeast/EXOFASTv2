@@ -637,36 +637,52 @@ for i=0L, ss.nstars-1 do begin
    if ss.yy[i] then begin
       
       if keyword_set(psname) then epsname = psname+'.yy.eps'
+      sigmab = ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2
       yychi2 = massradius_yy3(ss.star[i].mstar.value, ss.star[i].feh.value, $
                               ss.star[i].age.value, ss.star[i].teff.value,$
                               yyrstar=yyrstar, debug=ss.debug, psname=epsname, $
-                              sigmab=ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
+                              sigmab=sigmab,$
                               gravitysun=ss.constants.gravitysun)
       if ~finite(yychi2) then begin
-         if ss.debug or ss.verbose then printandlog, 'star not on YY tracks', ss.logname
+         if ss.debug or ss.verbose then $
+            printandlog, 'star not on YY tracks', ss.logname
          return, !values.d_infinity
       endif
       
       yychi2 += ((ss.star[i].rstar.value - yyrstar)/(0.03d0*yyrstar))^2
       chi2 += yychi2
-      if ss.verbose then printandlog, 'YY penalty = ' + strtrim(yychi2,2), ss.logname
+      if ss.verbose then $
+         printandlog, 'YY penalty = ' + strtrim(yychi2,2), ss.logname
    endif      
 
    ;; apply PARSEC penalty to constrain stellar parameters
    if ss.parsec[i] then begin
-      if keyword_set(psname) then epsname = psname+'.parsec.' + string(i,format='(i03)') + '.eps'
+      if keyword_set(psname) then $
+         epsname = psname+'.parsec.' + string(i,format='(i03)') + '.eps'
 
-      parsecchi2 = massradius_parsec(ss.star[i].eep.value, ss.star[i].mstar.value, ss.star[i].initfeh.value, $
-                                     ss.star[i].age.value, ss.star[i].teff.value,$
-                                     ss.star[i].rstar.value, ss.star[i].feh.value, debug=ss.debug, $
-                                     epsname=epsname, gravitysun=ss.constants.gravitysun, $
-                                     fitage=ss.star[i].age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose,$
-                                     tefffloor=ss.teffemfloor, fehfloor=ss.fehemfloor, rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+      parsecchi2 = massradius_parsec(ss.star[i].eep.value, $
+                                     ss.star[i].mstar.value, $
+                                     ss.star[i].initfeh.value, $
+                                     ss.star[i].age.value, $
+                                     ss.star[i].teff.value,$
+                                     ss.star[i].rstar.value, $
+                                     ss.star[i].feh.value, debug=ss.debug, $
+                                     epsname=epsname, $
+                                     gravitysun=ss.constants.gravitysun, $
+                                     fitage=ss.star[i].age.fit, $
+                                     ageweight=ageweight, $
+                                     logname=ss.logname, verbose=ss.verbose,$
+                                     tefffloor=ss.teffemfloor, $
+                                     fehfloor=ss.fehemfloor, $
+                                     rstarfloor=ss.rstaremfloor, $
+                                     agefloor=ss.ageemfloor)
       
       chi2 += parsecchi2
-      if ss.verbose then printandlog, 'PARSEC penalty = ' + strtrim(parsecchi2,2), ss.logname
+      if ss.verbose then $
+         printandlog, 'PARSEC penalty = ' + strtrim(parsecchi2,2), ss.logname
       if ~finite(chi2) then begin
-         if ss.debug or ss.verbose then printandlog, 'star not on PARSEC tracks', ss.logname
+         if ss.debug or ss.verbose then $
+            printandlog, 'star not on PARSEC tracks', ss.logname
          return, !values.d_infinity
       endif
       determinant *= ageweight ;; correct uniform EEP prior to uniform Age prior
@@ -674,34 +690,33 @@ for i=0L, ss.nstars-1 do begin
    
    ;; apply MIST penalty to constrain stellar parameters
    if ss.mist[i] then begin
-      if keyword_set(psname) then epsname = psname+'.mist.' + string(i,format='(i03)') + '.eps'
-      
-;************************************
-;print, 'this is for making pretty animated gifs. Do not leave it here!
-;filebase = "HAT-3b.MIST."
-;files = file_search(filebase+'*.png',count=index)
-;pngname = string(filebase, index+1,format='(a,i04,".png")')
-;************************************
+      if keyword_set(psname) then epsname = psname + '.mist.' + string(i,format='(i03)') + '.eps'
 
-;      print, 'age' + strtrim(i,2) + ' ' + strtrim(ss.star[i].age.value,2)
-;      print, 'av' + strtrim(i,2) + ' ' + strtrim(ss.star[i].av.value,2)
-;      print, 'eep' + strtrim(i,2) + ' ' + strtrim(ss.star[i].eep.value,2)
-
-      mistchi2 = massradius_mist(ss.star[i].eep.value, ss.star[i].mstar.value, ss.star[i].initfeh.value, $
-                                 ss.star[i].age.value, ss.star[i].teff.value,$
-                                 ss.star[i].rstar.value, ss.star[i].feh.value, debug=ss.debug, $
-                                 epsname=epsname, gravitysun=ss.constants.gravitysun, $
-                                 fitage=ss.star[i].age.fit, ageweight=ageweight, logname=ss.logname, verbose=ss.verbose,$
-                                 tefffloor=ss.teffemfloor, fehfloor=ss.fehemfloor, rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor, pngname=pngname)
-      
-;      print, 'age' + strtrim(i,2) + ' ' + strtrim(ss.star[i].age.value,2)
-;      print, 'eep' + strtrim(i,2) + ' ' + strtrim(ss.star[i].eep.value,2)
-
-      
+      mistchi2 = massradius_mist(ss.star[i].eep.value, $
+                                 ss.star[i].mstar.value,$
+                                 ss.star[i].initfeh.value, $
+                                 ss.star[i].age.value, $
+                                 ss.star[i].teff.value,$
+                                 ss.star[i].rstar.value, $
+                                 ss.star[i].feh.value, $
+                                 debug=ss.debug, $
+                                 epsname=epsname, $
+                                 gravitysun=ss.constants.gravitysun, $
+                                 fitage=ss.star[i].age.fit, $
+                                 ageweight=ageweight, $
+                                 logname=ss.logname, verbose=ss.verbose,$
+                                 tefffloor=ss.teffemfloor, $
+                                 fehfloor=ss.fehemfloor, $
+                                 rstarfloor=ss.rstaremfloor, $
+                                 agefloor=ss.ageemfloor, pngname=pngname,$
+                                 range=ss.emrange)
+            
       chi2 += mistchi2
-      if ss.verbose then printandlog, 'MIST penalty = ' + strtrim(mistchi2,2), ss.logname
+      if ss.verbose then $
+         printandlog, 'MIST penalty = ' + strtrim(mistchi2,2), ss.logname
       if ~finite(chi2) then begin
-         if ss.debug or ss.verbose then printandlog, 'star not on MIST tracks', ss.logname
+         if ss.debug or ss.verbose then $
+            printandlog, 'star not on MIST tracks', ss.logname
          return, !values.d_infinity
       endif
       determinant *= ageweight ;; correct uniform EEP prior to uniform Age prior
@@ -710,7 +725,8 @@ for i=0L, ss.nstars-1 do begin
 
    ;; apply TORRES penalty to constrain stellar parameters
    if ss.torres[i] then begin
-      massradius_torres, ss.star[i].logg.value, ss.star[i].teff.value, ss.star[i].feh.value, mstar_prior, rstar_prior
+      massradius_torres, ss.star[i].logg.value, ss.star[i].teff.value, $
+                         ss.star[i].feh.value, mstar_prior, rstar_prior
       umstar = 0.027d0
       urstar = 0.014d0
       if mstar_prior lt 0.6d0 then printandlog, $
@@ -721,9 +737,12 @@ for i=0L, ss.nstars-1 do begin
       chi2 += (alog10(ss.star[i].mstar.value/mstar_prior)/umstar)^2
       chi2 += (alog10(ss.star[i].rstar.value/rstar_prior)/urstar)^2
       
-      if ss.verbose then $
-         printandlog, 'Torres penalty: ' + string((alog10(ss.star[i].mstar.value/mstar_prior)/umstar)^2, $
-                                                  (alog10(ss.star[i].rstar.value/rstar_prior)/urstar)^2,format='(f0.6,x,f0.6)'), ss.logname
+      if ss.verbose then begin
+         mstarpenalty = (alog10(ss.star[i].mstar.value/mstar_prior)/umstar)^2
+         rstarpenalty =  (alog10(ss.star[i].rstar.value/rstar_prior)/urstar)^2
+         msg = 'Torres penalty: ' + string(mstarpenalty,rstarpenalty,format='(f0.6,x,f0.6)')
+         printandlog, msg, ss.logname
+      endif
    endif
 endfor
 
@@ -770,16 +789,22 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) then begin
          kapv = interpol(kkap,klam,0.55)
          kapp1 = interpol(kkap,klam,wavelength)        
          for i=0L, ss.nstars-1 do begin
-            exofast_interp_model3d, teffsed[i], ss.star[i].logg.value, fehsed[i], wavlength, lamflam1temp, alpha=ss.star[i].alpha.value,/next
+            exofast_interp_model3d, teffsed[i], ss.star[i].logg.value, $
+                                    fehsed[i], wavlength, lamflam1temp, $
+                                    alpha=ss.star[i].alpha.value,/next
             lamflam1=lamflam1temp*rstarsed[i]^2*ss.constants.rsun^2/ss.star[i].distance.value^2/ss.constants.pc^2
             taul1 = kapp1/kapv/1.086*ss.star[i].av.value
             extinct1 = exp(-taul1)
             atmospheres[i,*] = lamflam1*extinct1
          endfor
       endif
-      sedchi2 += mistmultised(teffsed, ss.star.logg.value,fehsed, ss.star.av.value, $
-                              ss.star.distance.value, lstarsed, ss.star.errscale.value, $
-                              ss.mistsedfile, debug=ss.debug, psname=epsname,atmospheres=atmospheres, wavelength=wavelength)
+      sedchi2 += mistmultised(teffsed, ss.star.logg.value,fehsed, $
+                              ss.star.av.value, $
+                              ss.star.distance.value, lstarsed, $
+                              ss.star.errscale.value, $
+                              ss.mistsedfile, debug=ss.debug, psname=epsname,$
+                              atmospheres=atmospheres, wavelength=wavelength,$
+                              range=ss.sedrange)
    endif else begin
       ;; Keivan Stassun's SED
       junk = exofast_sed(ss.star.fluxfile, teffsed, $
@@ -803,7 +828,8 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) then begin
       return, !values.d_infinity
    endif
    chi2 += sedchi2
-   if ss.verbose then printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
+   if ss.verbose then $
+      printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
 
 endif
 
@@ -874,9 +900,11 @@ for j=0, ss.ntel-1 do begin
                                c=ss.constants.c/ss.constants.au*ss.constants.day,q=q)
 
             ;; calculate the RV model
-            if ss.planet[i].rossiter then $
-               u1 = linld(ss.star[ss.planet[i].starndx].logg.value,ss.star[ss.planet[i].starndx].teff.value,ss.star[ss.planet[i].starndx].feh.value,'V') $
-            else u1 = 0d0
+            if ss.planet[i].rossiter then begin
+               u1 = linld(ss.star[ss.planet[i].starndx].logg.value,$
+                          ss.star[ss.planet[i].starndx].teff.value,$
+                          ss.star[ss.planet[i].starndx].feh.value,'V')
+            endif else u1 = 0d0
 
             if ~finite(u1) then begin
                if ss.verbose then begin
@@ -927,9 +955,9 @@ endfor
 ;; if at least one RV planet is fit, plot it
 if (where(ss.planet.fitrv))[0] ne -1 then begin
    if keyword_set(psname) then begin
-      plotrv, ss, psname=psname + '.rv.ps'
+      plotrv, ss, psname=psname + '.rv.ps',range=ss.rvrange
    endif else if ss.debug then begin
-      plotrv, ss
+      plotrv, ss,range=ss.rvrange
    endif
 endif
 
@@ -948,17 +976,24 @@ for i=0, ss.ndt-1 do begin
                          ss.planet[planetndx].p.value,$
                          ss.planet[planetndx].ar.value,$
                          ss.planet[planetndx].lambda.value, $
-                         ss.star[starndx].logg.value, ss.star[starndx].teff.value, ss.star[starndx].feh.value,$
-                         ss.star[starndx].vsini.value/1d3,ss.star[starndx].vline.value/1d3,$
-                         ss.doptom[i].dtscale.value, debug=ss.debug,/like,psname=epsname,$
+                         ss.star[starndx].logg.value, $
+                         ss.star[starndx].teff.value, $
+                         ss.star[starndx].feh.value,$
+                         ss.star[starndx].vsini.value/1d3,$
+                         ss.star[starndx].vline.value/1d3,$
+                         ss.doptom[i].dtscale.value, debug=ss.debug,$
+                         /like,psname=epsname,$
                          verbose=ss.verbose, logname=ss.logname)
 
    if ~finite(dtchi2) then begin
-      if ss.verbose or ss.debug then printandlog, (*ss.doptom[i].dtptrs).label + ': DT chi2 is bad', ss.logname
+      if ss.verbose or ss.debug then $
+         printandlog, (*ss.doptom[i].dtptrs).label + ': DT chi2 is bad',$
+                      ss.logname
       return, !values.d_infinity
    endif
    chi2 += dtchi2
-   if ss.verbose then printandlog, (*ss.doptom[i].dtptrs).label + ' DT penalty = ' + strtrim(dtchi2,2),ss.logname
+   if ss.verbose then printandlog,(*ss.doptom[i].dtptrs).label+' DT penalty = '+$
+                                  strtrim(dtchi2,2),ss.logname
 endfor
 
 ;; compute the stellar flux for each star in each transit band 
@@ -966,9 +1001,10 @@ endfor
 if (*ss.dilutebandndx)[0] ne -1 then begin
    starndx = ss.dilutestarndx
    bandndx = *ss.dilutebandndx
-   starflux = deblend(ss.star[starndx].teff.value, ss.star[starndx].logg.value, $
+   starflux = deblend(ss.star[starndx].teff.value, ss.star[starndx].logg.value,$
                       ss.star[starndx].feh.value, ss.star[starndx].av.value, $
-                      ss.star[starndx].distance.value, ss.star[starndx].lstar.value, ss.band[bandndx].name)
+                      ss.star[starndx].distance.value, $
+                      ss.star[starndx].lstar.value, ss.band[bandndx].name)
 endif
 
 ;; Transit model
@@ -976,6 +1012,11 @@ for j=0L, ss.ntran-1 do begin
 
    transit = *(ss.transit[j].transitptrs)
    
+;   if keyword_set(ss.trim_computation_window) then begin      
+;      phase = exofast_mod(transit.bjd - ss.planet[i].tc.value, ss.planet[i].period.value)
+;      compute = where(abs(phase-ss.planet[i].period.value/2d0) lt (ss.planet[i].t14.value*1.05d0),complement=ignore)
+;   endif
+
    if ss.transit[j].dilute.fit then begin
       matchband = (where(*ss.dilutebandndx eq ss.transit[j].bandndx))[0]
       matchstar = where(ss.diluted[j,*])
@@ -997,7 +1038,9 @@ for j=0L, ss.ntran-1 do begin
 
    ;; quadratic limb darkening
    if ss.claret then begin
-      ldcoeffs = quadld(ss.star[starndx].logg.value, ss.star[starndx].teff.value, ss.star[starndx].feh.value, band.name, $
+      ldcoeffs = quadld(ss.star[starndx].logg.value, $
+                        ss.star[starndx].teff.value, $
+                        ss.star[starndx].feh.value, band.name, $
                         verbose=ss.verbose, logname=ss.logname)
       u1claret = ldcoeffs[0]
       u2claret = ldcoeffs[1]
@@ -1151,9 +1194,9 @@ endfor
 ;; if a transit is fit for at least one planet
 if ((where(ss.planet.fittran))[0] ne -1) then begin
    if keyword_set(psname) then begin
-      plottran, ss, psname=psname + '.transit.ps'
+      plottran, ss, psname=psname + '.transit.ps', range=ss.transitrange
    endif else if ss.debug then begin
-      plottran, ss
+      plottran, ss, range=ss.transitrange
    endif
 endif
 
