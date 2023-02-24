@@ -1,4 +1,4 @@
-pro plottran, ss, psname=psname, ndx=ndx, noresiduals=noresiduals, savfile=savfile
+pro plottran, ss, psname=psname, ndx=ndx, noresiduals=noresiduals, savfile=savfile, range=range
 
 if n_elements(savfile) ne 0 then begin
    restore, savfile
@@ -339,8 +339,11 @@ for jj=0L, 1 do begin
          ymin = 1d0 - max(delta[i,use]) - 3d0*noise[use[0]] - spacing/2d0
          ymax = 1d0 + 3d0*noise[use[nlc-1]] + spacing*(nlc - 0.5)
       endelse
-      yrange = [ymin,ymax]
-      
+   
+;      if finite(range[2]) then ymin = range[2]
+;      if finite(range[3]) then ymax = range[3]
+      yrange=[ymin,ymax]
+
       ;; draw the shell of the plot
       if keyword_set(psname) then begin
          if runninggdl then begin
@@ -448,13 +451,8 @@ for jj=0L, 1 do begin
             prettytime = total(prettytime,2)/ninterp
          endif
          
-         time = (trandata.bjd - (t_eclipse[i] + ss.transit[j].ttv.value[ndx])) mod ss.planet[i].period.value[ndx]
-         toohigh = where(time gt ss.planet[i].period.value[ndx]/2d0)
-         toolow = where(time lt -ss.planet[i].period.value[ndx]/2d0)
-         if toohigh[0] ne -1 then time[toohigh] -= ss.planet[i].period.value[ndx]
-         if toolow[0] ne -1 then time[toolow] += ss.planet[i].period.value[ndx]
-         time *= 24d0 ;; hours to days
-         
+         ;; fold on period, centered at eclipse, convert to hours
+         time = exofast_mod(trandata.bjd-(t_eclipse[i] + ss.transit[j].ttv.value[ndx]),ss.planet[i].period.value[ndx],/negative)*24d0        
          prettytime = (prettytime - (t_eclipse[i] + ss.transit[j].ttv.value[ndx]))*24d0
          
          factor = nlc - total(mapping[i,0:j])
@@ -523,7 +521,6 @@ for jj=0L, 2 do begin
          
          use = where(mapping[i,*] and bandnames eq uniqbands[kk],nuse)
          maxnoise = max(noise[use])
-         ymax = max(modelflux)+3d0*maxnoise
          
          ;; read in the detrended models from above
          planetno = string(i,format='(i02)')
@@ -547,11 +544,7 @@ for jj=0L, 2 do begin
             endelse
          endfor
 
-         phasetime = ((time - t_eclipse[i]) mod ss.planet[i].period.value[ndx])*24d0
-         toohigh = where(phasetime gt (ss.planet[i].period.value[ndx]/2d0*24d0))
-         if toohigh[0] ne -1 then phasetime[toohigh] -= ss.planet[i].period.value[ndx]*24d0
-         toolow = where(phasetime lt (-ss.planet[i].period.value[ndx]/2d0*24d0))
-         if toolow[0] ne -1 then phasetime[toolow] += ss.planet[i].period.value[ndx]*24d0
+         phasetime = exofast_mod(time - t_eclipse[i],ss.planet[i].period.value[ndx],/negative)*24d0
          sorted = sort(phasetime)
 
          if jj eq 2 then begin
@@ -562,15 +555,8 @@ for jj=0L, 2 do begin
          endif else begin
             use = where(abs(phasetime) lt duration[i])
          endelse
-
-         ymin = min(modelflux[use]) - 3d0*maxnoise
-
          
-         prettyphasetime = ((prettytime - t_eclipse[i]) mod ss.planet[i].period.value[ndx])*24d0
-         toohigh = where(prettyphasetime gt (ss.planet[i].period.value[ndx]/2d0*24d0))
-         if toohigh[0] ne -1 then prettyphasetime[toohigh] -= ss.planet[i].period.value[ndx]*24d0
-         toolow = where(prettyphasetime lt (-ss.planet[i].period.value[ndx]/2d0*24d0))
-         if toolow[0] ne -1 then prettyphasetime[toolow] += ss.planet[i].period.value[ndx]*24d0
+         prettyphasetime = exofast_mod(prettytime - t_eclipse[i],ss.planet[i].period.value[ndx],/negative)*24d0
          prettysorted = sort(prettyphasetime)
          
          if keyword_set(psname) then begin
@@ -589,7 +575,19 @@ for jj=0L, 2 do begin
          if strpos(plotbandname,'Sloan') ne -1 then $
             plotbandname = (strsplit(plotbandname,'Sloan',/regex,/extract))[0] + "'"
          
-         xrange = [-duration[i],duration[i]]*24d0
+         xmin = -duration[i]*24d0
+         xmax = duration[i]*24d0
+         ymin = min(modelflux[use]) - 3d0*maxnoise
+         ymax = max(modelflux) + 3d0*maxnoise
+
+         if finite(range[0]) then xmin = range[0]
+         if finite(range[1]) then xmax = range[1]
+         if finite(range[2]) then ymin = range[2]
+         if finite(range[3]) then ymax = range[3]
+         
+         xrange = [xmin,xmax]
+         yrange = [ymin,ymax]
+
          plot, [0],[0], xstyle=1,ystyle=1,$
                ytitle='!3Normalized flux (' + plotbandname + ')',yrange=[ymin,ymax],xrange=xrange,$
                position=position1, xtickformat='(A1)'
@@ -611,12 +609,15 @@ for jj=0L, 2 do begin
          if ymax gt -ymin then ymin = -ymax
 ;         ymax = stdev(residuals)*3d0
 ;         ymin = -stdev(residuals)*3d0
+
+         if finite(range[4]) then ymin = range[4]
+         if finite(range[5]) then ymax = range[5]
          yrange = [ymin,ymax] 
 
          plot, [0],[0], position=position2, /noerase, $
                xrange=xrange, xtitle=xtitle,$
-               yrange=yrange, ytitle='O-C', $
-               /xstyle, /ystyle, yminor=2,yticks=2,ytickv=[ymin,0d0,ymax]*0.7d0
+               yrange=yrange/0.7, ytitle='O-C', $
+               /xstyle, /ystyle, yminor=2,yticks=2,ytickv=[ymin,0d0,ymax]
          oplot, phasetime, residuals, psym=8,symsize=symsize
          if jj eq 2 then begin
             oplot, phasetime+ss.planet[i].period.value[ndx]*24d0, residuals, psym=8,symsize=symsize
