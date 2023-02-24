@@ -66,7 +66,7 @@ for i=0, ss.nstars-1 do begin
    if (ss.mist[i] or ss.parsec[i]) and ~ss.star[i].eep.userchanged and (ss.star[i].mstar.userchanged or ss.star[i].rstar.userchanged or ss.star[i].teff.userchanged) then begin  
       maxeep = 808d0
       mineep = 0d0
-      neep = 30d0
+      neep = 100d0
       eeps = mineep + (maxeep-mineep)/(neep-1)*dindgen(neep)
       chi2 = dblarr(neep) + !values.d_infinity
       ages = dblarr(neep) + !values.d_infinity
@@ -78,6 +78,7 @@ for i=0, ss.nstars-1 do begin
                                         ss.star[i].rstar.value,ss.star[i].feh.value,mistage=mistage,fitage=ss.star[i].age.fit,$
                                         /allowold,tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
                                         rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+            if eeps[j] lt 202 then mistchi2+=30 ;; penalize PMS stars
             if finite(mistchi2) then begin
                if mistage gt 13.82d0 then break
                chi2[j] = mistchi2
@@ -90,6 +91,7 @@ for i=0, ss.nstars-1 do begin
                                             parsec_age=parsec_age,fitage=ss.star[i].age.fit,/allowold,$
                                             tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
                                             rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+            if eeps[j] lt 202 then mistchi2+=30 ;; penalize PMS stars
             if finite(parsecchi2) then begin
                if parsec_age gt 13.82d0 then break
                chi2[j] = parsecchi2
