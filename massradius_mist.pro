@@ -64,7 +64,7 @@ function massradius_mist, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvc
                           mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
                           epsname=epsname, debug=debug, gravitysun=gravitysun, fitage=fitage, $
                           ageweight=ageweight, verbose=verbose, logname=logname, trackfile=trackfile, allowold=allowold,$
-                          tefffloor=tefffloor, fehfloor=fehfloor, rstarfloor=rstarfloor, agefloor=agefloor, pngname=pngname
+                          tefffloor=tefffloor, fehfloor=fehfloor, rstarfloor=rstarfloor, agefloor=agefloor, pngname=pngname, range=range
 
 if n_elements(tefffloor) eq 0 then tefffloor = -1
 if n_elements(fehfloor) eq 0 then fehfloor = -1
@@ -349,7 +349,14 @@ if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then b
    else mineep = 202
    use = where(loggplottrack gt 3 and loggplottrack lt 5 and eepplot ge min([mineep,eep]))
    if use[0] eq -1 then use = indgen(n_elements(teffplottrack))
+
    xmin=max([teffplottrack[use],teff*1.1, teff*0.9],min=xmax) ;; plot range backwards
+   ymax = min([loggplot,3,5,loggplottrack[use]],max=ymin)     ;; plot range backwards
+
+   if finite(range[0]) then xmin = range[0]
+   if finite(range[1]) then xmax = range[1]
+   if finite(range[2]) then ymin = range[2]
+   if finite(range[3]) then ymax = range[3]
 
    ;; increase xrange so there are 4 equally spaced ticks that land on 100s
    xticks = 3
@@ -364,7 +371,6 @@ if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then b
    endrep until (xmin-xmax)/spacing eq xticks
    xminor = long(spacing/100d0)
   
-   ymax = min([loggplot,3,5,loggplottrack[use]],max=ymin) ;; plot range backwards
    plot, teffplottrack[use], loggplottrack[use],$
          xrange=[xmin,xmax], xtitle=xtitle, xstyle=1, xticks=xticks, xminor=xminor,$
          yrange=[ymin,ymax], ytitle=ytitle,$ 
