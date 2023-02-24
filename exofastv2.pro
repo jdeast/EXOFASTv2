@@ -721,29 +721,44 @@
 ;             offsets). Now easily extensible.
 ;-
 pro exofastv2, priorfile=priorfile, $
-               rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
+               rvpath=rvpath, tranpath=tranpath, $
+               astrompath=astrompath, dtpath=dtpath, $
                fluxfile=fluxfile,mistsedfile=mistsedfile,$
-               fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,fehsedfloor=fehsedfloor, oned=oned,$
-               teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
+               fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,$
+               fehsedfloor=fehsedfloor, oned=oned,$
+               teffemfloor=teffemfloor, fehemfloor=fehemfloor, $
+               rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
                prefix=prefix,$
-               circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
+               circular=circular,fitslope=fitslope, fitquad=fitquad, $
+               secondary=secondary, $
                rossiter=rossiter,chen=chen,$
-               diluted=diluted, fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
+               diluted=diluted, fitdilute=fitdilute, fitthermal=fitthermal,$
+               fitreflect=fitreflect, fitphase=fitphase, $
                fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
-               nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
+               nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, $
+               dontstop=dontstop, $
                ntemps=ntemps, tf=tf, keephot=keephot, $
-               debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
+               debug=debug, stardebug=stardebug, verbose=verbose, $
+               randomfunc=randomfunc, seed=seed,$
                bestonly=bestonly, plotonly=plotonly,refinestar=refinestar,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                rejectflatmodel=rejectflatmodel,$
                maxgr=maxgr, mintz=mintz, $
-               yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, nstars=nstars, starndx=starndx, $
+               yy=yy, torres=torres, nomist=nomist, parsec=parsec, $
+               noclaret=noclaret, tides=tides, nplanets=nplanets, $
+               nstars=nstars, starndx=starndx, $
                fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
-               earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
-               fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
-               skiptt=skiptt, novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, $
-               nthreads=nthreads, delay=delay, fittt=fittt, rvepoch=rvepoch, checkstart=checkstart,badstart=badstart
+               earth=earth, i180=i180, nocovar=nocovar, $
+               alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
+               fitspline=fitspline, splinespace=splinespace, $
+               fitwavelet=fitwavelet, $
+               skiptt=skiptt, novcve=novcve, nochord=nochord, $
+               fitsign=fitsign, randomsign=randomsign, $
+               nthreads=nthreads, delay=delay, mkgif=mkgif, fittt=fittt, $
+               rvepoch=rvepoch, checkstart=checkstart,badstart=badstart,$
+               transitrange=transitrange,rvrange=rvrange,$
+               sedrange=sedrange,emrange=emrange
 
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -842,7 +857,7 @@ if nplanets ne 0 and keyword_set(refinestar) then begin
    ss = mkss(fluxfile=fluxfile,mistsedfile=mistsedfile,$
              fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanet=0,priorfile=priorfile, $
              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
-             yy=yy, torres=torres, nomist=nomist, parsec=parsec, logname=logname, debug=stardebug, verbose=verbose)
+             yy=yy, torres=torres, nomist=nomist, parsec=parsec, logname=logname, debug=stardebug, verbose=verbose, mkgif=mkgif)
    if (size(ss))[2] ne 8 then return
 
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
@@ -866,7 +881,8 @@ ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath
           fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
           chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,$
           fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
-          novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, chi2func=chi2func, fittt=fittt, rvepoch=rvepoch,delay=delay)
+          novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, chi2func=chi2func, fittt=fittt, rvepoch=rvepoch,delay=delay,prefix=prefix,mkgif=mkgif)
+
 if (size(ss))[2] ne 8 then begin
    badstart=1
    return
@@ -964,7 +980,7 @@ if nthreads gt 1 then begin
          'noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,'+$
          'fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet,'+$
          'novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign,'+$
-         'chi2func=chi2func,fittt=fittt,rvepoch=rvepoch,delay=delay,/silent)'
+         'chi2func=chi2func,fittt=fittt,rvepoch=rvepoch,delay=delay,prefix=prefix,mkgif=mkgif,/silent)'
       
    endfor
 endif
@@ -1176,7 +1192,7 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dt
               chen=chen,nvalues=nsteps*nchains,/silent,yy=yy,torres=torres,nomist=nomist,parsec=parsec,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing, logname=logname, best=best,$
               fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
-              novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, fittt=fittt,rvepoch=rvepoch,delay=delay)
+              novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, chi2func=chi2func, fittt=fittt,rvepoch=rvepoch,delay=delay,prefix=prefix,mkgif=mkgif)
 if (size(mcmcss))[2] ne 8 then return
 
 mcmcss.nchains = nchains
