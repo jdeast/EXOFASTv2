@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Thu Feb  9 10:53:57 2023.<P>
+<STRONG>Last modified: </STRONG>Fri Feb 24 14:52:53 2023.<P>
  
 <HR>
  
@@ -53,6 +53,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_LATEXTAB">EXOFAST_LATEXTAB</A>
 <LI><A HREF="#EXOFAST_LATEXTAB2">EXOFAST_LATEXTAB2</A>
 <LI><A HREF="#EXOFAST_LIKE">EXOFAST_LIKE</A>
+<LI><A HREF="#EXOFAST_MOD">EXOFAST_MOD</A>
 <LI><A HREF="#EXOFAST_MULTIPLOT">EXOFAST_MULTIPLOT</A>
 <LI><A HREF="#EXOFAST_OCCULTQUAD">EXOFAST_OCCULTQUAD</A>
 <LI><A HREF="#EXOFAST_OCCULTQUAD_CEL">EXOFAST_OCCULTQUAD_CEL</A>
@@ -2603,7 +2604,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_LIKE">
 <H2>EXOFAST_LIKE</H2></A>
 <A HREF="#EXOFAST_LATEXTAB2">[Previous Routine]</A>
-<A HREF="#EXOFAST_MULTIPLOT">[Next Routine]</A>
+<A HREF="#EXOFAST_MOD">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2651,9 +2652,55 @@ Function value:       1.33000
 <STRONG>(See /h/onion0/scratch/EXOFASTv2/exofast_like.pro)</STRONG><P>
 <HR>
  
+<A NAME="EXOFAST_MOD">
+<H2>EXOFAST_MOD</H2></A>
+<A HREF="#EXOFAST_LIKE">[Previous Routine]</A>
+<A HREF="#EXOFAST_MULTIPLOT">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   EXOFAST_MOD
+
+ PURPOSE: 
+   Return postive-only mod.
+ 
+   IDL's built-in mod:
+     result = a mod b 
+   returns -b < result < +b
+
+   EXOFAST_MOD:
+     result = exofast_mod(a,b)
+   returns 0 <= result < b 
+
+ CALLING SEQUENCE:
+   result = exofast_mod(a,b)
+ 
+ OPTIONAL KEYWORDS:
+   NEGATIVE: if set, returns:
+     result = exofast_mod(a,b,/negative)
+   returns -b/2 <= result < b/2
+ INPUTS:
+
+  A - Number
+  B - Divisor
+
+ EXAMPLES:
+
+  ;; compute the phase of a planet
+  phase = exofast_mod(time,period)/period
+
+  ;; return times folded and centered around the transit
+  phasetime = exofast_mod(time-tc,period,/negative)
+ MODIFICATION HISTORY
+ 
+  2023/02/09 -- JDE, Written
+</PRE><P>
+<STRONG>(See /h/onion0/scratch/EXOFASTv2/exofast_mod.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="EXOFAST_MULTIPLOT">
 <H2>EXOFAST_MULTIPLOT</H2></A>
-<A HREF="#EXOFAST_LIKE">[Previous Routine]</A>
+<A HREF="#EXOFAST_MOD">[Previous Routine]</A>
 <A HREF="#EXOFAST_OCCULTQUAD">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
