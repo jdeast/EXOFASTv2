@@ -40,7 +40,7 @@
 ;-
 pro remake_corner, savpath, tags=tags, latexnames=latexnames, psname=psname, $
                    legendtxt=legendtxt, nsample=nsample, position=position, $
-                   posteriors=posteriors, nxbin=nxbin, nybin=nybin, optimizeorder=optimizeorder
+                   posteriors=posteriors, nxbin=nxbin, nybin=nybin, optimizeorder=optimizeorder, sample=sample, keepburn=keepburn
 
 if n_elements(position) ne 2 then position = [0.533d0,0.903d0]
 
@@ -119,15 +119,18 @@ for j=0L, nfiles-1 do begin
 
    labels[j] = (strsplit(files[j],'.',/extract))[1]
    
-   burnndx = mcmcss.burnndx
+   if keyword_set(keepburn) then burnndx = 0L $
+   else burnndx = mcmcss.burnndx
    nchains = mcmcss.nchains
    nsteps = mcmcss.nsteps/nchains
    goodchains = (*mcmcss.goodchains)
    ngoodsteps = n_elements(goodchains)*(nsteps-burnndx)
 
    ;; save memory by randomly sampling
-   if n_elements(nsample) ne 0 then sample = long(randomu(seed,nsample)*ngoodsteps) $
-   else sample = lindgen(ngoodsteps) ;; or not
+   if n_elements(sample) eq 0 then begin
+      if n_elements(nsample) ne 0 then sample = long(randomu(seed,nsample)*ngoodsteps) $
+      else sample = lindgen(ngoodsteps) ;; or not
+   endif
 
    if keyword_set(posteriors) then pars2txt = dblarr(npars,ngoodsteps)
 
@@ -288,8 +291,10 @@ for i=0L, n_elements(tags)-1 do begin
 endfor ;; each parameter on the X axis
 
 ;; draw the legend
-exofast_legend, legendtxt,color=colors[lindgen(nfiles) mod ncolors],$
-                linestyle=lonarr(nfiles),charsize=legendsize,pos=position,/norm
+if nfiles gt 1 then begin
+   exofast_legend, legendtxt,color=colors[lindgen(nfiles) mod ncolors],$
+                   linestyle=lonarr(nfiles),charsize=legendsize,pos=position,/norm
+endif   
 
 ;; reset back to default plotting parameters
 exofast_multiplot, /reset
