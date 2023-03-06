@@ -52,11 +52,7 @@ for lc in lcs:
     datestr = (t0 + datetime.timedelta(days=time[0]-jd0)).strftime('n%Y%m%d')
 
     # create the filename in EXOFASTv2 format
-    filename = datestr + '.TESS.TESS.' +\ # nYYYYMMDD.filter.telescope
-               'TIC' + str(search_result[i].target_name.data[0]) +\ # TIC ID
-               '.S' + str(lc.sector).zfill(2) + '.' +\ # 2-digit sector
-               str(int(search_result[i].exptime[0].value)).zfill(4) + '.' +\ 
-               lc.author + '.dat' # SPOC, QLP, etc
+    filename = datestr + '.TESS.TESS.' + 'TIC' + str(search_result[i].target_name.data[0]) + '.S' + str(lc.sector).zfill(2) + '.' + str(int(search_result[i].exptime[0].value)).zfill(4) + '.' + lc.author + '.dat' # SPOC, QLP, etc
 
     np.savetxt(filename,np.column_stack([time,flux,err]))
 
