@@ -531,29 +531,33 @@ endif else begin
    tdeltavs = 0B
 endelse
 
-if n_elements(rejectflatmodel) ne ntran and n_elements(rejectflatmodel) ne 0 then begin
+if n_elements(rejectflatmodel) ne ntran and n_elements(rejectflatmodel) ne 0 and ntran gt 0 then begin
    printandlog, 'REJECTFLATMODEL must be an NTRANSITS element array', logname
    return, -1
 end
-if n_elements(rejectflatmodel) eq 0 and ntran gt 0 then rejectflatmodel = bytarr(ntran)
+if n_elements(rejectflatmodel) eq 0 and ntran gt 0 then rejectflatmodel = bytarr(ntran) $
+else rejectflatmodel = [0B]
 
-if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 then begin
+if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 and ntran gt 0 then begin
    printandlog, 'FITSPLINE has ' + strtrim(n_elements(fitspline),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
    return, -1
 end
-if n_elements(fitspline) eq 0 and ntran gt 0 then fitspline = bytarr(ntran)
+if n_elements(fitspline) eq 0 and ntran gt 0 then fitspline = bytarr(ntran) $
+else fitspline = [0B]
 
-if n_elements(splinespace) ne ntran and n_elements(splinespace) ne 0 then begin
+if n_elements(splinespace) ne ntran and n_elements(splinespace) ne 0 and ntran gt 0 then begin
    printandlog, 'SPLINESPACE must be an NTRANSITS element array', logname
    return, -1
 end
-if n_elements(splinespace) eq 0 and ntran gt 0 then splinespace = dblarr(ntran) + 0.75d0
+if n_elements(splinespace) eq 0 and ntran gt 0 then splinespace = dblarr(ntran) + 0.75d0 $
+else splinespace = [0.75d0]
 
-if n_elements(fitwavelet) ne ntran and n_elements(fitwavelet) ne 0 then begin
+if n_elements(fitwavelet) ne ntran and n_elements(fitwavelet) ne 0 and ntran gt 0 then begin
    printandlog, 'FITWAVELET must be an NTRANSITS element array', logname
    return, -1
 end
-if n_elements(fitwavelet) eq 0 and ntran gt 0 then fitwavelet = bytarr(ntran)
+if n_elements(fitwavelet) eq 0 and ntran gt 0 then fitwavelet = bytarr(ntran) $
+else fitwavelet = [0B]
 
 ;; if RVPATH empty, don't use any telescope
 if rvpath eq '' then begin
