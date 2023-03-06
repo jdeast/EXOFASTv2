@@ -1,8 +1,15 @@
-pro choplc, filename, tc, period, t14=t14, prefix=prefix
+pro choplc, filename, tc, period, t14=t14, prefix=prefix, flatten=flatten
 
 if n_elements(prefix) eq 0 then prefix = 'transit'
 
 readcol, filename, time, flux, err, format='d,d,d'
+
+if keyword_set(flatten) then begin
+   norm = keplerspline(time, flux, breakp=breakp, ndays=0.75)
+   flux /= norm
+   err /= err
+endif
+
 
 nplanets = n_elements(tc)
 
@@ -35,7 +42,10 @@ for i=0, n_elements(tc)-1 do begin
          if j lt minepoch_real then minepoch_real = j
          if j gt maxepoch_real then maxepoch_real = j
 
-         forprint, time[match], flux[match], err[match], format='(f0.8,x,f0.8,x,f0.8)',/nocomment, textout=string(prefix,planetletter[i],j,'.dat', format='(a,a,".",i04,a)'),/silent
+         caldat, tc[i]+j*period[i], month, day, year
+         datestr = "n" + string(year,month,day,format='(i04,i02,i02)')
+
+         forprint, time[match], flux[match], err[match], format='(f0.8,x,f0.8,x,f0.8)',/nocomment, textout=string(datestr,prefix,planetletter[i],j,'.dat', format='(a,a,a,".",i04,a)'),/silent
       endif
 
    endfor
