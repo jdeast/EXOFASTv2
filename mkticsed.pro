@@ -168,6 +168,11 @@ endif
 qtic = qtic[match]
 star = [qtic.raj2000,qtic.dej2000]
 
+;; warn user if this object is a duplicate
+if qtic.disp eq 'SPLIT' or qtic.disp eq 'DUPLICATE' then begin
+   print, 'WARNING: disposition in TICv8.2 is ' + qtic.disp
+endif
+
 ;; prior file
 openw, priorlun, priorfile, /get_lun
 printf, priorlun, '#### TICv8.2 ####'
