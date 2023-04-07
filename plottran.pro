@@ -636,6 +636,7 @@ if n_elements(psname) eq 0 then $
 
 if keyword_set(psname) then begin
    device, /close
+   exofast_fixps, psname
 endif
 set_plot, mydevice
 
