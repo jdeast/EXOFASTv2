@@ -642,6 +642,7 @@ endif
 if keyword_set(psname) then begin
    device, /close
    set_plot, mydevice
+   exofast_fixps, psname
 endif
 
 end
