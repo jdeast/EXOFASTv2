@@ -2467,7 +2467,7 @@ for i=0, nplanets-1 do begin
          ss.planet[i].p.derive = 0
          ss.planet[i].ideg.derive = 0
          ss.planet[i].delta.derive = 0
-         ss.planet[i].depth.derive = 0
+         ;;ss.planet[i].depth.derive = 0
          ss.planet[i].mp.derive = 0
          ss.planet[i].mpearth.derive = 0
          
@@ -2798,6 +2798,7 @@ while not eof(lun) do begin
    
    nentries = n_elements(entries)
    prior.name = entries[0]
+
    ;; each line must have at least a name and value
    if nentries lt 2 or nentries gt 6 then begin
       if line ne '' and ~keyword_set(silent) then $
@@ -2926,6 +2927,10 @@ while not eof(lun) do begin
          printandlog, 'NOTE: ' + prior.name + ' starts at ' + strtrim(startval,2), logname
       endif
    endif
+
+   if parameter.userchanged and (finite(parameter.priorwidth) or finite(parameter.lowerbound) or finite(parameter.upperbound)) then begin
+      print, 'WARNING: ' + prior.name + ' already set. Overwriting'
+   end
 
    ;; flag that this parameter has been changed by the user
    ;; so it doesn't get overwritten later
