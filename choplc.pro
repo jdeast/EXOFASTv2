@@ -7,7 +7,7 @@ readcol, filename, time, flux, err, format='d,d,d'
 if keyword_set(flatten) then begin
    norm = keplerspline(time, flux, breakp=breakp, ndays=0.75)
    flux /= norm
-   err /= err
+   err /= norm
 endif
 
 
