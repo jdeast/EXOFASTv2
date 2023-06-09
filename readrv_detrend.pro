@@ -61,6 +61,10 @@ if ncol lt 3 then begin
    message, 'The first line is ' + line
 endif
 
+if nadd+nmult+3 ne ncol then begin
+   message, 'Mismatch between header line and data lines for ' + filename + '. The header MUST have one white-space delimited entry per column.'
+endif
+
 nrow = file_lines(filename) - header - sb2line
 
 ;; rewind file to beginning
