@@ -216,6 +216,7 @@ printf, lun, '# bandname magnitude used_errors catalog_errors'
 ;; use the Gaia ID to query the Gaia catalog
 gaiaid = qtic.gaia
 qgaia=Exofast_Queryvizier('I/345/gaia2',star,dist/60.,/silent,cfa=cfa,/all)
+
 if (size(qgaia))[2] eq 8 then begin
    match = (where(qgaia.source eq gaiaid))[0]
    if match ne -1 then begin
@@ -258,6 +259,7 @@ endif
 
 ;; EDR3 
 ;qgaia3=Exofast_Queryvizier('I/350/gaiaedr3',star,dist/60.,/silent,cfa=cfa,/all)
+;; DR3
 qgaia3=Exofast_Queryvizier('I/355/gaiadr3',star,dist/60.,/silent,cfa=cfa,/all)
 if (size(qgaia3))[2] eq 8 then begin
    match = (where(qgaia3.source eq gaiaid))[0]
@@ -292,10 +294,8 @@ if (size(qgaia3))[2] eq 8 then begin
             printf, priorlun, "# NOTE: the Gaia DR3 parallax could not be corrected and is raw from the catalog"
             printf, priorlun, qgaia3.plx, uplx, format='("parallax",x,f0.5,x,f0.5)'
          endelse
+      endif 
 
-
-
-      endif      
       if qgaia3.gmag gt -9 and finite(qgaia3.e_gmag) and (qgaia3.e_gmag lt 1d0)  then printf, lun,'Gaia_G_EDR3',qgaia3.gmag,max([0.02d,qgaia3.e_gmag]),qgaia3.e_gmag, format=fmt
       if qgaia3.bpmag gt -9 and finite(qgaia3.e_bpmag) and (qgaia3.e_bpmag lt 1d0) then printf, lun,'Gaia_BP_EDR3',qgaia3.bpmag,max([0.02d,qgaia3.e_bpmag]),qgaia3.e_bpmag, format=fmt
       if qgaia3.rpmag gt -9 and finite(qgaia3.e_rpmag) and (qgaia3.e_rpmag lt 1d0) then printf, lun,'Gaia_RP_EDR3',qgaia3.rpmag,max([0.02d,qgaia3.e_rpmag]),qgaia3.e_rpmag, format=fmt      
