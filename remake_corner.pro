@@ -40,7 +40,8 @@
 ;-
 pro remake_corner, savpath, tags=tags, latexnames=latexnames, psname=psname, $
                    legendtxt=legendtxt, nsample=nsample, position=position, $
-                   posteriors=posteriors, nxbin=nxbin, nybin=nybin, optimizeorder=optimizeorder, sample=sample, keepburn=keepburn
+                   posteriors=posteriors, nxbin=nxbin, nybin=nybin, optimizeorder=optimizeorder, sample=sample, keepburn=keepburn,$
+                   extrema=extrema
 
 if n_elements(position) ne 2 then position = [0.533d0,0.903d0]
 
@@ -112,7 +113,9 @@ ncolors = n_elements(colors)
 ;; this can eat up a lot of memory!
 labels = strarr(nfiles)
 pars = ptrarr(nfiles,npars,/allocate_heap)
-extrema = dblarr(2,nfiles,npars) + !values.d_nan
+
+if n_elements(extrema) ne 2*nfiles*npars then $
+   extrema = dblarr(2,nfiles,npars) + !values.d_nan
 
 for j=0L, nfiles-1 do begin
    restore, files[j]
@@ -123,7 +126,13 @@ for j=0L, nfiles-1 do begin
    else burnndx = mcmcss.burnndx
    nchains = mcmcss.nchains
    nsteps = mcmcss.nsteps/nchains
-   goodchains = (*mcmcss.goodchains)
+   ;goodchains = (*mcmcss.goodchains)
+
+
+   chi2 = *(mcmcss.chi2)
+   chi2 = reform(chi2,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains)
+   burnndx = getburnndx(chi2,goodchains=goodchains)
+
    ngoodsteps = n_elements(goodchains)*(nsteps-burnndx)
 
    ;; save memory by randomly sampling
@@ -138,12 +147,18 @@ for j=0L, nfiles-1 do begin
    for i=0L, npars-1 do begin
 
       parstr = find_by_tag(mcmcss, tags[i])
-      if (size(parstr))[2] ne 8 then continue
+
+      if (size(parstr))[2] ne 8 then begin
+         message, tags[i] + ' not found in ' + files[j] + '. This is likely to cause a fatal error.', /continue
+         message, 'Type ".con" to continue.'
+         continue
+      endif
 
       par = ((reform(parstr.value,nsteps,nchains))[burnndx:*,goodchains])[sample]
       xmin = min(par,max=xmax)
-      extrema[0,j,i] = xmin
-      extrema[1,j,i] = xmax
+      if ~finite(extrema[0,j,i]) then extrema[0,j,i] = xmin
+      if ~finite(extrema[1,j,i]) then extrema[1,j,i] = xmax
+
       if latexnames[i] eq '' then latexnames[i] = parstr.latex
 
       *pars[j,i] = par
@@ -160,6 +175,9 @@ for j=0L, nfiles-1 do begin
       undefine, pars2txt
    endif
 endfor
+
+print, extrema
+
 
 if keyword_set(optimizeorder) then begin
    area = dblarr(nfiles,npars,npars)
