@@ -828,12 +828,27 @@ if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~run
 logname = prefix + 'log'
 file_delete, logname, /allow_nonexistent
 
+
+exofast_path = getenv('EXOFAST_PATH')
+;if (strpos(exofast_path,'//') ne -1) or 
+if (strpos(exofast_path,'EXOFASTv2') eq -1) then begin
+   printandlog, "ERROR: EXOFAST_PATH (" + exofast_path + ") not set properly",logname
+   printandlog, "Typically, EXOFAST_PATH is something like ${HOME}/idl/EXOFASTv2/", logname
+;   printandlog, "NOTE: '//' is not allowed as it is inconsistenly resolved", logname
+   return
+endif
+
 ;; if the directory doesn't exist, make it
 dirname = file_dirname(prefix)
 if dirname ne '.' then begin
    if ~file_test(dirname,/directory) then begin
       file_mkdir, dirname
    endif
+endif
+
+modeldirname = dirname + path_sep() + 'modelfiles'
+if ~file_test(modeldirname,/directory) then begin
+   file_mkdir, modeldirname
 endif
 
 ;; some error checking on NTHREADS (multi-threading)
