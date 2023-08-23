@@ -228,13 +228,13 @@ endif
    ;; if fitting TT, a primary transit is required (TT->TC conversion may fail if there is no transit). 
    ;; Otherwise, we need a primary or secondary transit (or the MCMC will be hopelessly lost)
    if ss.fittran[i] and (abs(ss.planet[i].b.value) gt (1d0 + ss.planet[i].p.value)) and ((abs(ss.planet[i].bs.value) gt (1d0 + ss.planet[i].p.value) or ss.planet[i].tt.fit)) then begin
-      if keyword_set(verbose) then printandlog, 'planet does not transit; rejecting step', logname
+      if keyword_set(verbose) then printandlog, 'planet ' + strtrim(i,2) + ' does not transit; rejecting step', logname
       return, -1
    endif else if ss.planet[i].cosi.value lt 0 and ~ss.planet[i].i180 then begin
-      if keyword_set(verbose) then printandlog, 'cosi out of bounds; rejecting step', logname
+      if keyword_set(verbose) then printandlog, 'cosi for planet ' + strtrim(i,2) + ' out of bounds; rejecting step', logname
       return, -1
    endif else if abs(ss.planet[i].cosi.value) gt 1d0 then begin
-      if keyword_set(verbose) then printandlog, 'cosi out of bounds; rejecting step', logname
+      if keyword_set(verbose) then printandlog, 'cosi for planet ' + strtrim(i,2) + ' out of bounds; rejecting step', logname
       return, -1
    endif
 
