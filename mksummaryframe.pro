@@ -38,7 +38,7 @@ pro mksummaryframe, ss, ndx, base=base, transitpage=transitpage
             '+repage ' + base + '.transit.' + strtrim(i,2) + '.cropped.pdf', output
 
      ;; convert to png file
-     spawn, 'convert -flatten -density 175x175 ' + $
+     spawn, 'convert -flatten -density 300x300 ' + $
             base + '.transit.' + strtrim(i,2) + '.cropped.pdf ' +$
             base + '.transit.' + strtrim(i,2)+ '.png', output
      ;; *****************************************
@@ -66,7 +66,7 @@ pro mksummaryframe, ss, ndx, base=base, transitpage=transitpage
             ' +repage '+base+'.transit.stacked.'+strtrim(i,2)+'.cropped.pdf', output
 
      ;; convert to png
-     spawn, 'convert -flatten -density 175x175 ' +$
+     spawn, 'convert -flatten -density 300x300 ' +$
             base + '.transit.stacked.' + strtrim(i,2) + '.cropped.pdf ' +$
             base + '.transit.stacked.' + strtrim(i,2)+ '.png', output
      ;; *****************************************
@@ -88,7 +88,7 @@ pro mksummaryframe, ss, ndx, base=base, transitpage=transitpage
             '+repage ' + base + '.rv.' + strtrim(i,2) + '.cropped.pdf', output
 
      ;; convert to png file
-     spawn, 'convert -flatten -density 175x175 ' + $
+     spawn, 'convert -flatten -density 300x300 ' + $
             base + '.rv.' + strtrim(i,2) + '.cropped.pdf ' +$
             base + '.rv.' + strtrim(i,2)+ '.png', output
      ;; *****************************************
@@ -218,7 +218,7 @@ pro mksummaryframe, ss, ndx, base=base, transitpage=transitpage
      spawn, cmd, output
 
      ;; overlay the sed plot 
-     spawn, 'convert -flatten -density 175x175 ' + base + '.sed.eps ' + base + '.sed.png' 
+     spawn, 'convert -flatten -density 300x300 ' + base + '.sed.eps ' + base + '.sed.png' 
      cmd = 'composite -geometry ' + $
             strtrim(round(xsize/nx)*1,2) + 'x' +$
             strtrim(round(ysize/ny)*1,2) + '+' +$
@@ -231,7 +231,7 @@ pro mksummaryframe, ss, ndx, base=base, transitpage=transitpage
 
      ;; overlay the evolutionary model
      emfilebase = base + '.' + evolutionarymodel + '.' + string(i,format='(i03)')
-     spawn, 'convert -flatten -density 175x175 ' + emfilebase + '.eps ' + emfilebase + '.png' 
+     spawn, 'convert -flatten -density 300x300 ' + emfilebase + '.eps ' + emfilebase + '.png' 
      cmd = 'composite -geometry ' + $
            strtrim(round(xsize/nx*0.68),2) + 'x' +$
            strtrim(round(ysize/ny*1.00),2) + '+' +$
@@ -244,8 +244,8 @@ pro mksummaryframe, ss, ndx, base=base, transitpage=transitpage
 
   endfor
 
-  spawn, 'convert -flatten -density 175x175 ' + base + '.star_corner.ps ' + base + '.star_corner.png'
-  spawn, 'convert -flatten -density 175x175 ' + base + '.planet_corner.ps ' + base + '.planet_corner.png'
+  spawn, 'convert -flatten -density 300x300 ' + base + '.star_corner.ps ' + base + '.star_corner.png'
+  spawn, 'convert -flatten -density 300x300 ' + base + '.planet_corner.ps ' + base + '.planet_corner.png'
 
   chain_png_name = base + '.chi2chain.png'
   cmd = 'composite -geometry ' +$
