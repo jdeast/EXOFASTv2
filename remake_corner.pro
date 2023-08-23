@@ -61,12 +61,13 @@ endif else files = file_search(savpath,count=nfiles)
 if n_elements(psname) ne 0 then begin
    mydevice = !d.name
    set_plot, 'PS'
-   loadct, 39, /silent
+;   loadct, 39, /silent
    !p.font=0
    aspect_ratio=1.5
    xsize=9
    ysize=xsize/aspect_ratio
-   device,  filename=psname,/color,bits=24
+;   device,  filename=psname,/color,bits=24
+   device,  filename=psname,/color,/decomposed
    if npars eq 1 then device, xsize=xsize, ysize=ysize
    red = 254
    green = 159
@@ -95,6 +96,10 @@ if n_elements(psname) ne 0 then begin
    red = 254         ; 1
    colors = [black,red,blue, green,orange,cyan,purple,redorange,yellowgreen,$
              darkpurple,lightgreen,greenblue,darkblue,bluegreen,lightblue,yellow]
+
+   ;; https://venngage.com/tools/accessible-color-palette-generator
+;   colors = ['00A35B'x,'00CE89'x,'E67300'x,'8A30E6'x,'6319B5'x] ; contrasting palette 2
+   colors = ['00A35B'x,'E67300'x,'6319B5'x] ; contrasting palette 2
    legendsize = 0.5
    thick=2
 endif else begin
@@ -122,16 +127,20 @@ for j=0L, nfiles-1 do begin
 
    labels[j] = (strsplit(files[j],'.',/extract))[1]
    
-   if keyword_set(keepburn) then burnndx = 0L $
-   else burnndx = mcmcss.burnndx
+   if keyword_set(keepburn) then begin
+      burnndx = 0L
+      goodchains = lindgen(mcmcss.nchains)
+   endif else begin
+      burnndx = mcmcss.burnndx
+      goodchains = (*mcmcss.goodchains)
+   endelse
+   
    nchains = mcmcss.nchains
    nsteps = mcmcss.nsteps/nchains
-   ;goodchains = (*mcmcss.goodchains)
-
 
    chi2 = *(mcmcss.chi2)
    chi2 = reform(chi2,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains)
-   burnndx = getburnndx(chi2,goodchains=goodchains)
+   ;burnndx = getburnndx(chi2,goodchains=goodchains)
 
    ngoodsteps = n_elements(goodchains)*(nsteps-burnndx)
 
@@ -155,6 +164,12 @@ for j=0L, nfiles-1 do begin
       endif
 
       par = ((reform(parstr.value,nsteps,nchains))[burnndx:*,goodchains])[sample]
+;      if tags[i] eq 'mstar' then begin
+;         parold = (reform(mcmcss.star.mstar.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[0:burnndx,*mcmcss.goodchains]
+;         print, max(abs(par-parold))
+;         if max(abs(par-parold)) gt 1d-8 then stop
+;      endif         
+
       xmin = min(par,max=xmax)
       if ~finite(extrema[0,j,i]) then extrema[0,j,i] = xmin
       if ~finite(extrema[1,j,i]) then extrema[1,j,i] = xmax
@@ -175,9 +190,6 @@ for j=0L, nfiles-1 do begin
       undefine, pars2txt
    endif
 endfor
-
-print, extrema
-
 
 if keyword_set(optimizeorder) then begin
    area = dblarr(nfiles,npars,npars)
@@ -295,13 +307,22 @@ for i=0L, n_elements(tags)-1 do begin
          x = *pars[order[j],i]
          y = *pars[order[j],k]
 
+         oplot, x, y, psym=3,color=colors[order[j] mod ncolors]
+
+if 0 then begin
          if min(x) ne max(x) and min(y) ne max(y) then begin
             exofast_errell,x,y,xpath=xpath,ypath=ypath,$
                            prob=probs,nxbin=nxbin, nybin=nybin,$
                            xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,logname=logname
-            if n_elements(xpath) gt 0 and n_elements(ypath) eq n_elements(xpath) then $
+            if n_elements(xpath) gt 0 and n_elements(ypath) eq n_elements(xpath) then begin
                oplot, xpath, ypath, color=colors[order[j] mod ncolors], thick=thick
+            endif else begin
+               ;; not enough points to make contour, plot them individually
+               oplot, x, y, psym=3,color=colors[order[j] mod ncolors]
+            endelse
          endif
+endif
+
       endfor
       exofast_multiplot ;; next plot
 
