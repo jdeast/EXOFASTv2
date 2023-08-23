@@ -51,9 +51,13 @@ white = 'ffffff'x
 white = 256L^2*255L + 256L*255 + 255
 black = '000000'x  
 
+;; log spacing of frames throughout the fit (display more early steps)
+steps = round(10^(alog10(maxstep-1)*dindgen(nsteps/skip)/(nsteps/skip-1d0)))
 
+;; linear spacing of frames throughout the fit (display them uniformly)
+;steps = dindgen(nsteps/skip)/(nsteps/skip-1d0)*(maxstep-1)
 
-for i=0L, maxstep-1, skip do begin
+for i=0L, n_elements(steps)-1 do begin
 
    base = dirname + file_basename(mcmcss.prefix) + 'frame.' + string(i,format=format)
 
@@ -61,26 +65,25 @@ for i=0L, maxstep-1, skip do begin
 
    if file_test(base + '.exofastv2.png') and not keyword_set(redoframe) then continue
 
-   if i gt 3 then begin
-      burnndx = getburnndx(chi2[0:i,*],goodchains=goodchains,/silent)
-      burnndx = (i-3) < burnndx
+   if steps[i] gt 3 then begin
+      burnndx = getburnndx(chi2[0:steps[i],*],goodchains=goodchains,/silent)
+      burnndx = (steps[i]-3) < burnndx
    endif else begin
       burnndx = 0
       goodchains = lindgen(nchains)
    endelse
 
-
    ;; Likelihood chain plot
-   yminplot = min(loglike[burnndx:i,goodchains],max=ymaxplot)
-   yminplot = -3000+ymax
+   yminplot = min(loglike[burnndx:steps[i],goodchains],max=ymaxplot)
+   yminplot = -40+ymax
    ymaxplot = 0d0+ymax
-   plot, [0],[0], xrange=[0,i],yrange=[yminplot,ymaxplot]-ymax, $
-         ytitle=latex,xtitle='Chain Link number',/xs,background=white,color=black
+   plot, [0],[0], xrange=[0,steps[i]],yrange=[yminplot,ymaxplot]-ymax, $
+         ytitle=latex,xtitle='Chain Link number',/xs,background=white,color=black,/ys
    for j=0, n_elements(goodchains)-1 do begin
       color = rgb[goodchains[j],0]*256L^2 + rgb[goodchains[j],1]*256L + rgb[goodchains[j],2]
-      oplot, loglike[0:i,goodchains[j]]-ymax,color=color
+      oplot, loglike[0:steps[i],goodchains[j]]-ymax,color=color
    endfor
-   oplot, loglike[0:i,chain]-ymax,color=black,thick=5
+   oplot, loglike[0:steps[i],chain]-ymax,color=black,thick=5
 
 ;   plot, loglike[0:i,0]-ymax, ytitle=latex, $
 ;         xtitle='Chain link number',xrange=[0,i],/xs,background=white,color=black
@@ -95,15 +98,42 @@ for i=0L, maxstep-1, skip do begin
 
    if keyword_set(redocorner) or not file_test(base+'.star_corner.ps') then begin
       ;; make a corner plot for the stellar parameters
-      sample = burnndx + lindgen((i-burnndx) > 1)
+      use = boolarr(mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains)
+      use[burnndx:steps[i],goodchains]=1B
+      sample = where(use)
+
+      starextrema = dblarr(2,1,5)
+      par = (reform(mcmcss.star.mstar.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[mcmcss.burnndx:-1,*mcmcss.goodchains]
+      starextrema[*,0,0] = [min(par),max(par)]
+      par = (reform(mcmcss.star.rstar.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[mcmcss.burnndx:-1,*mcmcss.goodchains]
+      starextrema[*,0,1] = [min(par),max(par)]
+      par = (reform(mcmcss.star.teff.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[mcmcss.burnndx:-1,*mcmcss.goodchains]
+      starextrema[*,0,2] = [min(par),max(par)]
+      par = (reform(mcmcss.star.av.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[mcmcss.burnndx:-1,*mcmcss.goodchains]
+      starextrema[*,0,3] = [min(par),max(par)]
+      par = (reform(mcmcss.star.age.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[mcmcss.burnndx:-1,*mcmcss.goodchains]
+      starextrema[*,0,4] = [min(par),max(par)]
+
+      planetextrema = dblarr(2,1,5)
+      par = (reform(mcmcss.planet[0].mp.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[mcmcss.burnndx:-1,*mcmcss.goodchains]
+      planetextrema[*,0,0] = [min(par),max(par)]
+      par = (reform(mcmcss.planet[0].rp.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[mcmcss.burnndx:-1,*mcmcss.goodchains]
+      planetextrema[*,0,1] = [min(par),max(par)]
+      par = (reform(mcmcss.planet[0].b.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[mcmcss.burnndx:-1,*mcmcss.goodchains]
+      planetextrema[*,0,2] = [min(par),max(par)]
+      par = (reform(mcmcss.planet[0].e.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[mcmcss.burnndx:-1,*mcmcss.goodchains]
+      planetextrema[*,0,3] = [min(par),max(par)]
+      par = (reform(mcmcss.planet[0].omegadeg.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[mcmcss.burnndx:-1,*mcmcss.goodchains]
+      planetextrema[*,0,4] = [min(par),max(par)]
+
       remake_corner, idlfile, tags=['mstar','rstar','teff','av','age'     ],$
-                     sample=sample,/keepburn, psname=base+'.star_corner.ps'
+                     sample=sample,/keepburn, psname=base+'.star_corner.ps',extrema=starextrema
       ;; make a corner plot for the planet parameters
       remake_corner, idlfile, tags=['mp'   ,   'rp', 'b'  ,'e' ,'omegadeg'],$
-                     sample=sample,/keepburn, psname=base+'.planet_corner.ps'
+                     sample=sample,/keepburn, psname=base+'.planet_corner.ps',extrema=planetextrema
    endif
    
-   mksummaryframe, mcmcss, i + chain*nsteps, base=base, transitpage=transitpage
+   mksummaryframe, mcmcss, steps[i] + chain*nsteps, base=base, transitpage=transitpage
 endfor
 
 spawn, 'convert ' + dirname + '*.exofastv2.png ' + gifname
