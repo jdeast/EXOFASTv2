@@ -374,7 +374,7 @@ bad = where(ss.planet.fittran and ss.planet.b.value gt (1d0+ss.planet.p.value), 
 ;; these should be excluded with the rejectflattransit input
 ;bad = where(ss.planet.fittran and ss.planet.b.value gt (1d0+ss.planet.p.value) and ss.planet.bs.value gt (1d0+ss.planet.p.value), nbad)
 if nbad ne 0L then begin
-   if ss.verbose then printandlog, 'Planet does not transit!', ss.logname
+   if ss.verbose then printandlog, 'Planet ' + strtrim(bad,2) + ' does not transit!', ss.logname
    return, !values.d_infinity
 endif
 
@@ -470,7 +470,7 @@ for i=0L, n_elements(*ss.priors)-1 do begin
    
    if model_value gt upperbound or model_value lt lowerbound then begin
       if ss.debug or ss.verbose then $
-         printandlog, label + '( ' + strtrim(value,2) + ') is out of user-defined bounds (' +$
+         printandlog, label + '( ' + strtrim(model_value,2) + ') is out of user-defined bounds (' +$
                       strtrim(lowerbound,2) + ',' + strtrim(upperbound,2) + ')',ss.logname      
       return, !values.d_infinity
    endif
@@ -732,7 +732,7 @@ for i=0L, ss.nstars-1 do begin
       if mstar_prior lt 0.6d0 then printandlog, $
          'WARNING: Torres not applicable (mstar = ' + $
          strtrim(mstar_prior,2) + '); ignore at beginning. Otherwise, ' + $
-         'use MIST, YY, or impose a prior on mstar/rstar',ss.logname
+         'use MIST, YY, PARSEC, or impose a prior on mstar/rstar',ss.logname
       ;; add "prior" penalty
       chi2 += (alog10(ss.star[i].mstar.value/mstar_prior)/umstar)^2
       chi2 += (alog10(ss.star[i].rstar.value/rstar_prior)/urstar)^2
@@ -790,12 +790,14 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) then begin
          kapp1 = interpol(kkap,klam,wavelength)        
          for i=0L, ss.nstars-1 do begin
             exofast_interp_model3d, teffsed[i], ss.star[i].logg.value, $
-                                    fehsed[i], wavlength, lamflam1temp, $
+                                    fehsed[i], junk, lamflam1temp, $
                                     alpha=ss.star[i].alpha.value,/next
             lamflam1=lamflam1temp*rstarsed[i]^2*ss.constants.rsun^2/ss.star[i].distance.value^2/ss.constants.pc^2
             taul1 = kapp1/kapv/1.086*ss.star[i].av.value
             extinct1 = exp(-taul1)
             atmospheres[i,*] = lamflam1*extinct1
+            atmo_file = file_dirname(epsname) + path_sep() + 'modelfiles' + path_sep() + file_basename(epsname,'.sed.eps') + '.atmosphere.' + string(i,format='(i03)') + '.txt'
+            exofast_forprint, wavelength, atmospheres[i,*],textout=atmo_file,/nocomment
          endfor
       endif
       sedchi2 += mistmultised(teffsed, ss.star.logg.value,fehsed, $
@@ -941,7 +943,7 @@ for j=0, ss.ntel-1 do begin
    (*ss.telescope[j].rvptrs).residuals = rv.rv - modelrv
 
    if keyword_set(psname) then begin
-      base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
+      base = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.model')
       exofast_forprint, rv.bjd, rv.rv - modelrv, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.telescope_' + string(j,format='(i02)') + '.txt', /nocomment,/silent
       exofast_forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6)', textout=base + '.model.telescope_' + string(j,format='(i02)') + '.txt', /nocomment,/silent
    endif
@@ -1017,14 +1019,22 @@ for j=0L, ss.ntran-1 do begin
 ;      compute = where(abs(phase-ss.planet[i].period.value/2d0) lt (ss.planet[i].t14.value*1.05d0),complement=ignore)
 ;   endif
 
-   if ss.transit[j].dilute.fit then begin
-      matchband = (where(*ss.dilutebandndx eq ss.transit[j].bandndx))[0]
-      matchstar = where(ss.diluted[j,*])
-      planetndx = ss.transit[j].pndx
-      starndx = ss.planet[planetndx].starndx
-      dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])      
+;   if ss.transit[j].dilute.fit then begin
+   if ss.fitdilute[j] then begin
+
+      ;; dilute transit according to other stars' SEDs
+      if ss.nstars gt 1 then begin
+         matchband = (where(*ss.dilutebandndx eq ss.transit[j].bandndx))[0]
+         matchstar = where(ss.diluted[j,*])
+         planetndx = ss.transit[j].pndx
+         starndx = ss.planet[planetndx].starndx
+         dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])      
 ;      print, ss.band[ss.transit[j].bandndx].name, dilute
-      chi2 += ((ss.transit[j].dilute.value - dilute)/(dilute*0.1d0))^2   
+         chi2 += ((ss.transit[j].dilute.value - dilute)/(dilute*0.1d0))^2   
+      endif else begin
+         ;; otherwise, let it float (constrained by priors/other bands)
+         print, 'here ', j
+      endelse
    endif
 
    if (where(transit.err^2 + ss.transit[j].variance.value le 0d0))[0] ne -1 then begin
@@ -1094,7 +1104,7 @@ for j=0L, ss.ntran-1 do begin
                                     reflect=band.reflect.value, $
                                     phaseshift=band.phaseshift.value, $
                                     beam=ss.planet[i].beam.value,$
-                                    dilute=ss.transit[j].dilute.value,$;band.dilute.value,$
+                                    dilute=ss.transit[j].dilute.value,$
                                     tc=ss.planet[i].tc.value,$
                                     rstar=ss.star[ss.planet[i].starndx].rstar.value/AU,$
                                     ;x1=x1,y1=y1,z1=z1,$
@@ -1173,7 +1183,7 @@ if toolow[0] ne -1 then phase[toohigh] += ss.planet[0].period.value
 ;   (*ss.transit[j].transitptrs).model = modelflux
 
    if keyword_set(psname) then begin
-      base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
+      base = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.model')
       exofast_forprint, transit.bjd, transit.flux - modelflux, transit.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.transit_' + string(j,format='(i03)') + '.txt', /nocomment,/silent
       exofast_forprint, transit.bjd, modelflux, format='(f0.8,x,f0.6)', textout=base + '.model.transit_' + string(j,format='(i03)')+ '.txt', /nocomment,/silent
       
