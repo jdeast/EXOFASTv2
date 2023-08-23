@@ -85,8 +85,8 @@ if keyword_set(nextgen) or keyword_set(dusty) or keyword_set(cond) then begin
       for j=0, 1 do begin
          for k=0, 1 do begin
             for l=0, nalpha-1 do begin
-               filename = nextgenpath + 'lte' + teffstr[teffndx + i] + loggstr[loggndx+j] + zstr[zndx+k] + alphastr[l]+'.NextGen.spec.idl'
-               match = (where(specfiles eq filename))[0]
+               filename = file_search(nextgenpath + 'lte' + teffstr[teffndx + i] + loggstr[loggndx+j] + zstr[zndx+k] + alphastr[l]+'.NextGen.spec.idl')
+               match = (where(specfiles eq filename[0]))[0]
                if match ne -1 then begin
                   if n_elements(*model[match]) eq 0 then begin
                      restore, specfiles[match]
@@ -94,7 +94,6 @@ if keyword_set(nextgen) or keyword_set(dusty) or keyword_set(cond) then begin
                      *model[match] = lamflam1 ;; populate the model variable for next time
                   endif else lamflams[*,i,j,k] = *model[match]
                   break
-
                endif 
             endfor
             ;; the model file doesn't exist. Unphysical?
