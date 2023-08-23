@@ -127,7 +127,6 @@ mu = 5d0*alog10(distance)-5d0
 nbands = n_elements(sedbands)
 bcs=dblarr(nbands,nstars)
 
-
 for j=0L, nstars-1 do begin
    
    ;; bolometric corrections
@@ -261,7 +260,8 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       if total(blend[i,*]) gt 1 and total(blend[i,*]) ne nstars then begin
          for j=0L, i-1 do begin
             ;; if no other star before has this combination
-            if max(abs(blend[i,*] - blend[j,*])) ne 0 then begin
+            match = where(legendlabels eq strjoin(starnames[where(blend[i,*])],'+'),nmatch)
+            if nmatch eq 0 then begin
                ;; plot it
                blended_atmosphere = transpose(atmospheres[0,*])*0d0
                for k=0L, nstars-1 do begin
@@ -368,8 +368,15 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       device, encapsulated=0
 
       ;; create a residual file
-      residualfilename = file_dirname(psname) + path_sep() + file_basename(psname,'.eps') + '.residuals.txt'
-      exofast_forprint, filterprops.name, wp, modelflux, flux, fluxerr, fluxerr, flux-modelflux, textout=residualfilename, comment='# Filtername, Wavelength (um), model flux, flux, error, residuals (erg/s/cm^2)' 
+      residualfilename = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.eps') + '.residuals.txt'
+
+      startxt = strarr(nbands)
+      for i=0L, nbands-1 do startxt[i] = strjoin(strtrim(where(blend[i,*]),2),',')
+
+      exofast_forprint, filterprops.name, wp, widthhm, flux, fluxerr, modelflux, flux-modelflux,startxt, textout=residualfilename, $
+                        comment='# Filtername, Center wavelength (um), half bandpass (um), flux, error, modelflux, residuals (erg/s/cm^2), star indices', $
+                        format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
+
    endif
    set_plot, mydevice
 endif
