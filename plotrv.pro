@@ -207,7 +207,7 @@ for i=0, ss.nplanets-1 do begin
       allprettymodel += prettymodel
 
       if n_elements(psname) eq 1 then begin
-         base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
+         base = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.model')
          exofast_forprint, prettytime, prettymodel, textout=base+'.prettymodelrv.planet.' + string(i,format='(i02)') + '.txt', format='(f0.10,x,f0.10)'
       endif
    endelse 
