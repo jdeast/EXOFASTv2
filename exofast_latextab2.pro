@@ -327,6 +327,12 @@ if nnotes gt 0 then begin
    endfor
 endif
 printf, lun, '\end{deluxetable*}'
+
+;; create the bibliography
+;; use $EXOFAST_PATH/References.bib
+printf, lun, '\bibliographystyle{apj}'
+printf, lun, '\bibliography{References}'
+
 printf, lun, '\end{document}'
 defsysv, '!GDL', exists=runninggdl
 if not runninggdl then truncate_lun, lun
