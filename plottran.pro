@@ -148,7 +148,7 @@ yrange = [1d0-max(depth)-3*maxnoise,1d0+3*maxnoise]
 ;; output separate models and pretty models files for each planet
 if n_elements(psname) eq 0 then begin
    base = 'tmpbase'
-endif else base = file_dirname(psname) + path_sep() + file_basename(psname,'.transit.ps')
+endif else base = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.transit.ps')
 
 files = file_search(base + '.detrendedmodel.transit_*.planet_*.txt',count=nfiles)
 if nfiles gt 0 then file_delete, files
