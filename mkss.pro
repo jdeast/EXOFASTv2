@@ -340,6 +340,8 @@ if n_elements(starndx) ne nplanets and nplanets gt 0 then begin
    printandlog, "STARNDX must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    return, -1
 endif
+
+
    
 
 if not keyword_set(longcadence) then longcadence=0B
@@ -347,7 +349,6 @@ if n_elements(fitthermal) eq 0 then fitthermal = ['']
 if n_elements(fitreflect) eq 0 then fitreflect = ['']
 if n_elements(fitphase) eq 0 then fitphase = ['']
 if n_elements(fitellip) eq 0 then fitellip = ['']
-if n_elements(fitdilute) eq 0 then fitdilute = ['']
 if n_elements(tranpath) eq 0 then tranpath = ''
 if n_elements(rvpath) eq 0 then rvpath = ''
 if n_elements(astrompath) eq 0 then astrompath = ''
@@ -430,9 +431,9 @@ endelse
 ;; if not specified, default to no dilution
 if n_elements(diluted) eq 0 then begin
    diluted = bytarr(ntran>1, nstars)
-endif else if n_elements(diluted) eq 1 and keyword_set(diluted) then begin
-   ;; if specified as a keyword, all stars dilute all transits
-   diluted = bytarr(ntran>1, nstars)+1B
+endif else if n_elements(diluted) eq 1 then begin
+   ;; if specified as a keyword, dilute all LCs according to that keyword
+   diluted = bytarr(ntran>1, nstars)+keyword_set(diluted)
 endif
 
 ;; make sure the input make sense
@@ -440,7 +441,9 @@ sz = size(diluted)
 if total(diluted) gt 0 then begin
    if sz[0] eq 1 and nstars eq 1 and sz[2] eq ntran then begin  
       ;; only 1 star, cannot compute dilution
-      printandlog, 'DILUTED cannot be used with only one star. Either model multiple stars or impose external priors on dilution parameters and remove DILUTED argument', logname
+      printandlog, 'DILUTED cannot be used with only one star.',logname
+      printandlog, 'Either model multiple stars to model dilution according to their SEDs', logname
+      printandlog, 'or use FITDILUTE to FIT dilution independently for each lightcurve.', logname
       return, -1
    endif else if sz[0] eq 2 and ntran eq sz[1] and nstars eq sz[2] then begin
       ;; good (multiple stars), do nothing
@@ -450,6 +453,22 @@ if total(diluted) gt 0 then begin
    endelse
 endif
 dilutestarndx = where(total(diluted,1)) ;; this specifies which stars should be computed for deblending
+
+if n_elements(fitdilute) eq 0 then begin
+   ;; if not specified, we want to fit the dilution for every lightcurve specified in the DILUTED array
+   ;; which is none, if DILUTED is not set)
+   if nstars eq 1 then fitdilute = bytarr(ntran > 1) $
+   else fitdilute = total(diluted,2)
+endif else if n_elements(fitdilute) eq 1 then begin
+   ;; if set as a keyword, apply to all transits according to the keyword
+   fitdilute = lonarr(ntran>1) + keyword_set(fitdilute)
+endif else if n_elements(fitdilute) eq ntran then begin
+   ;; do nothing, user has already fully specified FITDILUTE for each light curve
+endif else begin
+   ;; this is an error
+   printandlog, 'FITDILUTE (' + strtrim(n_elements(fitdilute),2) + ') must be an NTRAN (' + strtrim(ntran,2) + ') array', logname
+   return, -1
+endelse
 
 if ntran eq 0 then begin
    exptime = [1]
@@ -486,6 +505,12 @@ endif else begin
       return, -1
    endelse
 endelse
+
+bad = where(ninterp le 0 or exptime le 0, nbad)
+if nbad ne 0 then begin
+   printandlog, 'NINTERP and EXPTIME must be greater than zero',logname
+   return, -1
+endif
 
 if nplanets ge 1 and ntran ge 1 then begin
    ;; some error checking on TTVs
@@ -726,7 +751,7 @@ logg.scale = 0.3d0
 teff = parameter
 teff.value = 5778d0
 teff.unit = 'K'
-teff.description = 'Effective Temperature'
+teff.description = 'Effective temperature'
 teff.latex = 'T_{\rm eff}'
 teff.label = 'teff'
 teff.fit=1
@@ -735,7 +760,7 @@ teff.scale = 500d0
 teffsed = parameter
 teffsed.value = 5778d0
 teffsed.unit = 'K'
-teffsed.description = 'Effective Temperature'
+teffsed.description = 'Effective temperature'
 teffsed.latex = 'T_{\rm eff,SED}'
 teffsed.label = 'teffsed'
 teffsed.fit=0
@@ -2345,6 +2370,17 @@ for i=0L, nstars-1 do begin
    endif
    ss.star[i].label = strtrim(i,2)
 
+   ;; these are global parameters, not one per star
+   ;; Should move to SS structure, but may require crawling routine modifications?
+   if i gt 0 then begin
+      ss.star[i].slope.fit = 0
+      ss.star[i].slope.derive = 0
+      ss.star[i].quad.fit = 0
+      ss.star[i].quad.derive = 0
+      ss.star[i].errscale.fit = 0
+      ss.star[i].errscale.derive = 0
+   endif
+
 endfor
 
 if ndt gt 0 then begin
@@ -2598,6 +2634,11 @@ if ntran gt 0 then begin
 
       if total(diluted[i,*]) then begin
          dilutebandndx = [dilutebandndx,ss.transit.bandndx]
+         ss.transit[i].dilute.fit = 1B
+         ss.transit[i].dilute.derive = 1B
+      endif
+
+      if fitdilute[i] then begin
          ss.transit[i].dilute.fit = 1B
          ss.transit[i].dilute.derive = 1B
       endif
