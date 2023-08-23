@@ -91,7 +91,7 @@ for i=0, ss.nstars-1 do begin
                                             parsec_age=parsec_age,fitage=ss.star[i].age.fit,/allowold,$
                                             tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
                                             rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
-            if eeps[j] lt 202 then mistchi2+=30 ;; penalize PMS stars
+            if eeps[j] lt 202 then parsecchi2+=30 ;; penalize PMS stars
             if finite(parsecchi2) then begin
                if parsec_age gt 13.82d0 then break
                chi2[j] = parsecchi2
