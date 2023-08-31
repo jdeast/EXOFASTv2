@@ -1,11 +1,12 @@
-pro choplc, filename, tc, period, t14=t14, prefix=prefix, flatten=flatten
+pro choplc, filename, tc, period, t14=t14, prefix=prefix, flatten=flatten, splinespace=splinespace
 
 if n_elements(prefix) eq 0 then prefix = 'transit'
+if n_elements(splinespace) eq 0 then splinespace=0.75d0
 
 readcol, filename, time, flux, err, format='d,d,d'
 
 if keyword_set(flatten) then begin
-   norm = keplerspline(time, flux, breakp=breakp, ndays=0.75)
+   norm = keplerspline(time, flux, breakp=breakp, ndays=splinespace)
    flux /= norm
    err /= norm
 endif
@@ -52,6 +53,8 @@ for i=0, n_elements(tc)-1 do begin
 
    if finite(minepoch_real) and finite(maxepoch_real) then begin
       ;; chopping the LC like this imposes these implicit priors on the model
+      print, 'Chopping the LC like this imposes implicit priors on the model'
+      print, 'You should make them explicit by adding these lines to the prior file so data gaps do not influence the fit'
       period_error = t14[i]/(maxepoch_real-minepoch_real)
       print, string(i,tc[i],tc[i]-t14[i],tc[i]+t14[i],format='("tc_",i1,x,f0.6," -1 ",f0.6,x,f0.6)')
       print, string(i,period[i],period[i]-period_error,period[i]+period_error,format='("period_",i1,x,f0.12," -1 ",f0.12,x,f0.12)')
