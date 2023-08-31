@@ -1,4 +1,4 @@
-pro summarizepar, pars, label=label, unit=unit, latex=latex, best=best, logname=logname, value=value, errlo=errlo, errhi=errhi, medianpars=medianpars, charsize=charsize, mode=mode, noplot=noplot
+pro summarizepar, pars, label=label, unit=unit, latex=latex, best=best, logname=logname, value=value, errlo=errlo, errhi=errhi, medianpars=medianpars, charsize=charsize, mode=mode, noplot=noplot, scinote=scinote
 
 if n_elements(unit) eq 0 then unit = ''
 if n_elements(label) eq 0 then label = ''
@@ -96,26 +96,52 @@ endif else if ~keyword_set(noplot) then begin
 
 endif
 
+;; if more than 4 insignificant zeros, use scientific notation
+expvalue = fix(alog10(abs(medvalue)))
+if medvalue lt 1d0 then expvalue -= 1
+exphi=fix(alog10(upper))
+if exphi lt 1d0 then exphi -= 1
+explo=fix(alog10(lower))
+if explo lt 1d0 then explo -= 1
+exps = [expvalue,exphi,explo]
+if medvalue lt 1d0 then junk = min(abs(exps),ndx) $
+else junk = max(abs(exps),ndx)
+exp = exps[ndx]
+;print, expvalue, exphi, explo
+if abs(exp) gt 4 and (expvalue*exphi gt 0) and (expvalue*explo gt 0) then begin
+   scinote = ' \times 10^{' + strtrim(exp,2) + '}'
+   upper /= 10d0^exp
+   lower /= 10d0^exp
+   medvalue /= 10d0^exp
+endif else scinote = ''
+
 ;; format values for table (rounded appropriately)
 ;; round the high error to 2 sig figs
 exphi=fix(alog10(upper))
 if (upper lt 1d0) then exphi=exphi-1
 roundhi=round(upper/10.d0^(exphi-1d0),/L64)*10.d0^(exphi-1d0)
 if (roundhi gt 10) then errhi = strtrim(round(roundhi,/L64),2) $
-else errhi = string(roundhi,format='(f255.'+strtrim(1-exphi,2)+')')
+else errhi = string(roundhi,format='(f0.'+strtrim(1-exphi,2)+')')
 
 ;; round the low error to 2 sig figs
 explo=fix(alog10(lower))
 if (lower lt 1d0) then explo=explo-1
 roundlo=round(lower/10.d0^(explo-1d0),/L64)*10.d0^(explo-1d0)
 if (roundlo gt 10) then errlo = strtrim(round(roundlo,/L64),2) $
-else errlo = string(roundlo,format='(f255.'+strtrim(1-explo,2)+')')
+else errlo = string(roundlo,format='(f0.'+strtrim(1-explo,2)+')')
 
 ;; round the value to the greater number of sig figs
 ndec = long(1 - (exphi < explo))
 if ndec eq 0 then value = string(medvalue,format='(i255)') $
 else if ndec lt 0 then $
    value=round(round(medvalue/10.d0^(-ndec),/L64)*10.d0^(-ndec),/L64) $
-else value = string(medvalue,format='(f255.'+strtrim(ndec,2)+')')
+else value = string(medvalue,format='(f0.'+strtrim(ndec,2)+')')
+if value eq '-0.0' then value = '0.0'
+
+;if scinote ne '' then begin
+;   print, value + ' +' + errhi + ' -' + errlo + ' ' +  scinote
+;endif
+
+
 
 end
