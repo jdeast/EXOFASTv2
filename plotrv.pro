@@ -119,6 +119,9 @@ for j=0, ss.ntel-1 do begin
 ;;   rv.residuals = rv.rv - (ss.telescope[j].gamma.value[ndx] + ss.star.slope.value[ndx]*(rv.bjd-t0) + ss.star.quad.value[ndx]*(rv.bjd-t0)^2)
    modelrv = (ss.telescope[j].gamma.value[ndx] + ss.star[0].slope.value[ndx]*(rv.bjd-t0) + ss.star[0].quad.value[ndx]*(rv.bjd-t0)^2)
 
+;   exofast_forprint, rv.bjd, modelrv, textout=base+'.rv.trend.txt', format='(f0.10,x,f0.10)'
+;   stop
+
    for i=0, ss.nplanets-1 do begin
       
       if ~ss.planet[i].fitrv then continue ;; skip unfit planets
@@ -207,7 +210,7 @@ for i=0, ss.nplanets-1 do begin
       allprettymodel += prettymodel
 
       if n_elements(psname) eq 1 then begin
-         base = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.model')
+         base = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.rv.ps')
          exofast_forprint, prettytime, prettymodel, textout=base+'.prettymodelrv.planet.' + string(i,format='(i02)') + '.txt', format='(f0.10,x,f0.10)'
       endif
    endelse 
