@@ -46,9 +46,10 @@ for i=0L, ss.nstars-1 do begin
 ;; derive the distance from lstar
    ss.star[i].lstar.value = 4d0*!dpi*ss.star[i].rstar.value^2*ss.star[i].teff.value^4*sigmaB                                ;; L_sun
    if ss.star[i].distance.fit then ss.star[i].parallax.value = 1d3/ss.star[i].distance.value                                ;; mas
-   if ss.star[i].parallax.fit then ss.star[i].distance.value = 1d3/ss.star[i].parallax.value                                ;; mas
+   if ss.star[i].parallax.fit then ss.star[i].distance.value = 1d3/ss.star[i].parallax.value                                ;; pc
    ss.star[i].fbol.value = (ss.star[i].lstar.value*ss.constants.lsun)/(4d0*!dpi*(ss.star[i].distance.value*ss.constants.pc)^2) ;; cgs
    ss.star[i].rhostar.value = ss.star[i].mstar.value/(ss.star[i].rstar.value^3)*ss.constants.rhosun                            ;; rho_sun
+   ss.star[i].absks.value = ss.star[i].appks.value - 2.5d0*alog10((ss.star[i].distance.value/10d0)^2)                       ;; mag
 endfor   
 
 for j=0, ss.ntel-1 do begin
