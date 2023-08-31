@@ -18,7 +18,8 @@
 ; CALLING SEQUENCE:
 ;   ss = mkss(nplanets=nplanets, circular=circular, $
 ;             fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
-;             rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
+;             rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, $
+;             fittran=fittran, fitrv=fitrv, $
 ;             nvalues=nvalues, debug=debug, priorfile=priorfile, $
 ;             rvpath=rvpath, tranpath=tranpath, longcadence=longcadence, earth=earth)
 ;
@@ -157,7 +158,8 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, $
                astrompath=astrompath,fitlogmp=fitlogmp,$
                longcadence=longcadence, rejectflatmodel=rejectflatmodel,ninterp=ninterp, exptime=exptime,$
-               earth=earth, silent=silent, yy=yy0, torres=torres0, nomist=nomist, parsec=parsec0, $
+               earth=earth, silent=silent, $
+               yy=yy0, torres=torres0, nomist=nomist, parsec=parsec0, mann=mann0,$
                noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
                logname=logname, best=best, tides=tides, $
                teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
@@ -225,7 +227,7 @@ if n_elements(torres0) eq 0 then begin
    torres = bytarr(nstars)
 endif else if n_elements(torres0) eq 1 then begin
    if keyword_set(torres0) then begin
-      ;; if set as a keyword, disable for all stars
+      ;; if set as a keyword, enable for all stars
       torres = bytarr(nstars) + 1B
    endif else begin
       torres = bytarr(nstars)      
@@ -235,6 +237,24 @@ endif else if n_elements(torres) eq nstars then begin
    torres = torres0
 endif else begin
    printandlog, 'TORRES mist have 0, 1, or NSTARS elements', lognname
+   return, -1
+endelse
+
+if n_elements(mann0) eq 0 then begin
+   ;; don't use MANN by default
+   mann = bytarr(nstars)
+endif else if n_elements(mann0) eq 1 then begin
+   if keyword_set(mann0) then begin
+      ;; if set as a keyword, enable for all stars
+      mann = bytarr(nstars) + 1B
+   endif else begin
+      mann = bytarr(nstars)      
+   endelse
+endif else if n_elements(mann) eq nstars then begin
+   ;; if set as an NSTARS array, use array
+   mann = mann0
+endif else begin
+   printandlog, 'MANN mist have 0, 1, or NSTARS elements', lognname
    return, -1
 endelse
 
@@ -271,7 +291,7 @@ else begin
       printandlog, 'You have specified a delay!! This is only designed to test threading and will needlessly slow down the fit. Are you sure?', logname
 endelse
 
-if max(mist + yy + parsec + torres) gt 1 then begin
+if max(mist + yy + parsec + torres + mann) gt 1 then begin
    printandlog, 'You are **STRONGLY** advised to disable all but one evolutionary model (they are not independent), but type ".con" to proceed', logname
    return, -1
 endif
@@ -716,9 +736,31 @@ parameter = create_struct('value',value,$     ;; its numerical value
                           'medvalue','',$     ;; median value
                           'upper','',$        ;; upper error bar (68% confidence)
                           'lower','',$        ;; lower error bar (68% confidence)
+                          'scinote','',$      ;; text for scientific notation if applicable
                           'best',!values.d_nan,$ ;; best-fit parameter
                           'fit', 0B,$         ;; If true, step in this parameter during the MCMC
                           'derive',1B)        ;; If true, quote this parameter in the final table
+
+null_parameter = create_struct('value',0L,$                  ;; its numerical value
+                               'prior',0d0,$                 ;; its prior value
+                               'priorwidth',!values.d_infinity,$ ;; its prior width (infinity => no constraint)
+                               'lowerbound',-!values.d_infinity,$ ;; values lower than this have zero likelihood
+                               'upperbound',!values.d_infinity,$  ;; values higher than this have zero likelihood
+                               'label','',$                       ;; what do I call it?
+                               'cgs',1d0,$                        ;; multiply value by this to convert to cgs units
+                               'scale',0d0,$                      ;; scale for amoeba
+                               'prior_new',ptr_new(/allocate_heap),$
+                               'latex','',$        ;; latex label for the latex table
+                               'userchanged',0B,$  ;; the user supplied a prior that impacts this parameter
+                               'description','',$  ;; a verbose description
+                               'unit','',$         ;; units ("Radians" triggers special angular behavior)
+                               'medvalue','',$     ;; median value
+                               'upper','',$        ;; upper error bar (68% confidence)
+                               'lower','',$        ;; lower error bar (68% confidence)
+                               'best',!values.d_nan,$ ;; best-fit parameter
+                               'fit', 0B,$            ;; If true, step in this parameter during the MCMC
+                               'derive',1B)           ;; If true, quote this parameter in the final table
+
                           
 ;; define each parameter (derived, fitted, and ignored)
 logmstar = parameter
@@ -731,6 +773,28 @@ logmstar.cgs = !values.d_nan
 logmstar.fit = 1
 logmstar.derive=0
 logmstar.scale = 1
+
+absks = parameter
+absks.value = 10d0
+absks.unit = 'mag'
+absks.description = 'Absolute Ks-band mag'
+absks.latex = 'K_S'
+absks.label = 'absks'
+absks.cgs = !values.d_nan
+absks.fit = 0
+absks.derive=0
+absks.scale = 0.1
+
+appks = parameter
+appks.value = 10d0
+appks.unit = 'mag'
+appks.description = 'Apparent Ks-band mag'
+appks.latex = 'k_S'
+appks.label = 'appks'
+appks.cgs = !values.d_nan
+appks.fit = 0
+appks.derive=0
+appks.scale = 0.1
 
 mstar = parameter
 mstar.value = 10^logmstar.value
@@ -1049,7 +1113,7 @@ tc.scale = 0.1
 
 tt = parameter
 tt.unit = '\bjdtdb'
-tt.description = 'Time of minimum projected separation'
+tt.description = 'Time of min proj sep'
 tt.latex = 'T_T'
 tt.label = 'tt'
 tt.cgs = 86400d0
@@ -1059,7 +1123,7 @@ tt.derive = 0B
 
 t0 = parameter
 t0.unit = '\bjdtdb'
-t0.description = 'Optimal conjunction Time'
+t0.description = 'Optimal conj time'
 t0.latex = 'T_0'
 t0.label = 't0'
 t0.cgs = 86400d0
@@ -1113,7 +1177,7 @@ secosw.derive = 0
 
 vcve = parameter
 vcve.unit = ''
-vcve.description = ''
+vcve.description = 'Scaled velocity'
 vcve.latex = 'V_c/V_e'
 vcve.label = 'vcve'
 vcve.cgs = !values.d_nan
@@ -1123,7 +1187,7 @@ if nplanets eq 0 then vcve.derive=0B
 
 chord = parameter
 chord.unit = ''
-chord.description = ''
+chord.description = 'Transit chord'
 chord.latex = '((1-R_P/R_*)^2-b^2)^{1/2}'
 chord.label = 'chord'
 chord.cgs = 1d0
@@ -1189,7 +1253,7 @@ if nplanets eq 0 then e.derive=0
 
 omega = parameter
 omega.unit = 'Radians'
-omega.description = 'Argument of Periastron'
+omega.description = 'Arg of periastron'
 omega.latex = '\omega_*'
 omega.label = 'omega'
 omega.cgs = 1d0
@@ -1217,7 +1281,7 @@ lsinw2.derive = 0
 
 lcosw = parameter
 lcosw.unit = ''
-lcosw.description = 'L*Cosine of Argument of Periastron'
+lcosw.description = 'L*Cos of arg of periastron'
 lcosw.latex = 'L\cos{\omega_*}'
 lcosw.label = 'lcosw'
 lcosw.cgs = 1d0
@@ -1227,7 +1291,7 @@ lcosw.derive = 0
 
 omegadeg = parameter
 omegadeg.unit = 'Degrees'
-omegadeg.description = 'Argument of Periastron'
+omegadeg.description = 'Arg of periastron'
 omegadeg.latex = '\omega_*'
 omegadeg.label = 'omegadeg'
 omegadeg.cgs = !dpi/180d0
@@ -1237,7 +1301,7 @@ bigomega = parameter
 bigomega.value = 0d0
 bigomega.scale = !dpi
 bigomega.unit = 'Radians'
-bigomega.description = 'Longitude of ascending node'
+bigomega.description = 'Long of asc node'
 bigomega.latex = '\Omega'
 bigomega.label = 'bigomega'
 bigomega.cgs = 1d0
@@ -1334,7 +1398,7 @@ if nplanets eq 0 then tp.derive = 0
 
 td = parameter
 td.unit = '\bjdtdb'
-td.description = 'Time of Descending Node'
+td.description = 'Time of desc node'
 td.latex = 'T_D'
 td.label = 'td'
 td.cgs = 86400d0
@@ -1342,7 +1406,7 @@ if nplanets eq 0 then td.derive = 0
 
 ta = parameter
 ta.unit = '\bjdtdb'
-ta.description = 'Time of Ascending Node'
+ta.description = 'Time of asc node'
 ta.latex = 'T_A'
 ta.label = 'ta'
 ta.cgs = 86400d0
@@ -1381,7 +1445,7 @@ if nplanets eq 0 then t14.derive = 0
 
 tau = parameter
 tau.unit = 'days'
-tau.description = 'Ingress/egress transit duration'
+tau.description = 'In/egress transit duration'
 tau.latex = '\tau'
 tau.label = 'tau'
 tau.cgs = 86400d0
@@ -1405,7 +1469,7 @@ if nplanets eq 0 then t14s.derive = 0
 
 taus = parameter
 taus.unit = 'days'
-taus.description = 'Ingress/egress eclipse duration'
+taus.description = 'In/egress eclipse duration'
 taus.latex = '\tau_S'
 taus.label = 'taus'
 taus.cgs = 86400d0
@@ -1437,7 +1501,7 @@ eclipsedepth.derive = 0
 
 eclipsedepth25 = parameter
 eclipsedepth25.unit = 'ppm'
-eclipsedepth25.description = 'Blackbody eclipse depth at 2.5$\mu$m'
+eclipsedepth25.description = 'BB eclipse depth at 2.5$\mu$m'
 eclipsedepth25.latex = '\delta_{S,2.5\mu m}'
 eclipsedepth25.label = 'eclipsedepth25'
 eclipsedepth25.cgs = 1d6
@@ -1445,7 +1509,7 @@ if nplanets eq 0 then eclipsedepth25.derive = 0
 
 eclipsedepth50 = parameter
 eclipsedepth50.unit = 'ppm'
-eclipsedepth50.description = 'Blackbody eclipse depth at 5.0$\mu$m'
+eclipsedepth50.description = 'BB eclipse depth at 5.0$\mu$m'
 eclipsedepth50.latex = '\delta_{S,5.0\mu m}'
 eclipsedepth50.label = 'eclipsedepth50'
 eclipsedepth50.cgs = 1d6
@@ -1453,14 +1517,14 @@ if nplanets eq 0 then eclipsedepth50.derive = 0
 
 eclipsedepth75 = parameter
 eclipsedepth75.unit = 'ppm'
-eclipsedepth75.description = 'Blackbody eclipse depth at 7.5$\mu$m'
+eclipsedepth75.description = 'BB eclipse depth at 7.5$\mu$m'
 eclipsedepth75.latex = '\delta_{S,7.5\mu m}'
 eclipsedepth75.label = 'eclipsedepth75'
 eclipsedepth75.cgs = 1d6
 if nplanets eq 0 then eclipsedepth75.derive = 0
 
 delta = parameter
-;delta.unit = 'fraction'
+;delta.unit = 'frac'
 delta.description = '$\left(R_P/R_*\right)^2$'
 delta.latex = '\delta'
 delta.label = 'delta'
@@ -1749,14 +1813,14 @@ if nplanets eq 0 then loggp.derive = 0
 
 teq = parameter
 teq.unit = 'K'
-teq.description = 'Equilibrium temperature'
+teq.description = 'Equilibrium temp'
 teq.latex = 'T_{\rm eq}'
 teq.label = 'teq'
 if nplanets eq 0 then teq.derive = 0
 
 tcirc = parameter
 tcirc.unit = 'Gyr'
-tcirc.description = 'Tidal circularization timescale'
+tcirc.description = 'Tidal circ timescale'
 tcirc.latex = '\tau_{\rm circ}'
 tcirc.label = 'tcirc'
 if nplanets eq 0 then tcirc.derive = 0
@@ -1947,6 +2011,8 @@ star = create_struct(mstar.label,mstar,$
                      age.label,age,$
                      eep.label,eep,$
                      logmstar.label,logmstar,$
+                     absks.label,absks,$
+                     appks.label,appks,$
                      vsini.label,vsini,$
                      vline.label,vline,$                    
                      Av.label,Av,$
@@ -2016,6 +2082,8 @@ if fluxfile ne '' then begin
    endelse
 endif
 
+;if n_elements(nvalues) ne 0 then stop
+
 planet = create_struct($
          period.label,period,$    ;; fundamental (most interesting) parameters
          rp.label,rp,$
@@ -2055,7 +2123,7 @@ for i=0L, nband-1 do begin
    depth.description = 'Transit depth in ' + prettyname
    depth.latex = '\delta_{\rm ' + prettyname + '}'
    depth.label = 'depth_' + bands[i]
-   depth.unit = 'fraction'
+   depth.unit = 'frac'
    if nplanets eq 0 then depth.derive = 0
    planet = create_struct(planet, depth.label, depth)
 endfor
@@ -2229,6 +2297,7 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'parsec', parsec,$
                    'yy', yy,$
                    'torres', torres,$
+                   'mann', mann,$
                    'fbolsedfloor', fbolsedfloor,$
                    'teffsedfloor', teffsedfloor,$
                    'fehsedfloor', fehsedfloor,$
@@ -2363,6 +2432,15 @@ for i=0L, nstars-1 do begin
       ss.star[i].eep.fit=0
       ss.star[i].eep.derive=0      
    endelse
+
+   if ss.mann[i] then begin
+      ss.star[i].distance.fit = 1
+      ss.star[i].distance.derive = 1
+      ss.star[i].parallax.derive = 1
+      ss.star[i].appks.fit = 1
+      ss.star[i].appks.derive = 1
+      ss.star[i].absks.derive = 1
+   endif
 
    if ss.yy[i] then begin
       ss.star[i].age.fit=1
