@@ -352,8 +352,6 @@ if 0 then begin
 ;         wait, 0.05
       endwhile
 
-
-
       if finite(junk) then begin
          if abs(age-parsec_age2) lt 1d-6 then begin
             parsec_rstariso[i] = parsec_rstar2
@@ -379,10 +377,9 @@ endif
    teffplottrack = parsec_teffiso
    loggplot =  alog10(mstar/(rstar^2)*gravitysun)
 
-;stop
-
-
    use = where(loggplottrack gt 3 and loggplottrack lt 5); and eepplot ge min([202,eep]))
+   if use[0] eq -1 then use = lindgen(n_elements(loggplottrack))
+
    xmin=max([teffplottrack[use],teff],min=xmax) ;; plot range backwards
 
    ;; increase xrange so there are 4 equally spaced ticks that land on 100s
