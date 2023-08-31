@@ -243,8 +243,9 @@ for i=0, n_tags(ss)-1 do begin
                                  error = "^{+" + (*(ss.(i)[j].(k))).(l)[m].upper + "}_{-" +  $
                                          (*(ss.(i)[j].(k))).(l)[m].lower + "}"
                               endelse
+                              scinote = (*(ss.(i)[j].(k))).(l)[m].scinote
                               if (*(ss.(i)[j].(k))).(l)[m].medvalue eq '0.00' and error eq '' then values += '&--' $
-                              else values = values + '&$' + (*(ss.(i)[j].(k))).(l)[m].medvalue + error + '$'
+                              else values = values + '&$' + (*(ss.(i)[j].(k))).(l)[m].medvalue + error + scinote + '$'
                               ngood++
                            endif else values += '&--'
                         endif else values += '&--'
@@ -298,7 +299,8 @@ for i=0, n_tags(ss)-1 do begin
                         error = "^{+" + ss.(i)[j].(k).upper + "}_{-" +  $
                                 ss.(i)[j].(k).lower + "}"
                      endelse
-                     values = values + '&$' + ss.(i)[j].(k).medvalue + error + '$'
+                     scinote = ss.(i)[j].(k).scinote
+                     values = values + '&$' + ss.(i)[j].(k).medvalue + error + scinote + '$'
                   endif else values += '&--'
 
                endfor
