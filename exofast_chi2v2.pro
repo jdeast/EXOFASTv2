@@ -744,6 +744,31 @@ for i=0L, ss.nstars-1 do begin
          printandlog, msg, ss.logname
       endif
    endif
+
+   ;; apply MANN penalty to constrain stellar parameters
+   if ss.mann[i] then begin
+      massradius_mann, ss.star[i].appks.value, mstar_prior, rstar_prior, $
+                       feh=ss.star[i].feh.value, $
+                       sigma_rstar=urstar, sigma_mstar=umstar,$
+                       distance=ss.star[i].distance.value,/mann19
+
+      if mstar_prior gt 0.7d0 then printandlog, $
+         'WARNING: MANN not applicable (mstar = ' + $
+         strtrim(mstar_prior,2) + ' > 0.7); ignore at beginning. Otherwise, ' + $
+         'use MIST, YY, PARSEC, TORRES, or impose a prior on mstar/rstar',ss.logname
+
+      ;; add "prior" penalty
+      chi2 += ((ss.star[i].mstar.value - mstar_prior)/umstar)^2
+;      chi2 += ((ss.star[i].rstar.value - rstar_prior)/urstar)^2
+      
+      if ss.verbose then begin
+         mstarpenalty = ((ss.star[i].mstar.value - mstar_prior)/umstar)^2
+         rstarpenalty = ((ss.star[i].rstar.value - rstar_prior)/urstar)^2
+         msg = 'Mann penalty: ' + string(mstarpenalty,rstarpenalty,format='(f0.6,x,f0.6)')
+         printandlog, msg, ss.logname
+      endif
+   endif
+
 endfor
 
 ;; fit the SED with MIST BC tables
@@ -931,6 +956,13 @@ for j=0, ss.ntel-1 do begin
       endif
 
    endfor
+
+   if keyword_set(psname) then begin
+      ;; without gamma, gammadot, gammadotdot, or detrending
+      base = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.model')
+      exofast_forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.detrendedmodel.telescope_' + string(j,format='(i02)') + '.txt', /nocomment,/silent
+   endif
+
    ;; add instrumental offset, slope, and quadratic term
    modelrv += ss.telescope[j].gamma.value 
    if (*ss.telescope[j].rvptrs).planet eq -1 then $
@@ -946,6 +978,10 @@ for j=0, ss.ntel-1 do begin
       base = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.model')
       exofast_forprint, rv.bjd, rv.rv - modelrv, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.telescope_' + string(j,format='(i02)') + '.txt', /nocomment,/silent
       exofast_forprint, rv.bjd, modelrv, format='(f0.8,x,f0.6)', textout=base + '.model.telescope_' + string(j,format='(i02)') + '.txt', /nocomment,/silent
+      
+      trend = ss.telescope[j].gamma.value + ss.star[0].slope.value*(rv.bjd-ss.rvepoch) + ss.star[0].quad.value*(rv.bjd-ss.rvepoch)^2
+      exofast_forprint, rv.bjd, trend, format='(f0.8,x,f0.6)', textout=base + '.trend.telescope_' + string(j,format='(i02)') + '.txt', /nocomment,/silent
+
    endif
 
    rvchi2 = exofast_like((*ss.telescope[j].rvptrs).residuals,ss.telescope[j].jittervar.value,rv.err,/chi2)
@@ -1033,7 +1069,7 @@ for j=0L, ss.ntran-1 do begin
          chi2 += ((ss.transit[j].dilute.value - dilute)/(dilute*0.1d0))^2   
       endif else begin
          ;; otherwise, let it float (constrained by priors/other bands)
-         print, 'here ', j
+;         print, 'here ', j
       endelse
    endif
 
