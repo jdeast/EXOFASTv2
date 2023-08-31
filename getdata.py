@@ -35,15 +35,15 @@ jd0 = 2451544.5
 
 #ticid = 'TIC ' + str(sys.argv[1])
 id = str(sys.argv[1])
-search_result = lk.search_lightcurve(id)#,mission='TESS',author=('SPOC','QLP'))
+search_result = lk.search_lightcurve(id,author=('SPOC','TESS-SPOC','QLP','TASOC','CDIPS','Kepler'))
+#,mission='TESS')
 
 if len(search_result) == 0:
     print("No light curves found for " + id + ". Try a different name.")
     sys.exit()
 
 lcs = search_result.download_all()
-i=0
-for lc in lcs:
+for i,lc in enumerate(lcs):
 
     lc = lc.remove_nans()
 #    lc = lc.remove_outliers() # this often clips the transits
@@ -77,5 +77,3 @@ for lc in lcs:
     filename = datestr + '.' + filter + '.' + telescope + '.' + id + '.' + sector + '.' + exptime + '.' + author + '.dat' 
 
     np.savetxt(filename,np.column_stack([time,flux,err]))
-
-    i = i+1
