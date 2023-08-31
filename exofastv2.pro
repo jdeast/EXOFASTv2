@@ -744,7 +744,7 @@ pro exofastv2, priorfile=priorfile, $
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                rejectflatmodel=rejectflatmodel,$
                maxgr=maxgr, mintz=mintz, $
-               yy=yy, torres=torres, nomist=nomist, parsec=parsec, $
+               yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, $
                noclaret=noclaret, tides=tides, nplanets=nplanets, $
                nstars=nstars, starndx=starndx, $
                fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
@@ -790,7 +790,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
              rejectflatmodel=rejectflatmodel,$
              maxgr=maxgr, mintz=mintz, $
-             yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, nstars=nstars, starndx=starndx, $
+             yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, noclaret=noclaret, tides=tides, nplanets=nplanets, nstars=nstars, starndx=starndx, $
              fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
              earth=earth, i180=i180, nocovar=nocovar, alloworbitcrossing=alloworbitcrossing, stretch=stretch,$
@@ -872,7 +872,7 @@ if nplanets ne 0 and keyword_set(refinestar) then begin
    ss = mkss(fluxfile=fluxfile,mistsedfile=mistsedfile,$
              fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanet=0,priorfile=priorfile, $
              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
-             yy=yy, torres=torres, nomist=nomist, parsec=parsec, logname=logname, debug=stardebug, verbose=verbose, mkgif=mkgif)
+             yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, logname=logname, debug=stardebug, verbose=verbose, mkgif=mkgif)
    if (size(ss))[2] ne 8 then return
 
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
@@ -894,7 +894,7 @@ ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath
           ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
           diluted=diluted, fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase, $
           fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
-          chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,$
+          chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,$
           fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
           novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, chi2func=chi2func, fittt=fittt, rvepoch=rvepoch,delay=delay,prefix=prefix,mkgif=mkgif)
 
@@ -991,7 +991,7 @@ if nthreads gt 1 then begin
          'ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,'+$
          'diluted=diluted, fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect,'+ $
          'fitphase=fitphase, fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam,'+ $
-         'chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec,'+$
+         'chen=chen, yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann,'+$
          'noclaret=noclaret, alloworbitcrossing=alloworbitcrossing, logname=logname,'+$
          'fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet,'+$
          'novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign,'+$
@@ -1204,7 +1204,7 @@ mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dt
               ninterp=ninterp, exptime=exptime, earth=earth, i180=i180,$
               diluted=diluted, fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
               fitphase=fitphase, fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
-              chen=chen,nvalues=nsteps*nchains,/silent,yy=yy,torres=torres,nomist=nomist,parsec=parsec,noclaret=noclaret,$
+              chen=chen,nvalues=nsteps*nchains,/silent,yy=yy,torres=torres,nomist=nomist,parsec=parsec,mann=mann,noclaret=noclaret,$
               alloworbitcrossing=alloworbitcrossing, logname=logname, best=best,$
               fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
               novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, chi2func=chi2func, fittt=fittt,rvepoch=rvepoch,delay=delay,prefix=prefix,mkgif=mkgif)

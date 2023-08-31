@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Wed Aug 23 11:44:38 2023.<P>
+<STRONG>Last modified: </STRONG>Thu Aug 31 15:47:21 2023.<P>
  
 <HR>
  
@@ -74,6 +74,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#KTOM2">KTOM2</A>
 <LI><A HREF="#LEGEND">LEGEND</A>
 <LI><A HREF="#LINLD">LINLD</A>
+<LI><A HREF="#MASSRADIUS_MANN">MASSRADIUS_MANN</A>
 <LI><A HREF="#MASSRADIUS_MIST[1]">MASSRADIUS_MIST[1]</A>
 <LI><A HREF="#MASSRADIUS_MIST[2]">MASSRADIUS_MIST[2]</A>
 <LI><A HREF="#MASSRADIUS_PARSEC">MASSRADIUS_PARSEC</A>
@@ -664,7 +665,8 @@ at the IDL command line prompt.<P>
  CALLING SEQUENCE:
    ss = mkss(nplanets=nplanets, circular=circular, $
              fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
-             rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
+             rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, $
+             fittran=fittran, fitrv=fitrv, $
              nvalues=nvalues, debug=debug, priorfile=priorfile, $
              rvpath=rvpath, tranpath=tranpath, longcadence=longcadence, earth=earth)
 
@@ -4105,7 +4107,7 @@ Function value:       1.33000
 <A NAME="LINLD">
 <H2>LINLD</H2></A>
 <A HREF="#LEGEND">[Previous Routine]</A>
-<A HREF="#MASSRADIUS_MIST[1]">[Next Routine]</A>
+<A HREF="#MASSRADIUS_MANN">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -4158,9 +4160,53 @@ Function value:       1.33000
 <STRONG>(See /home/jeastman/old_home/scratch/EXOFASTv2/linld.pro)</STRONG><P>
 <HR>
  
+<A NAME="MASSRADIUS_MANN">
+<H2>MASSRADIUS_MANN</H2></A>
+<A HREF="#LINLD">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_MIST[1]">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   MASSRADIUS_MANN
+
+ PURPOSE: 
+   Uses the Mann relation
+   (https://ui.adsabs.harvard.edu/abs/2015ApJ...804...64M/abstract)
+   the stellar mass and radius given Ks and [Fe/H].
+
+ CALLING SEQUENCE:
+    massradius_mann, ks0, mstar, rstar, feh=feh,
+                     sigma_rstar=sigma_rstar, sigma_mstar=sigma_mstar, 
+                     distance=distance,mann19=mann19
+
+ INPUTS:
+    KS0  - The K-band magnitude. If distance is given, this is
+           interpreted as the apparent magnitude. If distance is not
+           given, it's interpreted as the absolute magnitude.
+ OPTIONAL INPUTS
+    FEH  - The stellar metallicity. If supplied, we use equation
+           5. If not, we use equation 4.
+    DISTANCE - The stellar distance (pc). If supplied, we
+               assume KS0 is the apparent magnitude and we compute the
+               absolute magnitude
+ OPTIONAL KEYWORDS - 
+    MANN19 - If set, uses the Mann 2019 relations to estimate the mass.
+ OUTPUTS:
+    MSTAR       - The stellar mass, in solar masses
+    RSTAR       - The stellar radius, in solar radii
+    SIGMA_MSTAR - The stellar mass uncertainty, in solar masses
+    SIGMA_RSTAR - The stellar radius uncertainty, in solar radii
+
+ MODIFICATION HISTORY
+ 
+  2023/08 -- Public release -- Jason Eastman
+</PRE><P>
+<STRONG>(See /home/jeastman/old_home/scratch/EXOFASTv2/massradius_mann.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="MASSRADIUS_MIST[1]">
 <H2>MASSRADIUS_MIST[1]</H2></A>
-<A HREF="#LINLD">[Previous Routine]</A>
+<A HREF="#MASSRADIUS_MANN">[Previous Routine]</A>
 <A HREF="#MASSRADIUS_MIST[2]">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
