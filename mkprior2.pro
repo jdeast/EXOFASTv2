@@ -32,7 +32,7 @@
 ;
 ;-
 
-function getpriorline, parameter, ndx, num=num, ss=ss
+function getpriorline2, parameter, ndx, num=num, ss=ss
 
 label = parameter.label
 if n_elements(num) ne 0 then begin
@@ -148,7 +148,7 @@ for i=0L, mcmcss.nstars-1 do begin
    printf, lun, '# star ' + mcmcss.star[i].label
    for j=0, n_tags(mcmcss.star[i])-1 do begin
       if (size(mcmcss.star[i].(j)))[2] eq 8 then begin
-         line = getpriorline(mcmcss.star[i].(j), ndx, num=i, ss=mcmcss)
+         line = getpriorline2(mcmcss.star[i].(j), ndx, num=i, ss=mcmcss)
          if line ne '' then printf, lun, line
       endif
    endfor
@@ -159,21 +159,21 @@ for i=0L, mcmcss.ntel-1 do begin
    printf, lun, '# ' + mcmcss.telescope[i].label
    for j=0, n_tags(mcmcss.telescope[i])-1 do begin
       if (size(mcmcss.telescope[i].(j)))[2] eq 8 then begin        
-         line = getpriorline(mcmcss.telescope[i].(j), ndx, num=i, ss=mcmcss)
+         line = getpriorline2(mcmcss.telescope[i].(j), ndx, num=i, ss=mcmcss)
          if line ne '' then printf, lun, line 
       endif
    endfor
 
    if tag_exist((*(mcmcss.telescope[i].rvptrs)), 'NADD') then begin
       for j=0, (*(mcmcss.telescope[i].rvptrs)).nadd-1 do begin
-         line = getpriorline((*(mcmcss.telescope[i].rvptrs)).detrendaddpars[j],ndx, num=i, ss=mcmcss)
+         line = getpriorline2((*(mcmcss.telescope[i].rvptrs)).detrendaddpars[j],ndx, num=i, ss=mcmcss)
          if line ne '' then printf, lun, line
       endfor
    endif
 
    if tag_exist((*(mcmcss.telescope[i].rvptrs)), 'NMULT') then begin
       for j=0, (*(mcmcss.telescope[i].rvptrs)).nmult-1 do begin
-         line = getpriorline((*(mcmcss.telescope[i].rvptrs)).detrendmultpars[j],ndx, num=i, ss=mcmcss)
+         line = getpriorline2((*(mcmcss.telescope[i].rvptrs)).detrendmultpars[j],ndx, num=i, ss=mcmcss)
          if line ne '' then printf, lun, line
       endfor
    endif
@@ -186,7 +186,7 @@ if tag_exist(mcmcss,'nastrom') then begin
       printf, lun, '# ' + mcmcss.astrom[i].label
       for j=0, n_tags(mcmcss.astrom[i])-1 do begin
          if (size(mcmcss.astrom[i].(j)))[2] eq 8 then begin        
-            line = getpriorline(mcmcss.astrom[i].(j), ndx, num=i, ss=mcmcss)
+            line = getpriorline2(mcmcss.astrom[i].(j), ndx, num=i, ss=mcmcss)
             if line ne '' then printf, lun, line 
          endif
       endfor
@@ -198,7 +198,7 @@ for i=0L, mcmcss.nplanets-1 do begin
    printf, lun, '# ' + mcmcss.planet[i].label
    for j=0, n_tags(mcmcss.planet[i])-1 do begin
       if (size(mcmcss.planet[i].(j)))[2] eq 8 then begin         
-         line = getpriorline(mcmcss.planet[i].(j), ndx, num=i, ss=mcmcss)
+         line = getpriorline2(mcmcss.planet[i].(j), ndx, num=i, ss=mcmcss)
          if line ne '' then printf, lun, line
       endif
    endfor
@@ -209,7 +209,7 @@ for i=0L, mcmcss.nband-1 do begin
    printf, lun, '# ' + mcmcss.band[i].label
    for j=0, n_tags(mcmcss.band[i])-1 do begin
       if (size(mcmcss.band[i].(j)))[2] eq 8 then begin        
-         line = getpriorline(mcmcss.band[i].(j), ndx, num=i, ss=mcmcss)
+         line = getpriorline2(mcmcss.band[i].(j), ndx, num=i, ss=mcmcss)
          if line ne '' then printf, lun, line
       endif
    endfor
@@ -220,21 +220,21 @@ for i=0L, mcmcss.ntran-1 do begin
    printf, lun, '# ' + mcmcss.transit[i].label
    for j=0, n_tags(mcmcss.transit[i])-1 do begin
       if (size(mcmcss.transit[i].(j)))[2] eq 8 then begin
-         line = getpriorline(mcmcss.transit[i].(j), ndx, num=i, ss=mcmcss)
+         line = getpriorline2(mcmcss.transit[i].(j), ndx, num=i, ss=mcmcss)
          if line ne '' then printf, lun, line
       endif
    endfor
 
    if tag_exist((*(mcmcss.transit[i].transitptrs)), 'NADD') then begin
       for j=0, (*(mcmcss.transit[i].transitptrs)).nadd-1 do begin
-         line = getpriorline((*(mcmcss.transit[i].transitptrs)).detrendaddpars[j],ndx, num=i, ss=mcmcss)
+         line = getpriorline2((*(mcmcss.transit[i].transitptrs)).detrendaddpars[j],ndx, num=i, ss=mcmcss)
          if line ne '' then printf, lun, line
       endfor
    endif
 
    if tag_exist((*(mcmcss.transit[i].transitptrs)), 'NMULT') then begin
       for j=0, (*(mcmcss.transit[i].transitptrs)).nmult-1 do begin
-         line = getpriorline((*(mcmcss.transit[i].transitptrs)).detrendmultpars[j],ndx, num=i, ss=mcmcss)
+         line = getpriorline2((*(mcmcss.transit[i].transitptrs)).detrendmultpars[j],ndx, num=i, ss=mcmcss)
          if line ne '' then printf, lun, line
       endfor
    endif
