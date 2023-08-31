@@ -69,6 +69,8 @@ for i=0L, ss.nstars-1 do begin
    ;; do this instead -- hack?
    if stdev(ss.star[i].distance.value) lt 1d-10 then ss.star[i].distance.value = 1d3/ss.star[i].parallax.value
    if stdev(ss.star[i].parallax.value) lt 1d-10 then ss.star[i].parallax.value = 1d3/ss.star[i].distance.value
+   
+   ss.star[i].absks.value = ss.star[i].appks.value - 2.5d0*alog10((ss.star[i].distance.value/10d0)^2)                       ;; mag
 
 endfor   
 
