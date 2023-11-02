@@ -1,6 +1,15 @@
-pro mksummaryframe, ss, ndx, base=base, transitpage=transitpage
+pro mksummaryframe, ss, ndx, base=base, transitpage=transitpage, idlfile=idlfile
+
+  if n_elements(idlfile) eq 0 then begin
+     restore, idlfile
+     ss = mcmcss
+     mcmcss = 0
+  endif
+
+  if n_elements(ndx) eq 0 then junk = min(*ss.chi2,ndx)
 
   pars = str2pars(ss,ndx=ndx)
+stop
   chi2 = exofast_chi2v2(pars,psname=base)
 
   if n_elements(transitpage) ne ss.nplanets then transitpage = strtrim(2+ss.nplanets+nsecondaryplots+indgen(ss.nplanets),2) $

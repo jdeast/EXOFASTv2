@@ -16,7 +16,7 @@ pro readargs, argfile, priorfile=priorfile, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               rejectflatmodel=rejectflatmodel,$
               maxgr=maxgr, mintz=mintz, $
-              yy=yy, torres=torres, nomist=nomist, parsec=parsec, noclaret=noclaret, tides=tides, nplanets=nplanets, nstars=nstars,starndx=starndx, $
+              yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, noclaret=noclaret, tides=tides, nplanets=nplanets, nstars=nstars,starndx=starndx, $
               fitrv=fitrv, fittran=fittran,fitdt=fitdt,fitlogmp=fitlogmp,$
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
               earth=earth, i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch,$
@@ -147,6 +147,8 @@ while not eof(lun) do begin
             nomist = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'PARSEC' then begin
             parsec = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'MANN' then begin
+            mann = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOCLARET' then begin
             noclaret = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'TIDES' then begin

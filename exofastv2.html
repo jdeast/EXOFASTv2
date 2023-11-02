@@ -14,7 +14,7 @@ this routine, refer to the IDL Online Help Navigator
 or type: <P>
 <PRE>     ? mk_html_help</PRE><P>
 at the IDL command line prompt.<P>
-<STRONG>Last modified: </STRONG>Thu Aug 31 18:24:15 2023.<P>
+<STRONG>Last modified: </STRONG>Thu Nov  2 12:39:59 2023.<P>
  
 <HR>
  
@@ -53,6 +53,7 @@ at the IDL command line prompt.<P>
 <LI><A HREF="#EXOFAST_LATEXTAB">EXOFAST_LATEXTAB</A>
 <LI><A HREF="#EXOFAST_LATEXTAB2">EXOFAST_LATEXTAB2</A>
 <LI><A HREF="#EXOFAST_LIKE">EXOFAST_LIKE</A>
+<LI><A HREF="#EXOFAST_LOMBSCARGLE">EXOFAST_LOMBSCARGLE</A>
 <LI><A HREF="#EXOFAST_MOD">EXOFAST_MOD</A>
 <LI><A HREF="#EXOFAST_MULTIPLOT">EXOFAST_MULTIPLOT</A>
 <LI><A HREF="#EXOFAST_OCCULTQUAD">EXOFAST_OCCULTQUAD</A>
@@ -2606,7 +2607,7 @@ Function value:       1.33000
 <A NAME="EXOFAST_LIKE">
 <H2>EXOFAST_LIKE</H2></A>
 <A HREF="#EXOFAST_LATEXTAB2">[Previous Routine]</A>
-<A HREF="#EXOFAST_MOD">[Next Routine]</A>
+<A HREF="#EXOFAST_LOMBSCARGLE">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>
  NAME:
@@ -2654,9 +2655,69 @@ Function value:       1.33000
 <STRONG>(See /home/jeastman/old_home/scratch/EXOFASTv2/exofast_like.pro)</STRONG><P>
 <HR>
  
+<A NAME="EXOFAST_LOMBSCARGLE">
+<H2>EXOFAST_LOMBSCARGLE</H2></A>
+<A HREF="#EXOFAST_LIKE">[Previous Routine]</A>
+<A HREF="#EXOFAST_MOD">[Next Routine]</A>
+<A HREF="#ROUTINELIST">[List of Routines]</A>
+<PRE>
+ NAME:
+   EXOFAST_LOMBSCARGLE
+
+ PURPOSE: 
+   This function returns the NMIN best periods determined by a
+   lomb-scargle periodogram. 
+ 
+ CALLING SEQUENCE:
+   periods = exofast_lombscargle(time, rv [BESTPARS=,
+   SCALE=, NMIN=, MINPERIOD=, MAXPERIOD=,NOSLOPE=, /NYQUIST, /PLOT])
+
+ INPUTS:
+   TIME        - A time (eg, BJD_TDB) for each of the RV data points
+   RV          - The RV data points
+
+ OPTIONAL OUTPUTS:  
+   BESTPARS    - The best (analytically fit) parameters determined from
+                 the lomb-scargle periodogram (assumes circular orbit).
+   SCALE       - The scale (~error) of the period, determined by the
+                 spacing of the sampling of the periodogram.
+   NMIN        - The number of periods corresponding to chi^2 minima
+                 to return (default=5)
+   MINPERIOD   - The minimum period to explore. Default = 1 unit of
+                 time (typically days). This value is not used if
+                 /NYQUIST is set.
+   MAXPERIOD   - The maximum period to explore. Default is the full
+                 range of dates.
+
+ OPTIONAL KEYWORDS
+   SLOPE       - If set, a slope trend is analytically fit to the RV data.
+   QUAD        - If set, a quadratic trend is analytically fit to the RV data.
+   NYQUIST     - If set, the minimum period explored is the nyquist
+                 frequency (half the minimum spacing between two
+                 times). This takes precedence over MINPERIOD. Unless
+                 the times are uniformly spaced (which is not
+                 typical), use of this keyword is not recommended.
+   PLOT        - A diagnostic tool. If set, the lomb-scargle
+                 periodogram will be plotted, with the best period(s)
+                 overplotted. This is useful for determining good
+                 bounds, or if the observed behavior is unexpected.
+
+ DEPENDENCIES:
+   BUIELIB (http://www.boulder.swri.edu/~buie/idl/)
+
+ OUTPUTS:
+    result     - An NMIN elements array containing the best periods
+                 determined from the lomb-scargle periodogram.
+
+ MODIFICATION HISTORY 
+  2023/09 -- Jason Eastman (Cfa)
+</PRE><P>
+<STRONG>(See /home/jeastman/old_home/scratch/EXOFASTv2/exofast_lombscargle.pro)</STRONG><P>
+<HR>
+ 
 <A NAME="EXOFAST_MOD">
 <H2>EXOFAST_MOD</H2></A>
-<A HREF="#EXOFAST_LIKE">[Previous Routine]</A>
+<A HREF="#EXOFAST_LOMBSCARGLE">[Previous Routine]</A>
 <A HREF="#EXOFAST_MULTIPLOT">[Next Routine]</A>
 <A HREF="#ROUTINELIST">[List of Routines]</A>
 <PRE>

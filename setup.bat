@@ -1,3 +1,4 @@
+@setx HOME C:\Users\%USERNAME%\Documents\
 @setx MODELDIR %HOME%\modeling\
 @setx EXOFAST_PATH %HOME%\idl\EXOFASTv2
 @setx IDL_PATH "<IDL_DEFAULT>:+$HOME/idl"

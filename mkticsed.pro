@@ -82,7 +82,7 @@ end
 ;  2023/02 -- Documented.
 ;-
 
-pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile, france=france, ra=ra, dec=dec
+pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile, gaiaspfile=gaiaspfile, france=france, ra=ra, dec=dec
 
 if !version.os_family eq 'Windows' then $
    message,'This program relies on queryvizier, which is not supported in Windows'
@@ -126,6 +126,7 @@ endif
 if n_elements(ticid) eq 0 then message, 'TICID is required'
 if n_elements(priorfile) eq 0 then priorfile = ticid + '.priors'
 if n_elements(sedfile) eq 0 then sedfile = ticid + '.sed'
+if n_elements(gaiaspfile) eq 0 then gaiaspfile = ticid + '.Gaia.sed'
 
 dist = 120d0
 
@@ -168,14 +169,15 @@ endif
 qtic = qtic[match]
 star = [qtic.raj2000,qtic.dej2000]
 
-;; warn user if this object is a duplicate
-if qtic.disp eq 'SPLIT' or qtic.disp eq 'DUPLICATE' then begin
-   print, 'WARNING: disposition in TICv8.2 is ' + qtic.disp
-endif
-
 ;; prior file
 openw, priorlun, priorfile, /get_lun
 printf, priorlun, '#### TICv8.2 ####'
+
+;; warn user if this object is a duplicate
+if qtic.disp eq 'SPLIT' or qtic.disp eq 'DUPLICATE' then begin
+   printf, priorlun, '# WARNING: disposition in TICv8.2 is ' + qtic.disp
+endif
+
 if finite(qtic.mass) and finite(qtic.rad) and finite(qtic.teff) then begin
    ;; require all three. starting hybrid
    ;; values is less robust than starting at solar
@@ -213,10 +215,15 @@ fmt = '(a13,x,f9.6,x,f0.6,x,f0.6)'
 openw, lun, sedfile, /get_lun
 printf, lun, '# bandname magnitude used_errors catalog_errors'
 
+;; warn user if this object is a duplicate
+if qtic.disp eq 'SPLIT' or qtic.disp eq 'DUPLICATE' then begin
+   printf, lun, '# WARNING: disposition in TICv8.2 is ' + qtic.disp
+endif
+
 ;; use the Gaia ID to query the Gaia catalog
 gaiaid = qtic.gaia
 qgaia=Exofast_Queryvizier('I/345/gaia2',star,dist/60.,/silent,cfa=cfa,/all)
-
+dr2str = ''
 if (size(qgaia))[2] eq 8 then begin
    match = (where(qgaia.source eq gaiaid))[0]
    if match ne -1 then begin
@@ -236,7 +243,8 @@ if (size(qgaia))[2] eq 8 then begin
          printf, priorlun, "# NOTE: the Gaia DR2 parallax (" + strtrim(qgaia.plx,2) + ") and uncertainty (" + strtrim(qgaia.e_plx,2) + ") has been corrected as prescribed in Lindegren+ (2018)"
          corrected_plx = qgaia.plx + 0.030d0
          if corrected_plx gt 0d0 then begin
-            printf, priorlun, corrected_plx, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("#parallax",x,f0.5,x,f0.5)'
+            dr2str = string(corrected_plx, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("parallax",x,f0.5,x,f0.5)')
+            printf, priorlun, '#' + dr2str
          endif else begin
             printf, priorlun, '# WARNING: Negative parallax is not allowed. This is the corrected (but disallowed) parallax'
             printf, priorlun, corrected_plx, sqrt((k*qgaia.e_plx)^2 + sigma_s^2), format='("#parallax",x,f0.5,x,f0.5)'
@@ -294,11 +302,36 @@ if (size(qgaia3))[2] eq 8 then begin
             printf, priorlun, "# NOTE: the Gaia DR3 parallax could not be corrected and is raw from the catalog"
             printf, priorlun, qgaia3.plx, uplx, format='("parallax",x,f0.5,x,f0.5)'
          endelse
-      endif 
+      endif else if dr2str ne '' then begin
+         printf, priorlun, "# DR3 parallax unavailable. Using DR2 parallax"
+         printf, priorlun, dr2str
+      endif
 
       if qgaia3.gmag gt -9 and finite(qgaia3.e_gmag) and (qgaia3.e_gmag lt 1d0)  then printf, lun,'Gaia_G_EDR3',qgaia3.gmag,max([0.02d,qgaia3.e_gmag]),qgaia3.e_gmag, format=fmt
       if qgaia3.bpmag gt -9 and finite(qgaia3.e_bpmag) and (qgaia3.e_bpmag lt 1d0) then printf, lun,'Gaia_BP_EDR3',qgaia3.bpmag,max([0.02d,qgaia3.e_bpmag]),qgaia3.e_bpmag, format=fmt
       if qgaia3.rpmag gt -9 and finite(qgaia3.e_rpmag) and (qgaia3.e_rpmag lt 1d0) then printf, lun,'Gaia_RP_EDR3',qgaia3.rpmag,max([0.02d,qgaia3.e_rpmag]),qgaia3.e_rpmag, format=fmt      
+   endif else if dr2str ne '' then begin
+      printf, priorlun, "# DR3 parallax unavailable. Using DR2 parallax"
+      printf, priorlun, dr2str
+   endif
+endif else if dr2str ne '' then begin
+   printf, priorlun, "# DR3 parallax unavailable. Using DR2 parallax"
+   printf, priorlun, dr2str
+endif
+
+;; Gaia spectrophotometry
+qgaiasp=Exofast_Queryvizier('I/355/xpsample',star,dist/60.,/silent,cfa=cfa,/all)
+if (size(qgaiasp))[2] eq 8 then begin
+   match = where(qgaiasp.source eq gaiaid)
+   if match[0] ne -1 then begin
+      ;; Gaia lambda in nm, Gaia flux in W/m^2/Hz
+      ;; SED plot in microns, erg/s/cm^2
+      ;; interpolate onto atmosphere wavelength scale now?
+      flux = qgaiasp[match].flux*1d3*qgaiasp[match].lambda ;; W/m^2/Hz -> erg/s/cm^2
+      fluxerr = qgaiasp[match].e_flux*1d3*qgaiasp[match].lambda ;; W/m^2/Hz -> erg/s/cm^2
+      lambda = qgaiasp[match].lambda/1d3 ;; nm -> um
+      exofast_forprint, lambda, flux, fluxerr, $
+                        textout=gaiaspfile,/nocomment,format='(f5.3,x,e12.6,x,e12.6)'
    endif
 endif
 
@@ -326,7 +359,19 @@ if (size(qwise))[2] eq 8 then begin
       if qwise.w2mag gt -9 and finite(qwise.e_w2mag) and (qwise.e_w2mag lt 1d0) then printf, lun,'WISE2',qwise.w2mag,max([0.03d,qwise.e_w2mag]),qwise.e_w2mag, format=fmt
       if qwise.w3mag gt -9 and finite(qwise.e_w3mag) and (qwise.e_w3mag lt 1d0) then printf, lun,'WISE3',qwise.w3mag,max([0.03d,qwise.e_w3mag]),qwise.e_w3mag, format=fmt
       if qwise.w4mag gt -9 and finite(qwise.e_w4mag) and (qwise.e_w4mag lt 1d0) then printf, lun,'WISE4',qwise.w4mag,max([0.10d,qwise.e_w4mag]),qwise.e_w4mag, format=fmt
-   endif
+   endif else begin
+      print, 'No match in WISE by ID in TICv8.2'
+      mindmag = min(abs(q2mass.Kmag-qwise.w1mag),match)
+      sep = angsep(qtic.raj2000*!dpi/180d0,qtic.dej2000*!dpi/180d0,qwise.raj2000*!dpi/180d0, qwise.dej2000*!dpi/180d0)*180d0/!dpi*3600d0 ;; arcsec
+      if mindmag lt 0.5 and sep[match] lt 30d0 then begin
+         qwise = qwise[match]
+         printf, lun, '# No match in WISE by ID in TICv8.2, matched by K-WISE1 mag (' + strtrim(mindmag,2) + ') and separation (' + strtrim(sep[match],2) + '")'
+         if qwise.w1mag gt -9 and finite(qwise.e_w1mag) and (qwise.e_w1mag lt 1d0) then printf, lun,'WISE1',qwise.w1mag,max([0.03d,qwise.e_w1mag]),qwise.e_w1mag, format=fmt
+         if qwise.w2mag gt -9 and finite(qwise.e_w2mag) and (qwise.e_w2mag lt 1d0) then printf, lun,'WISE2',qwise.w2mag,max([0.03d,qwise.e_w2mag]),qwise.e_w2mag, format=fmt
+         if qwise.w3mag gt -9 and finite(qwise.e_w3mag) and (qwise.e_w3mag lt 1d0) then printf, lun,'WISE3',qwise.w3mag,max([0.03d,qwise.e_w3mag]),qwise.e_w3mag, format=fmt
+         if qwise.w4mag gt -9 and finite(qwise.e_w4mag) and (qwise.e_w4mag lt 1d0) then printf, lun,'WISE4',qwise.w4mag,max([0.10d,qwise.e_w4mag]),qwise.e_w4mag, format=fmt
+      endif
+   endelse
 endif
 
 ;; use the Tycho ID to query the Stromgren catalog to get a metalicity prior

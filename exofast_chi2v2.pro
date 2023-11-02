@@ -413,7 +413,7 @@ endif
 ;; tc-period/2 < tc < tc+period/2
 bad = where(ss.planet.tc.prior ne 0d0 and $
             abs(ss.planet.tc.value - ss.planet.tc.prior) gt ss.planet.period.value/2d0,nbad)
-if nbad gt 0 then begin
+if nbad gt 0 and ss.nplanets gt 0 then begin
    if ss.debug or ss.verbose then printandlog, 'tc is bad (' + strtrim(ss.planet[bad].tc.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
@@ -772,7 +772,7 @@ for i=0L, ss.nstars-1 do begin
 endfor
 
 ;; fit the SED with MIST BC tables
-if file_test(ss.mistsedfile) or file_test(ss.fluxfile) then begin
+if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) then begin
    if keyword_set(psname) then epsname = psname+'.sed.eps'
 
    sedchi2 = 0d0
@@ -832,6 +832,15 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) then begin
                               ss.mistsedfile, debug=ss.debug, psname=epsname,$
                               atmospheres=atmospheres, wavelength=wavelength,$
                               range=ss.sedrange)
+   endif else if file_test(ss.sedfile) then begin
+      sedchi2 += exofast_multised(teffsed, ss.star.logg.value,fehsed, $
+                                  ss.star.av.value, $
+                                  ss.star.distance.value, lstarsed, $
+                                  ss.star[0].errscale.value, $
+                                  ss.sedfile, rstar=ss.star.rstarsed.value,$
+                                  debug=ss.debug, psname=epsname,$
+                                  range=ss.sedrange,specphotpath=ss.specphotpath, $
+                                  sperrscale=ss.specphot.sperrscale.value)
    endif else begin
       ;; Keivan Stassun's SED
       junk = exofast_sed(ss.star.fluxfile, teffsed, $

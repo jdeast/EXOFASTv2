@@ -54,7 +54,7 @@
 ;            2013/01/14 Updated for change to URL.
 ;-
 
-function readipac, update=update
+function readipac, update=update, default_only=default_only
 
 ;; update the file if desired or not present
 path = getenv('EXOFAST_PATH')
@@ -100,8 +100,16 @@ free_lun, table
 
 ;; create a structure with the tag names
 structure = create_struct(tagnames[ntags-1],transpose(array[ntags-1,*]))
+
+if default_only then begin
+
+stop
+   ndx = (where(tagnames eq 'default_flag'))
+   selection = where(array[ndx,*] eq '1')
+endif else selection = lindgen(n_elements(array[0,*]))
+
 for i=ntags-2,0,-1 do begin
-    structure = create_struct(tagnames[i],transpose(array[i,*]),structure)
+    structure = create_struct(tagnames[i],transpose(array[i,selection]),structure)
 endfor
 
 ;; return the structure

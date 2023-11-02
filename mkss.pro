@@ -163,7 +163,7 @@ function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
                noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
                logname=logname, best=best, tides=tides, $
                teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
-               mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,fehsedfloor=fehsedfloor, oned=oned,$
+               mistsedfile=mistsedfile,sedfile=sedfile,specphotpath=specphotpath,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,fehsedfloor=fehsedfloor, oned=oned,$
                fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
                novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, $
                chi2func=chi2func, fittt=fittt,delay=delay, rvepoch=rvepoch,$
@@ -375,6 +375,20 @@ if n_elements(astrompath) eq 0 then astrompath = ''
 if n_elements(dtpath) eq 0 then dtpath = ''
 if n_elements(fluxfile) eq 0 then fluxfile = ''
 if n_elements(mistsedfile) eq 0 then mistsedfile = ''
+if n_elements(sedfile) eq 0 then sedfile = ''
+if n_elements(specphotpath) eq 0 then specphotpath = ''
+
+if specphotpath ne '' then begin
+   specfiles = file_search(specphotpath,count=nspecfiles)
+   if nspecfiles eq 0 then begin          
+      printandlog, "No spectrophotometry files files found matching " + strtrim(specphotpath,2) + "; please check SPECPHOTPATH", logname
+      return, -1
+   endif
+   if not file_test(sedfile) then begin
+      printandlog, 'Spectrophotometry is only supported with the NextGen SED model. Use SEDFILE to specify your SED file or remove SPECPHOTPATH'
+      return, -1
+   endif
+endif else nspecfiles = 0
 
 ;; read in the transit files
 if tranpath ne '' or astrompath ne '' then begin
@@ -1991,6 +2005,15 @@ errscale.scale = 10d0
 errscale.fit = 0
 errscale.derive = 0
 
+sperrscale = parameter
+sperrscale.description = 'SED spectrophotometry error scaling'
+sperrscale.latex = '\sigma_{SP}'
+sperrscale.label = 'sperrscale'
+sperrscale.value = 1d0
+sperrscale.scale = 10d0
+sperrscale.fit = 0
+sperrscale.derive = 0
+
 ;; Create the structures -- The order here dictates the order in the
 ;;                          output table.
 
@@ -2041,46 +2064,7 @@ star = create_struct(mstar.label,mstar,$
 constants = mkconstants()
 
 ndata = 0L
-;; if we're fitting an SED, fit the distance, extinction, and error scale
-if fluxfile ne '' then begin
-   printandlog, 'WARNING: FLUXFILE has been deprecated. MISTSEDFILE should be used instead.', logname
-   printandlog, 'NOTE: When using MISTSEDFILE, the atmosphere is not computed directly or plotted.', logname
-   if file_test(fluxfile) then begin
-      readcol, fluxfile, junk, format='a', comment='#', /silent
-      ndata += n_elements(junk) + 2 ;; two more because of links between rstar and rstarsed, teff and teffsed
 
-      star.fluxfile = fluxfile
-      star.errscale.fit = 1
-      star.errscale.derive = 1
-      star.distance.derive = 1
-      star.distance.fit = 1
-      star.fbol.derive = 1
-      star.parallax.derive = 1
-      star.av.fit = 1
-      star.av.derive = 1
-
-      if teffsedfloor ne 0d0 then begin
-         star.teffsed.fit = 1
-         star.teffsed.derive = 1
-      endif
-      if fbolsedfloor ne 0d0 then begin
-         star.rstarsed.fit = 1
-         star.rstarsed.derive = 1
-      endif
-      if fehsedfloor ne 0d0 then begin
-         star.fehsed.fit = 1
-         star.fehsed.derive = 1
-      endif
-
-      ;; overwrite the common block, in case it's been called
-      ;; before then updated
-      ;; the chi2 doesn't matter here, use solar values
-      sedchi2 = exofast_sed(fluxfile, 6000d0,1d0,0d0,10d0,logg=4.41d0,met=0d0,alpha=0d0,/redo)
-   endif else begin
-      printandlog, 'Could not find ' + fluxfile, logname
-      return, -1
-   endelse
-endif
 
 ;if n_elements(nvalues) ne 0 then stop
 
@@ -2189,6 +2173,8 @@ planet = create_struct($
          'rootlabel','Planetary Parameters:',$
          'label','')
 
+specphot = create_struct(sperrscale.label, sperrscale) ;; spectrophotometry error scaling
+
 ;; for each wavelength
 band = create_struct(u1.label,u1,$ ;; linear limb darkening
                      u2.label,u2,$ ;; quadratic limb darkening
@@ -2276,6 +2262,7 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'transit',replicate(transit,ntran > 1),$
                    'doptom',replicate(doptom,ndt>1),$
                    'astrom',replicate(astrom,nastrom>1),$
+                   'specphot',replicate(specphot,nspecfiles>1),$
                    'epochs',dblarr(ntran>1,nplanets>1),$
                    'constants',constants,$
                    'tofit',ptr_new(1),$
@@ -2325,6 +2312,9 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'chi2',ptr_new(1),$
                    'fluxfile',fluxfile,$
                    'mistsedfile',mistsedfile,$
+                   'sedfile',sedfile,$
+                   'specphotpath',specphotpath,$
+                   'nspecfiles',nspecfiles,$
                    ;; metadata to be able to restart fit
                    'circular', circular,$
                    'fitrv',fitrv,$
@@ -2372,50 +2362,79 @@ ss = create_struct('star',replicate(star,nstars>1),$
 
 ;)
 
-common BC_block, bcarrays, teffgrid, logggrid, fehgrid, avgrid, sedbands, mags, errs, filterprops, blend
+;; three different ways to do the SED model
+if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begin
 
-if mistsedfile ne '' then begin
+   ;; overwrite the common block, in case it's been called
+   ;; before then updated (without exiting IDL)
+   ;; the chi2 doesn't matter here, use solar values
+   
    if file_test(mistsedfile) then begin
-
-      ;; overwrite the common block, in case it's been called
-      ;; before then updated (without exiting IDL)
-      ;; the chi2 doesn't matter here, use solar values
+;      common BC_block, bcarrays, teffgrid, logggrid, fehgrid, avgrid, sedbands, mags, errs, filterprops, blend
       sedchi2 = mistmultised(replicate(6000d0,nstars), replicate(4.41d0,nstars), replicate(0d0,nstars), $
                              replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
-                             replicate(1d0,nstars), mistsedfile, /redo)
-
-      ss.ndata += n_elements(mags) +2d0 ;; two more because of links between rstar and rstarsed, teff and teffsed
+                             replicate(1d0,nstars), mistsedfile, /redo,blend0=blend)
       ss.mistsedfile = mistsedfile
-      starsused = where(total(blend,1) ne 0,nused)
-      for i=0L, nused-1 do begin
-     
-         ss.star[starsused[i]].errscale.fit = 1
-         ss.star[starsused[i]].errscale.derive = 1
-         ss.star[starsused[i]].distance.derive = 1
-         ss.star[starsused[i]].distance.fit = 1
-         ss.star[starsused[i]].fbol.derive = 1
-         ss.star[starsused[i]].parallax.derive = 1
-         ss.star[starsused[i]].av.fit = 1
-         ss.star[starsused[i]].av.derive = 1
-         
-         if teffsedfloor ne 0d0 then begin
-            ss.star[starsused[i]].teffsed.fit = 1
-            ss.star[starsused[i]].teffsed.derive = 1
-         endif
-         if fbolsedfloor ne 0d0 then begin
-            ss.star[starsused[i]].rstarsed.fit = 1
-            ss.star[starsused[i]].rstarsed.derive = 1
-         endif
-         if fehsedfloor ne 0d0 then begin
-            ss.star[starsused[i]].fehsed.fit = 1
-            ss.star[starsused[i]].fehsed.derive = 1
-         endif
+      ss.ndata += n_elements(mags) +2d0 ;; two more because of links between rstar and rstarsed, teff and teffsed
+   endif else if file_test(sedfile) then begin
+      sedchi2 = exofast_multised(replicate(6000d0,nstars), replicate(4.41d0,nstars), replicate(0d0,nstars), $
+                                 replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
+                                 replicate(1d0,nstars), sedfile, /redo, specphotpath=specphotpath,$
+                                 blend0=blend,rstar=replicate(1d0,nstars),sperrscale=ss.specphot.sperrscale.value)
+      ss.sedfile = sedfile
+      readcol, sedfile, junk, format='a', comment='#', /silent
+      ndata += n_elements(junk) + 2 ;; two more because of links between rstar and rstarsed, teff and teffsed
+      for i=0L, ss.nspecfiles-1 do begin
+         ss.specphot.sperrscale.fit = 1
+         ss.specphot.sperrscale.derive = 1
       endfor
    endif else begin
+      printandlog, 'WARNING: FLUXFILE has been deprecated. MISTSEDFILE should be used instead.', logname
+      printandlog, 'NOTE: When using MISTSEDFILE, the C3K atmosphere is not computed directly. The plotted NextGen atmosphere is for aesthetics only.', logname
+
+      sedchi2 = exofast_sed(fluxfile, 6000d0,1d0,0d0,10d0,logg=4.41d0,met=0d0,alpha=0d0,/redo)
+      ss.fluxfile = fluxfile
+      readcol, fluxfile, junk, format='a', comment='#', /silent
+      ndata += n_elements(junk) + 2 ;; two more because of links between rstar and rstarsed, teff and teffsed
+   endelse
+   
+   starsused = where(total(blend,1) ne 0,nused)
+   for i=0L, nused-1 do begin
+      
+      ss.star[starsused[i]].errscale.fit = 1
+      ss.star[starsused[i]].errscale.derive = 1
+      ss.star[starsused[i]].distance.derive = 1
+      ss.star[starsused[i]].distance.fit = 1
+      ss.star[starsused[i]].fbol.derive = 1
+      ss.star[starsused[i]].parallax.derive = 1
+      ss.star[starsused[i]].av.fit = 1
+      ss.star[starsused[i]].av.derive = 1
+      
+      if teffsedfloor ne 0d0 then begin
+         ss.star[starsused[i]].teffsed.fit = 1
+         ss.star[starsused[i]].teffsed.derive = 1
+      endif
+      if fbolsedfloor ne 0d0 then begin
+         ss.star[starsused[i]].rstarsed.fit = 1
+         ss.star[starsused[i]].rstarsed.derive = 1
+      endif
+      if fehsedfloor ne 0d0 then begin
+         ss.star[starsused[i]].fehsed.fit = 1
+         ss.star[starsused[i]].fehsed.derive = 1
+      endif
+   endfor
+endif else begin
+   if mistsedfile ne '' then begin
       printandlog, 'Could not find ' + mistsedfile, logname
       return, -1
-   endelse
-endif
+   endif else if sedfile ne '' then begin
+      printandlog, 'Could not find ' + sedfile, logname
+      return, -1
+   endif else if fluxfile ne '' then begin
+      printandlog, 'Could not find ' + fluxfile, logname
+      return, -1
+   endif
+endelse
 
 if n_elements(logname) eq 1 then ss.logname=logname
 
@@ -3094,6 +3113,35 @@ while not eof(lun) do begin
 endwhile
 if n_elements(priors) gt 0 then (*ss.priors) = priors
 
+;; was a prior on Tc and period given? If not, use BLS (if
+;; ntransits>1) or Lomb-Scargle (on RVs)
+;; aspirational stub -- not implemented/tested yet
+noephemeris = 0
+if noephemeris then begin
+   printandlog, "WARNING: no ephemeris (tc/period) given in the priors.",logname
+   printandlog, "Attempting to determine ephemeris, but EXOFAST is not designed to search for planets --", logname
+   printandlog, "especially for multi-planet systems.", logname
+   printandlog, "Supplying an accurate ephemeris in the prior file is STRONGLY recommended.", logname
+
+   G = constants.GMSun/constants.RSun^3*constants.day^2 ;; R_sun^3/(m_sun*day^2)
+   minperiod = sqrt(4d0*!dpi^2*ss.star.rstar.value^3/(G*ss.star.mstar.value)) ;; corresponds to a/rstar=1 
+   maxperiod = dataspan ;; can't see periodicities larger
+
+   printandlog, "Searching for periods between " + strtrim(minperiod,2) + " and " + strtrim(maxperiod,2) + " days", logname
+   if ntran gt 1 then begin
+      printandlog, "Using BLS to determine ephemeris", logname
+      bestperiod = bls(time,flux,minperiod=minperiod,maxperiod=maxperiod, tc=tt,periods=periods,ndx=ndx)
+      ss.planet[i].period.value = periods[ndx]
+      ss.planet[i].tt.value = tt[ndx]
+   endif else if ntel gt 0 then begin
+      printandlog, "Using Lomb-Scargle to determine ephemeris", logname
+      bestperiod = exofast_lombscargle(time,rv,err,minperiod=minperiod, maxperiod=maxperiod, $
+                                       bestpars=bestpars,slope=ss.star[0].slope.fit,quad=ss.star[0].quad.fit)
+      ss.planet[i].period.value = bestpars[1]
+      ss.planet[i].tc.value = bestpars[0]
+   endif
+endif
+
 changed = where(ss.planet.tc.userchanged)
 if changed[0] ne -1 then begin
    minbjd = min(ss.planet[changed].tc.prior,maxbjd)
@@ -3116,7 +3164,8 @@ endif
 dataspan = (maxallbjd - minallbjd)
 if dataspan gt 1d5 then begin
    printandlog, '', logname
-   printandlog, "WARNING: data/priors span " + strtrim(dataspan/365.25d0,2) + " years. Make sure all data have a consistent epoch (e.g., you're not using a mix of MJD and JD).", logname
+   printandlog, "WARNING: data/priors span " + strtrim(dataspan/365.25d0,2) + $
+                " years. Make sure all data have a consistent epoch (e.g., you're not using a mix of MJD and JD).", logname
    printandlog, "type '.con' to ignore and continue", logname
 endif
 free_lun, lun

@@ -723,7 +723,7 @@
 pro exofastv2, priorfile=priorfile, $
                rvpath=rvpath, tranpath=tranpath, $
                astrompath=astrompath, dtpath=dtpath, $
-               fluxfile=fluxfile,mistsedfile=mistsedfile,$
+               fluxfile=fluxfile,mistsedfile=mistsedfile,sedfile=sedfile,specphotpath=specphotpath,$
                fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,$
                fehsedfloor=fehsedfloor, oned=oned,$
                teffemfloor=teffemfloor, fehemfloor=fehemfloor, $
@@ -758,7 +758,8 @@ pro exofastv2, priorfile=priorfile, $
                nthreads=nthreads, delay=delay, mkgif=mkgif, fittt=fittt, $
                rvepoch=rvepoch, checkstart=checkstart,badstart=badstart,$
                transitrange=transitrange,rvrange=rvrange,$
-               sedrange=sedrange,emrange=emrange
+               sedrange=sedrange,emrange=emrange, mksummarypg=mksummarypg,$
+               usernote=usernote
 
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -777,7 +778,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
    if not file_test(argfile) then message, argfile + ', containing desired arguments to EXOFASTv2, does not exist'
    readargs, argfile, priorfile=priorfile, $
              rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
-             fluxfile=fluxfile, mistsedfile=mistsedfile, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,$
+             fluxfile=fluxfile, mistsedfile=mistsedfile, sedfile=sedfile,specphotpath=specphotpath, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,$
              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
              prefix=prefix,$
              circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
@@ -806,6 +807,7 @@ basename = file_basename(prefix)
 ;; output to log file and the screen
 logname = prefix + 'log'
 file_delete, logname, /allow_nonexistent
+if n_elements(usernote) ne 0 then printandlog, usernote, logname
 
 ;; name of the chi square function
 chi2func = 'exofast_chi2v2'
@@ -868,11 +870,14 @@ if stderr[0] eq '' then printandlog, "Using EXOFASTv2 commit " + output[0], logn
 ;; this can be really useful if you don't know the rough stellar
 ;; parameters, especially for the MIST models, but is a waste of time if you do
 if nplanets ne 0 and keyword_set(refinestar) then begin
-   printandlog, 'Refining stellar parameters', logname
-   ss = mkss(fluxfile=fluxfile,mistsedfile=mistsedfile,$
+   printandlog, 'Refining stellar parameters. This is poorly maintained and will be deprecated.',logname
+   printandlog, 'This is better accomplished by running a dedicated star-only fit.',logname
+   printandlog, 'Even that may not be necessary with parallel tempering (NTEMPS=8)', logname
+   ss = mkss(fluxfile=fluxfile,mistsedfile=mistsedfile, sedfile=sedfile,specphotpath=specphotpath,$
              fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanet=0,priorfile=priorfile, $
              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
-             yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, logname=logname, debug=stardebug, verbose=verbose, mkgif=mkgif)
+             yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, logname=logname, debug=stardebug, verbose=verbose, mkgif=mkgif,$
+             chi2func=chi2func,prefix=prefix, starndx=starndx,nstars=nstars)
    if (size(ss))[2] ne 8 then return
 
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
@@ -885,7 +890,7 @@ endif
 
 ;; create the master structure
 ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, $
-          mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets, nstars=nstars, starndx=starndx,$
+          mistsedfile=mistsedfile,sedfile=sedfile,specphotpath=specphotpath,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets, nstars=nstars, starndx=starndx,$
           teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
           debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
           circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,$
@@ -982,7 +987,7 @@ if nthreads gt 1 then begin
          
       ;; create the stellar stucture within each thread
       thread_array[i].obridge->execute,'ss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile,'+ $
-         'mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets,nstars=nstars,starndx=starndx,'+ $
+         'mistsedfile=mistsedfile,sedfile=sedfile,specphotpath=specphotpath,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets,nstars=nstars,starndx=starndx,'+ $
          'teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,'+$
          'debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,'+$
          'circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides,'+$
@@ -1028,6 +1033,7 @@ endif
 printandlog, '', logname
 
 if n_elements(nthin) eq 0 then nthin = 1L
+if nthin lt 1L then nthin=1L
 
 printandlog, 'MAXSTEPS set to ' + strtrim(maxsteps,2), logname
 printandlog, 'NTHIN set to ' + strtrim(nthin,2), logname
@@ -1195,7 +1201,7 @@ ss.verbose = keyword_set(verbose)
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
 mcmcss = mkss(rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, fluxfile=fluxfile, $
-              mistsedfile=mistsedfile, fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets, nstars=nstars,starndx=starndx, $
+              mistsedfile=mistsedfile, sedfile=sedfile, specphotpath=specphotpath,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanets=nplanets, nstars=nstars,starndx=starndx, $
               teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
               debug=debug, verbose=verbose, priorfile=priorfile, fitrv=fitrv, fittran=fittran, fitdt=fitdt,fitlogmp=fitlogmp,$
               circular=circular,fitslope=fitslope, fitquad=fitquad,tides=tides, $
@@ -1295,6 +1301,12 @@ if (keyword_set(mcmcss.ttvs) or ~keyword_set(skiptt)) and mcmcss.ntran ne 0 then
       plot_tdeltav, prefix + 'transits.csv'
    endif
 
+endif
+
+;; this makes a quick-look summary page, but requires gs, ps2pdf, grep,
+;; convert and likely only works on linux
+if keyword_set(mksummarypg) then begin
+   mksummaryframe,idlfile=idlfile,base=prefix
 endif
 
 ;; display all the plots, if desired

@@ -31,7 +31,7 @@ end
 
 ;; BLEND is an NSTARSxNBANDS boolean specifying which stars each magnitude applies to
 
-function mistmultised, teff, logg, feh, av, distance, lstar, errscale, sedfile, redo=redo, psname=psname, debug=debug, atmospheres=atmospheres, wavelength=wavelength, logname=logname,range=range
+function mistmultised, teff, logg, feh, av, distance, lstar, errscale, sedfile, redo=redo, psname=psname, debug=debug, atmospheres=atmospheres, wavelength=wavelength, logname=logname,range=range,blend0=blend0
 
 nstars = n_elements(teff)
 if n_elements(logg) ne nstars then message, 'TEFF and LOGG must have the same number of elements'
@@ -140,6 +140,8 @@ for j=0L, nstars-1 do begin
       bcs[i,j] = ninterpolate(bcarrays[*,*,*,*,i],[teff_ndx,logg_ndx,feh_ndx,av_ndx])
 
 endfor
+
+blend0 = blend
 
 modelmag = -2.5d0*alog10(lstar##replicate(1d0,nbands)) + 4.74d0 - bcs + mu##replicate(1d0,nbands)
 modelflux = 10^(-0.4*modelmag)
