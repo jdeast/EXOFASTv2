@@ -2,7 +2,7 @@
 ;; Required for virtual machine (free) use
 pro readargs, argfile, priorfile=priorfile, $
               rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
-              fluxfile=fluxfile,mistsedfile=mistsedfile,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,$
+              fluxfile=fluxfile,mistsedfile=mistsedfile,sedfile=sedfile,specphotpath=specphotpath,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,$
               teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
               prefix=prefix,$
               circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
@@ -49,6 +49,10 @@ while not eof(lun) do begin
             fluxfile = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'MISTSEDFILE' then begin
             mistsedfile = strtrim(entries[1],2)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'SEDFILE' then begin
+            sedfile = strtrim(entries[1],2)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'SPECPHOTPATH' then begin
+            specphotpath = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FBOLSEDFLOOR' then begin
             fbolsedfloor = double(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'TEFFSEDFLOOR' then begin
