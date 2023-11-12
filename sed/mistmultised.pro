@@ -52,7 +52,7 @@ if n_elements(teffgrid) eq 0 or keyword_set(redo) then begin
    sedbands = strarr(nlines)
    mags = dblarr(nlines)
    errs = dblarr(nlines)+99d0
-   blend = bytarr(nlines,nstars)
+   blend = intarr(nlines,nstars)
 
    openr, lun, sedfile, /get_lun
    for i=0L, nlines-1 do begin
@@ -68,14 +68,38 @@ if n_elements(teffgrid) eq 0 or keyword_set(redo) then begin
          errs[i] = double(entries[2])
       endelse
       if n_elements(entries) eq 5 then begin
-         starndx = long(strsplit(entries[4],',',/extract))
-         good = where(starndx lt nstars and starndx ge 0,complement=bad)
-         if bad[0] ne -1 then printandlog, 'WARNING: STARNDX (' + strtrim(starndx[bad],2) + ') in MISTSEDFILE (' + sedfile +') does not correspond to a star, ignoring', logname
-         if good[0] eq -1 then begin
-            printandlog, 'WARNING: No good STARNDX values in MISTSEDFILE (' + sedfile +') line: ' + line, logname
-            continue
-         endif
-         blend[i,starndx[good]] = 1B
+         if strpos(entries[4],'-') ne -1 then begin
+            ;; handle differential magnitudes
+            posndx = long(strsplit((strsplit(entries[4],'-',/extract))[0],',',/extract))
+
+            good = where(posndx lt nstars and posndx ge 0,complement=bad)
+            if bad[0] ne -1 then printandlog, 'WARNING: STARNDX (' + strtrim(posndx[bad],2) + ') in SEDFILE (' + sedfile +') does not correspond to a star, ignoring', logname
+            if good[0] eq -1 then begin
+               printandlog, 'WARNING: No good positive STARNDX values in SEDFILE (' + sedfile +') line: ' + line, logname
+               continue
+            endif
+            blend[i,posndx[good]] = 1
+
+            negndx = long(strsplit((strsplit(entries[4],'-',/extract))[1],',',/extract))
+            good = where(negndx lt nstars and negndx ge 0,complement=bad)
+            if bad[0] ne -1 then printandlog, 'WARNING: STARNDX (' + strtrim(negndx[bad],2) + ') in SEDFILE (' + sedfile +') does not correspond to a star, ignoring', logname
+            if good[0] eq -1 then begin
+               printandlog, 'WARNING: No good negative STARNDX values in SEDFILE (' + sedfile +') line: ' + line, logname
+               continue
+            endif
+            blend[i,negndx[good]] = -1
+
+         endif else begin
+            ;; handle unblended magnitudes
+            starndx = long(strsplit(entries[4],',',/extract))
+            good = where(starndx lt nstars and starndx ge 0,complement=bad)
+            if bad[0] ne -1 then printandlog, 'WARNING: STARNDX (' + strtrim(starndx[bad],2) + ') in MISTSEDFILE (' + sedfile +') does not correspond to a star, ignoring', logname
+            if good[0] eq -1 then begin
+               printandlog, 'WARNING: No good STARNDX values in MISTSEDFILE (' + sedfile +') line: ' + line, logname
+               continue
+            endif
+            blend[i,starndx[good]] = 1
+         endelse
       endif else begin
          ;; by default, assume all stars are blended together
          blend[i,*] = 1
