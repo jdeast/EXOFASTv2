@@ -133,7 +133,7 @@ if n_elements(teffgrid) eq 0 or keyword_set(redo) then begin
          if match[0] eq -1 or not file_test(filename) then begin
             print, sedbands[i] + ' not supported, remove or comment out from ' + sedfile
             stop
-         endif        
+         endif
       endif  
       restore, filename
       if i eq 0L then begin
@@ -257,15 +257,30 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    ;; compute the absolute fluxes
    zp = 3631d0*3d-9/wp
    flux = zp*10^(-0.4d0*abmags)
+   modelblendflux = zp*10^(-0.4d0*modelabmags)
+   ;; correct flux array for relative fluxes
+   for i=0L, nbands-1 do begin
+      relative = where(blend[i,*] eq -1)
+      if relative[0] ne -1 then begin
+         ;; assume model flux for positive stars
+         blendmagpos = -2.5d0*alog10(blendfluxpos[i])
+         blendmagneg = -2.5d0*alog10(blendfluxneg[i])
+         if vega[i] ne -1 then begin
+            blendmagpos += filterprops[i].vegaab
+            blendmagneg += filterprops[i].vegaab
+         endif
+         flux[i] = zp[i]*10^(-0.4d0*(blendmagpos-mags[i]))
+         modelblendflux[i] = zp[i]*10^(-0.4d0*blendmagneg) ;; only plot the fainter star
+      endif
+   endfor
    fluxerr = flux*alog(10d0)/2.5d0*errs
-   modelflux = zp*10^(-0.4d0*modelabmags)
-   
+
    ;; define the limits; plot the model flux
    xmin = min(wp, max=xmax)
    xmax = 30
    xmin = 0.1
-   ymin = alog10(min([modelflux,flux-fluxerr])) ;,reform(atmospheres,n_elements(atmospheres))]))
-   ymax = alog10(max([modelflux,flux+fluxerr,total(atmospheres,1)]))
+   ymin = alog10(min([modelblendflux,flux-fluxerr])) ;,reform(atmospheres,n_elements(atmospheres))]))
+   ymax = alog10(max([modelblendflux,flux+fluxerr,total(atmospheres,1)]))
    if finite(range[0]) then xmin = range[0]
    if finite(range[1]) then xmax = range[1]
    if finite(range[2]) then ymin = range[2]
@@ -273,7 +288,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 
    plot, [0], [0], /xlog, ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs, position=position1, xtickformat='(A1)'
 
-   ;; plot each individual star
+   ;; plot model atmospheres for each individual star
    for i=0L, nstars-1 do begin
       oplot, wavelength, alog10(smooth(atmospheres[i,*],10)), color=colors[(i+1) mod ncolors]
    endfor
@@ -281,48 +296,67 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    ;; set colors for each star and all stars
    pointcolors = dblarr(nbands)
    for i=0L, nbands-1 do begin
-      if total(blend[i,*]) eq 1d0 then pointcolors[i] = colors[((where(blend[i,*] eq 1L))[0]+1) mod ncolors]
-      if total(blend[i,*]) eq nstars then pointcolors[i] = colors[0]
+      if total(abs(blend[i,*])) eq 1d0 then pointcolors[i] = colors[((where(blend[i,*] eq 1L))[0]+1) mod ncolors] else $
+      if total(abs(blend[i,*])) eq nstars then pointcolors[i] = colors[0] else $
+      pointcolors[i] = colors[((where(blend[i,*] eq -1L))[-1]+1) mod ncolors] ;; use color of fainter star
    endfor
 
-   ;; plot each combination of blended stars 
+   ;; plot model atmospheres for each combination of blended stars 
    ;; except 1 and all, handled separately
    starnames = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
    legendlabels = starnames[lindgen(nstars)]
    legendcolors = colors[(lindgen(nstars)+1) mod ncolors]
    colorndx = nstars+1
    for i=0L, nbands-1L do begin
-      if total(blend[i,*]) gt 1 and total(blend[i,*]) ne nstars then begin
-         for j=0L, i-1 do begin
-            ;; if no other star before has this combination
-            match = where(legendlabels eq strjoin(starnames[where(blend[i,*])],'+'),nmatch)
-            if nmatch eq 0 then begin
-               ;; plot it
+      if total(abs(blend[i,*])) gt 1 and total(blend[i,*]) ne nstars then begin
+         ; for j=0L, i-1 do begin
+         ;; if no other band before has this combination of stars
+         starstr = strjoin(starnames[where(blend[i,*] eq 1)],'+')
+         is_diffmag = ((where(blend[i,*] eq -1))[0] ne -1)
+         if is_diffmag then begin
+            starstr += '-' + strjoin(starnames[where(blend[i,*] eq -1)],'-')
+         endif
+         match = where(legendlabels eq starstr,nmatch)
+         if nmatch eq 0 then begin
+            ;; plot blended atmosphere if not diffmag
+            if ~is_diffmag then begin
                blended_atmosphere = transpose(atmospheres[0,*])*0d0
                for k=0L, nstars-1 do begin
                   if blend[i,k] then blended_atmosphere += atmospheres[k,*]
                endfor
-               color = colors[colorndx mod ncolors]
                oplot, wavelength, alog10(smooth(blended_atmosphere,10)), color=colors[colorndx mod ncolors]
-               legendlabels = [legendlabels,strjoin(starnames[where(blend[i,*])],'+')]
-               legendcolors = [legendcolors,color]
-               colorndx++
-               pointcolors[i] = color
             endif
-         endfor
+            color = colors[colorndx mod ncolors]
+            legendlabels = [legendlabels,starstr]
+            legendcolors = [legendcolors,color]
+            colorndx++
+            pointcolors[i] = color
+         endif
+         ; endfor
       endif
    endfor
-   ;; plot all blended together
+   ;; plot all model atmospheres blended together
    oplot, wavelength, alog10(smooth(total(atmospheres,1),10)),color=colors[0]
    legendlabels = [legendlabels,strjoin(starnames[0:nstars-1],'+')]
    legendcolors = [legendcolors,colors[0]]
    if nstars gt 1 then exofast_legend, legendlabels, textcolors=legendcolors,/top,/right,charsize=0.75
 
    ;; plot bands
-   oplot, wp, alog10(modelflux), psym=8
+   oplot, wp, alog10(modelblendflux), psym=8
 
    ;; oploterror has too many dependencies; do it myself
    for i=0, nbands-1 do begin
+      ;; plot model bands (blue filled circles)
+      relative = where(blend[i,*] eq -1)
+      if relative[0] eq -1 then begin
+         ;; plot all stars
+         oplot, [wp[i]], [alog10(modelflux[i])], psym=8
+      endif else begin
+         ;; for relative photometry, only plot the fainter star's model
+         oplot, [wp[i,relative]], [alog10(modelflux[i,relative])], psym=8
+      endelse
+
+      ;; plot observed bands (red 2d error bars)
       ;; x error bar
       oplot, [wp[i]-widthhm[i],wp[i]+widthhm[i]], alog10([flux[i],flux[i]]), color=colors[1]
       ebw = !d.y_vsize/100d0 ;; error bar width = 1% of device size
@@ -342,9 +376,9 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    endfor
 
    ;; now plot the residuals below
-   residuals = (flux-modelflux)/fluxerr
-   res_errhi = (flux-modelflux+fluxerr)/fluxerr
-   res_errlo = (flux-modelflux-fluxerr)/fluxerr
+   residuals = (flux-modelblendflux)/fluxerr
+   res_errhi = (flux-modelblendflux+fluxerr)/fluxerr
+   res_errlo = (flux-modelblendflux-fluxerr)/fluxerr
 
    ;; round to 0.5
    ymin = floor(min(res_errlo)/0.5)*0.5
@@ -408,7 +442,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       startxt = strarr(nbands)
       for i=0L, nbands-1 do startxt[i] = strjoin(strtrim(where(blend[i,*]),2),',')
 
-      exofast_forprint, filterprops.name, wp, widthhm, flux, fluxerr, modelflux, flux-modelflux,startxt, textout=residualfilename, $
+      exofast_forprint, filterprops.name, wp, widthhm, flux, fluxerr, modelblendflux, flux-modelblendflux,startxt, textout=residualfilename, $
                         comment='# Filtername, Center wavelength (um), half bandpass (um), flux, error, modelflux, residuals (erg/s/cm^2), star indices', $
                         format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
 
