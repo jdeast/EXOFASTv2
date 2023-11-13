@@ -167,12 +167,23 @@ endfor
 
 modelmag = -2.5d0*alog10(lstar##replicate(1d0,nbands)) + 4.74d0 - bcs + mu##replicate(1d0,nbands)
 modelflux = 10^(-0.4*modelmag)
-if nstars eq 1 then blendflux = modelflux $
-else blendflux = total(modelflux*blend,2)
-blendmag = -2.5d0*alog10(blendflux)
+magresiduals = dblarr(nbands)
+if nstars eq 1 then begin
+   blendmag = modelmag
+   blendflux = modelflux
+   magresiduals = mags-modelmag
+endif else begin 
+   blendfluxpos = total(modelflux*(blend gt 0), 2)
+   blendfluxneg = total(modelflux*(blend lt 0), 2)
+   blendfluxneg[where(blendfluxneg eq 0d0)] = 1d0
+   blendmag = -2.5d0*alog10(blendfluxpos/blendfluxneg)
+   magresiduals = mags-blendmag
+   blendflux = total(modelflux*blend,2)
+endelse
 
 ;; calculate the likelihood
-sedchi2 = exofast_like(mags-blendmag,0d0,errs*errscale[0],/chi2)
+;; sedchi2 = exofast_like(mags-blendmag,0d0,errs*errscale[0],/chi2)
+sedchi2 = exofast_like(magresiduals,0d0,errs*errscale[0],/chi2)
 
 
 if 0 then begin
