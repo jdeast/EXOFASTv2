@@ -101,10 +101,14 @@ filterids = ['GAIA/GAIA2r.Gbp',$
              'WISE/WISE.W4',$
              'TESS/TESS.Red',$
              'Kepler/Kepler.K',$
-             'WIYN/NESSI.NB467',$
-             'WIYN/NESSI.NB562',$
-             'WIYN/NESSI.NB716',$
-             'WIYN/NESSI.NB832',$
+             'WIYN/NESSI.NB467',$ ;; Commonly used AO bands to split close binaries 
+             'WIYN/NESSI.NB562',$ ;; Commonly used AO bands to split close binaries 
+             'WIYN/NESSI.NB716',$ ;; Commonly used AO bands to split close binaries 
+             'WIYN/NESSI.NB832',$ ;; Commonly used AO bands to split close binaries 
+             'Gemini/Zorro.EO_466',$ ;; Commonly used AO bands to split close binaries 
+             'Gemini/Zorro.EO_562',$ ;; Commonly used AO bands to split close binaries 
+             'Gemini/Zorro.EO_716',$ ;; Commonly used AO bands to split close binaries 
+             'Gemini/Zorro.EO_832',$ ;; Commonly used AO bands to split close binaries 
              'WIYN/NESSI.u',$
              'WIYN/NESSI.g',$
              'WIYN/NESSI.r',$
