@@ -103,7 +103,12 @@ if not keyword_set(a[0,0,0,ndx]) or $
                        '.' + bandname + '.sav',$
                        root_dir=getenv('EXOFAST_PATH'),subdir='quadld')
    
-   restore, filename
+   
+   if file_test(filename) then restore, filename $
+   else begin
+      printandlog, 'quadratic limb darkening table for ' + bandname + ' does not exist.',logname
+      return, [!values.d_nan,!values.d_nan]
+   endelse
 
    ;; populate the array, only as needed
    a[*,*,*,ndx] = quadlda
