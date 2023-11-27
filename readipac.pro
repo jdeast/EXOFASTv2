@@ -101,9 +101,7 @@ free_lun, table
 ;; create a structure with the tag names
 structure = create_struct(tagnames[ntags-1],transpose(array[ntags-1,*]))
 
-if default_only then begin
-
-stop
+if keyword_set(default_only) then begin
    ndx = (where(tagnames eq 'default_flag'))
    selection = where(array[ndx,*] eq '1')
 endif else selection = lindgen(n_elements(array[0,*]))
