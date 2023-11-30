@@ -30,7 +30,30 @@ for i=0L, nlines-1 do begin
    endelse
 
    ;; load the filter properties
+   readcol, filepath('filternames2.txt', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist']), keivanname, mistname, claretname, svoname, format='a,a,a,a', comment='#',/silent
+
    idlfile = filepath(sedbands[i]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves']) 
+   if not file_test(idlfile) then begin
+      ;; see if they used Keivan's naming convention
+      match = where(sedbands[i] eq keivanname,nmatch)
+      if nmatch eq 1 then begin
+         ;; they used Keivan's naming convention, translate
+         if svoname[match[0]] eq 'Unsupported' then begin
+            print, sedbands[i] + ' is unsupported; try using the SVO name, or add it to filternames2.txt'
+            continue
+         endif else idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves']) 
+      endif else begin
+         ;; see if they used the MIST naming convention
+         match = where(sedbands[i] eq mistname,nmatch)
+         if nmatch eq 1 then begin
+            ;; they used MIST's naming convention, translate
+            if svoname[match[0]] eq 'Unsupported' then begin
+               print, sedbands[i] + ' is unsupported; try using the SVO name, or add it to filternames2.txt'
+               continue
+            endif else idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves'])
+         endif else idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves']) 
+      endelse
+   endif
 
    ;; if not recognized, download it
    if not file_test(idlfile) and keyword_set(download_new) then getfilter, sedbands[i]
