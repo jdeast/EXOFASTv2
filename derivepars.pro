@@ -39,7 +39,7 @@ for i=0L, ss.nstars-1 do begin
    ss.star[i].fbol.value = (ss.star[i].lstar.value*ss.constants.lsun)/(4d0*!dpi*(ss.star[i].distance.value*ss.constants.pc)^2)                  ;; cgs
 
    ;; derive the age
-   if ss.mist[i] and not ss.star[i].age.fit then begin
+   if ss.mist[i] and not ss.star[i].age.fit and ss.nstars eq 1 then begin
       for j=0L, ss.nsteps-1 do begin
          mistchi2 = massradius_mist(ss.star[i].eep.value[j],ss.star[i].mstar.value[j],$
                                     ss.star[i].initfeh.value[j],ss.star[i].age.value[j],$
@@ -50,7 +50,7 @@ for i=0L, ss.nstars-1 do begin
          
          ss.star[i].age.value[j] = mistage
       endfor
-   endif else if ss.parsec[i] and not ss.star[i].age.fit then begin
+   endif else if ss.parsec[i] and not ss.star[i].age.fit and ss.nstars eq 1 then begin
       for j=0L, ss.nsteps-1 do begin
          parsecchi2 = massradius_parsec(ss.star[i].eep.value[j],ss.star[i].mstar.value[j],$
                                         ss.star[i].initfeh.value[j],ss.star[i].age.value[j],$
