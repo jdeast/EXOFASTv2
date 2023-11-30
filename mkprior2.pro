@@ -1,6 +1,6 @@
 ;+
 ; NAME:
-;   mkprior
+;   mkprior2
 ; PURPOSE:
 ;
 ;   Prints the contents of an EXOFASTv2 prior file so the next fit
@@ -56,7 +56,7 @@ for i=0L, nlines-1 do begin
       priorval = (*(ss.(prior.value[0])))[prior.value[1]].(prior.value[2])[prior.value[3]].(prior.value[4])[prior.value[5]].label
    ;; if a map to another variable
    endif else if prior.value[3] ne -1 then begin
-      priorval = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].label      
+      priorval = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].label + '_' + strtrim(long(prior.value[1]),2)
    endif else if prior.value[2] ne -1 then begin
       priorval = ss.(prior.value[0])[prior.value[1]].label      
    endif else begin 
