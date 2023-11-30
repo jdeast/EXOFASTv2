@@ -156,7 +156,7 @@ if nfiles gt 0 then file_delete, files
 ;; draw the shell of the unphased plot
 ;; position keyword required for proper bounding box
 plot, [0],[0],yrange=yrange, xrange=xrange,/xstyle,/ystyle,$;position=[0.15, 0.05, 0.93, 0.93],$
-      ytitle='!3Normalized flux',xtitle=xtitle
+      ytitle='!3Norm flux',xtitle=xtitle
 
 ;; make one plot for all input files
 for j=0, ss.ntran-1 do begin
@@ -169,7 +169,7 @@ for j=0, ss.ntran-1 do begin
    
    npoints = n_elements(trandata.bjd)
    if ss.debug then npretty = npoints $
-   else npretty = ceil((maxbjd-minbjd)*1440d0/5d0) ;; 1 per 5 minutes
+   else npretty = ceil((maxbjd-minbjd)*1440d0/1d0) ;; 1 per minute
 
    ninterp = ss.transit[j].ninterp
    if ninterp gt 1 then begin
@@ -355,7 +355,7 @@ for jj=0L, 1 do begin
       endif
       
       plot, [0],[0],yrange=yrange, xrange=xrange,/xstyle,/ystyle,$
-            ytitle='!3Normalized flux + Constant',xtitle=xtitle
+            ytitle='!3Norm flux + Constant',xtitle=xtitle
       
       npretty = ceil((2d0*duration[i])*1440d0*2d0) ;; 1 per 30 seconds
       
@@ -589,7 +589,7 @@ for jj=0L, 2 do begin
          yrange = [ymin,ymax]
 
          plot, [0],[0], xstyle=1,ystyle=1,$
-               ytitle='!3Normalized flux (' + plotbandname + ')',yrange=[ymin,ymax],xrange=xrange,$
+               ytitle='!3Norm flux (' + plotbandname + ')',yrange=[ymin,ymax],xrange=xrange,$
                position=position1, xtickformat='(A1)'
          oplot, phasetime, residuals + modelflux, psym=8, symsize=symsize
          if jj eq 2 then begin
@@ -609,6 +609,15 @@ for jj=0L, 2 do begin
          if ymax gt -ymin then ymin = -ymax
 ;         ymax = stdev(residuals)*3d0
 ;         ymin = -stdev(residuals)*3d0
+
+         ymin = min([0,residuals],max=ymax)
+         if ymin lt -ymax then ymax = -ymin
+         if ymax gt -ymin then ymin = -ymax
+
+         ;; round to 2 sig figs
+         ndigits = floor(alog10(ymax))-1d0
+         ymax = double(round(ymax/(10d0^ndigits)))*10^ndigits
+         ymin = -ymax
 
          if finite(range[4]) then ymin = range[4]
          if finite(range[5]) then ymax = range[5]
