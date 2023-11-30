@@ -669,7 +669,7 @@ for i=0L, ss.nstars-1 do begin
                                      ss.star[i].feh.value, debug=ss.debug, $
                                      epsname=epsname, $
                                      gravitysun=ss.constants.gravitysun, $
-                                     fitage=ss.star[i].age.fit, $
+                                     /fitage,$;=ss.star[i].age.fit, $
                                      ageweight=ageweight, $
                                      logname=ss.logname, verbose=ss.verbose,$
                                      tefffloor=ss.teffemfloor, $
@@ -702,7 +702,7 @@ for i=0L, ss.nstars-1 do begin
                                  debug=ss.debug, $
                                  epsname=epsname, $
                                  gravitysun=ss.constants.gravitysun, $
-                                 fitage=ss.star[i].age.fit, $
+                                 /fitage,$;=ss.star[i].age.fit, $
                                  ageweight=ageweight, $
                                  logname=ss.logname, verbose=ss.verbose,$
                                  tefffloor=ss.teffemfloor, $
@@ -710,6 +710,22 @@ for i=0L, ss.nstars-1 do begin
                                  rstarfloor=ss.rstaremfloor, $
                                  agefloor=ss.ageemfloor, pngname=pngname,$
                                  range=ss.emrange)
+
+      ;; if there's more than one star with the same age and initfeh,
+      ;; make an isochrone with all of them on it
+      if keyword_set(psname) then begin
+         match = where(ss.star.age.value eq ss.star[i].age.value and $
+                       ss.star.initfeh.value eq ss.star[i].initfeh.value,nmatch)
+         if nmatch gt 1 and match[0] eq i then begin
+            isoname = psname + '.mistiso.' +string(i,format='(i03)') + '.eps'
+            plotisochrone, ss.star[i].age.value, ss.star[i].initfeh.value,$
+                           xrange=[10000,4000],yrange=[4.5,3],$
+                           mstar=ss.star[match].mstar.value,$
+                           teff=ss.star[match].teff.value,$
+                           rstar=ss.star[match].rstar.value,$
+                           /plotmodel,epsname=isoname
+         endif
+      endif
             
       chi2 += mistchi2
       if ss.verbose then $
@@ -720,7 +736,6 @@ for i=0L, ss.nstars-1 do begin
          return, !values.d_infinity
       endif
       determinant *= ageweight ;; correct uniform EEP prior to uniform Age prior
-      
    endif
 
    ;; apply TORRES penalty to constrain stellar parameters
@@ -1092,7 +1107,7 @@ for j=0L, ss.ntran-1 do begin
    starndx = ss.planet[planetndx].starndx
 
    ;; quadratic limb darkening
-   if ss.claret then begin
+   if ss.transit[j].claret then begin
       ldcoeffs = quadld(ss.star[starndx].logg.value, $
                         ss.star[starndx].teff.value, $
                         ss.star[starndx].feh.value, band.name, $
