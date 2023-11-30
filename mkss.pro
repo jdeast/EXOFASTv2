@@ -361,9 +361,6 @@ if n_elements(starndx) ne nplanets and nplanets gt 0 then begin
    return, -1
 endif
 
-
-   
-
 if not keyword_set(longcadence) then longcadence=0B
 if n_elements(fitthermal) eq 0 then fitthermal = ['']
 if n_elements(fitreflect) eq 0 then fitreflect = ['']
@@ -377,6 +374,28 @@ if n_elements(fluxfile) eq 0 then fluxfile = ''
 if n_elements(mistsedfile) eq 0 then mistsedfile = ''
 if n_elements(sedfile) eq 0 then sedfile = ''
 if n_elements(specphotpath) eq 0 then specphotpath = ''
+
+if tranpath ne '' then begin
+   tranfiles=file_search(tranpath,count=ntran)
+   if ntran eq 0 then begin
+      printandlog, "No transit files files found matching " + strtrim(tranpath,2) + "; please check TRANPATH", logname
+      return, -1
+   endif
+endif else begin
+   ntran = 0
+   tranpath = ''
+endelse
+
+if n_elements(noclaret) eq 1 then begin
+   noclaret = bytarr(ntran) + keyword_set(noclaret)
+endif else if n_elements(noclaret) ne ntran and n_elements(noclaret) ne 0 and ntran gt 0 then begin
+   printandlog, 'NOCLARET has ' + strtrim(n_elements(noclaret),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
+   return, -1
+end
+if n_elements(noclaret) eq 0 then begin
+   if ntran gt 0 then noclaret = bytarr(ntran) $
+   else noclaret = [0B]
+endif
 
 if specphotpath ne '' then begin
    specfiles = file_search(specphotpath,count=nspecfiles)
@@ -392,17 +411,6 @@ endif else nspecfiles = 0
 
 ;; read in the transit files
 if tranpath ne '' or astrompath ne '' then begin
-
-   if tranpath ne '' then begin
-      tranfiles=file_search(tranpath,count=ntran)
-      if ntran eq 0 then begin
-         printandlog, "No transit files files found matching " + strtrim(tranpath,2) + "; please check TRANPATH", logname
-         return, -1
-      endif
-   endif else begin
-      ntran = 0
-      tranpath = ''
-   endelse
 
    if astrompath ne '' then begin
       astromfiles=file_search(astrompath,count=nastrom)
@@ -426,8 +434,14 @@ if tranpath ne '' or astrompath ne '' then begin
                   'u','b','v','y']
    bands = strarr(ntran+nastrom)
    for i=0, ntran+nastrom-1 do begin
-      if i lt ntran then bands[i] = (strsplit(file_basename(tranfiles[i]),'.',/extract))(1) $
-      else bands[i] = (strsplit(file_basename(astromfiles[i-ntran]),'.',/extract))(1)
+      if i lt ntran then begin
+         bands[i] = (strsplit(file_basename(tranfiles[i]),'.',/extract))(1)
+         checkband = ~keyword_set(noclaret[i])
+      endif else begin
+         bands[i] = (strsplit(file_basename(astromfiles[i-ntran]),'.',/extract))(1)
+         checkband = 0
+      endelse
+
       if bands[i] eq 'u' then begin
          bands[i] = 'Sloanu'
       endif else if bands[i] eq 'g' then begin
@@ -439,8 +453,9 @@ if tranpath ne '' or astrompath ne '' then begin
       endif else if bands[i] eq 'z' then begin
          bands[i] = 'Sloanz'
       endif
-      if (where(allowedbands eq bands[i]))[0] eq -1 then begin
+      if (where(allowedbands eq bands[i]))[0] eq -1 and checkband then begin
          printandlog, 'ERROR: band (' + bands[i] + ') not recognized from the transit file "' + tranfiles[i] + '"',logname
+         printandlog, 'When CLARET tables are used for a transit, you must select from an allowed band',logname 
          printandlog, 'Please check the documentation for required filename format and select one of the following:',logname
          printandlog, string(allowedbands),logname
          return, -1
@@ -2218,6 +2233,7 @@ transit = create_struct(variance.label,variance,$ ;; jitter
                         tdeltav.label,tdeltav,$ ;; Transit depth variation
                         dilute.label, dilute, $ ;; Transit depth variation
                         f0.label,f0,$ ;; normalization
+                        'claret', 0B,$
                         'transitptrs',ptr_new(),$ ;; Data
                         'detrend',ptr_new(/allocate_heap),$ ;; array of detrending parameters
                         'bandndx',0L,$
@@ -2297,7 +2313,6 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'dilutebandndx',ptr_new(1),$;[-1L,1,1],$
                    'dilutestarndx',dilutestarndx,$
                    'oned', keyword_set(oned),$
-                   'claret', ~keyword_set(noclaret),$
                    'ttvs', ttvs,$
                    'tivs', tivs,$
                    'tdeltavs', tdeltavs,$
@@ -2443,6 +2458,7 @@ for i=0L, nstars-1 do begin
       ss.star[i].initfeh.fit=1
       ss.star[i].initfeh.derive=1
       ss.star[i].age.derive=1
+      ss.star[i].age.fit=1
       ss.star[i].eep.fit=1
       ss.star[i].eep.derive=1
    endif else begin
@@ -2705,7 +2721,7 @@ if ntran gt 0 then begin
    ss.transit[*].transitptrs = ptrarr(ntran,/allocate_heap)
    for i=0, ntran-1 do begin
       if ~keyword_set(silent) then printandlog, string(i,tranfiles[i],format='(i2,x,a)'),logname
-      *(ss.transit[i].transitptrs) = readtran(tranfiles[i], detrendpar=detrend, nplanets=nplanets)
+      *(ss.transit[i].transitptrs) = readtran(tranfiles[i], detrendpar=detrend, nplanets=nplanets,skipallowed=noclaret[i])
 
 ;      ;; create an array of detrending variables 
 ;      ;; (one for each extra column in the transit file)
@@ -2740,6 +2756,7 @@ if ntran gt 0 then begin
          ss.transit[i].dilute.derive = 1B
       endif
 
+      ss.transit[i].claret = ~keyword_set(noclaret[i])
       ss.transit[i].fitspline = fitspline[i]
       ss.transit[i].splinespace = splinespace[i]
 ;      ;; F0 and the spline are totally degenerate. 
@@ -3130,7 +3147,7 @@ if noephemeris then begin
    printandlog, "Searching for periods between " + strtrim(minperiod,2) + " and " + strtrim(maxperiod,2) + " days", logname
    if ntran gt 1 then begin
       printandlog, "Using BLS to determine ephemeris", logname
-      bestperiod = bls(time,flux,minperiod=minperiod,maxperiod=maxperiod, tc=tt,periods=periods,ndx=ndx)
+      bestperiod = exofast_bls(time,flux,minperiod=minperiod,maxperiod=maxperiod, tc=tt,periods=periods,ndx=ndx)
       ss.planet[i].period.value = periods[ndx]
       ss.planet[i].tt.value = tt[ndx]
    endif else if ntel gt 0 then begin
