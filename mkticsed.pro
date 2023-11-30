@@ -166,17 +166,24 @@ if match eq -1 then begin
    return
 endif
 
-qtic = qtic[match]
-star = [qtic.raj2000,qtic.dej2000]
-
 ;; prior file
 openw, priorlun, priorfile, /get_lun
 printf, priorlun, '#### TICv8.2 ####'
 
 ;; warn user if this object is a duplicate
-if qtic.disp eq 'SPLIT' or qtic.disp eq 'DUPLICATE' then begin
-   printf, priorlun, '# WARNING: disposition in TICv8.2 is ' + qtic.disp
+if qtic[match].disp eq 'SPLIT' or qtic[match].disp eq 'DUPLICATE' then begin
+   printf, priorlun, '# WARNING: disposition in TICv8.2 is ' + qtic[match].disp
+   duplicate_id = qtic[match].m_tic
+   ;; do I need to use both IDs? Maybe that's what split means?
+   ;; need to read and understand this paper: https://arxiv.org/pdf/2108.04778.pdf
+   if duplicate_id ne '-1' then begin
+      printf, priorlun, '# WARNING: Using TIC ID of duplicate (' + strtrim(duplicate_id,2) + ')'
+      match = (where(qtic.tic eq duplicate_id))[0]
+   endif
 endif
+
+qtic = qtic[match]
+star = [qtic.raj2000,qtic.dej2000]
 
 if finite(qtic.mass) and finite(qtic.rad) and finite(qtic.teff) then begin
    ;; require all three. starting hybrid
@@ -218,6 +225,14 @@ printf, lun, '# bandname magnitude used_errors catalog_errors'
 ;; warn user if this object is a duplicate
 if qtic.disp eq 'SPLIT' or qtic.disp eq 'DUPLICATE' then begin
    printf, lun, '# WARNING: disposition in TICv8.2 is ' + qtic.disp
+endif
+
+;; warn the user if this target appears in the Washington Double Star catalog
+qwds = Exofast_Queryvizier('B/wds/wds','TIC ' + ticid,2d0,/allcolumns,cfa=cfa)
+if (size(qwds))[2] eq 8 then begin
+   printf, lun, '# WARNING: this star appears in the Washington Double Star catalog'
+   printf, lun, '# WARNING: this star is a visual binary with separation ' + strtrim(qwds.sep2,2)
+   printf, lun, '# WARNING: unresolved photometry will bias the SED and the whole fit'
 endif
 
 ;; use the Gaia ID to query the Gaia catalog
