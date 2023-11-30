@@ -88,7 +88,7 @@ endfor
 printf, lun, '\begin{deluxetable*}{lc' + strjoin(replicate('c',maxvalues)) + '}'
 
 if n_elements(caption) ne 0 then printf, lun, '\tablecaption{' + caption + '}'
-printf, lun, '\tablehead{\colhead{~~~Parameter} & \colhead{Units} & \multicolumn{' + strtrim(maxvalues,2) + '}{c}{Values}}'
+printf, lun, '\tablehead{\colhead{~~~Parameter} & \colhead{Description} & \multicolumn{' + strtrim(maxvalues,2) + '}{c}{Values}}'
 printf, lun, '\startdata'
 
 if tag_exist(ss,'rvepoch') then rvepoch = ss.rvepoch $
@@ -100,9 +100,9 @@ masternotes = ['Uses measured mass and estimated radius from \citet{Chen:2017}',
                'Uses measured radius and estimated mass from \citet{Chen:2017}',$
                'Reference epoch = ' + string(rvepoch,format='(f0.6)'),$
                'This value ignores the systematic error and is for reference only',$ ;; Rstar,SED, Teff,SED
-               'Time of conjunction is commonly reported as the "transit time"',$
-               'Time of minimum projected separation is a more correct "transit time"',$
-               'Optimal time of conjunction minimizes the covariance between $T_C$ and Period',$
+               "Time of conjunction is commonly reported as the ``transit time''",$
+               "Time of minimum projected separation is a more correct ``transit time''",$
+               'At the epoch that minimizes the covariance between $T_C$ and Period',$
                'In RV-only fits, we marginalize over a uniform cosi prior',$
                'Estimated eclipse depth assumes blackbodies',$
                'Assumes no albedo and perfect redistribution',$
