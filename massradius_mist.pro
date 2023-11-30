@@ -262,10 +262,10 @@ else chi2 += ((mistteff - teff)/(percenterror*mistteff))^2
 if fehfloor gt 0 then chi2 += ((mistfeh - feh)/(fehfloor))^2 $
 else chi2 += ((mistfeh - feh)/(percenterror))^2 
               
-if keyword_set(fitage) then begin
+;if keyword_set(fitage) then begin
    if agefloor gt 0 then chi2 += ((mistage - age)/(agefloor*mistage))^2 $
    else chi2 += ((mistage - age)/(percenterror*mistage))^2           
-endif
+;endif
 
 ;; plot it
 if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then begin
