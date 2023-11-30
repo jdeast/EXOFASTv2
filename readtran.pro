@@ -1,4 +1,4 @@
-function readtran, filename, detrendpar=detrend, nplanets=nplanets
+function readtran, filename, detrendpar=detrend, nplanets=nplanets, skipallowed=skipallowed
 
 if n_elements(nplanets) eq 0 then nplanets = 1d0
 
@@ -33,7 +33,16 @@ allowedbands = ['U','B','V','R','I','J','H','K',$
                 'Kepler','TESS','CoRoT','Spit36','Spit45','Spit58','Spit80',$
                 'u','b','v','y']
 
-if (where(allowedbands eq band))[0] eq -1 then message, 'Filter (' + band + ') not allowed'
+if keyword_set(skipallowed) then begin
+   bandstr = strjoin(strsplit(band,'_',/regex,/extract),'.') 
+   if valid_num(bandstr) then begin
+      wavelength = double(bandstr)
+      band = bandstr + textoidl(' \mu m')
+   endif
+endif else begin
+   if (where(allowedbands eq band))[0] eq -1 then message, 'Filter (' + band + ') not allowed'
+endelse
+
 
 line = ""
 openr, lun, filename, /get_lun
