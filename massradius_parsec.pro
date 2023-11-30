@@ -269,10 +269,10 @@ else chi2 += ((parsec_teff - teff)/(percenterror*parsec_teff))^2
 if fehfloor gt 0 then chi2 += ((parsec_feh - feh)/(fehfloor))^2 $
 else chi2 += ((parsec_feh - feh)/(percenterror))^2 
               
-if keyword_set(fitage) then begin
+;if keyword_set(fitage) then begin
    if agefloor gt 0 then chi2 += ((parsec_age - age)/(agefloor*parsec_age))^2 $
    else chi2 += ((parsec_age - age)/(percenterror*parsec_age))^2
-endif
+;endif
 
 ;; plot it
 if keyword_set(debug) or keyword_set(epsname) then begin
