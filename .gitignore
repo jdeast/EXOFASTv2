@@ -15,5 +15,8 @@
 examples/*/*.idl
 examples/*/*.txt
 examples/*/fitresults
+examples/*/*.bak
 sed/mist/feh*
 sed/mist/*.txz
+sed/filtercurves/*.xml
+parsec/prosen
