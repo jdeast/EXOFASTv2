@@ -1,6 +1,5 @@
 pro plot_tdeltav, transitcsvfile
 
-if n_elements(transitcsvfile) eq 0 then transitcsvfile = '/h/onion0/modeling/joey/new.fittransits.csv'
 psname = file_basename(transitcsvfile,'.csv') + '.ps'
 textname = file_basename(transitcsvfile,'.csv') + '.txt'
 
@@ -32,21 +31,31 @@ for i=0L, ntran-1 do begin
       match = (where(keivanname eq band))[0]
       filename = filepath(mistname[match] + '.idl', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist'])
       if match[0] eq -1 or not file_test(filename) then begin
-         print, band + ' not recognized. Bug in plot_tdelta?'
-         stop
-      endif        
-   endif  
-   restore, filename
+         bandstr = strjoin(strsplit(band,'_',/regex,/extract),'.') 
+         if valid_num(bandstr) then begin
+            thiswp = double(bandstr)
+            thiswidthhm = 0.1d0
+         endif else begin
+            print, band + ' from filename must be among recognized bands or the wavelength in microns'
+         endelse
+      endif
+   endif 
+   
+   if file_test(filename) then begin
+      restore, filename 
+      thiswp = filterproperties.lambda_eff/1d4
+      thiswidthhm = filterproperties.w_eff/1d4/2d0
+   endif
 
    if i eq 0 then begin
-      wp = filterproperties.lambda_eff/1d4
-      widthhm = filterproperties.w_eff/1d4/2d0
+      wp = thiswp
+      widthhm = thiswidthhm
       parr = p
       up1arr = up1
       up2arr = up2
    endif else begin
-      wp = [wp,filterproperties.lambda_eff/1d4]
-      widthhm = [widthhm,filterproperties.w_eff/1d4/2d0]
+      wp = [wp,thiswp]
+      widthhm = [widthhm,thiswidthhm]
       parr = [parr,p]
       up1arr = [up1arr,up1]
       up2arr = [up2arr,up2]
