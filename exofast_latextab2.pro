@@ -108,7 +108,8 @@ masternotes = ['Uses measured mass and estimated radius from \citet{Chen:2017}',
                'Assumes no albedo and perfect redistribution',$
                "Corresponds to static points in a star's evolutionary history. See \S2 in \citet{Dotter:2016}.",$
                'The metallicity of the star at birth',$
-               'See Table 3 in \citet{Eastman:2019} for a detailed description of all parameters']
+               'See Table 3 in \citet{Eastman:2019} for a detailed description of all parameters',$
+               'See \citet{Eastman:2023b} for a detailed description']
 
 ;; these are the names of parameters that are influenced by the Chen &
 ;; Kipping mass estimate (given a radius)
@@ -142,6 +143,12 @@ if ss.star[0].slope.fit then begin
               ['gamma','2'],$
               ['slope','2'],$
               ['quad','2']]
+endif
+
+;; these notes are only neccesary if vcve is fit
+if ss.planet[0].vcve.fit then begin
+   notendx = [[notendx],$
+              ['vcve','13']]
 endif
 
 ;; these notes are only neccesary if the Chen & Kipping relation is used
