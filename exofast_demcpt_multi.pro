@@ -21,11 +21,11 @@ pro exofast_callback, olddet, oldpars, oldchi2, oldderived, nderived, nswap, nac
 
   C = fac*olddet[j,m]/det*exp(temps[m]*(oldchi2[j,m] - newchi2)/2d0)
 
-  if m eq 0 then begin
+;  if m eq 0 then begin
 ;     print, j, m, c, newchi2, oldchi2[j,m]
 ;     print, oldpars[*,j,m]
 ;     print, newpars
-  endif
+;  endif
 
   ;; accept the step; update values
   if call_function(randomfunc,seed) lt C then begin
@@ -36,10 +36,10 @@ pro exofast_callback, olddet, oldpars, oldchi2, oldderived, nderived, nswap, nac
      oldchi2[j,m] = newchi2
      if nderived gt 0 then oldderived[*,j,m] = dpar
 
-     if m eq 0 then begin
+;     if m eq 0 then begin
 ;        if swapped then print, 'swapped!' $
 ;        else stop;print, 'accepted!'
-     endif                           
+;     endif                           
 
   endif ;; else keep previous values
   

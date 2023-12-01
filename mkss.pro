@@ -162,12 +162,7 @@ if n_elements(mannrad0) eq 0 then begin
    ;; don't use MANN by default
    mannrad = bytarr(nstars)
 endif else if n_elements(mannrad0) eq 1 then begin
-   if keyword_set(mannrad0) then begin
-      ;; if set as a keyword, enable for all stars
-      mannrad = bytarr(nstars) + 1B
-   endif else begin
-      mannrad = bytarr(nstars)      
-   endelse
+   mannrad = bytarr(nstars) + keyword_set(mannrad0)
 endif else if n_elements(mannrad) eq nstars then begin
    ;; if set as an NSTARS array, use array
    mannrad = mannrad0
@@ -180,12 +175,7 @@ if n_elements(mannmass0) eq 0 then begin
    ;; don't use MANN by default
    mannmass = bytarr(nstars)
 endif else if n_elements(mannmass0) eq 1 then begin
-   if keyword_set(mannmass0) then begin
-      ;; if set as a keyword, enable for all stars
-      mannmass = bytarr(nstars) + 1B
-   endif else begin
-      mannmass = bytarr(nstars)      
-   endelse
+   mannmass = bytarr(nstars) + keyword_set(mannmass0)
 endif else if n_elements(mannmass) eq nstars then begin
    ;; if set as an NSTARS array, use array
    mannmass = mannmass0

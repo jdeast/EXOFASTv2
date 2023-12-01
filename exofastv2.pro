@@ -1330,8 +1330,8 @@ ss = mkss(priorfile=priorfile, $
           fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,$
           fehsedfloor=fehsedfloor, oned=oned,$
           ;; evolutionary model inputs
-          yy=yy0, nomist=nomist, parsec=parsec0, $
-          torres=torres0, mannrad=mannrad0, mannmass=mannmass0,$
+          yy=yy, nomist=nomist, parsec=parsec, $
+          torres=torres, mannrad=mannrad, mannmass=mannmass,$
           teffemfloor=teffemfloor, fehemfloor=fehemfloor, $
           rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
           ;; BEER model inputs
@@ -1690,8 +1690,8 @@ mcmcss = mkss(priorfile=priorfile, $
               fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,$
               fehsedfloor=fehsedfloor, oned=oned,$
               ;; evolutionary model inputs
-              yy=yy0, nomist=nomist, parsec=parsec0, $
-              torres=torres0, mannrad=mannrad0, mannmass=mannmass0,$
+              yy=yy, nomist=nomist, parsec=parsec, $
+              torres=torres, mannrad=mannrad, mannmass=mannmass,$
               teffemfloor=teffemfloor, fehemfloor=fehemfloor, $
               rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
               ;; BEER model inputs
