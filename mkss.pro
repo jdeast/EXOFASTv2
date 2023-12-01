@@ -1,175 +1,93 @@
 ;+
 ; NAME:
-;   EXOFAST
+;   MKSS
 ;
 ; PURPOSE:
-;
 ; Creates a stellar system structure that describes an arbitrary
-; number of planets, observed bands, rv telescopes (a new zero point
-; for each), and observed transits.  This structure is the input to
-; basically everything in EXOFASTv2 and is designed to be easily
-; extensible. To add a new derived parameter to the output table, add it here,
-; then calculate it in DERIVEPARS. To add a new fitted parameter, add
-; it here, then use it in EXOFAST_CHI2V2 to influence the model or
-; the likelihood/chi^2 directly.
+; number of stars, planets, observed bands, rv telescopes (a new zero
+; point for each), and observed transits.  This structure is the input
+; to basically everything in EXOFASTv2 and is designed to be easily
+; extensible. To add a new derived parameter to the output table, add
+; it here, then calculate it in DERIVEPARS. To add a new fitted
+; parameter, add it here, then use it in EXOFAST_CHI2V2 to influence
+; the model or the likelihood/chi^2 directly.
 ;
 ; Priors may be applied to any parameter (fitted or derived).
 ;
 ; CALLING SEQUENCE:
-;   ss = mkss(nplanets=nplanets, circular=circular, $
-;             fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
-;             rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, $
-;             fittran=fittran, fitrv=fitrv, $
-;             nvalues=nvalues, debug=debug, priorfile=priorfile, $
-;             rvpath=rvpath, tranpath=tranpath, longcadence=longcadence, earth=earth)
+;
+;   This code is deep in the bowels of EXOFASTv2 and is not intended
+;   to be user callable.
 ;
 ; INPUTS:
+;  See $EXOFAST_PATH/exofastv2.pro for an explanation of most inputs.
 ; 
-;  NPLANETS - The number of planets to fit
-;  CIRCULAR - An NPLANETS boolean array describing which
-;             planets should be fixed to have circular orbits. If not
-;             specified, all planets will be fit with eccentric models.
-;  FITTRAN  - An NPLANETS boolean array specifying which planets
-;             should be fit with a transit model. By default, all
-;             planets are fit with transit photometry. 
-;  FITRV    - An NPLANETS boolean array specifying which planets
-;             should be fit with a radial velocity model. By default, all
-;             planets are fit with radial velocities.
-;  CHEN     - An NPLANETS boolean array specifying which planets
-;             should have the Chen & Kipping, 2017 mass-radius
-;             relation applied. By default CHEN = FITRV xor
-;             FITTRAN. That is, only apply the mass-radius prior when
-;             RV is not fit (to derive the planet mass) or when a
-;             transit is not fit (to derive the radius). If the
-;             defaults have been overridden and FITRV and CHEN are
-;             both false for a given planet, the RV semi-amplitude
-;             (planet mass) and all derived parameters will not be
-;             quoted. Multi-planet systems will be constrained not to
-;             cross orbits, but the Hill Sphere will be set to zero.
-;             If FITTRAN and CHEN are both false for a given planet,
-;             the planetary radius and all derived parameters will not
-;             be quoted.
-;  I180     - An NPLANETS boolean array specifying which planets'
-;             inclination should be allowed to be between 0 and 180
-;             instead of the default of 0 to 90. Note that a normal
-;             transiting planet has a perfect degeneracy between i and
-;             180-i which is likely to cause convergence
-;             problems. Additional information (e.g., from astrometry
-;             or mutual eclipses) must be used for this keyword to be
-;             used properly. Even in the case of mutual eclipses
-;             (which is currently not supported), at least one planet must be
-;             arbitrarily constrained from 0 to 90.
-;  ROSSITER - An NPLANETS boolean array specify which planets to fit a
-;             rossiter model to the RV data. Fit lambda and
-;             V_rot*sin(I_*) from RV data during transit using the
-;             Ohta approximations (has known issues)
-;  FITDT    - An NPLANETS boolean array specifying which planets to
-;             fit a Doppler tomography model to the RV data
-;             (*** Currently unsupported***)
-;  THERMAL  - A string array specifying which bands to fit thermal
-;             emission for. This is what you want to set to fit an
-;             isolated secondary eclipse. All observations in this
-;             band will be modeled with a baseline of 1 between t2 and
-;             t3 of the secondary eclipse and 1 + thermal emission (in
-;             PPM) out of eclipse.
-;  REFLECT  - A string array specifying which bands to fit reflected
-;             light for. Set this along with thermal if you're
-;             fitting a full phase curve. It will be modeled as a
-;             sinusoid with the orbital period, a minimum at the
-;             primary transit, and a fitted amplitude (in PPM).
-;  DILUTE   - A string array specifying which bands to fit a dilution
-;             term for. Set this if the star is blended with a
-;             neighbor and you expect color-dependent depth
-;             variations.
-;             Note: May be degenerate with F0 (transit normalization) 
-;             Note: this only affects the transit model. It is not
-;             accounted for in the SED fitting.
-;             TODO: automatically model dilution based on multiple
-;             SEDs
 ;  NVALUES  - By default, parameter.value is a scalar. Set this
 ;             to make it an array of length NVALUES.
-;  PRIORFILE - The name of the file that specifies all the priors. The
-;              prior file is an ASCII file with each line containing
-;              three white space delimited columns: NAME, VALUE,
-;              WIDTH. NAME must match a parameter.label. If in an
-;              array (e.g., of planets), add "_i", where "i" is the
-;              zero-indexed index into the array.  If WIDTH is set to
-;              0, the parameter is fixed at VALUE (this is generally
-;              not recommended; it's far better to apply a realistic
-;              prior). If WIDTH is set to -1, the fit starts at VALUE,
-;              but there is no penalty if the model deviates from
-;              VALUE. If WIDTH is positive, a gaussian prior is
-;              applied. That is, a chi^2 penalty equal to ((parameter
-;              - VALUE)/WIDTH)^2 is applied to the likelihood
-;              function. Here is the contents of a sample priorfile
-;              for the EPXXXXXXXXX system published in Eastman et al,
-;              2017:
 ;
-;              teff 6167 78 # Gaussian prior on T_eff of 6167 +/- 78 K
-;              feh -0.04 0.1 # Gaussian prior on [Fe/H] of -0.04 +/- 0.1 dex
-;              logg 4.22 0.06 # Gaussian prior on logg of 4.22 +/- 0.06
-;              vsini 9400 300 # Gaussian prior on vsini of 9400 +/- 300 (ignored since vsini is not fitted)
-;              av 0.15 0.30 # Gaussian prior on A_V (extinction) of 0.15 +/- 0.30
-;              ma 11.529 0.142 # Gaussian prior on ma (apparent V mag) of 11.529 +/- 0.142
-;              distance 247.87 57.223 # Gaussian prior on distance of 247.87 +/- 57.223 pc
-;              tc_0 2457166.0543 -1 # start the fit with a TC for planet 0 (EPXXXXXXXXb) at BJD_TDB=2457166.0543
-;              p_0 0.020 -1 # start the fit with Rp/Rstar for planet 0 at 0.020
-;              period_0 26.847 -1 # start the fit with period for planet 0 at 26.847 days
-;              tc_1 2457213.5328 -1 # start the fit with a TC for planet 1 (EPXXXXXXXXc) at BJD_TDB=2457213.5328
-;              p_1 0.02 -1 # start the fit with Rp/Rstar for planet 1 at 0.020
-;              period_1 39.5419 -1 # start the fit with period for planet 0 at 39.5419 days
-;              tc_2 2457191.8894 -1 # start the fit with a TC for planet 2 (EPXXXXXXXXd) at BJD_TDB=2457191.8894
-;              p_2 0.020 -1 # start the fit with Rp/Rstar for planet 2 at 0.020
-;              period_2 125 -1 # start the fit with period for planet 2 at 125 days
-;              tc_3 2457170.4990 -1 # start the fit with a TC for planet 3 (EPXXXXXXXXe) at BJD_TDB=2457170.4990
-;              p_3 0.029 -1 # start the fit with Rp/Rstar for planet 3 at 0.020
-;              period_3 160 -1 # start the fit with period for planet 3 at 160 days
-;  RVPATH   - The path of the RV files. Each RV files is fit with a
-;             separate zero point.
-;  TRANPATH - The path of the transit data. Each file is fit with a
-;             separate normalization. If TTVS is set, each file is fit
-;with a diff
+;  SILENT   - If set, supress output messages.
 ;
-; KEYWORDS:
-;  FITSLOPE - Fit a linear trend to the RV data
-;  FITQUAD  - Fit a quadratic trend to the RV data
-;  TTVS     - Fit an independent (non-periodic) transit time for each transit
-;  TDVS     - Fit an indepdedent depth to each transit
-;  EPRIOR4  - Parameterize the eccentricity and argument of
-;             periastron as e^(1/4)*sin(omega) and
-;             e^(1/4)*cos(omega) to more closely match the observed
-;             eccentricity distribution 
-;  DEBUG    - Output various debugging information and plots at each
-;             step.
-
-; PARAMETER STRUCTURE
-; parameter.value -- the parameter's numerical value in
-;                    parameter.unit units. For the MCMC, this is an
-;                    array for all links.
-; parameter.prior -- the parameter's prior
+;  CHI2FUNC - A string specifying the name of the function that
+;             computes the model's chi^2.
+;
+; MODIFICATION HISTORY
+; 
+;  2023/12 -- Documentation cleanup.
 ;-
-function mkss, nplanets=nplanets, circular=circular,chen=chen, i180=i180,$
-               fitslope=fitslope, fitquad=fitquad, $
+function mkss, priorfile=priorfile, $
+               prefix=prefix,$
+               ;; data file inputs
+               rvpath=rvpath, tranpath=tranpath, $
+               astrompath=astrompath, dtpath=dtpath, $
+               ;; SED model inputs
+               fluxfile=fluxfile, mistsedfile=mistsedfile, $
+               sedfile=sedfile, specphotpath=specphotpath,$
+               noavprior=noavprior,$
+               fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,$
+               fehsedfloor=fehsedfloor, oned=oned,$
+               ;; evolutionary model inputs
+               yy=yy0, nomist=nomist, parsec=parsec0, $
+               torres=torres0, mannrad=mannrad0, mannmass=mannmass0,$
+               teffemfloor=teffemfloor, fehemfloor=fehemfloor, $
+               rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
+               ;; BEER model inputs
+               fitthermal=fitthermal, fitellip=fitellip, $
+               fitreflect=fitreflect, fitphase=fitphase,$
+               fitbeam=fitbeam, derivebeam=derivebeam, $
+               ;; star inputs
+               nstars=nstars, starndx=starndx, $
+               diluted=diluted, fitdilute=fitdilute, $
+               ;; planet inputs
+               nplanets=nplanets, $
+               fittran=fittran,fitrv=fitrv,$
+               rossiter=rossiter, fitdt=fitdt,$ 
+               circular=circular, tides=tides, $
+               alloworbitcrossing=alloworbitcrossing,$
+               chen=chen, i180=i180,$
+               ;; RV inputs
+               fitslope=fitslope, fitquad=fitquad, rvepoch=rvepoch, $
+               ;; transit inputs
+               noclaret=noclaret,$
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
-               rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, fittran=fittran, fitrv=fitrv, $
-               fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, fitphase=fitphase,$
-               fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
-               nvalues=nvalues, debug=debug, verbose=verbose, priorfile=priorfile, $
-               rvpath=rvpath, tranpath=tranpath, dtpath=dtpath, fluxfile=fluxfile, $
-               astrompath=astrompath,fitlogmp=fitlogmp,$
-               longcadence=longcadence, rejectflatmodel=rejectflatmodel,ninterp=ninterp, exptime=exptime,$
-               earth=earth, silent=silent, $
-               yy=yy0, torres=torres0, nomist=nomist, parsec=parsec0, mann=mann0,$
-               noclaret=noclaret,alloworbitcrossing=alloworbitcrossing,$
-               logname=logname, best=best, tides=tides, $
-               teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
-               mistsedfile=mistsedfile,sedfile=sedfile,specphotpath=specphotpath,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,fehsedfloor=fehsedfloor, oned=oned,$
-               fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
-               novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, $
-               chi2func=chi2func, fittt=fittt,delay=delay, rvepoch=rvepoch,$
-               nstars=nstars, starndx=starndx, noavprior=noavprior, diluted=diluted,prefix=prefix,mkgif=mkgif,$
+               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
+               rejectflatmodel=rejectflatmodel,$
+               fitspline=fitspline, splinespace=splinespace, $
+               fitwavelet=fitwavelet, $            
+               ;; reparameterization inputs
+               fitlogmp=fitlogmp,$
+               novcve=novcve, nochord=nochord, fitsign=fitsign, $
+               fittt=fittt, earth=earth, $
+               ;; plotting inputs
                transitrange=transitrange,rvrange=rvrange,$
-               sedrange=sedrange,emrange=emrange
+               sedrange=sedrange,emrange=emrange, $
+               ;; debugging inputs
+               debug=debug, verbose=verbose, delay=delay, $
+               ;; internal inputs
+               nvalues=nvalues,$ 
+               silent=silent, $
+               chi2func=chi2func, $
+               logname=logname, $
+               best=best
 
 if n_elements(transitrange) eq 0 then transitrange=dblarr(6)+!values.d_nan
 if n_elements(rvrange) eq 0 then rvrange=dblarr(6) + !values.d_nan
@@ -240,21 +158,39 @@ endif else begin
    return, -1
 endelse
 
-if n_elements(mann0) eq 0 then begin
+if n_elements(mannrad0) eq 0 then begin
    ;; don't use MANN by default
-   mann = bytarr(nstars)
-endif else if n_elements(mann0) eq 1 then begin
-   if keyword_set(mann0) then begin
+   mannrad = bytarr(nstars)
+endif else if n_elements(mannrad0) eq 1 then begin
+   if keyword_set(mannrad0) then begin
       ;; if set as a keyword, enable for all stars
-      mann = bytarr(nstars) + 1B
+      mannrad = bytarr(nstars) + 1B
    endif else begin
-      mann = bytarr(nstars)      
+      mannrad = bytarr(nstars)      
    endelse
-endif else if n_elements(mann) eq nstars then begin
+endif else if n_elements(mannrad) eq nstars then begin
    ;; if set as an NSTARS array, use array
-   mann = mann0
+   mannrad = mannrad0
 endif else begin
-   printandlog, 'MANN mist have 0, 1, or NSTARS elements', lognname
+   printandlog, 'MANNRAD mist have 0, 1, or NSTARS elements', lognname
+   return, -1
+endelse
+
+if n_elements(mannmass0) eq 0 then begin
+   ;; don't use MANN by default
+   mannmass = bytarr(nstars)
+endif else if n_elements(mannmass0) eq 1 then begin
+   if keyword_set(mannmass0) then begin
+      ;; if set as a keyword, enable for all stars
+      mannmass = bytarr(nstars) + 1B
+   endif else begin
+      mannmass = bytarr(nstars)      
+   endelse
+endif else if n_elements(mannmass) eq nstars then begin
+   ;; if set as an NSTARS array, use array
+   mannmass = mannmass0
+endif else begin
+   printandlog, 'MANNMASS mist have 0, 1, or NSTARS elements', lognname
    return, -1
 endelse
 
@@ -291,7 +227,7 @@ else begin
       printandlog, 'You have specified a delay!! This is only designed to test threading and will needlessly slow down the fit. Are you sure?', logname
 endelse
 
-if max(mist + yy + parsec + torres + mann) gt 1 then begin
+if max(mist + yy + parsec + torres + (mannrad or mannmass)) gt 1 then begin
    printandlog, 'You are **STRONGLY** advised to disable all but one evolutionary model (they are not independent), but type ".con" to proceed', logname
    return, -1
 endif
@@ -1869,7 +1805,7 @@ fave.cgs = 1d-9
 if nplanets eq 0 then fave.derive = 0
 
 u1 = parameter
-u1.description = 'linear limb-darkening coeff'
+u1.description = 'Linear limb-darkening coeff'
 u1.latex = 'u_{1}'
 u1.label = 'u1'
 u1.scale = 0.15d0
@@ -1877,7 +1813,7 @@ if nplanets eq 0 then u1.derive = 0 $
 else u1.fit = 1
 
 u2 = parameter
-u2.description = 'quadratic limb-darkening coeff'
+u2.description = 'Quadratic limb-darkening coeff'
 u2.latex = 'u_{2}'
 u2.label = 'u2'
 u2.scale = 0.15d0
@@ -1885,7 +1821,7 @@ if nplanets eq 0 then u2.derive = 0 $
 else u2.fit = 1
 
 u3 = parameter
-u3.description = 'non-linear limb-darkening coeff'
+u3.description = 'Non-linear limb-darkening coeff'
 u3.latex = 'u_{3}'
 u3.label = 'u3'
 u3.scale = 0.15d0
@@ -2286,7 +2222,6 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'debug',keyword_set(debug),$
                    'verbose',keyword_set(verbose),$
                    'tides',keyword_set(tides),$
-                   'randomsign',keyword_set(randomsign),$
                    'ntel',ntel,$
                    'rvepoch',0d0,$
                    'ntran',ntran,$
@@ -2300,7 +2235,8 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'parsec', parsec,$
                    'yy', yy,$
                    'torres', torres,$
-                   'mann', mann,$
+                   'mannrad', mannrad,$
+                   'mannmass', mannmass,$
                    'fbolsedfloor', fbolsedfloor,$
                    'teffsedfloor', teffsedfloor,$
                    'fehsedfloor', fehsedfloor,$
@@ -2366,7 +2302,6 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'planetorder',lindgen(nplanets > 1),$
                    'dtpath',dtpath,$
                    'delay',delay,$
-                   'mkgif',keyword_set(mkgif),$
                    'prefix',prefix, $
                    'earth',keyword_set(earth),$
                    'priorfile',priorfile,$
@@ -2468,7 +2403,7 @@ for i=0L, nstars-1 do begin
       ss.star[i].eep.derive=0      
    endelse
 
-   if ss.mann[i] then begin
+   if ss.mannrad[i] or ss.mannmass[i] then begin
       ss.star[i].distance.fit = 1
       ss.star[i].distance.derive = 1
       ss.star[i].parallax.derive = 1
@@ -2766,8 +2701,6 @@ if ntran gt 0 then begin
 ;         ss.transit[i].f0.derive = 0B
 ;      endif         
 
-      ;; added variance and added red noise are highly
-      ;; degenerate; don't fit both!
       if fitwavelet[i] then begin
          ss.transit[i].variance.fit = 0B
          ss.transit[i].variance.derive = 0B
@@ -3084,7 +3017,7 @@ while not eof(lun) do begin
    endif
 
    if parameter.userchanged and (finite(parameter.priorwidth) or finite(parameter.lowerbound) or finite(parameter.upperbound)) then begin
-      print, 'WARNING: ' + prior.name + ' already set. Overwriting'
+      printandlog, 'WARNING: ' + prior.name + ' already set. Overwriting', logname
    end
 
    ;; flag that this parameter has been changed by the user
