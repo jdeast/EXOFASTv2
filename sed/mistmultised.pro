@@ -120,7 +120,8 @@ if n_elements(teffgrid) eq 0 or keyword_set(redo) then begin
    endelse
    nbands = n_elements(sedbands)
 
-   readcol, filepath('filternames.txt', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist']), keivanname, mistname, format='a,a', comment='#',/silent
+;   readcol, filepath('filternames.txt', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist']), keivanname, mistname, format='a,a', comment='#',/silent
+   readcol, filepath('filternames2.txt', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist']), keivanname, mistname, claretname, svoname, format='a,a,a,a', comment='#',/silent
 
    ;; this is the dimension for each axis of the array
    restore, filepath('mist.sed.grid.idl', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist'])
@@ -131,10 +132,15 @@ if n_elements(teffgrid) eq 0 or keyword_set(redo) then begin
          match = (where(keivanname eq sedbands[i]))[0]
          filename = filepath(mistname[match] + '.idl', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist'])
          if match[0] eq -1 or not file_test(filename) then begin
-            print, sedbands[i] + ' not supported, remove or comment out from ' + sedfile
-            stop
+            match = (where(svoname eq sedbands[i]))[0]
+            filename = filepath(mistname[match] + '.idl', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist'])
+            if match[0] eq -1 or not file_test(filename) then begin
+               print, sedbands[i] + ' not supported, remove or comment out from ' + sedfile
+               stop
+            endif
          endif
       endif  
+
       restore, filename
       if i eq 0L then begin
          sz = size(bcarray)
@@ -187,7 +193,6 @@ endelse
 ;; sedchi2 = exofast_like(mags-blendmag,0d0,errs*errscale[0],/chi2)
 sedchi2 = exofast_like(magresiduals,0d0,errs*errscale[0],/chi2)
 
-
 if 0 then begin
 forprint, modelflux[*,0], modelflux[*,1], mags,blendmag,((mags-blendmag)/(errs*errscale[0]))^2, /textout
 print, 'lstar = ' + strtrim(lstar,2)
@@ -201,6 +206,7 @@ print, 'chi2 = ' + strtrim(sedchi2,2)
 endif
 
 if keyword_set(debug) or keyword_set(psname) eq 1 then begin
+
    ;; The Spectral Energy Distribution (black), with broad band
    ;; averages (blue circles) and broad band measurements (red). The error
    ;; bars in wavelength denote the bandwidth of the corresponding
@@ -298,9 +304,9 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    ;; set colors for each star and all stars
    pointcolors = dblarr(nbands)
    for i=0L, nbands-1 do begin
-      if total(abs(blend[i,*])) eq 1d0 then pointcolors[i] = colors[((where(blend[i,*] eq 1L))[0]+1) mod ncolors] else $
-      if total(abs(blend[i,*])) eq nstars then pointcolors[i] = colors[0] else $
-      pointcolors[i] = colors[((where(blend[i,*] eq -1L))[-1]+1) mod ncolors] ;; use color of fainter star
+      if total(blend[i,*] eq 1) eq 1d0 then pointcolors[i] = colors[((where(blend[i,*] eq 1L))[0]+1) mod ncolors] $ ;; only one star, use its color
+      else if total(blend[i,*] eq 1) eq nstars then pointcolors[i] = colors[0]; $ ;; all blended, use black
+;      else pointcolors[i] = colors[((where(blend[i,*] eq -1L))[-1]+1) mod ncolors] ;; relative, use new colo
    endfor
 
    ;; plot model atmospheres for each combination of blended stars 
@@ -309,6 +315,51 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    legendlabels = starnames[lindgen(nstars)]
    legendcolors = colors[(lindgen(nstars)+1) mod ncolors]
    colorndx = nstars+1
+
+
+   for i=0L, nbands-1L do begin 
+      ;; if the observed band is some combination of more than one but not all stars
+      if total(abs(blend[i,*])) gt 1 and total(blend[i,*]) ne nstars then begin
+         starstr = strjoin(starnames[where(blend[i,*] eq 1)],'+')
+         is_diffmag = ((where(blend[i,*] eq -1))[0] ne -1)
+         if is_diffmag then begin
+            starstr += '-' + strjoin(starnames[where(blend[i,*] eq -1)],'-')
+         endif
+
+         ;; plot blended atmospheres for all supplied combinations
+         ;; include differential photometry
+         ;; if differential photometry supplied as (A+B) - (C+D), 
+         ;; plot A+B and C+D
+         for k=-1,1,2 do begin 
+            blendstarndx = where(blend[i,*] eq k, nblend)
+            if nblend gt 1 and nblend ne nstars then begin
+               legendtxt = strjoin(starnames[blendstarndx],'+')
+               legendndx = where(legendlabels eq legendtxt)
+               if legendndx[0] eq -1 then begin ;; if I haven't done this blend yet
+                  blended_atmosphere = total(atmospheres[blendstarndx,*],1)
+                  color = colors[colorndx mod ncolors]
+                  oplot, wavelength, alog10(smooth(blended_atmosphere,10)), color=color
+                  legendlabels = [legendlabels,legendtxt]
+                  legendcolors = [legendcolors,color]
+                  colorndx++
+               endif
+            endif
+         endfor
+
+         ;; now choose the plot point color, unique to each supplied combination
+         match = where(legendlabels eq starstr,nmatch) 
+         if nmatch eq 0 then begin
+            color = colors[colorndx mod ncolors]
+            legendlabels = [legendlabels,starstr]
+            legendcolors = [legendcolors,color]
+            colorndx++
+            pointcolors[i] = color
+         endif else pointcolors[i] = legendcolors[match[0]]
+      endif 
+   endfor ;; each observed band
+
+
+if 0 then begin
    for i=0L, nbands-1L do begin
       if total(abs(blend[i,*])) gt 1 and total(blend[i,*]) ne nstars then begin
          ; for j=0L, i-1 do begin
@@ -333,10 +384,12 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
             legendcolors = [legendcolors,color]
             colorndx++
             pointcolors[i] = color
-         endif
+         endif else pointcolors[i] = legendcolors[match[0]]
          ; endfor
       endif
    endfor
+endif
+
    ;; plot all model atmospheres blended together
    oplot, wavelength, alog10(smooth(total(atmospheres,1),10)),color=colors[0]
    legendlabels = [legendlabels,strjoin(starnames[0:nstars-1],'+')]
@@ -400,7 +453,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    oplot, [xmin,xmax], [0d0,0d0], linestyle=1,color=colors[1]
    for i=0L, nbands-1 do begin
       plotsym, 0, symsize, /fill, color=pointcolors[i]
-      oplot, [wp[i]], [residuals[i]], psym=8;, color=pointcolors[i]
+      oplot, [wp[i]], [residuals[i]], psym=8 ;, color=pointcolors[i]
 
       ;; x error bar
       oplot, [wp[i]-widthhm[i],wp[i]+widthhm[i]], [residuals[i],residuals[i]], color=pointcolors[i]
