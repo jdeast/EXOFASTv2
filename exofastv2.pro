@@ -1128,6 +1128,7 @@ pro exofastv2, priorfile=priorfile, $
                ;; SED model inputs
                fluxfile=fluxfile,mistsedfile=mistsedfile,$
                sedfile=sedfile,specphotpath=specphotpath,$
+               noavprior=noavprior,$
                fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,$
                fehsedfloor=fehsedfloor, oned=oned,$
                ;; evolutionary model inputs
