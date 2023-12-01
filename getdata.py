@@ -197,5 +197,5 @@ for search_result in search_results[to_download]:
     np.savetxt(filename,np.column_stack([time,flux,err]))
     print("Downloaded " + filename)
 
-import ipdb
-ipdb.set_trace()
+#import ipdb
+#ipdb.set_trace()
