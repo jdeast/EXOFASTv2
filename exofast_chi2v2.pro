@@ -761,29 +761,31 @@ for i=0L, ss.nstars-1 do begin
    endif
 
    ;; apply MANN penalty to constrain stellar parameters
-   if ss.mann[i] then begin
+   if ss.mannrad[i] or ss.mannmass[i] then begin
       massradius_mann, ss.star[i].appks.value, mstar_prior, rstar_prior, $
                        feh=ss.star[i].feh.value, $
                        sigma_rstar=urstar, sigma_mstar=umstar,$
-                       distance=ss.star[i].distance.value,/mann19
+                       distance=ss.star[i].distance.value
 
-      if mstar_prior gt 0.7d0 then printandlog, $
+      if ss.star[i].mstar.value gt 0.7d0 then printandlog, $
          'WARNING: MANN not applicable (mstar = ' + $
-         strtrim(mstar_prior,2) + ' > 0.7); ignore at beginning. Otherwise, ' + $
+         strtrim(ss.star[i].mstar.value,2) + ' > 0.7); ignore at beginning. Otherwise, ' + $
          'use MIST, YY, PARSEC, TORRES, or impose a prior on mstar/rstar',ss.logname
 
-      ;; add "prior" penalty
-      chi2 += ((ss.star[i].mstar.value - mstar_prior)/umstar)^2
-;      chi2 += ((ss.star[i].rstar.value - rstar_prior)/urstar)^2
-      
-      if ss.verbose then begin
-         mstarpenalty = ((ss.star[i].mstar.value - mstar_prior)/umstar)^2
+      ;; add "prior" penalties
+      if ss.mannrad[i] then begin
          rstarpenalty = ((ss.star[i].rstar.value - rstar_prior)/urstar)^2
-         msg = 'Mann penalty: ' + string(mstarpenalty,rstarpenalty,format='(f0.6,x,f0.6)')
-         printandlog, msg, ss.logname
+         chi2 += rstarpenalty
+         if ss.verbose then printandlog, 'Mann rstar penalty: ' + strtrim(rstarpenalty,2),ss.logname
       endif
-   endif
 
+      if ss.mannmass[i] then begin
+         mstarpenalty = ((ss.star[i].mstar.value - mstar_prior)/umstar)^2
+         chi2 += mstarpenalty
+         if ss.verbose then printandlog, 'Mann mstar penalty: ' + strtrim(mstarpenalty,2),ss.logname
+      endif
+
+   endif
 endfor
 
 ;; fit the SED with MIST BC tables
@@ -843,7 +845,7 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
       sedchi2 += mistmultised(teffsed, ss.star.logg.value,fehsed, $
                               ss.star.av.value, $
                               ss.star.distance.value, lstarsed, $
-                              ss.star.errscale.value, $
+                              ss.star[0].errscale.value, $
                               ss.mistsedfile, debug=ss.debug, psname=epsname,$
                               atmospheres=atmospheres, wavelength=wavelength,$
                               range=ss.sedrange)
