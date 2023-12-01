@@ -1,27 +1,53 @@
 ;; Reads a file of input arguments to EXOFASTv2
 ;; Required for virtual machine (free) use
 pro readargs, argfile, priorfile=priorfile, $
-              rvpath=rvpath, tranpath=tranpath, astrompath=astrompath, dtpath=dtpath, $
-              fluxfile=fluxfile,mistsedfile=mistsedfile,sedfile=sedfile,specphotpath=specphotpath,fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,$
-              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
               prefix=prefix,$
-              circular=circular,fitslope=fitslope, fitquad=fitquad, secondary=secondary, $
-              rossiter=rossiter,chen=chen,$
-              diluted=diluted,fitdilute=fitdilute, fitthermal=fitthermal, fitreflect=fitreflect, $
-              fitphase=fitphase, fitellip=fitellip, fitbeam=fitbeam, derivebeam=derivebeam, $
-              nthin=nthin, maxsteps=maxsteps, maxtime=maxtime, dontstop=dontstop, $
-              ntemps=ntemps,tf=tf,keephot=keephot,$
-              debug=debug, stardebug=stardebug, verbose=verbose, randomfunc=randomfunc, seed=seed,$
-              bestonly=bestonly, plotonly=plotonly, refinestar=refinestar, $
+              rvpath=rvpath, tranpath=tranpath, $
+              astrompath=astrompath, dtpath=dtpath, $
+              fluxfile=fluxfile,mistsedfile=mistsedfile,$
+              sedfile=sedfile,specphotpath=specphotpath,$
+              fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, $
+              fehsedfloor=fehsedfloor, oned=oned,$
+              yy=yy, nomist=nomist, parsec=parsec, $
+              torres=torres, mannrad=mannrad, mannmass=mannmass, $
+              teffemfloor=teffemfloor, fehemfloor=fehemfloor, $
+              rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
+              fitthermal=fitthermal, fitellip=fitellip, $
+              fitreflect=fitreflect, fitphase=fitphase, $
+              fitbeam=fitbeam, derivebeam=derivebeam, $
+              nstars=nstars,starndx=starndx, $
+              diluted=diluted,fitdilute=fitdilute, $
+              nplanets=nplanets, $
+              fittran=fittran, fitrv=fitrv, $
+              rossiter=rossiter, fitdt=fitdt, $
+              circular=circular, tides=tides, $ 
+              alloworbitcrossing=alloworbitcrossing, $
+              chen=chen, i180=i180, $
+              fitslope=fitslope, fitquad=fitquad, rvepoch=rvepoch, $
+              noclaret=noclaret, $
+              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               rejectflatmodel=rejectflatmodel,$
+              fitspline=fitspline, splinespace=splinespace, $
+              fitwavelet=fitwavelet, $              
+              fitlogmp=fitlogmp,$
+              novcve=novcve, nochord=nochord, fitsign=fitsign, $
+              fittt=fittt, earth=earth, $             
+              transitrange=transitrange,rvrange=rvrange,$
+              sedrange=sedrange,emrange=emrange, $
+              debug=debug, verbose=verbose, delay=delay,$
+              maxsteps=maxsteps, nthin=nthin, maxtime=maxtime, $
               maxgr=maxgr, mintz=mintz, $
-              yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, noclaret=noclaret, tides=tides, nplanets=nplanets, nstars=nstars,starndx=starndx, $
-              fitrv=fitrv, fittran=fittran,fitdt=fitdt,fitlogmp=fitlogmp,$
-              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
-              earth=earth, i180=i180, nocovar=nocovar,alloworbitcrossing=alloworbitcrossing,stretch=stretch,$
-              fitspline=fitspline, splinespace=splinespace, fitwavelet=fitwavelet, $
-              skiptt=skiptt, novcve=novcve, nochord=nochord, fitsign=fitsign, randomsign=randomsign, fittt=fittt, rvepoch=rvepoch, logname=logname
+              dontstop=dontstop, $              
+              ntemps=ntemps,tf=tf,keephot=keephot,$
+              randomfunc=randomfunc, seed=seed,$
+              stretch=stretch,$
+              skiptt=skiptt, $
+              usernote=usernote,$
+              mksummarypg=mksummarypg,$
+              nocovar=nocovar,$
+              plotonly=plotonly, bestonly=bestonly,$
+              logname=logname
 
 line = ''
 openr, lun, argfile, /get_lun
@@ -81,8 +107,6 @@ while not eof(lun) do begin
             fittt = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'RVEPOCH' then begin
             rvepoch = double(entries[1])
-         endif else if strupcase(strtrim(entries[0],2)) eq 'SECONDARY' then begin
-            secondary = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'ROSSITER' then begin
             rossiter = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'CHEN' then begin
@@ -119,18 +143,16 @@ while not eof(lun) do begin
             keephot = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'DEBUG' then begin
             debug = boolean(entries[1])
-         endif else if strupcase(strtrim(entries[0],2)) eq 'STARDEBUG' then begin
-            stardebug = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'VERBOSE' then begin
             verbose = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'DELAY' then begin
+            delay = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'SEED' then begin
             seed = long(entries[1])
-         endif else if strupcase(strtrim(entries[0],2)) eq 'BESTONLY' then begin
-            bestonly = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'PLOTONLY' then begin
             plotonly = boolean(entries[1])
-         endif else if strupcase(strtrim(entries[0],2)) eq 'REFINESTAR' then begin
-            refinestar = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'BESTONLY' then begin
+            bestonly = boolean(entries[1])            
          endif else if strupcase(strtrim(entries[0],2)) eq 'LONGCADENCE' then begin
             longcadence = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'EXPTIME' then begin
@@ -151,10 +173,12 @@ while not eof(lun) do begin
             nomist = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'PARSEC' then begin
             parsec = boolean(entries[1])
-         endif else if strupcase(strtrim(entries[0],2)) eq 'MANN' then begin
-            mann = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'MANNRAD' then begin
+            mannrad = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'MANNMASS' then begin
+            mannmass = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOCLARET' then begin
-            noclaret = boolean(entries[1])
+            noclaret = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'TIDES' then begin
             tides = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NPLANETS' then begin
@@ -162,7 +186,7 @@ while not eof(lun) do begin
          endif else if strupcase(strtrim(entries[0],2)) eq 'NSTARS' then begin
             nstars = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'STARNDX' then begin
-            starndx = boolean(json_parse(entries[1],/toarray))
+            starndx = long(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITRV' then begin
             fitrv = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITTRAN' then begin
@@ -179,6 +203,14 @@ while not eof(lun) do begin
             tdeltavs = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'EARTH' then begin
             earth = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'TRANSITRANGE' then begin
+            transitrange = double(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'RVRANGE' then begin
+            rvrange = double(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'SEDRANGE' then begin
+            sedrange = double(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'EMRANGE' then begin
+            emrange = double(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'I180' then begin
             i180 = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOVCVE' then begin
@@ -187,8 +219,6 @@ while not eof(lun) do begin
             nochord = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITSIGN' then begin
             fitsign = boolean(json_parse(entries[1],/toarray))
-         endif else if strupcase(strtrim(entries[0],2)) eq 'RANDOMSIGN' then begin
-            randomsign = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOCOVAR' then begin
             nocovar = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'ALLOWORBITCROSSING' then begin
@@ -203,10 +233,14 @@ while not eof(lun) do begin
             fitwavelet = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'SKIPTT' then begin
             skiptt = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'USERNOTE' then begin
+            usernote = entries[1]
+         endif else if strupcase(strtrim(entries[0],2)) eq 'MKSUMMARYPG' then begin
+            mksummarypg = boolean(entries[1])
          endif else begin
-            print, entries[0] + ' argument not recognized'
+            printandlog, entries[0] + ' argument not recognized', logname
          endelse
-      endif else print, 'invalid line: ' + line
+      endif else printandlog, 'invalid line: ' + line, logname
    endif
 endwhile
 free_lun, lun
