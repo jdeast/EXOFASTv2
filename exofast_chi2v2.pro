@@ -771,10 +771,10 @@ for i=0L, ss.nstars-1 do begin
                        sigma_rstar=urstar, sigma_mstar=umstar,$
                        distance=ss.star[i].distance.value
 
-      if ss.star[i].mstar.value gt 0.7d0 then printandlog, $
-         'WARNING: MANN not applicable (mstar = ' + $
-         strtrim(ss.star[i].mstar.value,2) + ' > 0.7); ignore at beginning. Otherwise, ' + $
-         'use MIST, YY, PARSEC, TORRES, or impose a prior on mstar/rstar',ss.logname
+      if ss.star[i].mstar.value gt 0.7d0 and ss.verbose then $
+         printandlog, 'WARNING: MANN not applicable (mstar = ' + $
+                      strtrim(ss.star[i].mstar.value,2) + ' > 0.7); ignore at beginning. Otherwise, ' + $
+                      'use MIST, YY, PARSEC, TORRES, or impose a prior on mstar/rstar',ss.logname
 
       ;; add "prior" penalties
       if ss.mannrad[i] then begin

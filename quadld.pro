@@ -106,7 +106,7 @@ if not keyword_set(a[0,0,0,ndx]) or $
    
    if file_test(filename) then restore, filename $
    else begin
-      printandlog, 'quadratic limb darkening table for ' + bandname + ' does not exist.',logname
+      if keyword_set(verbose) then printandlog, 'quadratic limb darkening table for ' + bandname + ' does not exist.',logname
       return, [!values.d_nan,!values.d_nan]
    endelse
 

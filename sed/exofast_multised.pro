@@ -69,7 +69,7 @@ if n_elements(flux) eq 0 or keyword_set(redo) then begin
 
 endif
 
-sed = dblarr(nwaves,nstars)
+sed = dblarr(nstars,nwaves)
 for j=0L, nstars-1 do begin
    if keyword_set(oned) then begin
       ;; round to 0.5 dex in logg and met rather than interpolate
@@ -86,7 +86,7 @@ for j=0L, nstars-1 do begin
    lamflam1=lamflam1temp*rstar[j]*rstar[j]*rsun*rsun/distance[j]/distance[j]/pc/pc 
    taul1 = kapp1/kapv/1.086*Av[j]
    extinct1 = exp(-taul1)
-   sed[*,j] = lamflam1*extinct1
+   sed[j,*] = lamflam1*extinct1
 endfor
 
 ;; compute the blended flux in each band
@@ -98,12 +98,12 @@ endif
 
 for j=0L, nstars-1 do begin
    for i=0L, nbands-1 do begin
-      if blend[i,j] eq 1 then modelfluxpos[i] += total(sed[*,j]*filter_curves[i,*])/filter_curve_sum[i] $
-      else if blend[i,j] eq -1 then modelfluxneg[i] += total(sed[*,j]*filter_curves[i,*])/filter_curve_sum[i]
+      if blend[i,j] eq 1 then modelfluxpos[i] += total(sed[j,*]*filter_curves[i,*])/filter_curve_sum[i] $
+      else if blend[i,j] eq -1 then modelfluxneg[i] += total(sed[j,*]*filter_curves[i,*])/filter_curve_sum[i]
    endfor
    for i=0L, nspecfiles-1 do begin
       ;; interpolate model flux onto observed scale
-      if abs(specblend[i,j]) eq 1 then intflux = interpol(sed[*,j], wavelength, (*spectrophotometry[i])[*,0])
+      if abs(specblend[i,j]) eq 1 then intflux = interpol(sed[j,*], wavelength, (*spectrophotometry[i])[*,0])
       if specblend[i,j] eq 1 then begin
          if n_elements((*specphotflux[i])) eq 0 then (*specphotflux[i]) = intflux $
          else (*specphotflux[i]) += intflux
@@ -181,7 +181,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    xmax = 30
    xmin = 0.1
    ymin = alog10(min([flux[absolute],flux[absolute]-errflux[absolute]])) ;,reform(atmospheres,n_elements(atmospheres))]))
-   ymax = alog10(max([flux[absolute],flux[absolute]+errflux[absolute],total(sed,2)]))
+   ymax = alog10(max([flux[absolute],flux[absolute]+errflux[absolute],total(sed,1)]))
 
    if finite(range[0]) then xmin = range[0]
    if finite(range[1]) then xmax = range[1]
@@ -189,121 +189,79 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    if finite(range[3]) then ymax = range[3]
    
    plot, [0], [0], /xlog, ytitle=ytitle, yrange=[ymin,ymax], xrange=[xmin,xmax], /xs, position=position1, xtickformat='(A1)'
-   
-   ;; plot atmosphere for each individual star
-   for j=0L, nstars-1 do begin
-      oplot, wavelength, alog10(smooth(sed[*,j],10)), color=colors[(j+1) mod ncolors]
-   endfor
-   
+      
    ;; set colors for each star and all stars
    pointcolors = dblarr(nbands) + colors[0]
-   for i=0L, nbands-1 do begin      
-      if total(blend[i,*] eq 1) eq 1d0 then pointcolors[i] = colors[((where(blend[i,*] eq 1L))[0]+1) mod ncolors] $ 
-      else if total(blend[i,*] eq 1) eq nstars then pointcolors[i] = colors[0] $ ;; all 
-      else pointcolors[i] = colors[((where(blend[i,*] eq -1L))[-1]+1) mod ncolors] ;; relative, use color of fainter star
-   endfor
 
-   ;; plot atmospheres for each combination of blended stars 
-   ;; except 1 and all, handled separately
-   starnames = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
-   legendlabels = starnames[lindgen(nstars)]
-   legendcolors = colors[(lindgen(nstars)+1) mod ncolors]
-   colorndx = nstars+1
+   if nstars gt 1 then begin
+      ;; plot atmosphere for each individual star
+      for j=0L, nstars-1 do begin
+         oplot, wavelength, alog10(smooth(sed[j,*],10)), color=colors[(j+1) mod ncolors]
+      endfor
+      
+      
+      for i=0L, nbands-1 do begin      
+         if total(blend[i,*] eq 1) eq 1d0 then pointcolors[i] = colors[((where(blend[i,*] eq 1L))[0]+1) mod ncolors] ;$ 
+;         else if total(blend[i,*] eq 1) eq nstars then pointcolors[i] = colors[0] $ ;; all 
+;         else pointcolors[i] = colors[((where(blend[i,*] eq -1L))[-1]+1) mod ncolors] ;; relative, use color of fainter star
+      endfor
 
-   for i=0L, nbands-1L do begin 
-      ;; if the observed band is some combination of more than one but not all stars
-      if total(abs(blend[i,*])) gt 1 and total(blend[i,*]) ne nstars then begin
-         starstr = strjoin(starnames[where(blend[i,*] eq 1)],'+')
-         is_diffmag = ((where(blend[i,*] eq -1))[0] ne -1)
-         if is_diffmag then begin
-            starstr += '-' + strjoin(starnames[where(blend[i,*] eq -1)],'-')
-         endif
-
-         ;; plot blended atmospheres for all supplied combinations
-         ;; include differential photometry
-         ;; if differential photometry supplied as (A+B) - (C+D), 
-         ;; plot A+B and C+D
-          for k=-1,1,2 do begin 
-            blendstarndx = where(blend[i,*] eq k, nblend)
-            if nblend gt 1 and nblend ne nstars then begin
-               legendtxt = strjoin(starnames[blendstarndx],'+')
-               legendndx = where(legendlabels eq legendtxt)
-               if legendndx[0] eq -1 then begin ;; if I haven't done this blend yet
-                  blended_atmosphere = total(sed[*,blendstarndx],2)
-                  color = colors[colorndx mod ncolors]
-                  oplot, wavelength, alog10(smooth(blended_atmosphere,10)), color=color
-                  legendlabels = [legendlabels,legendtxt]
-                  legendcolors = [legendcolors,color]
-                  colorndx++
-               endif
+      ;; plot atmospheres for each combination of blended stars 
+      ;; except 1 and all, handled separately
+      starnames = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+      legendlabels = starnames[lindgen(nstars)]
+      legendcolors = colors[(lindgen(nstars)+1) mod ncolors]
+      colorndx = nstars+1
+      
+      for i=0L, nbands-1L do begin 
+         ;; if the observed band is some combination of more than one but not all stars
+         if total(abs(blend[i,*])) gt 1 and total(blend[i,*]) ne nstars then begin
+            starstr = strjoin(starnames[where(blend[i,*] eq 1)],'+')
+            is_diffmag = ((where(blend[i,*] eq -1))[0] ne -1)
+            if is_diffmag then begin
+               starstr += '-' + strjoin(starnames[where(blend[i,*] eq -1)],'-')
             endif
-         endfor
+            
+            ;; plot blended atmospheres for all supplied combinations
+            ;; include differential photometry
+            ;; if differential photometry supplied as (A+B) - (C+D), 
+            ;; plot A+B and C+D
+            for k=-1,1,2 do begin 
+               blendstarndx = where(blend[i,*] eq k, nblend)
+               if nblend gt 1 and nblend ne nstars then begin
+                  legendtxt = strjoin(starnames[blendstarndx],'+')
+                  legendndx = where(legendlabels eq legendtxt)
+                  if legendndx[0] eq -1 then begin ;; if I haven't done this blend yet
+                     blended_atmosphere = total(sed[blendstarndx,*],1)
+                     color = colors[colorndx mod ncolors]
+                     oplot, wavelength, alog10(smooth(blended_atmosphere,10)), color=color
+                     legendlabels = [legendlabels,legendtxt]
+                     legendcolors = [legendcolors,color]
+                     colorndx++
+                  endif
+               endif
+            endfor
+            
+            ;; now choose the plot point color, unique to each supplied combination
+            match = where(legendlabels eq starstr,nmatch) 
+            if nmatch eq 0 then begin
+               color = colors[colorndx mod ncolors]
+               legendlabels = [legendlabels,starstr]
+               legendcolors = [legendcolors,color]
+               colorndx++
+               pointcolors[i] = color
+            endif else pointcolors[i] = legendcolors[match[0]]
+         endif 
+      endfor ;; each observed band
 
-         ;; now choose the plot point color, unique to each supplied combination
-         match = where(legendlabels eq starstr,nmatch) 
-         if nmatch eq 0 then begin
-            color = colors[colorndx mod ncolors]
-            legendlabels = [legendlabels,starstr]
-            legendcolors = [legendcolors,color]
-            colorndx++
-            pointcolors[i] = color
-         endif else pointcolors[i] = legendcolors[match[0]]
-      endif 
-   endfor ;; each observed band
+      legendlabels = [legendlabels,strjoin(starnames[0:nstars-1],'+')]
+      legendcolors = [legendcolors,colors[0]]
    
-
-
-
-if 0 then begin
-   for i=0L, nbands-1L do begin
-      posndx = where(blend[i,*] eq 1,npos)
-      negndx = where(blend[i,*] eq -1,nneg)
-      if npos gt 1 and npos ne nstars then begin
-         for j=0L, i-1 do begin
-            ;; if no other star before has this combination
-            match = where(legendlabels eq strjoin(starnames[posndx],'+'),nmatch)
-            if nmatch eq 0 then begin
-               ;; plot it
-               blended_atmosphere = dblarr(nwaves)
-               for k=0L, nstars-1 do begin
-                  if blend[i,k] eq 1 then blended_atmosphere += sed[*,k]
-               endfor
-               color = colors[colorndx mod ncolors]
-               oplot, wavelength, alog10(smooth(blended_atmosphere,10)), color=colors[colorndx mod ncolors]
-               legendlabels = [legendlabels,strjoin(starnames[posndx],'+')]
-               legendcolors = [legendcolors,color]
-               colorndx++
-               pointcolors[i] = color
-            endif else pointcolors[i] = legendcolors[match[0]]
-         endfor
-      endif
-      if nneg gt 1 and nneg ne nstars then begin
-         for j=0L, i-1 do begin
-            ;; if no other star before has this combination
-            match = where(legendlabels eq strjoin(starnames[negndx],'+'),nmatch)
-            if nmatch eq 0 then begin
-               ;; plot it
-               blended_atmosphere = dblarr(nwaves)
-               for k=0L, nstars-1 do begin
-                  if blend[i,k] eq -1 then blended_atmosphere += sed[*,k]
-               endfor
-               color = colors[colorndx mod ncolors]
-               oplot, wavelength, alog10(smooth(blended_atmosphere,10)), color=colors[colorndx mod ncolors]
-               legendlabels = [legendlabels,strjoin(starnames[negndx],'+')]
-               legendcolors = [legendcolors,color]
-               colorndx++
-               pointcolors[i] = color
-            endif else pointcolors[i] = legendcolors[match[0]]
-         endfor
-      endif
-   endfor
-endif
+   endif
 
    ;; plot all stars blended together
-   oplot, wavelength, alog10(smooth(total(sed,2),10)),color=colors[0]
-   legendlabels = [legendlabels,strjoin(starnames[0:nstars-1],'+')]
-   legendcolors = [legendcolors,colors[0]]
-   
+   oplot, wavelength, alog10(smooth(total(sed,1),10)),color=colors[0]
+
    ;; overplot the spectrophotometry data
    if nspecfiles gt 0 then specphotcolors = lonarr(nspecfiles)
    for i=0L, nspecfiles-1 do begin
