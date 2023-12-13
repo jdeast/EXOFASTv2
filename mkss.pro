@@ -132,7 +132,7 @@ endif else if n_elements(parsec0) eq 1 then begin
    endif else begin
       parsec = bytarr(nstars)
    endelse
-endif else if n_elements(parsec) eq nstars then begin
+endif else if n_elements(parsec0) eq nstars then begin
    ;; if set as an NSTARS array, use array
    parsec = parsec0
 endif else begin
@@ -150,7 +150,7 @@ endif else if n_elements(torres0) eq 1 then begin
    endif else begin
       torres = bytarr(nstars)      
    endelse
-endif else if n_elements(torres) eq nstars then begin
+endif else if n_elements(torres0) eq nstars then begin
    ;; if set as an NSTARS array, use array
    torres = torres0
 endif else begin
@@ -163,7 +163,7 @@ if n_elements(mannrad0) eq 0 then begin
    mannrad = bytarr(nstars)
 endif else if n_elements(mannrad0) eq 1 then begin
    mannrad = bytarr(nstars) + keyword_set(mannrad0)
-endif else if n_elements(mannrad) eq nstars then begin
+endif else if n_elements(mannrad0) eq nstars then begin
    ;; if set as an NSTARS array, use array
    mannrad = mannrad0
 endif else begin
@@ -176,11 +176,11 @@ if n_elements(mannmass0) eq 0 then begin
    mannmass = bytarr(nstars)
 endif else if n_elements(mannmass0) eq 1 then begin
    mannmass = bytarr(nstars) + keyword_set(mannmass0)
-endif else if n_elements(mannmass) eq nstars then begin
+endif else if n_elements(mannmass0) eq nstars then begin
    ;; if set as an NSTARS array, use array
    mannmass = mannmass0
 endif else begin
-   printandlog, 'MANNMASS mist have 0, 1, or NSTARS elements', lognname
+   printandlog, 'MANNMASS must have 0, 1, or NSTARS elements', lognname
    return, -1
 endelse
 
@@ -194,7 +194,7 @@ endif else if n_elements(yy0) eq 1 then begin
    endif else begin
       yy = bytarr(nstars)
    endelse
-endif else if n_elements(yy) eq nstars then begin
+endif else if n_elements(yy0) eq nstars then begin
    ;; if set as an NSTARS array, use array
    yy = yy0
 endif else begin
@@ -313,13 +313,13 @@ endif else begin
 endelse
 
 if n_elements(noclaret) eq 1 then begin
-   noclaret = bytarr(ntran) + keyword_set(noclaret)
+   noclaret = bytarr(ntran>1) + keyword_set(noclaret)
 endif else if n_elements(noclaret) ne ntran and n_elements(noclaret) ne 0 and ntran gt 0 then begin
    printandlog, 'NOCLARET has ' + strtrim(n_elements(noclaret),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
    return, -1
 end
 if n_elements(noclaret) eq 0 then begin
-   if ntran gt 0 then noclaret = bytarr(ntran) $
+   if ntran gt 0 then noclaret = bytarr(ntran>1) $
    else noclaret = [0B]
 endif
 
@@ -394,6 +394,7 @@ if tranpath ne '' or astrompath ne '' then begin
       for i=0L, nband-1 do printandlog, string(i,bands[i],format='(i2,x,a)'),logname
       printandlog, '', logname
    endif
+
 endif else begin
    ntran = 0
    tranpath = ''
@@ -541,7 +542,9 @@ if n_elements(rejectflatmodel) eq 0 then begin
    else rejectflatmodel = [0B]
 endif
 
-if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 and ntran gt 0 then begin
+if n_elements(fitspline) eq 1 then  begin
+   fitspline = bytarr(ntran) + keyword_set(fitspline)
+endif else if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 and ntran gt 0 then begin
    printandlog, 'FITSPLINE has ' + strtrim(n_elements(fitspline),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
    return, -1
 end
@@ -549,6 +552,7 @@ if n_elements(fitspline) eq 0 then begin
    if ntran gt 0 then fitspline = bytarr(ntran) $
    else fitspline = [0B]
 endif
+
 
 if n_elements(splinespace) ne ntran and n_elements(splinespace) ne 0 and ntran gt 0 then begin
    printandlog, 'SPLINESPACE must be an NTRANSITS element array', logname
@@ -2044,7 +2048,10 @@ planet = create_struct($
 ;; compute a depth for each observed band
 for i=0L, nband-1 do begin
    depth = parameter
-   prettyname = prettybands[(where(bands[i] eq allowedbands))[0]]
+
+   match = (where(bands[i] eq allowedbands))[0]
+   if match eq -1 then prettyname = bands[i] $
+   else prettyname = prettybands[match]
    depth.description = 'Transit depth in ' + prettyname
    depth.latex = '\delta_{\rm ' + prettyname + '}'
    depth.label = 'depth_' + bands[i]
@@ -2581,7 +2588,10 @@ endfor
 
 for i=0, nband-1 do begin
    ss.band[i].name = bands[i]
-   ss.band[i].label = prettybands[(where(bands[i] eq allowedbands))[0]]
+
+   match = (where(bands[i] eq allowedbands))[0]
+   if match[0] eq -1 then ss.band[i].label = bands[i] $
+   else ss.band[i].label = prettybands[match]
 
    ldcoeffs = quadld(ss.star[0].logg.value, ss.star[0].teff.value, ss.star[0].feh.value, bands[i])
    if finite(ldcoeffs[0]) then ss.band[i].u1.value = ldcoeffs[0] $
