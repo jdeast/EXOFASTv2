@@ -97,6 +97,21 @@ if len(search_results) == 0:
     print("No light curves found for " + args.id + ". Name must be SIMBAD-resolveable")
     sys.exit()
 
+# sometimes IDs match to multiple TIC IDs
+# warn the user to select by TIC ID
+unique_ids = list(set(search_results.target_name))
+if len(unique_ids) > 1 and 'TIC' in args.id: 
+    match = np.where(search_results.target_name == args.id[3:])
+    if len(match) > 0:
+        search_results = search_results[match]
+        unique_ids = list(set(search_results.target_name))
+
+if len(unique_ids) > 1:
+    print("Multiple TIC IDs match " + args.id)
+    print(unique_ids)
+    print("Specify target by TIC ID")
+    sys.exit()
+
 unique_sectors = list(set(search_results.mission))
 
 # only get one light curve per sector
@@ -124,11 +139,12 @@ else:
                 if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'CDIPS')[0]
                 if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'TASOC')[0]
                 if len(match3) == 1: to_download.append(match[match2[match3[0]]])
-                
+
 for search_result in search_results[to_download]:
 
     author = search_result.author[0] # SPOC, QLP, etc
     exptime = str(int(search_result.exptime[0].value)).zfill(4)
+    ticid = 'TIC' + search_result.target_name[0]
 
     if author == "Kepler":
         bjd_offset = 2454833.0
