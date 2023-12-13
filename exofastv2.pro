@@ -1378,122 +1378,7 @@ endif else badstart=0
 npars = ss.npars
 nfit = n_elements((*(ss.tofit))[0,*])
 
-if nthreads gt 1 then begin
-   ;; load the stellar structure into the common block for each thread
-   ;; (can't pass structures between threads, so we have to create it in each thread)
-   thread_array = replicate(create_struct('obridge',obj_new("IDL_IDLBridge", output=''),$
-                                          'j',-1L, 'm',-1L, 'k', -1L, $
-                                          'newpars',dblarr(nfit),'status',0B, 'fac', 1d0,$
-                                          'start', systime(/seconds)),nthreads)
-   
-   ;; get the current working directory (make sure all threads start there)
-   cd, current=cwd
-
-   for i=0L, nthreads-1 do begin
-      ;; replicate copies the IDLBridge by reference, not by value!! reinitialize here
-      thread_array[i].obridge = obj_new("IDL_IDLBridge", output='')
-      
-      ;; can't share a structure directly with a thread
-      ;; must share components and create the structure within the thread
-      ;; share every variable in memory to make it future proof
-      help, output=helpoutput
-      for j=0L, n_elements(helpoutput)-2 do begin
-         ;; done with variables, we're done
-         if helpoutput[j] eq 'Compiled Procedures:' then break
-         
-         ;; undefined variable; skip it
-         if strpos(helpoutput[j],'UNDEFINED') eq 16 then continue
-
-         entries = strsplit(helpoutput[j],/extract)
-
-         ;; either a long variable name that spans two lines, or not a variable
-         if strpos(helpoutput[j],'=') ne 26 then begin
-
-            ;; not a variable; skip it
-            if strpos(helpoutput[j+1],'=') ne 26 then continue
-
-            ;; undefined variable, skip it
-            if strpos(helpoutput[j+1],'UNDEFINED') eq 16 then continue
-
-            ;; if it's not a lone (long) variable name, skip it
-            if n_elements(entries) ne 1 then continue
-
-            ;; this line is the name of a long variable name
-            ;; skip the next line, which is its value
-            j++
-
-         endif else if n_elements(entries) gt 4 then begin
-            ;; catch N-dimentional arrays and strings with spaces
-            if strpos(helpoutput[j],'Array') ne 28 and strpos(helpoutput[j],'STRING') ne 16 then continue
-         endif else if n_elements(entries) ne 4 then continue            
-         ;; declare it in the thread
-         ;; EXECUTE is ok here, since we can't use VM with IDLBridge anyway
-         varname = entries[0]
-         junk = execute("thread_array[i].obridge->setvar,'" + varname + "'," + varname)
-;         print, 'setting ' + varname + ' to '
-;         junk = execute('print, ' + strtrim(varname,2))
-      endfor
-
-      ;; disable NaN warnings inside each thread
-      thread_array[i].obridge->setvar,'!except',0
-
-      ;; make sure each thread is run from the current working directory
-      thread_array[i].obridge->setvar,'cwd',cwd
-      thread_array[i].obridge->execute,'cd, cwd'
-      
-      ;; compile all the codes in each thread so compilation messages don't pollute the screen
-      if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
-         thread_array[i].obridge->execute, "resolve_all, resolve_function=[chi2func,'exofast_random'], resolve_procedure=['exofastv2'],skip_routines=['cggreek'],/cont,/quiet"
-
-
-;      print, thread_array[i].obridge->getvar('rvpath')
-;      print, thread_array[i].obridge->getvar('tranpath')
-;      print, thread_array[i].obridge->getvar('astrompath')
-;      print, thread_array[i].obridge->getvar('fbolsedfloor')
-         
-      ;; create the stellar stucture within each thread
-      thread_array[i].obridge->execute,$
-         'ss = mkss(priorfile=priorfile, prefix=prefix,'+$
-         'rvpath=rvpath, tranpath=tranpath,'+$
-         'astrompath=astrompath, dtpath=dtpath,'+$
-         'fluxfile=fluxfile, mistsedfile=mistsedfile,'+$
-         'sedfile=sedfile,specphotpath=specphotpath,'+$
-         'noavprior=noavprior,'+$
-         'fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,'+$
-         'fehsedfloor=fehsedfloor, oned=oned,'+$
-         'yy=yy, nomist=nomist, parsec=parsec,'+ $
-         'torres=torres, mannrad=mannrad, mannmass=mannmass,'+$         
-         'teffemfloor=teffemfloor, fehemfloor=fehemfloor,'+$
-         'rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,'+$
-         'fitthermal=fitthermal, fitellip=fitellip,'+ $
-         'fitreflect=fitreflect,fitphase=fitphase,'+ $
-         'fitbeam=fitbeam, derivebeam=derivebeam,'+ $
-         'nstars=nstars,starndx=starndx,'+ $         
-         'diluted=diluted, fitdilute=fitdilute,'+$
-         'nplanets=nplanets,'+$
-         'fittran=fittran, fitrv=fitrv,'+$
-         'rossiter=rossiter,fitdt=fitdt,'+$
-         'circular=circular,tides=tides,'+$
-         'alloworbitcrossing=alloworbitcrossing,'+$
-         'chen=chen, i180=i180,'+$
-         'fitslope=fitslope, fitquad=fitquad,rvepoch=rvepoch,'+$
-         'noclaret=noclaret,'+$
-         'ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,'+$
-         'longcadence=longcadence,exptime=exptime,ninterp=ninterp,'+$ 
-         'rejectflatmodel=rejectflatmodel,'+$
-         'fitspline=fitspline, splinespace=splinespace,'+$
-         'fitwavelet=fitwavelet,'+$
-         'fitlogmp=fitlogmp,'+$
-         'novcve=novcve, nochord=nochord, fitsign=fitsign,'+$
-         'fittt=fittt, earth=earth,'+$
-         'transitrange=transitrange,rvrange=rvrange,'+$
-         'sedrange=sedrange,emrange=emrange,'+$
-         'debug=debug, verbose=verbose,delay=delay,'+$
-         '/silent,'+$
-         'chi2func=chi2func,'+$
-         'logname=logname)'
-   endfor
-endif
+;; this is where threads were previously initialized
 
 if n_elements(mintz) eq 0 then mintz = 1000d0
 if n_elements(maxgr) eq 0 then maxgr = 1.01d0
@@ -1611,6 +1496,120 @@ bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psna
 
 printandlog, 'The best loglike found by AMOEBA was ' + strtrim(-bestchi2/2d0,2), logname
 printandlog, 'It should only be compared against the loglike of the same model with different starting points', logname
+
+;; initialize the threads
+if nthreads gt 1 then begin
+   printandlog, 'Initializing ' + strtrim(nthreads,2) + ' threads', logname
+
+   ;; load the stellar structure into the common block for each thread
+   ;; (can't pass structures between threads, so we have to create it in each thread)
+   thread_array = replicate(create_struct('obridge',obj_new("IDL_IDLBridge", output=''),$
+                                          'j',-1L, 'm',-1L, 'k', -1L, $
+                                          'newpars',dblarr(nfit),'status',0B, 'fac', 1d0,$
+                                          'start', systime(/seconds)),nthreads)
+   
+   ;; get the current working directory (make sure all threads start there)
+   cd, current=cwd
+
+   for i=0L, nthreads-1 do begin
+      ;; replicate copies the IDLBridge by reference, not by value!! reinitialize here
+      thread_array[i].obridge = obj_new("IDL_IDLBridge", output='')
+      
+      ;; can't share a structure directly with a thread
+      ;; must share components and create the structure within the thread
+      ;; share every variable in memory to make it future proof
+      help, output=helpoutput
+      for j=0L, n_elements(helpoutput)-2 do begin
+         ;; done with variables, we're done
+         if helpoutput[j] eq 'Compiled Procedures:' then break
+         
+         ;; undefined variable; skip it
+         if strpos(helpoutput[j],'UNDEFINED') eq 16 then continue
+
+         entries = strsplit(helpoutput[j],/extract)
+
+         ;; either a long variable name that spans two lines, or not a variable
+         if strpos(helpoutput[j],'=') ne 26 then begin
+
+            ;; not a variable; skip it
+            if strpos(helpoutput[j+1],'=') ne 26 then continue
+
+            ;; undefined variable, skip it
+            if strpos(helpoutput[j+1],'UNDEFINED') eq 16 then continue
+
+            ;; if it's not a lone (long) variable name, skip it
+            if n_elements(entries) ne 1 then continue
+
+            ;; this line is the name of a long variable name
+            ;; skip the next line, which is its value
+            j++
+
+         endif else if n_elements(entries) gt 4 then begin
+            ;; catch N-dimentional arrays and strings with spaces
+            if strpos(helpoutput[j],'Array') ne 28 and strpos(helpoutput[j],'STRING') ne 16 then continue
+         endif else if n_elements(entries) ne 4 then continue            
+         ;; declare it in the thread
+         ;; EXECUTE is ok here, since we can't use VM with IDLBridge anyway
+         varname = entries[0]
+         junk = execute("thread_array[i].obridge->setvar,'" + varname + "'," + varname)
+;         print, 'setting ' + varname + ' to '
+;         junk = execute('print, ' + strtrim(varname,2))
+      endfor
+
+      ;; disable NaN warnings inside each thread
+      thread_array[i].obridge->setvar,'!except',0
+
+      ;; make sure each thread is run from the current working directory
+      thread_array[i].obridge->setvar,'cwd',cwd
+      thread_array[i].obridge->execute,'cd, cwd'
+      
+      ;; compile all the codes in each thread so compilation messages don't pollute the screen
+      if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
+         thread_array[i].obridge->execute, "resolve_all, resolve_function=[chi2func,'exofast_random'], resolve_procedure=['exofastv2'],skip_routines=['cggreek'],/cont,/quiet"
+         
+      ;; create the stellar stucture within each thread
+      thread_array[i].obridge->execute,$
+         'ss = mkss(priorfile=priorfile, prefix=prefix,'+$
+         'rvpath=rvpath, tranpath=tranpath,'+$
+         'astrompath=astrompath, dtpath=dtpath,'+$
+         'fluxfile=fluxfile, mistsedfile=mistsedfile,'+$
+         'sedfile=sedfile,specphotpath=specphotpath,'+$
+         'noavprior=noavprior,'+$
+         'fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,'+$
+         'fehsedfloor=fehsedfloor, oned=oned,'+$
+         'yy=yy, nomist=nomist, parsec=parsec,'+ $
+         'torres=torres, mannrad=mannrad, mannmass=mannmass,'+$         
+         'teffemfloor=teffemfloor, fehemfloor=fehemfloor,'+$
+         'rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,'+$
+         'fitthermal=fitthermal, fitellip=fitellip,'+ $
+         'fitreflect=fitreflect,fitphase=fitphase,'+ $
+         'fitbeam=fitbeam, derivebeam=derivebeam,'+ $
+         'nstars=nstars,starndx=starndx,'+ $         
+         'diluted=diluted, fitdilute=fitdilute,'+$
+         'nplanets=nplanets,'+$
+         'fittran=fittran, fitrv=fitrv,'+$
+         'rossiter=rossiter,fitdt=fitdt,'+$
+         'circular=circular,tides=tides,'+$
+         'alloworbitcrossing=alloworbitcrossing,'+$
+         'chen=chen, i180=i180,'+$
+         'fitslope=fitslope, fitquad=fitquad,rvepoch=rvepoch,'+$
+         'noclaret=noclaret,'+$
+         'ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,'+$
+         'longcadence=longcadence,exptime=exptime,ninterp=ninterp,'+$ 
+         'rejectflatmodel=rejectflatmodel,'+$
+         'fitspline=fitspline, splinespace=splinespace,'+$
+         'fitwavelet=fitwavelet,'+$
+         'fitlogmp=fitlogmp,'+$
+         'novcve=novcve, nochord=nochord, fitsign=fitsign,'+$
+         'fittt=fittt, earth=earth,'+$
+         'transitrange=transitrange,rvrange=rvrange,'+$
+         'sedrange=sedrange,emrange=emrange,'+$
+         'debug=debug, verbose=verbose,delay=delay,'+$
+         '/silent,'+$
+         'chi2func=chi2func,'+$
+         'logname=logname)'
+   endfor
+endif
 
 ;; do the MCMC fit
 if not keyword_set(bestonly) then begin
