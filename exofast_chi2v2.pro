@@ -76,12 +76,6 @@ au = ss.constants.au/ss.constants.rsun
 chi2 = 0.d0
 determinant = 1d0
 
-if ss.debug or ss.verbose then begin
-   printandlog, '1',ss.logname
-   printandlog, '', ss.logname
-   printandlog, '2',ss.logname
-endif
-
 ;; *** First make sure step parameters are in bounds ***
 
 ;; physical limb darkening (Kipping, 2013)
