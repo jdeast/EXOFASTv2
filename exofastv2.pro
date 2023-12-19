@@ -239,7 +239,7 @@
 ;
 ;                Such a file can be generated given the 2D array of
 ;                fractional flux decrements (DT), a time array
-;                (BJD_TDB) and a velocity array (VEL) like this:
+;                (BJD_TDB) and a velocity array (VEL, in km/s) like this:
 ; 
 ;                writefits,'nYYYYMMDD.pname.instrument.resolution.fits',DT
 ;                writefits,'nYYYYMMDD.pname.instrument.resolution.fits',BJD_TDB, /append
