@@ -104,6 +104,7 @@ r = a*(1d0-e^2)/(1d0+e*cos(trueanom))*factor
 if ~keyword_set(primary) then om = omega + !dpi $
 else om = omega
 
+;; z grows with distance
 z = r*sin(trueanom+om)*sin(inclination)
 
 return, bjd_target - z/c
