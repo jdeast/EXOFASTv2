@@ -12,6 +12,7 @@
 *.csv
 *.DAT
 *.gz
+pngs/
 examples/*/*.idl
 examples/*/*.txt
 examples/*/fitresults
