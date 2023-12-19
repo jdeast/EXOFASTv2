@@ -82,7 +82,8 @@ end
 ;  2023/02 -- Documented.
 ;-
 
-pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile, gaiaspfile=gaiaspfile, france=france, ra=ra, dec=dec
+pro mkticsed, ticid, priorfile=priorfile, sedfile=sedfile, gaiaspfile=gaiaspfile, france=france, ra=ra, dec=dec, $
+              apass=apass, galax=galex, ucac=ucac, merm=merm, stromgren=stromgren, kepler=kepler, tycho=tycho
 
 if !version.os_family eq 'Windows' then $
    message,'This program relies on queryvizier, which is not supported in Windows'
@@ -129,6 +130,7 @@ if n_elements(sedfile) eq 0 then sedfile = ticid + '.sed'
 if n_elements(gaiaspfile) eq 0 then gaiaspfile = ticid + '.Gaia.sed'
 
 dist = 120d0
+galdist=dist
 
 ;; query TICv8 for the TIC ID
 if strtrim(long(ticid),2) eq ticid then begin
@@ -359,7 +361,12 @@ if (size(q2mass))[2] eq 8 then begin
       q2mass = q2mass[match]
       if q2mass.Jmag gt -9 and (q2mass.e_Jmag lt 1d0) then printf, lun,'J2M',q2mass.Jmag,max([0.02d,q2mass.e_Jmag]),q2mass.e_Jmag, format=fmt
       if q2mass.Hmag gt -9 and (q2mass.e_Hmag lt 1d0) then printf, lun,'H2M',q2mass.Hmag,max([0.02d,q2mass.e_Hmag]),q2mass.e_Hmag, format=fmt
-      if q2mass.Kmag gt -9 and (q2mass.e_Kmag lt 1d0) then printf, lun,'K2M',q2mass.Kmag,max([0.02d,q2mass.e_Kmag]),q2mass.e_Kmag, format=fmt
+      if q2mass.Kmag gt -9 and (q2mass.e_Kmag lt 1d0) then begin
+         printf, lun,'K2M',q2mass.Kmag,max([0.02d,q2mass.e_Kmag]),q2mass.e_Kmag, format=fmt
+         ;; include the 
+         printf, priorlun,'# Apparent 2MASS K magnitude for the Mann relation'
+         printf, priorlun,'appks',q2mass.Kmag,max([0.02d,q2mass.e_Kmag]), format='(a5,x,f9.6,x,f0.6)'
+      endif
    endif
 endif
 
@@ -417,7 +424,7 @@ if ~finite(feh) or ~finite(ufeh) then begin
          b_y = qpaunzen15.b_y
          m1 = qpaunzen15.m1
          c1 = qpaunzen15.c1
-                  
+         
          ;; metalicity prior from Cassegrande+ 2011 (solar neighborhood)
          if b_y gt 0.23d0 and b_y lt 0.63d0 and $
             m1 gt 0.05d0 and m1 le 0.68d0 and $
@@ -459,12 +466,165 @@ if ~finite(feh) or ~finite(ufeh) then begin
 ;   printf, priorlun, '# Cassegrande+ 2011, Table 1'
 ;   feh = -0.06d0
 ;   ufeh = 0.25d0
-
+   
    printf, priorlun, '# wide Gaussian prior'
    feh = 0d0
    ufeh = 1d0
    printf, priorlun, feh, ufeh, format='("feh",x,f0.5,x,f0.5)'
 endif
+
+;; get GALEX -- by default, skip; models are unreliable here
+qgalex=Exofast_Queryvizier('II/312/ais',star,galdist/60d0,/silent,/all,cfa=cfa)
+if long(tag_exist(qgalex,'fuv',/quiet)) ne 0L then begin
+   printf, lun, '# Galex DR5, Bianchi+ 2011'
+   printf, lun, '# http://adsabs.harvard.edu/abs/2011Ap%26SS.335..161B'
+   printf, lun, '# Atmospheric models are generally untrustworthy here, and including UV photometry may bias the fit'
+   printf, lun, '# Matching is done by nearest neighbor with ~10% failure rate'
+   if n_elements(qgalex) gt 1 then begin
+      print,'Warning: More than 1 GALEX source found; using nearest one only.'
+      printf, lun,'# Warning: More than 1 GALEX source found; using nearest one only.'
+      junk = min(qgalex._r,m)
+      qgalex=qgalex[m]
+   endif
+   if qgalex.fuv gt -99 and finite(qgalex.e_fuv) then begin
+      line = string('galFUV',qgalex.fuv,max([0.1d,qgalex.e_fuv]),qgalex.e_fuv, format=fmt) 
+      if keyword_set(galex) then printf, lun, line $
+      else printf, lun, '#' + line
+   endif
+   if qgalex.nuv gt -99 and finite(qgalex.e_nuv) then begin
+      line = string('galNUV',qgalex.nuv,max([0.1d,qgalex.e_nuv]),qgalex.e_nuv, format=fmt)
+      if keyword_set(galex) then printf, lun,line $
+      else printf, lun, '#' + line
+   endif
+endif else qgalex={fuv_6:-99.,nuv_6:-99.}
+
+; Tycho-2
+qtyc2=Exofast_Queryvizier('I/259/TYC2',star,dist/60.,/silent,/all,cfa=cfa)
+if long(tag_exist(qtyc2,'BTMAG',/quiet)) ne 0L then begin
+   printf, lun, '# Tycho catalog, Hoeg+ 2000'
+   printf, lun, '# http://adsabs.harvard.edu/abs/2000A%26A...355L..27H'
+   printf, lun, '# Matching is done by nearest neighbor with ~10% failure rate'
+   if n_elements(qtyc2) gt 1 then begin
+      print,'Warning: More than 1 Tycho-2 source found; using nearest one only.'
+      printf, lun,'# Warning: More than 1 Tycho-2 source found; using nearest one only.'
+      junk = min(qtyc2._r,m)
+      qtyc2=qtyc2[m]
+   endif
+   if keyword_set(tycho) then comment = '' else comment = '#          '
+   if qtyc2.btmag gt -9 and finite(qtyc2.e_btmag) then printf, lun,comment+'BT',qtyc2.btmag,max([0.02d,qtyc2.e_btmag]),qtyc2.e_btmag, format=fmt
+   if qtyc2.vtmag gt -9 and finite(qtyc2.e_vtmag) then printf, lun,comment+'VT',qtyc2.vtmag,max([0.02d,qtyc2.e_vtmag]),qtyc2.e_vtmag, format=fmt
+endif else qtyc2={btmag:-99.,vtmag:-99.}
+
+; UCAC4 
+qucac4=Exofast_Queryvizier('UCAC4',star,dist/60.,/silent,/all,cfa=cfa)
+if long(tag_exist(qucac4,'bmag',/quiet)) ne 0L then begin
+   printf, lun,'# UCAC4, Zacharias+, 2012'
+   printf, lun,'# http://adsabs.harvard.edu/abs/2012yCat.1322....0Z'
+   printf, lun,'# Matching is done by nearest neighbor with ~10% failure rate'
+   if n_elements(qucac4) gt 1 then begin
+      print,'Warning: More than 1 UCAC-4 source found; using nearest one only.'
+      printf, lun,'# Warning: More than 1 UCAC-4 source found; using nearest one only.'
+      junk = min(qucac4._r,m)
+      qucac4=qucac4[m]
+   endif
+   if keyword_set(apass) then comment1 = '' else comment1 = '#           ' 
+   if keyword_set(apass) then comment2 = '' else comment2 = '#       ' 
+
+   printf, lun, '# APASS DR6 (via UCAC4), Henden+ 2016'
+   printf, lun, '# http://adsabs.harvard.edu/abs/2016yCat.2336....0H'
+   if qucac4.bmag ne qtyc2.btmag and qucac4.bmag gt -9 and qucac4.e_bmag ne 99 then printf, lun,comment1+'B',qucac4.bmag,max([0.02d,qucac4.e_bmag*0.01d]),qucac4.e_bmag*0.01d, format=fmt
+   if qucac4.vmag ne qtyc2.vtmag and qucac4.bmag gt -9 and qucac4.e_vmag ne 99 then printf, lun,comment1+'V',qucac4.vmag,max([0.02d,qucac4.e_vmag*0.01d]),qucac4.e_vmag*0.01d, format=fmt
+   if qucac4.gmag gt -9 then printf, lun,comment2+'gSDSS',qucac4.gmag,max([0.02d,qucac4.e_gmag*0.01d]),qucac4.e_gmag*0.01d, format=fmt
+   if qucac4.rmag gt -9 then printf, lun,comment2+'rSDSS',qucac4.rmag,max([0.02d,qucac4.e_rmag*0.01d]),qucac4.e_rmag*0.01d, format=fmt
+   if qucac4.imag gt -9 then printf, lun,comment2+'iSDSS',qucac4.imag,max([0.02d,qucac4.e_imag*0.01d]),qucac4.e_imag*0.01d, format=fmt
+
+;   if qucac4.Jmag gt -9  or qucac4.Hmag gt -9 or qucac4.Kmag gt -9 then begin
+;      printf, lun, '# 2MASS (via UCAC4), Cutri+ 2003'
+;      printf, lun, '# http://adsabs.harvard.edu/abs/2003yCat.2246....0C'   
+;   endif
+;   if qucac4.Jmag gt -9 then printf, lun,'J2M',qucac4.Jmag,max([0.02d,qucac4.e_Jmag]),qucac4.e_Jmag, format=fmt
+;   if qucac4.Hmag gt -9 then printf, lun,'H2M',qucac4.Hmag,max([0.02d,qucac4.e_Hmag]),qucac4.e_Hmag, format=fmt
+;   if qucac4.Kmag gt -9 then printf, lun,'K2M',qucac4.Kmag,max([0.02d,qucac4.e_Kmag]),qucac4.e_Kmag, format=fmt
+endif; else qucac4={Jmag:-99.,Hmag:-99.,Kmag:-99.}
+
+
+; Paunzen, 2015 Stromgren
+qpaunzen15=Exofast_Queryvizier('J/A+A/580/A23/catalog',star,dist/60.,/silent,/all,cfa=cfa)
+if long(tag_exist(qpaunzen15,'vmag',/quiet)) ne 0L then begin
+   if n_elements(qpaunzen15) gt 1 then begin
+      print,'Warning: More than 1 Paunzen source found; using nearest one only.'
+      printf, lun,'# Warning: More than 1 Paunzen source found; using nearest one only.'
+      junk = min(qpaunzen15._r,m)
+      qpaunzen15=qpaunzen15[m]
+   endif
+   ubvymags=strom_conv(qpaunzen15.vmag,max([0.01d,qpaunzen15.e_vmag]),$
+                       qpaunzen15.b_y,max([0.02d,qpaunzen15.e_b_y]),$
+                       qpaunzen15.m1,max([0.02d,qpaunzen15.e_m1]),$
+                       qpaunzen15.c1,max([0.02d,qpaunzen15.e_c1]),/silent)
+   printf, lun, '# Stromgren photometry, Paunzen, 2015'
+   printf, lun, '# http://adsabs.harvard.edu/abs/2015A%26A...580A..23P'
+   printf, lun, '# Matching is done by nearest neighbor with ~10% failure rate'
+   if keyword_set(stromgren) then comment = '' else comment = '#        '
+
+   if ubvymags(0) gt -9 then printf, lun,comment+'uStr',ubvymags(0),max([0.02d,ubvymags(1)]), format=fmt
+   if ubvymags(2) gt -9 then printf, lun,comment+'vStr',ubvymags(2),max([0.02d,ubvymags(3)]), format=fmt
+   if ubvymags(4) gt -9 then printf, lun,comment+'bStr',ubvymags(4),max([0.02d,ubvymags(5)]), format=fmt
+   if ubvymags(6) gt -9 then printf, lun,comment+'yStr',ubvymags(6),max([0.02d,ubvymags(7)]), format=fmt
+endif else qpaunzen15={vmag:-99.}
+
+; get Mermilliod 1991 UBV ;; by default skip (Gaia better)
+qmermilliod91=Exofast_Queryvizier('II/168/ubvmeans',star,dist/60.,/silent,/all,cfa=cfa) 
+if long(tag_exist(qmermilliod91,'vmag',/quiet)) ne 0L then begin
+   if n_elements(qmermilliod91) gt 1 then begin
+      print,'Warning: More than 1 Mermilliod source found; using nearest one only.'
+      printf, lun,'# Warning: More than 1 Mermilliod source found; using nearest one only.'
+      junk = min(qmermilliod91._r,m)
+      qmermilliod91=qmermilliod91[m]
+   endif
+
+   if keyword_set(merm) then comment='' else comment='#           '
+   printf, lun, '# Mermilliod, 1994'
+   printf, lun, '# http://adsabs.harvard.edu/abs/1994yCat.2193....0M'
+   printf, lun, '# Matching is done by nearest neighbor with ~10% failure rate'
+
+   if qmermilliod91.u_b+qmermilliod91.b_v+qmermilliod91.vmag gt -9 and $
+      finite(qmermilliod91.e_u_b) and finite(qmermilliod91.e_b_v) and $
+      finite(qmermilliod91.e_vmag) then begin
+      printf, lun, comment+'U',qmermilliod91.u_b+qmermilliod91.b_v+qmermilliod91.vmag,max([0.02d,sqrt(qmermilliod91.e_u_b^2+qmermilliod91.e_b_v^2+qmermilliod91.e_vmag^2)]), format=fmt
+   endif
+   
+   if qmermilliod91.b_v+qmermilliod91.vmag gt -9 and $
+      finite(qmermilliod91.e_b_v) and $
+      finite(qmermilliod91.e_vmag) then begin
+      printf, lun, comment+'B',qmermilliod91.b_v+qmermilliod91.vmag,max([0.02d,sqrt(qmermilliod91.e_b_v^2+qmermilliod91.e_vmag^2)]), format=fmt
+   endif
+   if qmermilliod91.vmag gt -9 and finite(qmermilliod91.e_vmag) then begin
+      printf, lun, comment+'V',qmermilliod91.vmag,max([0.02d,qmermilliod91.e_vmag]), format=fmt
+   endif
+endif else qmermilliod91={vmag:-99.}
+
+; KIS DR2
+qkis=Exofast_Queryvizier('J/AJ/144/24/kisdr2',star,dist/60.,/silent,cfa=cfa,/all)
+if long(tag_exist(qkis,'KIS',/quiet)) ne 0L then begin
+   printf, lun, '# KIS DR2, Greiss+ 2012'
+   printf, lun, '# http://adsabs.harvard.edu/abs/2012AJ....144...24G'
+   printf, lun, '# Matching is done by nearest neighbor with ~10% failure rate'
+   if n_elements(qkis) gt 1 then begin
+      print,'Warning: More than 1 KIS source found; using nearest one only.'
+      printf, lun,'# Warning: More than 1 KIS source found; using nearest one only.'
+      match = crossref(ra, dec, qkis.raj2000, qkis.dej2000)
+      qkis = qkis[match]
+   endif
+   
+   if keyword_set(kepler) then comment = '' else comment = '#        '
+   
+   if qkis.umag gt -9 and finite(qkis.e_umag) then printf, lun,comment+'UKIS',qkis.umag,max([0.02d,qkis.e_umag]),qkis.e_umag, format=fmt
+   if qkis.gmag gt -9 and finite(qkis.e_gmag) then printf, lun,comment+'gKIS',qkis.gmag,max([0.02d,qkis.e_gmag]),qkis.e_gmag, format=fmt
+   if qkis.rmag gt -9 and finite(qkis.e_rmag) then printf, lun,comment+'rKIS',qkis.rmag,max([0.02d,qkis.e_rmag]),qkis.e_rmag, format=fmt
+   if qkis.imag gt -9 and finite(qkis.e_imag) then printf, lun,comment+'iKIS',qkis.imag,max([0.02d,qkis.e_imag]),qkis.e_imag, format=fmt
+endif else qkis={umag:-99.,gmag:-99.,rmag:-99.,imag:-99.}
+
+
 
 free_lun, priorlun
 free_lun, lun
