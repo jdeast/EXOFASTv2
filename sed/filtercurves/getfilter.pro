@@ -113,7 +113,13 @@ filterids = ['GAIA/GAIA2r.Gbp',$
              'WIYN/NESSI.g',$
              'WIYN/NESSI.r',$
              'WIYN/NESSI.i',$
-             'WIYN/NESSI.z']
+             'WIYN/NESSI.z',$
+             'Misc/APASS.B',$
+             'Misc/APASS.V',$
+             'Misc/APASS.sdss_g',$
+             'Misc/APASS.sdss_r',$
+             'Misc/APASS.sdss_i',$
+             'Misc/APASS.sdss_z']
              
 for i=0L, n_elements(filterids)-1 do begin
    getfilter, filterids[i],/redo
