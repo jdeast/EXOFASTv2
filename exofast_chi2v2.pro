@@ -219,6 +219,13 @@ if nbad gt 0 then begin
    return, !values.d_infinity
 endif
 
+;; 0.01 < Specphot error scaling < 10000
+bad = where(ss.specphot.sperrscale.value lt 1d-2 or ss.specphot.sperrscale.value gt 1d5, nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'spectrophotometry error scale is bad (' + strtrim(ss.specphot[bad].sperrscale.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
 ;; -10 < [Fe/H] < 2 
 bad = where(ss.star.feh.value lt -10d0 or ss.star.feh.value gt 2d0 ,nbad)
 if nbad gt 0 then begin
@@ -1044,7 +1051,7 @@ for i=0, ss.ndt-1 do begin
                          ss.star[starndx].vsini.value/1d3,$
                          ss.star[starndx].vline.value/1d3,$
                          ss.doptom[i].dtscale.value, debug=ss.debug,$
-                         /like,psname=epsname,$
+                         /like,psname=epsname,c=ss.constants.c/1e5,$
                          verbose=ss.verbose, logname=ss.logname)
 
    if ~finite(dtchi2) then begin
