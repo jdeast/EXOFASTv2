@@ -186,6 +186,22 @@ for i=0, ss.nplanets-1 do begin
    ;; how did the user seed e?
    if ss.planet[i].e.userchanged then begin
       ;; do nothing
+   endif else if ss.planet[i].tc.userchanged and ss.planet[i].ts.userchanged then begin
+      ;; from eclipse timing
+      print, 'warning: setting e/omega from times and durations is untested'
+      if ss.planet[i].esinw.userchanged then esinw=ss.planet[i].esinw.value
+      if ss.planet[i].tfwhm.userchanged then tfwhmp=ss.planet[i].tfwhm.value
+      if ss.planet[i].tfwhms.userchanged then tfwhms=ss.planet[i].tfwhms.value
+      if ss.planet[i].i.userchanged then inc=ss.planet[i].i.value
+      if ss.planet[i].p.userchanged then p=ss.planet[i].p.value
+      junk = time2ew(ss.planet[i].tc.value, ss.planet[i].ts.value,$
+                     ss.planet[i].period.value,esinwin=esinw,$
+                     tfwhmp=tfwhmp, tfwhms=tfwhms, p=p, inc=inc,$
+                     e=e,omega=omega,ecosw=ecosw)
+      ss.planet[i].e.value = e
+      ss.planet[i].omega.value = omega
+      ss.planet[i].e.userchanged = 1B
+      ss.planet[i].omega.userchanged = 1B
    endif else if ss.planet[i].vcve.userchanged then begin
 
       ;; pick the omega that maximizes the range of vcve
@@ -457,7 +473,7 @@ endelse
                                        ss.planet[i].e.value,$
                                        ss.planet[i].i.value,$
                                        ss.planet[i].omega.value,$
-                                       ss.planet[i].period.value,/reverse_correction)
+                                       ss.planet[i].period.value,/tt2tc)
 
          ;; make tt as close as possible to tc
          nper = round((ss.planet[i].tt.value - ss.planet[i].tc.value)/ss.planet[i].period.value)

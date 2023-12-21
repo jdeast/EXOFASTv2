@@ -66,9 +66,9 @@ for i=0L, ss.nstars-1 do begin
    ;; if user fixes the distance to another star's distance, parallax won't be derived like this
 ;   if ss.star[i].distance.fit then ss.star[i].parallax.value = 1d3/ss.star[i].distance.value ;; mas
 ;   if ss.star[i].parallax.fit then ss.star[i].distance.value = 1d3/ss.star[i].parallax.value ;; pc
-   ;; do this instead -- hack?
-   if stdev(ss.star[i].distance.value) lt 1d-10 then ss.star[i].distance.value = 1d3/ss.star[i].parallax.value
-   if stdev(ss.star[i].parallax.value) lt 1d-10 then ss.star[i].parallax.value = 1d3/ss.star[i].distance.value
+   ;; do this instead -- hack!
+   if stdev(ss.star[i].distance.value) lt 1d-8 then ss.star[i].distance.value = 1d3/ss.star[i].parallax.value
+   if stdev(ss.star[i].parallax.value) lt 1d-8 then ss.star[i].parallax.value = 1d3/ss.star[i].distance.value
    
    ss.star[i].absks.value = ss.star[i].appks.value - 2.5d0*alog10((ss.star[i].distance.value/10d0)^2)                       ;; mag
 
@@ -240,21 +240,25 @@ endelse
                                     ss.planet[i].e.value,$
                                     ss.planet[i].i.value,$
                                     ss.planet[i].omega.value,$
-                                    ss.planet[i].period.value,/reverse_correction)                                    
+                                    ss.planet[i].period.value,/tt2tc)                                    
    endif else begin
-      if ss.planet[i].tt.derive then begin
-         ss.planet[i].tt.value = tc2tt(ss.planet[i].tc.value,$
-                                       ss.planet[i].e.value,$
-                                       ss.planet[i].i.value,$
-                                       ss.planet[i].omega.value,$
-                                       ss.planet[i].period.value)
-      endif
+      ss.planet[i].tt.value = tc2tt(ss.planet[i].tc.value,$
+                                    ss.planet[i].e.value,$
+                                    ss.planet[i].i.value,$
+                                    ss.planet[i].omega.value,$
+                                    ss.planet[i].period.value)
    endelse
 
    ss.planet[i].tp.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value)
    ss.planet[i].ts.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phase2)
    ss.planet[i].ta.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phasea)
    ss.planet[i].td.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phased)
+
+   ss.planet[i].te.value = tc2tt(ss.planet[i].ts.value,$
+                                 ss.planet[i].e.value,$
+                                 ss.planet[i].i.value,$
+                                 ss.planet[i].omega.value,$
+                                 ss.planet[i].period.value,/ts2te)
 
    ;; if given a prior, select the epoch closest to that prior
    if ss.planet[i].ts.prior ne 0d0 then begin
@@ -288,7 +292,7 @@ endelse
 
    ss.planet[i].fave.value = ss.constants.sigmab*ss.star[ss.planet[i].starndx].teff.value^4/(ss.planet[i].ar.value*(1d0+ss.planet[i].e.value^2/2d0))^2/1d9    ;; 10^9 erg/s/cm^2
 
-   ss.planet[i].b.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)  ;; eq 7, Winn 2010
+   ss.planet[i].b.value  = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)  ;; eq 7, Winn 2010
    ss.planet[i].bs.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value)  ;; eq 8, Winn 2010
 
    ;; approximate durations taken from Winn 2010 (close enough; these should only be used to schedule observations anyway)
@@ -369,27 +373,64 @@ endelse
    minepoch = floor((minbjd - median(ss.planet[i].tc.value))/median(ss.planet[i].period.value))-1
    maxepoch =  ceil((maxbjd - median(ss.planet[i].tc.value))/median(ss.planet[i].period.value))+1
    bestepoch = (minepoch+maxepoch)/2d0
+   bestepoch2 = (minepoch+maxepoch)/2d0
    mincovar = !values.d_infinity
+   mincovar2 = !values.d_infinity
    burnndx = ss.burnndx
    goodchains = *(ss.goodchains)
    for epoch=minepoch, maxepoch do begin
 
       ;; trim the burn in and remove bad chains before computing covariances
-      tc     = (reform(ss.planet[i].tc.value+epoch*ss.planet[i].period.value,$
+      tt     = (reform(ss.planet[i].tt.value+epoch*ss.planet[i].period.value,$
                        ss.nsteps/ss.nchains,ss.nchains))[burnndx:*,goodchains]
       period = (reform(ss.planet[i].period.value,$
                        ss.nsteps/ss.nchains,ss.nchains))[burnndx:*,goodchains]
-      tc = reform(tc,n_elements(tc))
+
+      tt = reform(tt,n_elements(tt))
       period = reform(period,n_elements(period))
       
-      corr = correlate(transpose([[tc],[period]]))
+      corr = correlate(transpose([[tt],[period]]))
       if abs(corr[0,1]) lt mincovar then begin
          mincovar = abs(corr[0,1])
          bestepoch = epoch
       endif
+
+      ;; do the same for the secondary eclipse time
+      te = (reform(ss.planet[i].te.value+epoch*ss.planet[i].period.value,$
+                   ss.nsteps/ss.nchains,ss.nchains))[burnndx:*,goodchains]
+      te = reform(te,n_elements(te))
+      corr = correlate(transpose([[te],[period]]))
+      if abs(corr[0,1]) lt mincovar2 then begin
+         mincovars = abs(corr[0,1])
+         bestepoch2 = epoch
+      endif
+
    endfor
-   ;; apply the best
-   ss.planet[i].t0.value = ss.planet[i].tc.value + bestepoch*ss.planet[i].period.value
+
+   ;; apply the best epoch to compute the optimal times
+   ss.planet[i].tt.value = ss.planet[i].tt.value + bestepoch*ss.planet[i].period.value
+   ss.planet[i].te.value = ss.planet[i].te.value + bestepoch2*ss.planet[i].period.value
+   
+   ;; convert to SSB frame
+   for j=0L, ss.nsteps-1 do begin
+      model_times = [ss.planet[i].tt.value[j],ss.planet[i].te.value[j],$
+                     ss.planet[i].tc.value[j],ss.planet[i].ts.value[j]]
+      
+      observed_times = target2bjd(model_times,$
+                                  inclination=ss.planet[i].i.value[j],$
+                                  a=ss.planet[i].a.value[j],$
+                                  tp=ss.planet[i].tp.value[j],$
+                                  period=ss.planet[i].period.value[j],$
+                                  e=ss.planet[i].e.value[j],$
+                                  omega=ss.planet[i].omega.value[j],$
+                                  q=1d0/ss.planet[i].q.value[j])
+      
+      ss.planet[i].t0.value[j] = observed_times[0] 
+      ss.planet[i].te0.value[j] = observed_times[1] 
+      ss.planet[i].tco.value[j] = observed_times[2] 
+      ss.planet[i].tso.value[j] = observed_times[3] 
+
+   endfor
 
    ;; blackbody eclipse depths
 

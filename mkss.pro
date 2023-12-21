@@ -543,7 +543,7 @@ if n_elements(rejectflatmodel) eq 0 then begin
 endif
 
 if n_elements(fitspline) eq 1 then  begin
-   fitspline = bytarr(ntran) + keyword_set(fitspline)
+   fitspline = bytarr(ntran>1) + keyword_set(fitspline)
 endif else if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 and ntran gt 0 then begin
    printandlog, 'FITSPLINE has ' + strtrim(n_elements(fitspline),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
    return, -1
@@ -1061,8 +1061,8 @@ rhostar.latex = '\rho_*'
 rhostar.label = 'rhostar'
 
 tc = parameter
-tc.unit = '\bjdtdb'
-tc.description = 'Time of conjunction'
+tc.unit = '\tjdtdb'
+tc.description = 'Model Time of conjunction'
 tc.latex = 'T_C'
 tc.label = 'tc'
 tc.cgs = 86400d0
@@ -1070,9 +1070,18 @@ if nplanets eq 0 then tc.derive=0 $
 else tc.fit = 1
 tc.scale = 0.1
 
+tco = parameter
+tco.unit = '\bjdtdb'
+tco.description = 'Observed Time of conjunction'
+tco.latex = 'T_C'
+tco.label = 'tco'
+tco.cgs = 86400d0
+if nplanets eq 0 then tco.derive=0
+tco.scale = 0.1
+
 tt = parameter
-tt.unit = '\bjdtdb'
-tt.description = 'Time of min proj sep'
+tt.unit = '\tjdtdb'
+tt.description = 'Model time of min proj sep'
 tt.latex = 'T_T'
 tt.label = 'tt'
 tt.cgs = 86400d0
@@ -1082,7 +1091,7 @@ tt.derive = 0B
 
 t0 = parameter
 t0.unit = '\bjdtdb'
-t0.description = 'Optimal conj time'
+t0.description = 'Obs time of min proj sep'
 t0.latex = 'T_0'
 t0.label = 't0'
 t0.cgs = 86400d0
@@ -1348,7 +1357,7 @@ ideg.cgs = !dpi/180d0
 if nplanets eq 0 then ideg.derive = 0
 
 tp = parameter
-tp.unit = '\bjdtdb'
+tp.unit = '\tjdtdb'
 tp.description = 'Time of Periastron'
 tp.latex = 'T_P'
 tp.label = 'tp'
@@ -1356,7 +1365,7 @@ tp.cgs = 86400d0
 if nplanets eq 0 then tp.derive = 0
 
 td = parameter
-td.unit = '\bjdtdb'
+td.unit = '\tjdtdb'
 td.description = 'Time of desc node'
 td.latex = 'T_D'
 td.label = 'td'
@@ -1364,7 +1373,7 @@ td.cgs = 86400d0
 if nplanets eq 0 then td.derive = 0
 
 ta = parameter
-ta.unit = '\bjdtdb'
+ta.unit = '\tjdtdb'
 ta.description = 'Time of asc node'
 ta.latex = 'T_A'
 ta.label = 'ta'
@@ -1372,12 +1381,37 @@ ta.cgs = 86400d0
 if nplanets eq 0 then ta.derive = 0
 
 ts = parameter
-ts.unit = '\bjdtdb'
-ts.description = 'Time of eclipse'
+ts.unit = '\tjdtdb'
+ts.description = 'Model Time of eclipse'
 ts.latex = 'T_S'
 ts.label = 'ts'
 ts.cgs = 86400d0
 if nplanets eq 0 then ts.derive = 0
+
+tso = parameter
+tso.unit = '\bjdtdb'
+tso.description = 'Observed Time of eclipse'
+tso.latex = 'T_S'
+tso.label = 'tso'
+tso.cgs = 86400d0
+if nplanets eq 0 then tso.derive = 0
+
+te = parameter
+te.unit = '\tjdtdb'
+te.description = 'Model time of sec min proj sep'
+te.latex = 'T_E'
+te.label = 'te'
+te.cgs = 86400d0
+if nplanets eq 0 then te.derive = 0
+
+te0 = parameter
+te0.unit = '\bjdtdb'
+te0.description = 'Obs time of sec min proj sep'
+te0.latex = 'T_{E,0}'
+te0.label = 'te0'
+te0.cgs = 86400d0
+if nplanets eq 0 then te.derive = 0
+
 
 phase = parameter
 phase.unit = ''
@@ -2021,6 +2055,7 @@ planet = create_struct($
          mpsun.label,mpsun,$
          logmp.label,logmp,$
          mpearth.label,mpearth,$
+         tco.label,tco,$
          tc.label,tc,$
          tt.label,tt,$
          t0.label,t0,$
@@ -2086,8 +2121,11 @@ planet = create_struct($
          lcoslambda.label,lcoslambda,$
          safronov.label,safronov,$
          fave.label,fave,$
-         tp.label,tp,$
+         tso.label,tso,$
          ts.label,ts,$
+         te.label,te,$
+         te0.label,te0,$
+         tp.label,tp,$
          ta.label,ta,$
          td.label,td,$
          phase.label,phase,$
@@ -2332,8 +2370,8 @@ if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begi
       readcol, sedfile, junk, format='a', comment='#', /silent
       ndata += n_elements(junk) + 2 ;; two more because of links between rstar and rstarsed, teff and teffsed
       for i=0L, ss.nspecfiles-1 do begin
-         ss.specphot.sperrscale.fit = 1
-         ss.specphot.sperrscale.derive = 1
+         ss.specphot[i].sperrscale.fit = 1
+         ss.specphot[i].sperrscale.derive = 1
       endfor
    endif else begin
       printandlog, 'WARNING: FLUXFILE has been deprecated. MISTSEDFILE should be used instead.', logname
@@ -3143,8 +3181,6 @@ for i=0, ntran-1 do begin
 ;   endif
    
    for j=0, nplanets-1 do begin
-
-      
 
 ;      ss.transit[i].epoch = min(round((mean((*(ss.transit[i].transitptrs)).bjd) - ss.planet[ss.transit[i].pndx].tc.value)/ss.planet[ss.transit[i].pndx].period.value))
 

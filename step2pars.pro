@@ -266,7 +266,7 @@ endif
                                     ss.planet[i].e.value,$
                                     ss.planet[i].i.value,$
                                     ss.planet[i].omega.value,$
-                                    ss.planet[i].period.value,/reverse_correction)
+                                    ss.planet[i].period.value,/tt2tc)
 
    endif else begin
       ;; tc is fit, don't bother computing tt unless it's constrained by a prior
