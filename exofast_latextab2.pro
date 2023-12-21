@@ -60,6 +60,7 @@ if keyword_set(emulateapj) then printf, lun, '\documentclass{emulateapj}' $
 else printf, lun, '\documentclass{aastex62}'
 
 printf, lun, '\providecommand{\bjdtdb}{\ensuremath{\rm {BJD_{TDB}}}}'
+printf, lun, '\providecommand{\tjdtdb}{\ensuremath{\rm {TJD_{TDB}}}}'
 printf, lun, '\providecommand{\feh}{\ensuremath{\left[{\rm Fe}/{\rm H}\right]}}'
 printf, lun, '\providecommand{\teff}{\ensuremath{T_{\rm eff}}}'
 printf, lun, '\providecommand{\teq}{\ensuremath{T_{\rm eq}}}'
@@ -96,28 +97,38 @@ else rvepoch = 0d0
 
 ;; format for the line in the table
 ;; $symbol$ ... description (units) ... $value^{+upper}_{-lower}$\\
-masternotes = ['Uses measured mass and estimated radius from \citet{Chen:2017}',$
-               'Uses measured radius and estimated mass from \citet{Chen:2017}',$
-               'Reference epoch = ' + string(rvepoch,format='(f0.6)'),$
-               'This value ignores the systematic error and is for reference only',$ ;; Rstar,SED, Teff,SED
-               "Time of conjunction is commonly reported as the ``transit time''",$
-               "Time of minimum projected separation is a more correct ``transit time''",$
-               'At the epoch that minimizes the covariance between $T_C$ and Period',$
-               'In RV-only fits, we marginalize over a uniform cosi prior',$
-               'Estimated eclipse depth assumes blackbodies',$
-               'Assumes no albedo and perfect redistribution',$
-               "Corresponds to static points in a star's evolutionary history. See \S2 in \citet{Dotter:2016}.",$
-               'The metallicity of the star at birth',$
-               'See Table 3 in \citet{Eastman:2019} for a detailed description of all parameters',$
-               'See \citet{Eastman:2023b} for a detailed description']
+masternotes = ['Uses measured mass and estimated radius from \citet{Chen:2017}',$                                ;; 0
+               'Uses measured radius and estimated mass from \citet{Chen:2017}',$                                ;; 1
+               'Reference epoch = ' + string(rvepoch,format='(f0.6)'),$                                          ;; 2
+               'This value ignores the systematic error and is for reference only',$                             ;; 3 (Rstar,SED, Teff,SED)
+               "Time of conjunction is commonly reported as the ``transit time''",$                              ;; 4 
+               "Time of minimum projected separation is a more correct ``transit time''",$                       ;; 5
+               'At the epoch that minimizes the covariance between $T_C$ and Period',$                           ;; 6
+               'In RV-only fits, we marginalize over a uniform cosi prior',$                                     ;; 7
+               'Estimated eclipse depth assumes blackbodies',$                                                   ;; 8
+               'Assumes no albedo and perfect redistribution',$                                                  ;; 9
+               "Corresponds to static points in a star's evolutionary history. See \S2 in \citet{Dotter:2016}",$ ;; 10
+               'The metallicity of the star at birth',$                                                          ;; 11
+               'See \citet{Eastman:2023b} for a detailed description',$                                          ;; 12
+               "\tjdtdb is the target's barycentric frame and corrects for light travel time",$                  ;; 13 
+               "Use this to predict future transit times",$                                                      ;; 14
+               "Use this to model TTVs, e",$                                                                     ;; 15
+               "This If you are modeling TTVs, this is the transit time you want",$                              ;; 16
+               "Time of superior conjunction is commonly reported as the ``occultation time''",$                 ;; 17
+               'See Table 3 in \citet{Eastman:2019} for a detailed description of all parameters']               ;; 18
 
 ;; these are the names of parameters that are influenced by the Chen &
 ;; Kipping mass estimate (given a radius)
 notendx = [['rstarsed','3'],$
            ['teffsed','3'],$
-           ['tc','4'],$
-           ['tt','5'],$
-           ['t0','6'],$
+           ['tco','4'],$ ;; bjdtdb
+           ['tc','4,13'],$ ;; tjdtdb
+           ['tt','5,13,15'],$ ;; tjdtdb 
+           ['t0','5,6,14'],$ ;; bjdtdb
+           ['tso','4'],$ ;; bjdtdb
+           ['ts','4,13,'],$ ;; tjdtdb
+           ['te','5,13,15'],$ ;; tjdtdb
+           ['te0','5,6,14'],$ ;; bjdtdb
            ['eclipsedepth36','8'],$
            ['eclipsedepth45','8'],$
            ['teq','9'],$
@@ -148,7 +159,7 @@ endif
 ;; these notes are only neccesary if vcve is fit
 if ss.planet[0].vcve.fit then begin
    notendx = [[notendx],$
-              ['vcve','13']]
+              ['vcve','12']]
 endif
 
 ;; these notes are only neccesary if the Chen & Kipping relation is used
@@ -276,15 +287,23 @@ for i=0, n_tags(ss)-1 do begin
                else unit = "(" + ss.(i)[0].(k).unit + ")"
 
                footnote = ''
-               ;; add appropriate footnotes
+               ;; add appropriate tablenotes
                match = where(notendx[0,*] eq ss.(i)[0].(k).label)
                if match[0] ne -1 then begin
-                  matchexisting = (where(notes eq masternotes[long(notendx[1,match[0]])]))[0]
-                  if matchexisting eq -1 then begin
-                     nnotes++
-                     notes = [notes,masternotes[long(notendx[1,match[0]])]]
-                     footnote += '$^{' + strtrim(nnotes,2) + '}$'
-                  endif else footnote += '$^{' + strtrim(matchexisting,2) + '}$'
+                  splitnotes = long(strsplit(notendx[1,match[0]],',',/extract))
+                  notestr = lonarr(n_elements(splitnotes))
+                  for ii=0L, n_elements(splitnotes)-1 do begin
+                     matchexisting = (where(notes eq masternotes[splitnotes[ii]]))[0]
+                     
+                     if matchexisting eq -1 then begin
+                        nnotes++
+                        notes = [notes,masternotes[splitnotes[ii]]]
+                        notestr[ii] = nnotes
+                     endif else notestr[ii] = matchexisting
+                        
+                  endfor
+                  sorted = sort(notestr)
+                  footnote += '$^{' + strjoin(strtrim(notestr[sorted],2),',') + '}$'
                endif
                
                ;; before all the values
@@ -329,7 +348,7 @@ endfor
 ; finish the table
 printf, lun, '\enddata'
 if n_elements(label) ne 0 then printf, lun, '\label{' + label + '}'
-printf, lun, '\tablenotetext{}{' + masternotes[12] + '}'
+printf, lun, '\tablenotetext{}{' + masternotes[18] + '}'
 if nnotes gt 0 then begin
    for i=1L, nnotes do begin
       printf, lun, '\tablenotetext{' + strtrim(i,2) + '}{' + notes[i] + '}'
