@@ -76,6 +76,36 @@ au = ss.constants.au/ss.constants.rsun
 chi2 = 0.d0
 determinant = 1d0
 
+;; if values are linked, we must propagate them before we check boundaries
+;; if value is a map, and the variable is fixed, we must propagate it here
+for i=0L, n_elements(*ss.priors)-1 do begin
+
+   ;; Skip priors with penalties -- the penalties will guide them to agree
+   prior = (*ss.priors)[i]
+
+   ;; if it's not fixed to a linked parameter, skip it. The penalties will sort it out
+   if prior.gaussian_width ne 0d0 or prior.value[1] eq -1 then continue
+   
+   ;; the prior is linked to another variable -- get its value
+   if prior.value[4] ne -1 then begin
+      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].(prior.value[4])[prior.value[5]].value
+   endif else if prior.value[2] ne -1 then begin
+      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].value
+   endif else begin
+      value = ss.(prior.value[0])[prior.value[1]].value
+   endelse
+
+   ;; assign the value
+   if prior.map[4] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].(prior.map[4])[prior.map[5]].value = value
+   endif else if prior.map[2] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].value = value
+   endif else if prior.map[0] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].value = value
+   endif     
+
+endfor
+
 ;; *** First make sure step parameters are in bounds ***
 
 ;; physical limb darkening (Kipping, 2013)
@@ -285,7 +315,7 @@ if ss.nastrom gt 0 then begin
       if ss.debug or ss.verbose then printandlog, 'astrometry error scale is bad (' + strtrim(ss.astrom[bad].errscale.value,2) + ')', ss.logname
       return, !values.d_infinity
    endif
-   
+
    ;; 0 <= ra+raoffset <= 360
    bad = where(ss.star[ss.astrom.starndx].ra.value + ss.astrom.raoffset.value lt 0 or ss.star[ss.astrom.starndx].ra.value + ss.astrom.raoffset.value gt 360,nbad)
    if nbad gt 0 then begin
@@ -305,7 +335,7 @@ if ss.nastrom gt 0 then begin
       if ss.debug or ss.verbose then printandlog, 'pmra is bad (' + strtrim(ss.star[ss.astrom.starndx].pmra.value,2) + ')', ss.logname
       return, !values.d_infinity
    endif
-   
+
    ;; -20000 <= pmdec <= 20000 (2x barnard's star)
    if abs(ss.star[ss.astrom.starndx].pmdec.value) gt 2d4 then begin
       if ss.debug or ss.verbose then printandlog, 'pmdec is bad (' + strtrim(ss.star[ss.astrom.starndx].pmdec.value,2) + ')', ss.logname
@@ -327,20 +357,20 @@ if nbad gt 0 then begin
    return, !values.d_infinity
 endif
 
-;; require planets to stay in the same order as they start
-if ss.nplanets gt 0 then begin
-   if max(abs(ss.planetorder - sort(ss.planet.logp.value))) ne 0 then begin
-      if keyword_set(verbose) then printandlog, 'Planets must remain in the original order! Rejecting step', logname
-      return, !values.d_infinity
-   endif
-endif
-
 ;; limit range of alpha abundance (not used yet)
 ;bad = where(ss.star.alpha.value lt -0.3d0 or ss.star.alpha.value gt 0.7d0,nbad) 
 ;if nbad gt 0 then begin
 ;   if ss.debug or ss.verbose then printandlog, 'alpha is bad (' + strtrim(ss.star[bad].alpha.value,2) + ')', ss.logname
 ;   return, !values.d_infinity
 ;endif
+
+;; require planets to stay in the same order as they start
+if ss.nplanets gt 0 then begin
+   if max(abs(ss.planetorder - sort(ss.planet.logp.value))) ne 0 then begin
+      if keyword_set(ss.verbose) then printandlog, 'Planets must remain in the original order! Rejecting step', logname
+      return, !values.d_infinity
+   endif
+endif
 
 ;; **** Now place additional physical constraints on derived parameters ****
 
@@ -385,7 +415,9 @@ endif
 
 ;; for multi-planet systems, make sure they don't enter each other's hill spheres
 ;; if mp unknown, mp=0 => hill radius=0 => planets can't cross orbits
-;; **** ignores mutual inclination; a priori excludes systems like Neptune and Pluto!! ****
+;; **** ignores mutual inclination; a priori excludes systems like
+;; Neptune and Pluto!! ****
+
 if ~ss.alloworbitcrossing then begin
    mindist = dblarr(ss.nplanets>1)
    maxdist = dblarr(ss.nplanets>1)
@@ -532,7 +564,8 @@ for i=0L, n_elements(*ss.priors)-1 do begin
 
    ;; output debugging info if requested
    if ss.verbose then begin
-      str = string(label,priorchi2, format='(a," penalty = ",f0.6)')
+      str = string(label,priorchi2,model_value,prior_value,prior.gaussian_width, $
+                   format='(a," penalty = ",f0.6," (model value=",f0.6,", prior value=",f0.6,", gaussian width=",f0.6,")")')
       printandlog, str, ss.logname
    endif
 
