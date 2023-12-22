@@ -3075,7 +3075,7 @@ while not eof(lun) do begin
 
    ;; warn the user that they may be specifying a useless prior, 
    ;; which is likely unintended
-   if ~parameter.fit and ~parameter.derive and ~keyword_set(silent) then begin
+   if ~parameter.fit and ~parameter.derive and ~keyword_set(silent) and parameter.priorwidth ne 0 then begin
       printandlog, "WARNING: Prior supplied on '" + $
                    prior.name + "' but it is neither fitted or derived. Not applying prior, " + $
                    'but it will be used to derive the starting parameters if possible.', logname
