@@ -1474,6 +1474,7 @@ printandlog, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nma
 ss.amoeba = 1B
 ss.delay =0
 best = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
+
 ss.delay = delay
 if best[0] eq -1 then begin
    printandlog, 'ERROR: Could not find best combined fit; adjust your starting values and try again. You may want to set the /DEBUG keyword.', logname
@@ -1493,7 +1494,6 @@ save, best, filename=prefix + 'amoeba.idl'
 
 ;; output the best-fit model fluxes/rvs
 bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'amoeba')
-
 printandlog, 'The best loglike found by AMOEBA was ' + strtrim(-bestchi2/2d0,2), logname
 printandlog, 'It should only be compared against the loglike of the same model with different starting points', logname
 
