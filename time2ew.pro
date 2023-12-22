@@ -50,7 +50,7 @@
 ;-
 function time2ew, tc, ts, period, esinwin=esinwin, $
                   tfwhmp=tfwhmp, tfwhms=tfwhms, p=p, inc=inc, $
-                  e=e, omega=omega, ecosw=ecosw, esinwout=esinwout,$
+                  ecc=ecc, omega=omega, ecosw=ecosw, esinwout=esinwout,$
                   tol=tol, maxiter=maxiter
 
 ;; Kopal 1946 eq 133
@@ -89,11 +89,11 @@ repeat begin
    endif
 
    ecosw = (minecosw+maxecosw)/2d0
-   e = sqrt(ecosw^2+esinw^2)
+   ecc = sqrt(ecosw^2+esinw^2)
    omega = atan(esinw,ecosw)
 
    ;; Kopal, 1946 eq 114
-   psi = !dpi + 2d0*atan(ecosw/(sqrt(1d0-e^2)))
+   psi = !dpi + 2d0*atan(ecosw/(sqrt(1d0-ecc^2)))
 
    ;; Kopal 1946, eq 115
    residual = 2d0*!dpi/period*(ts-tc) - psi + sin(psi)
