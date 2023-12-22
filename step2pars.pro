@@ -10,6 +10,7 @@ mearth = ss.constants.gmearth/ss.constants.gmsun ;; m_sun
 rearth = ss.constants.rearth/ss.constants.rsun  ;; r_sun
 sigmaB = ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; Stefan-Boltzmann constant
 
+if 0 then begin
 ;; if value is a map, and the variable is fixed, we must propagate it here
 for i=0L, n_elements(*ss.priors)-1 do begin
 
@@ -38,6 +39,7 @@ for i=0L, n_elements(*ss.priors)-1 do begin
    endif     
 
 endfor
+endif
 
 ;; derive stellar parameters
 for i=0L, ss.nstars-1 do begin
