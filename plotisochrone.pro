@@ -1,4 +1,7 @@
-pro plotisochrone, age, initfeh, teff=teff, rstar=rstar, mstar=mstar, feh=feh, parsec=parsec, plotmodel=plotmodel, epsname=epsname, isochrone_teff=isochrone_teff, isochrone_logg=isochrone_logg, isochrone_mstar=isochrone_mstar, isochrone_rstar=isochrone_rstar
+pro plotisochrone, age, initfeh, teff=teff, rstar=rstar, mstar=mstar, feh=feh, parsec=parsec, plotmodel=plotmodel, epsname=epsname, isochrone_teff=isochrone_teff, isochrone_logg=isochrone_logg, isochrone_mstar=isochrone_mstar, isochrone_rstar=isochrone_rstar, xrange=xrange, yrange=yrange
+
+if n_elements(xrange) ne 2 then xrange = [0,0]+!values.d_nan
+if n_elements(yrange) ne 2 then yrange = [0,0]+!values.d_nan
 
 ;; default to the sun (this doesn't really matter)
 if n_elements(teff) eq 0 then teff = 5788d0
@@ -30,10 +33,10 @@ for i=0L, nmstar-1L do begin
       model_age=!values.d_nan
       
       if keyword_set(parsec) then begin
-         junk = massradius_parsec(thiseep,isochrone_mstar[i],initfeh,age,teff,rstar,feh,$
+         junk = massradius_parsec(thiseep,isochrone_mstar[i],initfeh,age,teff[0],rstar[0],feh,$
                                   parsec_rstar=model_rstar,parsec_teff=model_teff,parsec_age=model_age,/allowold)
       endif else begin
-         junk = massradius_mist(thiseep,isochrone_mstar[i],initfeh,age,teff,rstar,feh,$
+         junk = massradius_mist(thiseep,isochrone_mstar[i],initfeh,age,teff[0],rstar[0],feh,$
                                 mistrstar=model_rstar,mistteff=model_teff,mistage=model_age,/allowold)
       endelse
       
@@ -59,6 +62,12 @@ isochrone_logg = alog10(isochrone_mstar/(isochrone_rstar^2)*constants.gravitysun
 
 ymin = max([isochrone_logg,logg],min=ymax) ;; plot range backwards
 xmin = max([isochrone_teff,teff],min=xmax) ;; plot range backwards
+
+if finite(xrange[0]) then xmin=xrange[0]
+if finite(xrange[1]) then xmax=xrange[1]
+if finite(yrange[0]) then ymin=yrange[0]
+if finite(yrange[1]) then ymax=yrange[1]
+
 ;; increase xrange so there are 4 equally spaced ticks that land on 100s
 xticks = 3
 xmin = ceil(xmin/100)*100
@@ -104,8 +113,11 @@ plot, isochrone_teff, isochrone_logg, xrange=[xmin,xmax], yrange=[ymin,ymax], xs
 if keyword_set(plotmodel) then begin
    plotsym,0,/fill
    oplot, [teff], [logg], psym=8,symsize=0.5 ;; the model point
-   junk = min(abs(isochrone_mstar-mstar),ndx)
-   oplot, [isochrone_teff[ndx]], [isochrone_logg[ndx]], psym=2, color=red ;; overplot the time 
+   for i=0L, n_elements(mstar)-1 do begin
+      junk = min(abs(isochrone_mstar-mstar[i]),ndx)
+      oplot, [isochrone_teff[ndx]], [isochrone_logg[ndx]], psym=2, color=red ;; overplot the time 
+;      oplot, [isochrone_teff[ndx],teff[i]],[isochrone_logg[ndx],logg[i]],linestyle=1
+   endfor
 endif
 
 if keyword_set(epsname) then begin

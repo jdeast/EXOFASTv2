@@ -64,7 +64,7 @@ function massradius_mist, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvc
                           mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
                           epsname=epsname, debug=debug, gravitysun=gravitysun, fitage=fitage, $
                           ageweight=ageweight, verbose=verbose, logname=logname, trackfile=trackfile, allowold=allowold,$
-                          tefffloor=tefffloor, fehfloor=fehfloor, rstarfloor=rstarfloor, agefloor=agefloor, pngname=pngname
+                          tefffloor=tefffloor, fehfloor=fehfloor, rstarfloor=rstarfloor, agefloor=agefloor, pngname=pngname, range=range
 
 if n_elements(tefffloor) eq 0 then tefffloor = -1
 if n_elements(fehfloor) eq 0 then fehfloor = -1
@@ -225,7 +225,6 @@ for i=0, 1 do begin
    endfor
 endfor
 
-
 x_eep = (eep-eepbox[0])/(eepbox[1]-eepbox[0])
 y_mass = (mstar-mstarbox[0])/(mstarbox[1]-mstarbox[0])
 z_feh = (initfeh-initfehbox[0])/(initfehbox[1]-initfehbox[0])
@@ -263,10 +262,10 @@ else chi2 += ((mistteff - teff)/(percenterror*mistteff))^2
 if fehfloor gt 0 then chi2 += ((mistfeh - feh)/(fehfloor))^2 $
 else chi2 += ((mistfeh - feh)/(percenterror))^2 
               
-if keyword_set(fitage) then begin
+;if keyword_set(fitage) then begin
    if agefloor gt 0 then chi2 += ((mistage - age)/(agefloor*mistage))^2 $
    else chi2 += ((mistage - age)/(percenterror*mistage))^2           
-endif
+;endif
 
 ;; plot it
 if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then begin
@@ -324,14 +323,14 @@ if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then b
    mistageiso = dblarr(neep) + !values.d_nan
 
    for i=0, neep-1 do begin
-      junk = massradius_mist(eepplot[i],mstar,initfeh,age,teff,rstar,feh,mistrstar=mistrstar,mistteff=mistteff,mistage=mistage)
+      junk = massradius_mist(eepplot[i],mstar,initfeh,age,teff,rstar,feh,mistrstar=mistrstar,mistteff=mistteff,mistage=mistage,/allowold)
       if finite(junk) then begin
          mistrstariso[i] = mistrstar
          mistteffiso[i] = mistteff
          mistageiso[i] = mistage
       endif
    endfor
-   
+
    good = where(finite(mistrstariso))
    eepplot = eepplot[good]
    mistrstariso = mistrstariso[good]
@@ -350,7 +349,14 @@ if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then b
    else mineep = 202
    use = where(loggplottrack gt 3 and loggplottrack lt 5 and eepplot ge min([mineep,eep]))
    if use[0] eq -1 then use = indgen(n_elements(teffplottrack))
+
    xmin=max([teffplottrack[use],teff*1.1, teff*0.9],min=xmax) ;; plot range backwards
+   ymax = min([loggplot,3,5,loggplottrack[use]],max=ymin)     ;; plot range backwards
+
+   if finite(range[0]) then xmin = range[0]
+   if finite(range[1]) then xmax = range[1]
+   if finite(range[2]) then ymin = range[2]
+   if finite(range[3]) then ymax = range[3]
 
    ;; increase xrange so there are 4 equally spaced ticks that land on 100s
    xticks = 3
@@ -363,10 +369,13 @@ if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then b
          xmax -= 100d0
       endif
    endrep until (xmin-xmax)/spacing eq xticks
-   xminor = spacing/100d0
+   xminor = long(spacing/100d0)
   
-   ymax = min([loggplot,3,5,loggplottrack[use]],max=ymin) ;; plot range backwards
-   plot, teffplottrack[use], loggplottrack[use],xtitle=xtitle,ytitle=ytitle, xrange=[xmin,xmax], yrange=[ymin,ymax], xstyle=1, xticks=xticks, xminor=xminor,/xlog,color=black,background=white,font=font,charsize=charsize,thick=thick,xthick=thick,charthick=thick,ythick=thick
+   plot, teffplottrack[use], loggplottrack[use],$
+         xrange=[xmin,xmax], xtitle=xtitle, xstyle=1, xticks=xticks, xminor=xminor,$
+         yrange=[ymin,ymax], ytitle=ytitle,$ 
+         font=font,charsize=charsize,thick=thick,xthick=thick,charthick=thick,ythick=thick,$
+         color=black,background=white
    plotsym,0,/fill
    oplot, [teff], [loggplot], psym=8,symsize=symsize,color=black ;; the input point
    junk = min(abs(eepplot-eep),ndx)

@@ -33,10 +33,15 @@
 ;               memory management if plotting data from many large files
 ;  POSITION   - A 2-element array specifying the normalized X and Y
 ;               coordinates of the top left corner of the legend
+;  POSTERIORS - When this keyword is set, text files of the posteriors
+;               will be output with the same name as the input files,
+;               replacing 'idl' with 'txt'.
 ;
 ;-
 pro remake_corner, savpath, tags=tags, latexnames=latexnames, psname=psname, $
-                   legendtxt=legendtxt, nsample=nsample, position=position
+                   legendtxt=legendtxt, nsample=nsample, position=position, $
+                   posteriors=posteriors, nxbin=nxbin, nybin=nybin, optimizeorder=optimizeorder, sample=sample, keepburn=keepburn,$
+                   extrema=extrema
 
 if n_elements(position) ne 2 then position = [0.533d0,0.903d0]
 
@@ -56,12 +61,13 @@ endif else files = file_search(savpath,count=nfiles)
 if n_elements(psname) ne 0 then begin
    mydevice = !d.name
    set_plot, 'PS'
-   loadct, 39, /silent
+;   loadct, 39, /silent
    !p.font=0
    aspect_ratio=1.5
    xsize=9
    ysize=xsize/aspect_ratio
-   device,  filename=psname,/color,bits=24
+;   device,  filename=psname,/color,bits=24
+   device,  filename=psname,/color,/decomposed
    if npars eq 1 then device, xsize=xsize, ysize=ysize
    red = 254
    green = 159
@@ -88,8 +94,12 @@ if n_elements(psname) ne 0 then begin
    orange = 208      ; 4
    redorange = 224   ; 7
    red = 254         ; 1
-   colors = [black,red,green,blue,orange,cyan,purple,redorange,yellowgreen,$
+   colors = [black,red,blue, green,orange,cyan,purple,redorange,yellowgreen,$
              darkpurple,lightgreen,greenblue,darkblue,bluegreen,lightblue,yellow]
+
+   ;; https://venngage.com/tools/accessible-color-palette-generator
+;   colors = ['00A35B'x,'00CE89'x,'E67300'x,'8A30E6'x,'6319B5'x] ; contrasting palette 2
+   colors = ['00A35B'x,'E67300'x,'6319B5'x] ; contrasting palette 2
    legendsize = 0.5
    thick=2
 endif else begin
@@ -108,39 +118,109 @@ ncolors = n_elements(colors)
 ;; this can eat up a lot of memory!
 labels = strarr(nfiles)
 pars = ptrarr(nfiles,npars,/allocate_heap)
-extrema = dblarr(2,nfiles,npars) + !values.d_nan
+
+if n_elements(extrema) ne 2*nfiles*npars then $
+   extrema = dblarr(2,nfiles,npars) + !values.d_nan
+
 for j=0L, nfiles-1 do begin
    restore, files[j]
 
    labels[j] = (strsplit(files[j],'.',/extract))[1]
    
-   burnndx = mcmcss.burnndx
+   if keyword_set(keepburn) then begin
+      burnndx = 0L
+      goodchains = lindgen(mcmcss.nchains)
+   endif else begin
+      burnndx = mcmcss.burnndx
+      goodchains = (*mcmcss.goodchains)
+   endelse
+   
    nchains = mcmcss.nchains
    nsteps = mcmcss.nsteps/nchains
-   goodchains = (*mcmcss.goodchains)
+
+   chi2 = *(mcmcss.chi2)
+   chi2 = reform(chi2,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains)
+   ;burnndx = getburnndx(chi2,goodchains=goodchains)
+
    ngoodsteps = n_elements(goodchains)*(nsteps-burnndx)
 
    ;; save memory by randomly sampling
-   if n_elements(nsample) ne 0 then sample = long(randomu(seed,nsample)*ngoodsteps) $
-   else sample = lindgen(ngoodsteps) ;; or not
+   if n_elements(sample) eq 0 then begin
+      if n_elements(nsample) ne 0 then sample = long(randomu(seed,nsample)*ngoodsteps) $
+      else sample = lindgen(ngoodsteps) ;; or not
+   endif
+
+   if keyword_set(posteriors) then pars2txt = dblarr(npars,ngoodsteps)
 
    ;; extract the relevant values from the structure
    for i=0L, npars-1 do begin
 
       parstr = find_by_tag(mcmcss, tags[i])
-      if (size(parstr))[2] ne 8 then continue
+
+      if (size(parstr))[2] ne 8 then begin
+         message, tags[i] + ' not found in ' + files[j] + '. This is likely to cause a fatal error.', /continue
+         message, 'Type ".con" to continue.'
+         continue
+      endif
 
       par = ((reform(parstr.value,nsteps,nchains))[burnndx:*,goodchains])[sample]
+;      if tags[i] eq 'mstar' then begin
+;         parold = (reform(mcmcss.star.mstar.value,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains))[0:burnndx,*mcmcss.goodchains]
+;         print, max(abs(par-parold))
+;         if max(abs(par-parold)) gt 1d-8 then stop
+;      endif         
+
       xmin = min(par,max=xmax)
-      extrema[0,j,i] = xmin
-      extrema[1,j,i] = xmax
+      if ~finite(extrema[0,j,i]) then extrema[0,j,i] = xmin
+      if ~finite(extrema[1,j,i]) then extrema[1,j,i] = xmax
+
       if latexnames[i] eq '' then latexnames[i] = parstr.latex
 
       *pars[j,i] = par
+      if keyword_set(posteriors) then pars2txt[i,*] = par
 
    endfor
    undefine, mcmcss ;; free up memory before we load the next one
+
+   if keyword_set(posteriors) then begin
+      openw, lun, file_basename(files[j],'.idl') + '.txt',/get_lun
+      printf, lun, tags, format='("#"' + strtrim( npars,2) + '(a27,x))'
+      printf, lun, pars2txt, format='(' + strtrim( npars,2) + '(f27.20,x))'
+      free_lun, lun
+      undefine, pars2txt
+   endif
 endfor
+
+if keyword_set(optimizeorder) then begin
+   area = dblarr(nfiles,npars,npars)
+   area2 = dblarr(nfiles,npars,npars)
+   if n_elements(nxbin) eq 0 then nxbin = 100
+   if n_elements(nybin) eq 0 then nybin = nxbin
+   
+   for j=0L, nfiles-1 do begin   
+      for i=0L, npars-1 do begin
+         xpar = *pars[j,i]
+         xmin = min(extrema[0,*,i])
+         xmax = max(extrema[1,*,i])
+         for k=0L, npars-1 do begin
+            ypar = *pars[j,k]
+            ymin = min(extrema[0,*,k])
+            ymax = max(extrema[1,*,k])
+            xbinsz = double(xmax-xmin)/(nxbin-1)
+            ybinsz = double(ymax-ymin)/(nybin-1)
+            hist2d = hist_2d(xpar,ypar,$
+                             bin1=xbinsz,min1=xmin,max1=xmax,$
+                             bin2=ybinsz,min2=ymin,max2=ymax)
+            hist2d = hist2d/total(hist2d)
+            sorted = sort(hist2d)
+            thresh = hist2d[sorted[n_elements(hist2d)*0.05]]
+;            area[j,i,k] = total(1d0/hist2d^2,/nan)
+            area[j,i,k] = n_elements(where(hist2d gt thresh))
+         endfor
+      endfor
+   endfor
+endif
+;stop
 
 if n_elements(legendtxt) ne nfiles then legendtxt = labels
 
@@ -184,6 +264,8 @@ for i=0L, n_elements(tags)-1 do begin
                par = *pars[j,k]
                if n_elements(par) eq 0 then continue
 
+;xmin = 1.6
+;xmax = 1.9
                hist = histogram(par,nbin=100,locations=x,min=xmin, max=xmax)
                hists[j,*] = hist/total(hist)
                ;; zero out singular arrays (e.g., age when age isn't fit)
@@ -213,19 +295,34 @@ for i=0L, n_elements(tags)-1 do begin
             /ystyle,/xstyle,xminor=1, yminor=1,$ 
             xtickname=replicate(" ",60),ytickname=replicate(" ",60), xtitle=xtitle, ytitle=ytitle
       
+      ;; plot them from largest are to smallest, so they don't
+      ;; cover each other up
+      if keyword_set(optimizeorder) then begin
+         order = reverse(sort(area[*,i,k]))
+      endif else order = lindgen(nfiles)
+
       ;; overplot get the covariance contours for each save file
       for j=0, nfiles-1 do begin
 
-         x = *pars[j,i]
-         y = *pars[j,k]
+         x = *pars[order[j],i]
+         y = *pars[order[j],k]
 
+         oplot, x, y, psym=3,color=colors[order[j] mod ncolors]
+
+if 0 then begin
          if min(x) ne max(x) and min(y) ne max(y) then begin
             exofast_errell,x,y,xpath=xpath,ypath=ypath,$
-                           prob=probs,nxbin=100, nybin=100,$
+                           prob=probs,nxbin=nxbin, nybin=nybin,$
                            xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,logname=logname
-            if n_elements(xpath) gt 0 and n_elements(ypath) eq n_elements(xpath) then $
-               oplot, xpath, ypath, color=colors[j mod ncolors], thick=thick
+            if n_elements(xpath) gt 0 and n_elements(ypath) eq n_elements(xpath) then begin
+               oplot, xpath, ypath, color=colors[order[j] mod ncolors], thick=thick
+            endif else begin
+               ;; not enough points to make contour, plot them individually
+               oplot, x, y, psym=3,color=colors[order[j] mod ncolors]
+            endelse
          endif
+endif
+
       endfor
       exofast_multiplot ;; next plot
 
@@ -233,8 +330,10 @@ for i=0L, n_elements(tags)-1 do begin
 endfor ;; each parameter on the X axis
 
 ;; draw the legend
-exofast_legend, legendtxt,color=colors[lindgen(nfiles) mod ncolors],$
-                linestyle=lonarr(nfiles),charsize=legendsize,pos=position,/norm
+if nfiles gt 1 then begin
+   exofast_legend, legendtxt,color=colors[lindgen(nfiles) mod ncolors],$
+                   linestyle=lonarr(nfiles),charsize=legendsize,pos=position,/norm
+endif   
 
 ;; reset back to default plotting parameters
 exofast_multiplot, /reset

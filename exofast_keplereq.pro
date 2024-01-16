@@ -155,6 +155,8 @@ FUNCTION exofast_keplereq,m,ecc,thresh=thresh
       else break
   ENDWHILE
   ;; range reduction
+;  eccanom = exofast_mod(eccanom,2d0*!dpi)
+
   toohigh = where(eccanom GE 2*!dpi)
   if toohigh[0] ne -1 then eccanom[toohigh] = eccanom[toohigh] MOD (2*!dpi)
   toolow = where(eccanom LT 0)

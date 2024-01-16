@@ -1,11 +1,5 @@
 pro derivepars, ss, logname=logname
 
-ss.star.mstar.value = 10^ss.star.logmstar.value
-ss.star.rhostar.value = ss.star.mstar.value/(ss.star.rstar.value^3)*ss.constants.rhosun ;; rho_sun
-ss.star.logg.value = alog10(ss.star.mstar.value/(ss.star.rstar.value^2)*ss.constants.gravitysun) ;; cgs
-ss.star.lstar.value = 4d0*!dpi*ss.star.rstar.value^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
-ss.star.fbol.value = (ss.star.lstar.value*ss.constants.lsun)/(4d0*!dpi*(ss.star.distance.value*ss.constants.pc)^2) ;; cgs
-
 G = ss.constants.GMsun/ss.constants.rsun^3*ss.constants.day^2
 AU = ss.constants.au/ss.constants.rsun ;; R_sun
 mjup = ss.constants.gmjupiter/ss.constants.gmsun ;; m_sun
@@ -14,35 +8,71 @@ mearth = ss.constants.gmearth/ss.constants.gmsun ;; m_sun
 rearth = ss.constants.rearth/ss.constants.rsun  ;; r_sun
 sigmaB = ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; Stefan-Boltzmann constant
 
-;; derive the age
-if ss.mist and not ss.star.age.fit then begin
-   for i=0L, ss.nsteps-1 do begin
-      mistchi2 = massradius_mist(ss.star.eep.value[i],ss.star.mstar.value[i],$
-                                 ss.star.initfeh.value[i],ss.star.age.value[i],$
-                                 ss.star.teff.value[i],ss.star.rstar.value[i],$
-                                 ss.star.feh.value[i],mistage=mistage,fitage=ss.star.age.fit,$
-                                 tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
-                                 rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+for i=0L, n_elements(*ss.priors)-1 do begin
+   prior = (*ss.priors)[i]
+   if prior.gaussian_width ne 0d0 or prior.value[1] eq -1 then continue
 
-      ss.star.age.value[i] = mistage
-   endfor
-endif else if ss.parsec and not ss.star.age.fit then begin
-   for i=0L, ss.nsteps-1 do begin
-      parsecchi2 = massradius_parsec(ss.star.eep.value[i],ss.star.mstar.value[i],$
-                                     ss.star.initfeh.value[i],ss.star.age.value[i],$
-                                     ss.star.teff.value[i],ss.star.rstar.value[i],$
-                                     ss.star.feh.value[i],parsec_age=parsec_age,fitage=ss.star.age.fit,$
-                                     tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
-                                     rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
-      ss.star.age.value[i] = parsec_age
-   endfor
-endif
+   ;; the prior is linked to another variable -- get its value
+   if prior.value[4] ne -1 then begin
+      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].(prior.value[4])[prior.value[5]].value
+   endif else if prior.value[2] ne -1 then begin
+      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].value
+   endif else begin
+      value = ss.(prior.value[0])[prior.value[1]].value
+   endelse
+   
+   ;; assign the value
+   if prior.map[4] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].(prior.map[4])[prior.map[5]].value = value
+   endif else if prior.map[2] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].value = value
+   endif else if prior.map[0] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].value = value
+   endif
+endfor
 
+for i=0L, ss.nstars-1 do begin
+   ss.star[i].mstar.value = 10^ss.star[i].logmstar.value
+   ss.star[i].rhostar.value = ss.star[i].mstar.value/(ss.star[i].rstar.value^3)*ss.constants.rhosun                                          ;; rho_sun
+   ss.star[i].logg.value = alog10(ss.star[i].mstar.value/(ss.star[i].rstar.value^2)*ss.constants.gravitysun)                                 ;; cgs
+   ss.star[i].lstar.value = 4d0*!dpi*ss.star[i].rstar.value^2*ss.star[i].teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+   ss.star[i].fbol.value = (ss.star[i].lstar.value*ss.constants.lsun)/(4d0*!dpi*(ss.star[i].distance.value*ss.constants.pc)^2)                  ;; cgs
 
+   ;; derive the age
+   if ss.mist[i] and not ss.star[i].age.fit and ss.nstars eq 1 then begin
+      for j=0L, ss.nsteps-1 do begin
+         mistchi2 = massradius_mist(ss.star[i].eep.value[j],ss.star[i].mstar.value[j],$
+                                    ss.star[i].initfeh.value[j],ss.star[i].age.value[j],$
+                                    ss.star[i].teff.value[j],ss.star[i].rstar.value[j],$
+                                    ss.star[i].feh.value[j],mistage=mistage,fitage=ss.star[i].age.fit,$
+                                    tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
+                                    rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+         
+         ss.star[i].age.value[j] = mistage
+      endfor
+   endif else if ss.parsec[i] and not ss.star[i].age.fit and ss.nstars eq 1 then begin
+      for j=0L, ss.nsteps-1 do begin
+         parsecchi2 = massradius_parsec(ss.star[i].eep.value[j],ss.star[i].mstar.value[j],$
+                                        ss.star[i].initfeh.value[j],ss.star[i].age.value[j],$
+                                        ss.star[i].teff.value[j],ss.star[i].rstar.value[j],$
+                                        ss.star[i].feh.value[j],parsec_age=parsec_age,fitage=ss.star[i].age.fit,$
+                                        tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
+                                        rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
+         ss.star[i].age.value[j] = parsec_age
+      endfor
+   endif
 
-;; derive the absolute magnitude and distance
-if ss.star.distance.fit then ss.star.parallax.value = 1d3/ss.star.distance.value ;; mas
-if ss.star.parallax.fit then ss.star.distance.value = 1d3/ss.star.parallax.value ;; pc
+   ;; derive the distance
+   ;; if user fixes the distance to another star's distance, parallax won't be derived like this
+;   if ss.star[i].distance.fit then ss.star[i].parallax.value = 1d3/ss.star[i].distance.value ;; mas
+;   if ss.star[i].parallax.fit then ss.star[i].distance.value = 1d3/ss.star[i].parallax.value ;; pc
+   ;; do this instead -- hack!
+   if stdev(ss.star[i].distance.value) lt 1d-8 then ss.star[i].distance.value = 1d3/ss.star[i].parallax.value
+   if stdev(ss.star[i].parallax.value) lt 1d-8 then ss.star[i].parallax.value = 1d3/ss.star[i].distance.value
+   
+   ss.star[i].absks.value = ss.star[i].appks.value - 2.5d0*alog10((ss.star[i].distance.value/10d0)^2)                       ;; mag
+
+endfor   
 
 for j=0, ss.ntel-1 do begin
    positive = where(ss.telescope[j].jittervar.value gt 0d0)
@@ -75,11 +105,11 @@ if (maxbjd-minbjd) gt 1d5 then begin
    printandlog, 'This will almost certainly not end well.', ss.logname
 endif
 
-;starbb36 = exofast_blackbody(ss.star.teff.value,replicate(3550d0/1d9,ss.nsteps),/wave)
-;starbb45 = exofast_blackbody(ss.star.teff.value,replicate(4493d0/1d9,ss.nsteps),/wave)
-starbb25 = exofast_blackbody(ss.star.teff.value,replicate(2500d0/1d9,ss.nsteps),/wave)
-starbb50 = exofast_blackbody(ss.star.teff.value,replicate(5000d0/1d9,ss.nsteps),/wave)
-starbb75 = exofast_blackbody(ss.star.teff.value,replicate(7500d0/1d9,ss.nsteps),/wave)
+;starbb36 = exofast_blackbody(ss.star[i].teff.value,replicate(3550d0/1d9,ss.nsteps),/wave)
+;starbb45 = exofast_blackbody(ss.star[i].teff.value,replicate(4493d0/1d9,ss.nsteps),/wave)
+starbb25 = exofast_blackbody(ss.star[i].teff.value,replicate(2500d0/1d9,ss.nsteps),/wave)
+starbb50 = exofast_blackbody(ss.star[i].teff.value,replicate(5000d0/1d9,ss.nsteps),/wave)
+starbb75 = exofast_blackbody(ss.star[i].teff.value,replicate(7500d0/1d9,ss.nsteps),/wave)
 
 for i=0, ss.nplanets-1 do begin
 
@@ -88,10 +118,10 @@ for i=0, ss.nplanets-1 do begin
    else ss.planet[i].logmp.value = alog10(ss.planet[i].mpsun.value) ;; m_sun
    ss.planet[i].mp.value = ss.planet[i].mpsun.value/mjup ;; m_jupiter
    ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth ;; m_earth
-   ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star.mstar.value                           ;; unitless
+   ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star[ss.planet[i].starndx].mstar.value                           ;; unitless
 
    ;; derive the radius of the planet   
-   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star.rstar.value ;; r_sun
+   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star[ss.planet[i].starndx].rstar.value ;; r_sun
    ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup ;; r_jupiter
    ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth ;; r_earth
 
@@ -168,8 +198,8 @@ endelse
    ss.planet[i].vcve.value = sqrt(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)
 
    ;; derive a/rstar, a
-   ss.planet[i].arsun.value=(G*(ss.star.mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/(4d0*!dpi^2))^(1d0/3d0) ;; (a1 + a2)/rsun
-   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star.rstar.value                                                        ;; (a1 + a2)/rstar
+   ss.planet[i].arsun.value=(G*(ss.star[ss.planet[i].starndx].mstar.value+ss.planet[i].mpsun.value)*ss.planet[i].period.value^2/(4d0*!dpi^2))^(1d0/3d0) ;; (a1 + a2)/rsun
+   ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star[ss.planet[i].starndx].rstar.value                                                        ;; (a1 + a2)/rstar
    ss.planet[i].a.value = ss.planet[i].arsun.value*ss.constants.rsun/ss.constants.au                                           ;; AU
 
    ;; derive cosi, b, and chord (depending on which is fit)
@@ -195,7 +225,7 @@ endelse
    ss.planet[i].msiniearth.value = ss.planet[i].mpearth.value*sini                               ;; m_earth
 
    ;; derive RV semi-amplitude
-   ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star.mstar.value + ss.planet[i].mpsun.value)^2d0))^(1d0/3d0) * $
+   ss.planet[i].k.value = (2d0*!dpi*G/(ss.planet[i].period.value*(ss.star[ss.planet[i].starndx].mstar.value + ss.planet[i].mpsun.value)^2d0))^(1d0/3d0) * $
                           ss.planet[i].mpsun.value*sin(ss.planet[i].i.value)/sqrt(1d0-ss.planet[i].e.value^2)*$
                           ss.constants.rsun/ss.constants.meter/ss.constants.day ;; m/s
 
@@ -210,21 +240,25 @@ endelse
                                     ss.planet[i].e.value,$
                                     ss.planet[i].i.value,$
                                     ss.planet[i].omega.value,$
-                                    ss.planet[i].period.value,/reverse_correction)                                    
+                                    ss.planet[i].period.value,/tt2tc)                                    
    endif else begin
-      if ss.planet[i].tt.derive then begin
-         ss.planet[i].tt.value = tc2tt(ss.planet[i].tc.value,$
-                                       ss.planet[i].e.value,$
-                                       ss.planet[i].i.value,$
-                                       ss.planet[i].omega.value,$
-                                       ss.planet[i].period.value)
-      endif
+      ss.planet[i].tt.value = tc2tt(ss.planet[i].tc.value,$
+                                    ss.planet[i].e.value,$
+                                    ss.planet[i].i.value,$
+                                    ss.planet[i].omega.value,$
+                                    ss.planet[i].period.value)
    endelse
 
    ss.planet[i].tp.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value)
    ss.planet[i].ts.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phase2)
    ss.planet[i].ta.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phasea)
    ss.planet[i].td.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phased)
+
+   ss.planet[i].te.value = tc2tt(ss.planet[i].ts.value,$
+                                 ss.planet[i].e.value,$
+                                 ss.planet[i].i.value,$
+                                 ss.planet[i].omega.value,$
+                                 ss.planet[i].period.value,/ts2te)
 
    ;; if given a prior, select the epoch closest to that prior
    if ss.planet[i].ts.prior ne 0d0 then begin
@@ -244,21 +278,21 @@ endelse
    ss.planet[i].ta.value = exofast_recenter(ss.planet[i].ta.value, medper)
    ss.planet[i].td.value = exofast_recenter(ss.planet[i].td.value, medper)
 
-   ss.planet[i].teq.value = ss.star.teff.value*sqrt(1d0/(2d0*ss.planet[i].ar.value)) ;(f*(1d0-Ab))^(0.25d0)
+   ss.planet[i].teq.value = ss.star[ss.planet[i].starndx].teff.value*sqrt(1d0/(2d0*ss.planet[i].ar.value)) ;(f*(1d0-Ab))^(0.25d0)
    ss.planet[i].dr.value = ss.planet[i].ar.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value) ;; d/rstar = star-planet separation at transit
 
    Qp = 1d6 ;; tidal Q value   
    ss.planet[i].tcirc.value = 4d0*Qp/63d0/(ss.constants.day*365.25d9)*$
-                              ((ss.planet[i].a.value*ss.constants.au)^3/(ss.constants.GMsun*ss.star.mstar.value))^(1d0/2d0)*$
-                              (ss.planet[i].mpsun.value/ss.star.mstar.value)*$
+                              ((ss.planet[i].a.value*ss.constants.au)^3/(ss.constants.GMsun*ss.star[ss.planet[i].starndx].mstar.value))^(1d0/2d0)*$
+                              (ss.planet[i].mpsun.value/ss.star[ss.planet[i].starndx].mstar.value)*$
                               (ss.planet[i].ar.value/ss.planet[i].p.value)^5d0*$
                               (1d0-ss.planet[i].e.value^2)^(13d0/2d0)/$
                               (1d0+6d0*ss.planet[i].e.value^2) ;; Adams & Laughlin, 2006, eq 2 (in Gyr)
-;   ss.planet[i].tcirc.value = 1.6d0*ss.planet[i].mp.value*ss.star.mstar.value^(-3d0/2d0)*ss.planet[i].rp.value^(-5d0)*(ss.planet[i].a.value/0.05d0)^(13d0/2d0) ;; Adams & Laughlin, 2006, eq 3
+;   ss.planet[i].tcirc.value = 1.6d0*ss.planet[i].mp.value*ss.star[ss.planet[i].starndx].mstar.value^(-3d0/2d0)*ss.planet[i].rp.value^(-5d0)*(ss.planet[i].a.value/0.05d0)^(13d0/2d0) ;; Adams & Laughlin, 2006, eq 3
 
-   ss.planet[i].fave.value = ss.constants.sigmab*ss.star.teff.value^4/(ss.planet[i].ar.value*(1d0+ss.planet[i].e.value^2/2d0))^2/1d9    ;; 10^9 erg/s/cm^2
+   ss.planet[i].fave.value = ss.constants.sigmab*ss.star[ss.planet[i].starndx].teff.value^4/(ss.planet[i].ar.value*(1d0+ss.planet[i].e.value^2/2d0))^2/1d9    ;; 10^9 erg/s/cm^2
 
-   ss.planet[i].b.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)  ;; eq 7, Winn 2010
+   ss.planet[i].b.value  = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)  ;; eq 7, Winn 2010
    ss.planet[i].bs.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value)  ;; eq 8, Winn 2010
 
    ;; approximate durations taken from Winn 2010 (close enough; these should only be used to schedule observations anyway)
@@ -277,8 +311,8 @@ endelse
    ss.planet[i].tau.value = (ss.planet[i].t14.value-t23)/2d0
    ss.planet[i].tfwhm.value = ss.planet[i].t14.value-ss.planet[i].tau.value
 
-   ss.planet[i].ptg.value = (ss.star.rstar.value+ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 + ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2) ;; eq 9, Winn 2010
-   ss.planet[i].pt.value = (ss.star.rstar.value-ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 + ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2)  ;; eq 9, Winn 2010
+   ss.planet[i].ptg.value = (ss.star[ss.planet[i].starndx].rstar.value+ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 + ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2) ;; eq 9, Winn 2010
+   ss.planet[i].pt.value = (ss.star[ss.planet[i].starndx].rstar.value-ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 + ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2)  ;; eq 9, Winn 2010
 
    ;; approximate durations taken from Winn 2010 (close enough; these should only be used to schedule observations anyway)
    ss.planet[i].t14s.value = ss.planet[i].period.value/!dpi*asin(sqrt((1d0+abs(ss.planet[i].p.value))^2 - ss.planet[i].bs.value^2)/(sini*ss.planet[i].ar.value))*sqrt(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value) ;; eqs 14, 16, Winn 2010
@@ -304,8 +338,8 @@ endelse
       stop
    endif
 
-   ss.planet[i].psg.value = (ss.star.rstar.value+ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2) ;; eq 9, Winn 2010
-   ss.planet[i].ps.value = (ss.star.rstar.value-ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2)  ;; eq 9, Winn 2010
+   ss.planet[i].psg.value = (ss.star[ss.planet[i].starndx].rstar.value+ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2) ;; eq 9, Winn 2010
+   ss.planet[i].ps.value = (ss.star[ss.planet[i].starndx].rstar.value-ss.planet[i].rpsun.value)/ss.planet[i].arsun.value*(1d0 - ss.planet[i].esinw.value)/(1d0-ss.planet[i].e.value^2)  ;; eq 9, Winn 2010
 
    ss.planet[i].rhop.value = ss.planet[i].mpsun.value/(ss.planet[i].rpsun.value^3)*ss.constants.rhosun ;; cgs
    ss.planet[i].loggp.value = alog10(ss.planet[i].mpsun.value/ss.planet[i].rpsun.value^2*ss.constants.gravitysun) ;; cgs
@@ -339,27 +373,64 @@ endelse
    minepoch = floor((minbjd - median(ss.planet[i].tc.value))/median(ss.planet[i].period.value))-1
    maxepoch =  ceil((maxbjd - median(ss.planet[i].tc.value))/median(ss.planet[i].period.value))+1
    bestepoch = (minepoch+maxepoch)/2d0
+   bestepoch2 = (minepoch+maxepoch)/2d0
    mincovar = !values.d_infinity
+   mincovar2 = !values.d_infinity
    burnndx = ss.burnndx
    goodchains = *(ss.goodchains)
    for epoch=minepoch, maxepoch do begin
 
       ;; trim the burn in and remove bad chains before computing covariances
-      tc     = (reform(ss.planet[i].tc.value+epoch*ss.planet[i].period.value,$
+      tt     = (reform(ss.planet[i].tt.value+epoch*ss.planet[i].period.value,$
                        ss.nsteps/ss.nchains,ss.nchains))[burnndx:*,goodchains]
       period = (reform(ss.planet[i].period.value,$
                        ss.nsteps/ss.nchains,ss.nchains))[burnndx:*,goodchains]
-      tc = reform(tc,n_elements(tc))
+
+      tt = reform(tt,n_elements(tt))
       period = reform(period,n_elements(period))
       
-      corr = correlate(transpose([[tc],[period]]))
+      corr = correlate(transpose([[tt],[period]]))
       if abs(corr[0,1]) lt mincovar then begin
          mincovar = abs(corr[0,1])
          bestepoch = epoch
       endif
+
+      ;; do the same for the secondary eclipse time
+      te = (reform(ss.planet[i].te.value+epoch*ss.planet[i].period.value,$
+                   ss.nsteps/ss.nchains,ss.nchains))[burnndx:*,goodchains]
+      te = reform(te,n_elements(te))
+      corr = correlate(transpose([[te],[period]]))
+      if abs(corr[0,1]) lt mincovar2 then begin
+         mincovars = abs(corr[0,1])
+         bestepoch2 = epoch
+      endif
+
    endfor
-   ;; apply the best
-   ss.planet[i].t0.value = ss.planet[i].tc.value + bestepoch*ss.planet[i].period.value
+
+   ;; apply the best epoch to compute the optimal times
+   ss.planet[i].tt.value = ss.planet[i].tt.value + bestepoch*ss.planet[i].period.value
+   ss.planet[i].te.value = ss.planet[i].te.value + bestepoch2*ss.planet[i].period.value
+   
+   ;; convert to SSB frame
+   for j=0L, ss.nsteps-1 do begin
+      model_times = [ss.planet[i].tt.value[j],ss.planet[i].te.value[j],$
+                     ss.planet[i].tc.value[j],ss.planet[i].ts.value[j]]
+      
+      observed_times = target2bjd(model_times,$
+                                  inclination=ss.planet[i].i.value[j],$
+                                  a=ss.planet[i].a.value[j],$
+                                  tp=ss.planet[i].tp.value[j],$
+                                  period=ss.planet[i].period.value[j],$
+                                  e=ss.planet[i].e.value[j],$
+                                  omega=ss.planet[i].omega.value[j],$
+                                  q=1d0/ss.planet[i].q.value[j])
+      
+      ss.planet[i].t0.value[j] = observed_times[0] 
+      ss.planet[i].te0.value[j] = observed_times[1] 
+      ss.planet[i].tco.value[j] = observed_times[2] 
+      ss.planet[i].tso.value[j] = observed_times[3] 
+
+   endfor
 
    ;; blackbody eclipse depths
 
@@ -386,9 +457,9 @@ endelse
 endfor
 
 for i=0L, ss.nband-1 do begin  
-   massfraction = ss.planet[0].mpsun.value/(ss.star.mstar.value + ss.planet[0].mpsun.value)
-   fluxfraction = ss.band[i].dilute.value
-   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
+   massfraction = ss.planet[0].mpsun.value/(ss.star[ss.planet[0].starndx].mstar.value + ss.planet[0].mpsun.value)
+;   fluxfraction = ss.band[i].dilute.value
+;   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
    ss.band[i].eclipsedepth.value = ss.band[i].thermal.value + ss.band[i].reflect.value
 endfor
 

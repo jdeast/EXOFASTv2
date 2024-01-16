@@ -78,7 +78,7 @@ repeat begin
 ;   if ~finite(max(abs(diff))) then stop
 
    if niter gt 100 then begin
-      print, inclination, a, tp, period, e, omega, format='(i=",f0.20,",a=",f0.20,",tp=",f0.20,",period=",f0.20,",e=",f0.20,",omega=",f0.20)'
+      print, inclination, a, tp, period, e, omega, format='("i=",f0.20,",a=",f0.20,",tp=",f0.20,",period=",f0.20,",e=",f0.20,",omega=",f0.20)'
       message, 'Not converging; this is a rare bug usually associated with poorly constrained parameters. Try again or consider imposing some priors for poorly constrained parameters. Especially if you have parallel tempering enabled, you should have loose, uniform priors on Period and Tc.'
    endif
 

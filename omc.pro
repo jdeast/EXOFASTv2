@@ -50,7 +50,7 @@
 ;  2011/07 -- Written, Jason Eastman (OSU)
 ;
 ;-
-pro omc, time, err, telescope=telescope, chi2=chi2, period=period, t0=t0, ps=ps, epsname=epsname, nogaps=nogaps
+pro omc, time, err, telescope=telescope, chi2=chi2, period=period, t0=t0, ps=ps, epsname=epsname, nogaps=nogaps,logname=logname
 
 ;; read in the times
 ;openr, lun, filename, /get_lun
@@ -184,12 +184,12 @@ if n_elements(telescope) ge 1 then begin
 endif
 
 ;; print the best-fit ephemeris, uncertainties, and chi^2
-print, 'T0 = '+string(coeffs[0],format='(f14.6)')+' +/- '+strtrim(sigma[0],2)
-print, 'P  = '+strtrim(coeffs[1],2) + ' +/- ' + strtrim(sigma[1],2)
-print, 'chi^2 = '+strtrim(total(((omc)/err)^2),2)
-print, 'dof = '+strtrim((n_elements(time)-2),2)
-print, 'chi^2/dof = ' + strtrim(total(((omc)/err)^2)/(n_elements(time)-2),2)
-print, ''
+printandlog, 'T0 = '+string(coeffs[0],format='(f14.6)')+' +/- '+strtrim(sigma[0],2),logname
+printandlog, 'P  = '+strtrim(coeffs[1],2) + ' +/- ' + strtrim(sigma[1],2),logname
+printandlog, 'chi^2 = '+strtrim(total(((omc)/err)^2),2),logname
+printandlog, 'dof = '+strtrim((n_elements(time)-2),2),logname
+printandlog, 'chi^2/dof = ' + strtrim(total(((omc)/err)^2)/(n_elements(time)-2),2),logname
+printandlog, '',logname
 
 ;; print the epochs, times, errors, etc.
 ;print, 'Epoch      T_C      ERR    O-C (O-C)/err'

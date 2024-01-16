@@ -1,8 +1,16 @@
-pro choplc, filename, tc, period, t14=t14, prefix=prefix
+pro choplc, filename, tc, period, t14=t14, prefix=prefix, flatten=flatten, splinespace=splinespace
 
 if n_elements(prefix) eq 0 then prefix = 'transit'
+if n_elements(splinespace) eq 0 then splinespace=0.75d0
 
 readcol, filename, time, flux, err, format='d,d,d'
+
+if keyword_set(flatten) then begin
+   norm = keplerspline(time, flux, breakp=breakp, ndays=splinespace)
+   flux /= norm
+   err /= norm
+endif
+
 
 nplanets = n_elements(tc)
 
@@ -35,13 +43,18 @@ for i=0, n_elements(tc)-1 do begin
          if j lt minepoch_real then minepoch_real = j
          if j gt maxepoch_real then maxepoch_real = j
 
-         forprint, time[match], flux[match], err[match], format='(f0.8,x,f0.8,x,f0.8)',/nocomment, textout=string(prefix,planetletter[i],j,'.dat', format='(a,a,".",i04,a)'),/silent
+         caldat, tc[i]+j*period[i], month, day, year
+         datestr = "n" + string(year,month,day,format='(i04,i02,i02)')
+
+         forprint, time[match], flux[match], err[match], format='(f0.8,x,f0.8,x,f0.8)',/nocomment, textout=string(datestr,prefix,planetletter[i],j,'.dat', format='(a,a,a,".",i04,a)'),/silent
       endif
 
    endfor
 
    if finite(minepoch_real) and finite(maxepoch_real) then begin
       ;; chopping the LC like this imposes these implicit priors on the model
+      print, 'Chopping the LC like this imposes implicit priors on the model'
+      print, 'You should make them explicit by adding these lines to the prior file so data gaps do not influence the fit'
       period_error = t14[i]/(maxepoch_real-minepoch_real)
       print, string(i,tc[i],tc[i]-t14[i],tc[i]+t14[i],format='("tc_",i1,x,f0.6," -1 ",f0.6,x,f0.6)')
       print, string(i,period[i],period[i]-period_error,period[i]+period_error,format='("period_",i1,x,f0.12," -1 ",f0.12,x,f0.12)')

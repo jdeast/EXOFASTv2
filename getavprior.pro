@@ -35,11 +35,17 @@
 function getavprior, ra=ra, dec=dec, object=object, line=line
 
 if keyword_set(object) then begin
-   cmd = "curl 'https://irsa.ipac.caltech.edu/cgi-bin/DUST/nph-dust?locstr="  + object + "'"
+   url = 'https://irsa.ipac.caltech.edu/cgi-bin/DUST/nph-dust?locstr='  + object
 endif else if n_elements(ra) eq 1 and n_elements(dec) eq 1 then begin
-   cmd = "curl 'https://irsa.ipac.caltech.edu/cgi-bin/DUST/nph-dust?locstr="  + strtrim(ra,2) + '+'  + strtrim(dec,2) + "+equ+j2000'"
+   url = 'https://irsa.ipac.caltech.edu/cgi-bin/DUST/nph-dust?locstr='  + strtrim(ra,2) + '+'  + strtrim(dec,2) + '+equ+j2000'
 endif else message, 'must specify either RA and DEC or OBJECT'
-spawn, cmd, output
+
+if float(!version.release) ge 8.5 then begin
+   output =  strsplit(string(wget(url,/buffer)),string(10B),/extract)
+endif else begin
+   cmd = "curl '" + url + "'"
+   spawn, cmd, output
+endelse
 
 if output[0] eq '' then begin
    message, 'Curl not installed? curl command failed: ' + cmd,/continue
@@ -56,7 +62,7 @@ if strpos(output[2],'Invalid object name') ne -1 then begin
 endif
 
 match = where(strtrim(output,2) eq '</maxValueSandF>')
-maxav = strtrim((strsplit(output[match-1]*3.1d0,'(',/extract))[0],2)
+maxav = strtrim((strsplit(output[match-1]*3.1d0*1.5d0*0.87d0,'(',/extract))[0],2)
 line = 'av 0 -1 0 ' + maxav
 
 return, double(maxav)

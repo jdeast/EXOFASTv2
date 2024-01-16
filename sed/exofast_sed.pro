@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug, redo=redo, flux=flux, oned=oned
+function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug, redo=redo, flux=flux, oned=oned, wavelength=wavelength
 
 common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m, w1, kapp1
 
@@ -27,6 +27,7 @@ if n_elements(fp) eq 0 or keyword_set(redo) then begin
    kapv = interpol(kkap,klam,0.55)
 
    w1 = findgen(24000)/1000+0.1 ;; wavelength scale on which to interpolate
+   wavelength=w1
    kapp1 = interpol(kkap,klam,w1)
 endif
 

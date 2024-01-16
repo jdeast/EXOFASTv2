@@ -8,7 +8,7 @@ basename = file_basename(filename)
 ;; First index is velocity, second index is BJD
 ccf2d = readfits(filename, /silent)
 bjd = readfits(filename, exten_no=1, /silent)
-vel = readfits(filename, exten_no=2, /silent)
+vel = readfits(filename, exten_no=2, /silent) ;; km/s
 
 if n_elements(lambdarange) eq 0 then lambdarange=0
 

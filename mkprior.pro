@@ -35,7 +35,9 @@
 function getpriorline, parameter, ndx, num=num
 
 label = parameter.label
-if n_elements(num) ne 0 then label = label + '_' + strtrim(num,2)
+if n_elements(num) ne 0 then begin
+   if num ne 0 then label = label + '_' + strtrim(num,2)
+endif
 
 bestval = strtrim(string(parameter.value[ndx],format='(f0.30)'),2)
 
@@ -113,11 +115,13 @@ endif else if n_elements(mcmcss) eq 0 then $
 minchi2 = min(*mcmcss.chi2,ndx)
 
 ;; star
-for j=0, n_tags(mcmcss.star)-1 do begin
-   if (size(mcmcss.star.(j)))[2] eq 8 then begin
-      line = getpriorline(mcmcss.star.(j), ndx)
-      if line ne '' then printf, lun, line
-   endif
+for i=0L, mcmcss.nstars-1 do begin
+   for j=0, n_tags(mcmcss.star[i])-1 do begin
+      if (size(mcmcss.star[i].(j)))[2] eq 8 then begin
+         line = getpriorline(mcmcss.star[i].(j), ndx, num=i)
+         if line ne '' then printf, lun, line
+      endif
+   endfor
 endfor
 
 ;; telescopes

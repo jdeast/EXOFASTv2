@@ -3,7 +3,7 @@
 ;; Modified to integrate into EXOFASTv2 2017/06/27, JDE
 ;; note vsini and vline are in km/s here!
 
-function dopptom_chi2, doptom, tc, period, e, omega, cosi, p, ar, lambda, logg, teff, feh, vsini, vline, errscale, debug=debug,like=like,psname=psname, verbose=verbose, logname=logname
+function dopptom_chi2, doptom, tc, period, e, omega, cosi, p, ar, lambda, logg, teff, feh, vsini, vline, errscale, debug=debug,like=like,psname=psname, verbose=verbose, logname=logname,c=c
 
 if vline le 0d0 then begin
    if keyword_set(verbose) then printandlog, 'Invalid line width (' + strtrim(vline,2) + ' =< 0)', logname
@@ -37,7 +37,7 @@ velsini = doptom.vel/vsini
 stepsize = doptom.stepsize / vsini
 meanstepsize = mean(stepsize)
 
-c = 299792.458d0
+if n_elements(c) eq 0 then c = 299792.458d0
 rvel = c/doptom.rspec ;; spectrograph resolution in velocity 
 
 ;; convert form FWHM to sigma
@@ -45,6 +45,15 @@ fwhm2sigma = 2d0*sqrt(2d0*alog(2d0))
 
 ;relevantVels = where((velsini gt -1.5) and (velsini lt 1.5))  ; we only care about these, to speed things up
 relevantVels = where(abs(velsini) le 2d0)  ; we only care about these, to speed things up
+
+if relevantVels[0] eq -1 then begin
+   if keyword_set(verbose) then begin
+      printandlog, 'No relevant velocities. Check vsini constraint (vsini=' + strtrim(vsini,2) + ' km/s)', logname
+      printandlog, 'Note a vsini prior (in m/s) must be supplied', logname
+      printandlog, 'Note VEL in fits file is in km/s. See exofastv2.pro DTPATH documentation for how to create this file.', logname
+   endif
+   return, !values.d_infinity 
+endif
 ;relevantVels = lindgen(n_elements(velsini))
 
 IndepVels = (rvel/fwhm2sigma) / (meanstepsize*vsini)     ; accounts for the fact that we're supersampling within the actual spectral res. of the spectrograph, to adjust chi^2 later

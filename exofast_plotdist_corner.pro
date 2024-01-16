@@ -128,19 +128,24 @@ for i=0, n_tags(ss)-1 do begin
                                             latex=(*(ss.(i)[j].(k))).(l)[m].latex,$
                                             best=(*(ss.(i)[j].(k))).(l)[m].value[bestndx],$
                                             logname=logname,value=value,errlo=errlo,errhi=errhi,$
-                                            medianpars=medianpars,charsize=charsize
+                                            medianpars=medianpars,charsize=charsize, scinote=scinote
                               
                               ;; populate the median value and error bars
                               (*ss.(i)[j].(k)).(l)[m].medvalue = strtrim(value,2)
                               (*ss.(i)[j].(k)).(l)[m].upper = strtrim(errhi,2)
                               (*ss.(i)[j].(k)).(l)[m].lower = strtrim(errlo,2)
+                              (*ss.(i)[j].(k)).(l)[m].scinote = scinote
                               (*ss.(i)[j].(k)).(l)[m].best = (*(ss.(i)[j].(k))).(l)[m].value[bestndx]
                               
                               if n_elements(csvfile) ne 0 then begin
                                  parname = (*(ss.(i)[j].(k))).(l)[m].label
 ;                                 parname = (*(ss.(i)[j].(k))).(l)[m].latex
                                  parname += '_' + strtrim(j,2) + '_' + strtrim(m,2)
-                                 printf, csvlun, parname, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),format='(3(a,","),a)'
+                                 if scinote eq '' then begin
+                                    printf, csvlun, parname, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),format='(3(a,","),a)'
+                                 endif else begin
+                                    printf, csvlun, parname, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),scinote,format='(4(a,","),a)'
+                                 endelse
                               endif
 
                               ;; store these for the covariance plot
@@ -186,19 +191,24 @@ for i=0, n_tags(ss)-1 do begin
                                    latex=ss.(i)[j].(k).latex,$
                                    best=ss.(i)[j].(k).value[bestndx],$
                                    logname=logname,value=value,errlo=errlo,errhi=errhi,$
-                                   medianpars=medianpars,charsize=charsize
+                                   medianpars=medianpars,charsize=charsize, scinote=scinote
                                    
                      ;; populate the median value and error bars
                      ss.(i)[j].(k).medvalue = strtrim(value,2)
                      ss.(i)[j].(k).upper = strtrim(errhi,2)
                      ss.(i)[j].(k).lower = strtrim(errlo,2)
+                     ss.(i)[j].(k).scinote = scinote
                      ss.(i)[j].(k).best = ss.(i)[j].(k).value[bestndx]
 
                      if n_elements(csvfile) ne 0 then begin
                         parname = ss.(i)[j].(k).label
 ;                        parname = ss.(i)[j].(k).latex
                         parname += '_' + strtrim(j,2)
-                        printf, csvlun, parname, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),format='(3(a,","),a)'
+                        if scinote eq '' then begin
+                           printf, csvlun, parname, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),format='(3(a,","),a)'
+                        endif else begin
+                           printf, csvlun, parname, strtrim(value,2), strtrim(errhi,2), strtrim(errlo,2),scinote,format='(4(a,","),a)'
+                        endelse
                      endif
 
                      ;; store these for the covariance plot

@@ -1,9 +1,14 @@
-pro flatten, filename
+;; flatten a lightcurve using Andrew Vanderberg's Keplerspline
+pro flatten, filename,splinespace=splinespace
 
-readcol, filename, time, flux, format='d,d',delimiter=',',skip=1
+if n_elements(splinespace) eq 0 then splinespace = 0.75
 
-flatflux = flux/median(flux,48*3d0)
+readcol, filename, time, flux, fluxerr, format='d,d,d'
 
-exofast_forprint, time+2454833d0, flatflux, flatflux*0d0 + stddev(flatflux), format='(f0.9,x,f0.9,x,f0.9)',/nocomment, textout=filename + '.dat3'
+norm = keplerspline(time, flux, breakp=breakp, ndays=splinespace)
+
+flattened_filename = file_path(filename) + path_sep() + file_basename(filename,'.dat') + '.flattened.dat'
+
+exofast_forprint, time, flux/norm, fluxerr/norm, format='(f0.9,x,f0.9,x,f0.9)',/nocomment, textout=flattened_filename
 
 end
