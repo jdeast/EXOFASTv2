@@ -5,6 +5,8 @@ if n_elements(savfile) ne 0 then begin
    ss = mcmcss
 endif
 
+if n_elements(range) eq 0 then range = dblarr(6)+!values.d_nan
+
 ;; pick the best-fit index if not specified
 if n_elements(ndx) eq 0 then begin
    if ss.nsteps eq 1 then ndx = 0 $
@@ -126,6 +128,11 @@ for i=0L, ss.nplanets-1 do begin
             match1 = where(thisbjd gt (tc[i] + epochs[k]*period[i] - t14[i]) and $
                            thisbjd lt (tc[i] + epochs[k]*period[i] + t14[i]))
             if match1[0] ne -1 then primary[i,j] = 1B
+         endfor
+
+         ;; same for secondaries
+         epochs = minepoch + lindgen(maxepoch-minepoch+1)
+         for k=0L, n_elements(epochs)-1 do begin
             match2 = where(thisbjd gt (ts[i] + epochs[k]*period[i] - t14s[i]) and $
                            thisbjd lt (ts[i] + epochs[k]*period[i] + t14s[i]))
             if match2[0] ne -1 then secondary[i,j] = 1B
@@ -326,7 +333,6 @@ for jj=0L, 1 do begin
       ysize = xsize/aspect_ratio + (nlc-1)
 ;      ysize = xsize/aspect_ratio + (ss.ntran-1)*0.6
 
-      
       ;; this is a planet specific quantity
       spacing = (max(delta[i,use])+max(noise[use]))*3d0
       if ~keyword_set(noresiduals) then spacing *= 4d0/3d0
