@@ -33,7 +33,7 @@ Unsupported ACS_WFC_F814W Unsupported Unsupported
 Unsupported ACS_WFC_F850LP Unsupported Unsupported
 Unsupported ACS_WFC_F892N Unsupported Unsupported
 B Bessell_B B Misc_APASS.B
-I Bessell_I I Unsupported
+I Bessell_I I Generic_Cousins.I
 R Bessell_R R Unsupported
 U Bessell_U U Unsupported
 V Bessell_V V Misc_APASS.V
