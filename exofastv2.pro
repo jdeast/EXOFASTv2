@@ -496,7 +496,7 @@
 ;  STARNDX   - An NPLANETS long array that specifies the index of the
 ;              star each planet orbits. The default is 0 for all.
 ; 
-;  DILUTED   - An NTRANSITSxNSTARS boolean array specifying which
+;  SEDDEBLEND- An NTRANSITSxNSTARS boolean array specifying which
 ;              transits are blended with which stars. These will
 ;              automatically be deblended according to the SED models
 ;              of all stars specified here, assuming an error of 10%.
@@ -690,6 +690,22 @@
 ;             is likely required for low SNR transits or when using
 ;             parallel tempering (see NTEMP and TF).
 ;
+; NOPRIMARY - An NPLANETS byte array specifying which planets are
+;             allowed to not have a primary transit. Normally, b>1+p
+;             models are rejected because the transit fit is
+;             unconstrained and poorly behaved, but in the rare cases
+;             a planet only has a secondary and not a primary, this is
+;             required. You probably also want to specify
+;             REQUIRESECONDARY=NOPRIMARY.
+;
+; REQUIRESECONDARY - 
+;             An NPLANETS byte array specifying which planets are
+;             required to have a secondary eclipse. Models with bs>1+p
+;             will be rejected. When fitting a secondary, this could
+;             bias non-significant detections. When only fitting a
+;             secondary, this may be required to keep the fit
+;             reasonably bounded.
+;
 ;  FITSPLINE- An NTRANSITFILES byte array specifying which transits
 ;             should be flatted with Andrew Vanderburg's
 ;             keplerspline. This should only be used for long baseline
@@ -706,6 +722,15 @@
 ;             inflating the uncertainties, and increasing convergence
 ;             times. It should be short compared to the variability
 ;             you wish to remove.
+;
+;  FITRAMP  - An NTRANSITFILES byte array specifying which transits
+;             should be fit with an exponential ramp (common for JWST
+;             and Spitzer LCs). When set, the corresponding lightcurve
+;             will be multiplied by 1+A*exp((time[0]-time)/tau), where
+;             A and tau (unique to each LC) are fitted parameters
+;             reported alongside other transit parameters and time is
+;             the user-supplied time from the transit file. A is
+;             typically negative.
 ;
 ;  FITWAVELET
 ;           - An NTRANSITFILES array specifying which to fit Carter's
@@ -970,7 +995,7 @@
 ;             unless doing TTVs.
 ;
 ;  USERNOTE - A string that is printed to the top of the log file,
-;             intended to help keep track of fits. 
+;             intended to help the user keep track of fits. 
 ;
 ;  MKSUMMARYPG
 ;           - A keyword that generates a quick look summary page of
@@ -1119,6 +1144,7 @@
 ;             offsets). Now easily extensible.
 ;  2023/12 -- Missed a lot of updates here (see git
 ;             history). Documentation cleanup.
+;  2024/01 -- Add FITRAMP (primarily for JWST transits)
 ;-
 pro exofastv2, priorfile=priorfile, $
                prefix=prefix,$
@@ -1142,7 +1168,7 @@ pro exofastv2, priorfile=priorfile, $
                fitbeam=fitbeam, derivebeam=derivebeam, $
                ;; star inputs
                nstars=nstars, starndx=starndx, $
-               diluted=diluted, fitdilute=fitdilute, $
+               seddeblend=seddeblend, fitdilute=fitdilute, $
                ;; planet inputs
                nplanets=nplanets, $
                fittran=fittran, fitrv=fitrv, $
@@ -1151,14 +1177,15 @@ pro exofastv2, priorfile=priorfile, $
                alloworbitcrossing=alloworbitcrossing, $
                chen=chen, i180=i180, $
                ;; RV inputs
-               fitslope=fitslope, fitquad=fitquad, rvepoch=rvepoch,$               
+               fitslope=fitslope, fitquad=fitquad, rvepoch=rvepoch,$
                ;; transit inputs
                noclaret=noclaret, $
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                rejectflatmodel=rejectflatmodel,$
+               noprimary=noprimary, requiresecondary=requiresecondary,$
                fitspline=fitspline, splinespace=splinespace, $
-               fitwavelet=fitwavelet, $
+               fitramp=fitramp, fitwavelet=fitwavelet, $
                ;; reparameterization inputs
                fitlogmp=fitlogmp,$
                novcve=novcve, nochord=nochord, fitsign=fitsign, $
@@ -1215,7 +1242,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              fitreflect=fitreflect, fitphase=fitphase, $
              fitbeam=fitbeam, derivebeam=derivebeam, $
              nstars=nstars,starndx=starndx, $
-             diluted=diluted,fitdilute=fitdilute, $
+             seddeblend=seddeblend,fitdilute=fitdilute, $
              nplanets=nplanets, $
              fittran=fittran, fitrv=fitrv, $
              rossiter=rossiter, fitdt=fitdt, $
@@ -1227,8 +1254,9 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
              longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
              rejectflatmodel=rejectflatmodel,$
+             noprimary=noprimary, requiresecondary=requiresecondary,$
              fitspline=fitspline, splinespace=splinespace, $
-             fitwavelet=fitwavelet, $              
+             fitramp=fitramp, fitwavelet=fitwavelet, $              
              fitlogmp=fitlogmp,$
              novcve=novcve, nochord=nochord, fitsign=fitsign, $
              fittt=fittt, earth=earth, $             
@@ -1274,7 +1302,7 @@ endif else if n_elements(nthreads) ne 1 then begin
 endif ;; else use the user's input   
 
 if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
-   resolve_all, resolve_function=[chi2func,'exofast_random'],skip_routines=['cggreek'],/cont,/quiet
+   resolve_all, resolve_either=[chi2func,'exofast_random','ramp_func'],skip_routines=['cggreek'],/cont,/quiet
 
 ;; output to log file too
 logname = prefix + 'log'
@@ -1340,7 +1368,7 @@ ss = mkss(priorfile=priorfile, $
           fitbeam=fitbeam, derivebeam=derivebeam, $
           ;; star inputs
           nstars=nstars, starndx=starndx, $
-          diluted=diluted, fitdilute=fitdilute, $
+          seddeblend=seddeblend, fitdilute=fitdilute, $
           ;; planet inputs
           nplanets=nplanets, $
           fittran=fittran,fitrv=fitrv,$
@@ -1355,8 +1383,9 @@ ss = mkss(priorfile=priorfile, $
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
           longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
           rejectflatmodel=rejectflatmodel,$
+          noprimary=noprimary, requiresecondary=requiresecondary,$
           fitspline=fitspline, splinespace=splinespace, $
-          fitwavelet=fitwavelet, $            
+          fitramp=fitramp, fitwavelet=fitwavelet, $            
           ;; reparameterization inputs
           fitlogmp=fitlogmp,$
           novcve=novcve, nochord=nochord, fitsign=fitsign, $
@@ -1565,7 +1594,7 @@ if nthreads gt 1 then begin
       
       ;; compile all the codes in each thread so compilation messages don't pollute the screen
       if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
-         thread_array[i].obridge->execute, "resolve_all, resolve_function=[chi2func,'exofast_random'], resolve_procedure=['exofastv2'],skip_routines=['cggreek'],/cont,/quiet"
+         thread_array[i].obridge->execute, "resolve_all, resolve_either=[chi2func,'exofast_random','ramp_func'], resolve_procedure=['exofastv2'],skip_routines=['cggreek'],/cont,/quiet"
          
       ;; create the stellar stucture within each thread
       thread_array[i].obridge->execute,$
@@ -1585,7 +1614,7 @@ if nthreads gt 1 then begin
          'fitreflect=fitreflect,fitphase=fitphase,'+ $
          'fitbeam=fitbeam, derivebeam=derivebeam,'+ $
          'nstars=nstars,starndx=starndx,'+ $         
-         'diluted=diluted, fitdilute=fitdilute,'+$
+         'seddeblend=seddeblend, fitdilute=fitdilute,'+$
          'nplanets=nplanets,'+$
          'fittran=fittran, fitrv=fitrv,'+$
          'rossiter=rossiter,fitdt=fitdt,'+$
@@ -1597,8 +1626,9 @@ if nthreads gt 1 then begin
          'ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,'+$
          'longcadence=longcadence,exptime=exptime,ninterp=ninterp,'+$ 
          'rejectflatmodel=rejectflatmodel,'+$
+         'noprimary=noprimary, requiresecondary=requiresecondary,'+$
          'fitspline=fitspline, splinespace=splinespace,'+$
-         'fitwavelet=fitwavelet,'+$
+         'fitramp=fitramp, fitwavelet=fitwavelet,'+$
          'fitlogmp=fitlogmp,'+$
          'novcve=novcve, nochord=nochord, fitsign=fitsign,'+$
          'fittt=fittt, earth=earth,'+$
@@ -1699,7 +1729,7 @@ mcmcss = mkss(priorfile=priorfile, $
               fitbeam=fitbeam, derivebeam=derivebeam, $
               ;; star inputs
               nstars=nstars, starndx=starndx, $
-              diluted=diluted, fitdilute=fitdilute, $
+              seddeblend=seddeblend, fitdilute=fitdilute, $
               ;; planet inputs
               nplanets=nplanets, $
               fittran=fittran,fitrv=fitrv,$
@@ -1714,8 +1744,9 @@ mcmcss = mkss(priorfile=priorfile, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               rejectflatmodel=rejectflatmodel,$
+              noprimary=noprimary, requiresecondary=requiresecondary,$
               fitspline=fitspline, splinespace=splinespace, $
-              fitwavelet=fitwavelet, $            
+              fitramp=fitramp, fitwavelet=fitwavelet, $            
               ;; reparameterization inputs
               fitlogmp=fitlogmp,$
               novcve=novcve, nochord=nochord, fitsign=fitsign, $
