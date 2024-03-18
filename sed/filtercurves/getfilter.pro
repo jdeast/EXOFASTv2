@@ -116,6 +116,7 @@ filterids = ['GAIA/GAIA2r.Gbp',$
              'WIYN/NESSI.z',$
              'Misc/APASS.B',$
              'Misc/APASS.V',$
+             'Generic/Cousins.I',$
              'Misc/APASS.sdss_g',$
              'Misc/APASS.sdss_r',$
              'Misc/APASS.sdss_i',$
