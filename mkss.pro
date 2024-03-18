@@ -56,7 +56,7 @@ function mkss, priorfile=priorfile, $
                fitbeam=fitbeam, derivebeam=derivebeam, $
                ;; star inputs
                nstars=nstars, starndx=starndx, $
-               diluted=diluted, fitdilute=fitdilute, $
+               seddeblend=seddeblend, fitdilute=fitdilute, $
                ;; planet inputs
                nplanets=nplanets, $
                fittran=fittran,fitrv=fitrv,$
@@ -71,8 +71,9 @@ function mkss, priorfile=priorfile, $
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                rejectflatmodel=rejectflatmodel,$
+               noprimary=noprimary, requiresecondary=requiresecondary,$
                fitspline=fitspline, splinespace=splinespace, $
-               fitwavelet=fitwavelet, $            
+               fitramp=fitramp, fitwavelet=fitwavelet, $            
                ;; reparameterization inputs
                fitlogmp=fitlogmp,$
                novcve=novcve, nochord=nochord, fitsign=fitsign, $
@@ -403,38 +404,38 @@ endif else begin
    nband = 0
 endelse
 
-;; initialize the diluted (NTRANxNSTARs) byte array
+;; initialize the seddeblend (NTRANxNSTARs) byte array
 ;; if not specified, default to no dilution
-if n_elements(diluted) eq 0 then begin
-   diluted = bytarr(ntran>1, nstars)
-endif else if n_elements(diluted) eq 1 then begin
+if n_elements(seddeblend) eq 0 then begin
+   seddeblend = bytarr(ntran>1, nstars)
+endif else if n_elements(seddeblend) eq 1 then begin
    ;; if specified as a keyword, dilute all LCs according to that keyword
-   diluted = bytarr(ntran>1, nstars)+keyword_set(diluted)
+   seddeblend = bytarr(ntran>1, nstars)+keyword_set(seddeblend)
 endif
 
 ;; make sure the input make sense
-sz = size(diluted) 
-if total(diluted) gt 0 then begin
-   if sz[0] eq 1 and nstars eq 1 and sz[2] eq ntran then begin  
+sz = size(seddeblend) 
+if total(seddeblend) gt 0 then begin
+   if nstars eq 1 then begin
       ;; only 1 star, cannot compute dilution
-      printandlog, 'DILUTED cannot be used with only one star.',logname
+      printandlog, 'SEDDEBLEND cannot be used with only one star.',logname
       printandlog, 'Either model multiple stars to model dilution according to their SEDs', logname
       printandlog, 'or use FITDILUTE to FIT dilution independently for each lightcurve.', logname
       return, -1
    endif else if sz[0] eq 2 and ntran eq sz[1] and nstars eq sz[2] then begin
       ;; good (multiple stars), do nothing
    endif else begin
-      printandlog, 'DILUTED (' + strtrim(sz[2],2) + ' x ' + strtrim(sz[1],2) + ') must be an NTRANxNSTARS (' + strtrim(ntran,2) + ' x ' + strtrim(nstars,2) + ') array', logname
+      printandlog, 'SEDDEBLEND (' + strtrim(sz[2],2) + ' x ' + strtrim(sz[1],2) + ') must be an NTRANxNSTARS (' + strtrim(ntran,2) + ' x ' + strtrim(nstars,2) + ') array', logname
       return, -1
    endelse
 endif
-dilutestarndx = where(total(diluted,1)) ;; this specifies which stars should be computed for deblending
+dilutestarndx = where(total(seddeblend,1)) ;; this specifies which stars should be computed for deblending
 
 if n_elements(fitdilute) eq 0 then begin
-   ;; if not specified, we want to fit the dilution for every lightcurve specified in the DILUTED array
-   ;; which is none, if DILUTED is not set)
+   ;; if not specified, we want to fit the dilution for every lightcurve specified in the SEDDEBLEND array
+   ;; which is none, if SEDDEBLEND is not set)
    if nstars eq 1 then fitdilute = bytarr(ntran > 1) $
-   else fitdilute = total(diluted,2)
+   else fitdilute = total(seddeblend,2) gt 1
 endif else if n_elements(fitdilute) eq 1 then begin
    ;; if set as a keyword, apply to all transits according to the keyword
    fitdilute = lonarr(ntran>1) + keyword_set(fitdilute)
@@ -533,13 +534,34 @@ endif else begin
    tdeltavs = 0B
 endelse
 
-if n_elements(rejectflatmodel) ne ntran and n_elements(rejectflatmodel) ne 0 and ntran gt 0 then begin
+if n_elements(rejectflatmodel) eq 1 then begin
+   rejectflatmodel = bytarr(ntran>1) + keyword_set(rejectflatmodel)
+endif else if n_elements(rejectflatmodel) ne ntran and n_elements(rejectflatmodel) ne 0 and ntran gt 0 then begin
    printandlog, 'REJECTFLATMODEL must be an NTRANSITS element array', logname
    return, -1
 end
 if n_elements(rejectflatmodel) eq 0 then begin
-   if ntran gt 0 then rejectflatmodel = bytarr(ntran) $
-   else rejectflatmodel = [0B]
+   rejectflatmodel = bytarr(ntran>1)
+endif
+
+if n_elements(noprimary) eq 1 then begin
+   noprimary = bytarr(nplanets>1)+keyword_set(noprimary)
+endif else if n_elements(noprimary) ne nplanets and n_elements(noprimary) ne 0 and ntran gt 0 then begin
+   printandlog, 'NOPRIMARY must be an NPLANETS element array', logname
+   return, -1
+end
+if n_elements(noprimary) eq 0 then begin
+   noprimary = bytarr(nplanets>1)
+endif
+
+if n_elements(requiresecondary) eq 1 then begin
+   requiresecondary = bytarr(nplanets>1)+keyword_set(requiresecondary)
+endif else if n_elements(requiresecondary) ne nplanets and n_elements(requiresecondary) ne 0 and ntran gt 0 then begin
+   printandlog, 'REQUIRESECONDARY must be an NPLANETS element array', logname
+   return, -1
+end
+if n_elements(requiresecondary) eq 0 then begin
+   requiresecondary = bytarr(nplanets>1)
 endif
 
 if n_elements(fitspline) eq 1 then  begin
@@ -548,19 +570,26 @@ endif else if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 and 
    printandlog, 'FITSPLINE has ' + strtrim(n_elements(fitspline),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
    return, -1
 end
-if n_elements(fitspline) eq 0 then begin
-   if ntran gt 0 then fitspline = bytarr(ntran) $
-   else fitspline = [0B]
-endif
+if n_elements(fitspline) eq 0 then fitspline = bytarr(ntran>1) 
 
-
-if n_elements(splinespace) ne ntran and n_elements(splinespace) ne 0 and ntran gt 0 then begin
+if n_elements(splinespace) eq 0 then begin
+   splinespace = dblarr(ntran > 1) + 0.75d0
+endif else if n_elements(splinespace) eq 1 then begin
+   splinespace = dblarr(ntran>1) + splinespace
+endif else if n_elements(splinespace) ne ntran then begin
    printandlog, 'SPLINESPACE must be an NTRANSITS element array', logname
    return, -1
+endif ;; else: specified correctly by user, do nothing
+
+if n_elements(fitramp) eq 1 then  begin
+   fitramp = bytarr(ntran>1) + keyword_set(fitramp)
+endif else if n_elements(fitramp) ne ntran and n_elements(fitramp) ne 0 and ntran gt 0 then begin
+   printandlog, 'FITRAMP must be an NTRANSITS element array', logname
+   return, -1
 end
-if n_elements(splinespace) eq 0 then begin
-   if ntran gt 0 then splinespace = dblarr(ntran) + 0.75d0 $
-   else splinespace = [0.75d0]
+if n_elements(fitramp) eq 0 then begin
+   if ntran gt 0 then fitramp = bytarr(ntran) $
+   else fitramp = [0B]
 endif
 
 if n_elements(fitwavelet) ne ntran and n_elements(fitwavelet) ne 0 and ntran gt 0 then begin
@@ -1265,6 +1294,14 @@ omegadeg.label = 'omegadeg'
 omegadeg.cgs = !dpi/180d0
 if nplanets eq 0 then omegadeg.derive=0
 
+omegagr = parameter
+omegagr.unit = '$^\circ$/century'
+omegagr.description = 'Computed GR precession'
+omegagr.latex = '\dot{\omega}_{\rm GR}'
+omegagr.label = 'omegagr'
+omegagr.cgs = !dpi/180d0/36525d0/86400d0
+if nplanets eq 0 then omegagr.derive=0
+
 bigomega = parameter
 bigomega.value = 0d0
 bigomega.scale = !dpi
@@ -1906,6 +1943,23 @@ dilute.scale = 1d-2
 dilute.fit = 0
 dilute.derive = 0
 
+rampexp = parameter
+rampexp.value = -0.1d0
+rampexp.description = 'Exponential Ramp'
+rampexp.latex = '\tau_{Ramp}'
+rampexp.label = 'rampexp'
+rampexp.scale = 0.1d0
+rampexp.fit = 0
+rampexp.derive = 0
+
+rampamp = parameter
+rampamp.description = 'Amp of exp ramp'
+rampamp.latex = 'A_{Ramp}'
+rampamp.label = 'rampamp'
+rampamp.scale = 0.5d0
+rampamp.fit = 0
+rampamp.derive = 0
+
 mag = parameter
 mag.description = 'Apparent Magnitude'
 mag.latex = 'mag'
@@ -2068,6 +2122,7 @@ planet = create_struct($
          lsinw.label,lsinw,$
          lsinw2.label,lsinw2,$
          lcosw.label,lcosw,$
+         omegagr.label,omegagr,$
          bigomega.label,bigomega,$ ;; for astrometry
          bigomegadeg.label,bigomegadeg,$
          lsinbigomega.label,lsinbigomega,$
@@ -2203,6 +2258,8 @@ transit = create_struct(variance.label,variance,$ ;; jitter
                         tiv.label,tiv,$ ;; Transit inclination variation
                         tdeltav.label,tdeltav,$ ;; Transit depth variation
                         dilute.label, dilute, $ ;; Transit depth variation
+                        rampexp.label, rampexp, $
+                        rampamp.label, rampamp, $
                         f0.label,f0,$ ;; normalization
                         'claret', 0B,$
                         'transitptrs',ptr_new(),$ ;; Data
@@ -2219,6 +2276,7 @@ transit = create_struct(variance.label,variance,$ ;; jitter
                         'rejectflatmodel',0B,$
                         'fitspline',0B,$
                         'splinespace',0.75d0,$
+                        'fitramp',0B,$
                         'label','') 
 
 doptom = create_struct('dtptrs',ptr_new(),$
@@ -2280,7 +2338,7 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'rstaremfloor', rstaremfloor,$
                    'ageemfloor', ageemfloor,$
                    'avprior', avprior, $
-                   'diluted',diluted,$
+                   'seddeblend',seddeblend,$
                    'dilutebandndx',ptr_new(1),$;[-1L,1,1],$
                    'dilutestarndx',dilutestarndx,$
                    'oned', keyword_set(oned),$
@@ -2309,6 +2367,8 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'rossiter',rossiter,$
                    'fitlogmp',fitlogmp,$
                    'rejectflatmodel',rejectflatmodel,$
+                   'noprimary',noprimary,$
+                   'requiresecondary',requiresecondary,$
                    'longcadence',longcadence,$
                    'tranpath',tranpath,$
                    'rvpath',rvpath,$
@@ -2317,6 +2377,7 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'fitquad',keyword_set(fitquad),$
                    'fitspline',fitspline,$
                    'splinespace',splinespace,$
+                   'fitramp',keyword_set(fitramp),$
                    'fitwavelet',fitwavelet,$
                    'ninterp',ninterp,$
                    'exptime',exptime,$
@@ -2528,8 +2589,13 @@ for i=0, nplanets-1 do begin
    ss.planet[i].fittran = fittran[i]
    ss.planet[i].fitrv = fitrv[i]
    ss.planet[i].chen = chen[i]
-   if ss.planet[i].fittran then ss.planet[i].tt.derive = 1B $
-   else ss.planet[i].tt.derive = 0B
+   if ss.planet[i].fittran then begin
+      ss.planet[i].tt.derive = 1B
+      ss.planet[i].te.derive = 1B
+   endif else begin
+      ss.planet[i].tt.derive = 0B
+      ss.planet[i].te.derive = 0B
+   endelse
 
    if ss.planet[i].fittran and fittt[i] then begin
       ss.planet[i].tt.fit = 1B
@@ -2709,7 +2775,6 @@ if ntran gt 0 then begin
       if minbjd lt minallbjd then minallbjd = minbjd
       if maxbjd gt maxallbjd then maxallbjd = maxbjd
 
-
       ss.transit[i].exptime = exptime[i]
       ss.transit[i].ninterp = ninterp[i]
       
@@ -2718,7 +2783,7 @@ if ntran gt 0 then begin
       ss.transit[i].label = (*(ss.transit[i].transitptrs)).label
       ss.transit[i].rejectflatmodel = rejectflatmodel[i]
 
-      if total(diluted[i,*]) then begin
+      if total(seddeblend[i,*]) then begin
          dilutebandndx = [dilutebandndx,ss.transit.bandndx]
          ss.transit[i].dilute.fit = 1B
          ss.transit[i].dilute.derive = 1B
@@ -2732,12 +2797,30 @@ if ntran gt 0 then begin
       ss.transit[i].claret = ~keyword_set(noclaret[i])
       ss.transit[i].fitspline = fitspline[i]
       ss.transit[i].splinespace = splinespace[i]
+      ss.transit[i].fitramp = fitramp[i]
 ;      ;; F0 and the spline are totally degenerate. 
 ;      ;; Don't fit (or derive) F0 if flattening with a spline
 ;      if ss.transit[i].fitspline then begin
 ;         ss.transit[i].f0.fit = 0B
 ;         ss.transit[i].f0.derive = 0B
 ;      endif         
+
+      if fitramp[i] then begin
+         ss.transit[i].rampexp.fit = 1B
+         ss.transit[i].rampexp.derive = 1B
+         ss.transit[i].rampamp.fit = 1B
+         ss.transit[i].rampamp.derive = 1B
+         time = (*(ss.transit[i].transitptrs)).bjd
+         time = time[0] - time
+         flux = (*(ss.transit[i].transitptrs)).flux
+         err = (*(ss.transit[i].transitptrs)).err
+
+         ;; get the starting values for the exponential curve
+         a = [0.05d0,-10d0]
+         result = curvefit(time,flux,1d0/err^2,a,function_name='ramp_func',/noderiv)
+         ss.transit[i].rampamp.value = a[0]
+         ss.transit[i].rampexp.value = -1d0/a[1]
+      endif
 
       if fitwavelet[i] then begin
          ss.transit[i].variance.fit = 0B
