@@ -63,6 +63,12 @@ isochrone_logg = alog10(isochrone_mstar/(isochrone_rstar^2)*constants.gravitysun
 ymin = max([isochrone_logg,logg],min=ymax) ;; plot range backwards
 xmin = max([isochrone_teff,teff],min=xmax) ;; plot range backwards
 
+;; plot ranges backwards
+ymin = ceil(max(logg)*2d0)/2d0
+ymax = floor(min(logg)*2d0)/2d0
+xmin = ceil(max(teff)/1000d0)*1000d0
+xmax = floor(min(teff)/1000d0)*1000d0
+
 if finite(xrange[0]) then xmin=xrange[0]
 if finite(xrange[1]) then xmax=xrange[1]
 if finite(yrange[0]) then ymin=yrange[0]
