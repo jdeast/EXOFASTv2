@@ -93,15 +93,28 @@ repeat begin
    omega = atan(esinw,ecosw)
 
    ;; Kopal, 1946 eq 114
+   
    psi = !dpi + 2d0*atan(ecosw/(sqrt(1d0-ecc^2)))
 
    ;; Kopal 1946, eq 115
-   residual = 2d0*!dpi/period*(ts-tc) - psi + sin(psi)
+   ;; that equation assumes the Ts is at the epoch immediately
+   ;; following Tc. Make sure that's true.
+   ;; It also ignores light travel time. 
+   offset = ((((ts - tc) mod period) + period) mod period)
+   residual = 2d0*!dpi/period*(offset) - psi + sin(psi)
 
    if residual gt 0 then minecosw = ecosw $
    else maxecosw = ecosw
 
+   ;; this is equation 1 of Alonso+ 2018 for consistency
+   ;; assuming i=!dpi/2d0
+   ;;ecosw2 = !dpi/period*(offset-period/2d0)/2d0
+
    iter++
+
+;   print, ecosw, ecosw2, psi, sin(psi)
+;   print, offset, residual, ecc, psi, ts, tc, ts-tc, omega, ecosw
+;   stop
 
 endrep until abs(residual) lt tol
 esinwout=esinw
