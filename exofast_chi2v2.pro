@@ -160,7 +160,7 @@ endif
 ;bad = where(ss.band.dilute.fit and (ss.band.dilute.value le -1d0 or ss.band.dilute.value ge 1d0),nbad)
 bad = where(ss.transit.dilute.fit and (ss.transit.dilute.value le -1d0 or ss.transit.dilute.value ge 1d0),nbad)
 if nbad gt 0 then begin
-   if ss.debug or ss.verbose then printandlog, 'dilution is bad (' + strtrim(ss.band[bad].dilute.value,2) + ')',ss.logname
+   if ss.debug or ss.verbose then printandlog, 'dilution is bad (' + strtrim(ss.transit[bad].dilute.value,2) + ')',ss.logname
    return, !values.d_infinity
 endif
 
@@ -203,6 +203,13 @@ endif
 bad = where(ss.planet.lsinlambda.value^2 + ss.planet.lcoslambda.value^2 gt 1d0, nbad)
 if nbad gt 0 then begin
    if ss.debug or ss.verbose then printandlog, 'lambda is bad', ss.logname
+   return, !values.d_infinity
+endif
+
+;; ramp boundary checking
+bad = where(ss.transit.rampexp.value le 0d0 and ss.transit.rampexp.fit,nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'rampexp is bad (' + strtrim(bad,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
@@ -403,13 +410,15 @@ endif
 ;; no transit and we're fitting a transit! This causes major
 ;; problems; exclude this model (but this biases the significance of
 ;; the detection)
-bad = where(ss.planet.fittran and ss.planet.b.value gt (1d0+ss.planet.p.value), nbad)
-
-;; note: this still allows eccentric solutions with only secondary eclipses!
-;; these should be excluded with the rejectflattransit input
-;bad = where(ss.planet.fittran and ss.planet.b.value gt (1d0+ss.planet.p.value) and ss.planet.bs.value gt (1d0+ss.planet.p.value), nbad)
+bad = where(~ss.noprimary and ss.fittran and ss.planet.b.value gt (1d0+ss.planet.p.value), nbad)
 if nbad ne 0L then begin
-   if ss.verbose then printandlog, 'Planet ' + strtrim(bad,2) + ' does not transit!', ss.logname
+   if ss.verbose then printandlog, 'Planet ' + strtrim(bad,2) + ' has no primary transit!', ss.logname
+   return, !values.d_infinity
+endif
+
+bad = where(ss.requiresecondary and ss.planet.bs.value gt (1d0+ss.planet.p.value), nbad)
+if nbad ne 0L then begin
+   if ss.verbose then printandlog, 'Planet ' + strtrim(bad,2) + ' has no secondary eclipse!', ss.logname
    return, !values.d_infinity
 endif
 
@@ -757,7 +766,6 @@ for i=0L, ss.nstars-1 do begin
          if nmatch gt 1 and match[0] eq i then begin
             isoname = psname + '.mistiso.' +string(i,format='(i03)') + '.eps'
             plotisochrone, ss.star[i].age.value, ss.star[i].initfeh.value,$
-                           xrange=[10000,4000],yrange=[4.5,3],$
                            mstar=ss.star[match].mstar.value,$
                            teff=ss.star[match].teff.value,$
                            rstar=ss.star[match].rstar.value,$
@@ -1114,26 +1122,25 @@ for j=0L, ss.ntran-1 do begin
 
    transit = *(ss.transit[j].transitptrs)
    
-;   if keyword_set(ss.trim_computation_window) then begin      
-;      phase = exofast_mod(transit.bjd - ss.planet[i].tc.value, ss.planet[i].period.value)
-;      compute = where(abs(phase-ss.planet[i].period.value/2d0) lt (ss.planet[i].t14.value*1.05d0),complement=ignore)
-;   endif
-
-;   if ss.transit[j].dilute.fit then begin
    if ss.fitdilute[j] then begin
 
+      matchstar = where(ss.seddeblend[j,*])
       ;; dilute transit according to other stars' SEDs
-      if ss.nstars gt 1 then begin
+      if ss.nstars gt 1 or n_elements(matchstar gt 1) then begin
          matchband = (where(*ss.dilutebandndx eq ss.transit[j].bandndx))[0]
-         matchstar = where(ss.diluted[j,*])
          planetndx = ss.transit[j].pndx
          starndx = ss.planet[planetndx].starndx
          dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])      
-;      print, ss.band[ss.transit[j].bandndx].name, dilute
-         chi2 += ((ss.transit[j].dilute.value - dilute)/(dilute*0.1d0))^2   
+         dilutechi2 = ((ss.transit[j].dilute.value - dilute)/(dilute*0.05d0))^2   
+         chi2 += dilutechi2
+
+         if ss.verbose then begin
+            name = ss.band[ss.transit[j].bandndx].name
+            printandlog, "SED " + name + " model dilution = " + strtrim(dilute,2) + ', dilution parameter: ' + strtrim(ss.transit[j].dilute.value,2),ss.logname
+            printandlog, "SED " + name + " deblending penalty: " + strtrim(dilutechi2,2), ss.logname
+         endif
       endif else begin
          ;; otherwise, let it float (constrained by priors/other bands)
-;         print, 'here ', j
       endelse
    endif
 
@@ -1247,6 +1254,27 @@ for j=0L, ss.ntran-1 do begin
    modelflux *= (ss.transit[j].f0.value + $
                  total(transit.detrendmult*(replicate(1d0,n_elements(transit.bjd))##transit.detrendmultpars.value),1))
 
+   ;; exponential ramp (e.g., Spitzer & JWST)
+   if ss.transit[j].fitramp then begin
+      ramp_profile = (1d0+ss.transit[j].rampamp.value*exp((transit.bjd[0]-transit.bjd)/ss.transit[j].rampexp.value)) 
+
+      ;; A*exp(-t/tau) ~ A*(1-t/tau + t/tau^2/2 + ...)
+      ;; The leading term of the ramp looks a lot like F0. 
+      ;; Subtract A to reduce covariance with F0
+      ramp_profile -= ss.transit[j].rampamp.value 
+
+      ;; The second order term of the ramp looks a lot like time decorrelation. Subtract?
+;      ramp_profile -= ss.transit[j].rampamp.value*(transit.bjd[0]-transit.bjd)/ss.transit[j].rampexp.value) ;; this term has a near-perfect correlation with time
+
+      ;; The third order term of the ramp looks a lot like time^2 decorrelation. Subtract?
+;      ramp_profile -= ss.transit[j].rampamp.value*(transit.bjd[0]-transit.bjd)/(ss.transit[j].rampexp.value)^2*2d0) ;; this term has a near-perfect correlation with time^2
+
+      bad = where(~finite(ramp_profile),nbad)
+      if nbad gt 0 then print, ss.transit[j].rampamp.value, ss.transit[j].rampexp.value
+      modelflux *= ramp_profile
+   endif
+   
+
    ;; fit Andrew Vanderburg's keplerspline to the residuals to detrend the lightcurve
    if ss.transit[j].fitspline then begin
       if transit.breakpts[0] eq -1 then $         
@@ -1293,7 +1321,10 @@ if toolow[0] ne -1 then phase[toohigh] += ss.planet[0].period.value
       
    endif
 
-   if ~finite(transitchi2) then stop
+   if ~finite(transitchi2) then begin
+      printandlog, 'the transit model likelihood is not finite. this should not happen. please inspect input files'
+      stop
+   endif
 
    chi2 += transitchi2
    if ss.verbose then printandlog, ss.transit[j].label + ' transit penalty: ' + strtrim(transitchi2,2) + ' ' + strtrim(ss.transit[j].variance.value,2),ss.logname
