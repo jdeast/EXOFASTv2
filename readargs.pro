@@ -16,7 +16,7 @@ pro readargs, argfile, priorfile=priorfile, $
               fitreflect=fitreflect, fitphase=fitphase, $
               fitbeam=fitbeam, derivebeam=derivebeam, $
               nstars=nstars,starndx=starndx, $
-              diluted=diluted,fitdilute=fitdilute, $
+              seddeblend=seddeblend,fitdilute=fitdilute, $
               nplanets=nplanets, $
               fittran=fittran, fitrv=fitrv, $
               rossiter=rossiter, fitdt=fitdt, $
@@ -28,6 +28,7 @@ pro readargs, argfile, priorfile=priorfile, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               rejectflatmodel=rejectflatmodel,$
+              noprimary=noprimary, requiresecondary=requiresecondary,$
               fitspline=fitspline, splinespace=splinespace, $
               fitwavelet=fitwavelet, $              
               fitlogmp=fitlogmp,$
@@ -49,7 +50,20 @@ pro readargs, argfile, priorfile=priorfile, $
               plotonly=plotonly, bestonly=bestonly,$
               logname=logname
 
+;; first get the log name so we can log any errors
 line = ''
+openr, lun, argfile, /get_lun
+while not eof(lun) do begin
+   readf, lun, line
+   entries = strsplit(line,'=',/extract)
+   if strupcase(strtrim(entries[0],2)) eq 'PREFIX' then begin
+      prefix = strtrim(entries[1],2)
+      logname = prefix + 'log'
+      break
+   endif
+endwhile
+free_lun, lun
+
 openr, lun, argfile, /get_lun
 while not eof(lun) do begin
    readf, lun, line
@@ -111,8 +125,8 @@ while not eof(lun) do begin
             rossiter = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'CHEN' then begin
             chen = boolean(json_parse(entries[1],/toarray))
-         endif else if strupcase(strtrim(entries[0],2)) eq 'DILUTED' then begin
-            diluted = json_parse(entries[1],/toarray)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'SEDDEBLEND' then begin
+            seddeblend = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITDILUTE' then begin
             fitdilute = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITTHERMAL' then begin
@@ -160,7 +174,11 @@ while not eof(lun) do begin
          endif else if strupcase(strtrim(entries[0],2)) eq 'NINTERP' then begin
             ninterp = long(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'REJECTFLATMODEL' then begin
-            rejectflatmodel = boolean(entries[1])
+            rejectflatmodel = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'NOPRIMARY' then begin
+            noprimary = boolean(json_parse(entries[1],/toarray))
+         endif else if strupcase(strtrim(entries[0],2)) eq 'REQUIRESECONDARY' then begin
+            requiresecondary = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'MAXGR' then begin
             maxgr = double(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'MINTZ' then begin
