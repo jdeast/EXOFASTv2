@@ -12,6 +12,7 @@
 *.csv
 *.DAT
 *.gz
+exozippy/
 pngs/
 examples/*/*.idl
 examples/*/*.txt
