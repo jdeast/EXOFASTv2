@@ -202,6 +202,13 @@ endelse
    ss.planet[i].ar.value = ss.planet[i].arsun.value/ss.star[ss.planet[i].starndx].rstar.value                                                        ;; (a1 + a2)/rstar
    ss.planet[i].a.value = ss.planet[i].arsun.value*ss.constants.rsun/ss.constants.au                                           ;; AU
 
+;   ;; estimate GR precession (eq 2, Jordan & Bakos, 2008)
+;   ss.planet[i].omegagr.value = 7.78d0/(1d0-ss.planet[i].e.value^2)*ss.star[ss.planet[i].starndx].mstar.value*(0.05d0/ss.planet[i].a.value)*(1d0/ss.planet[i].period.value)
+
+   ;; more precise estimate of GR precession (accounts for planet mass) (eq 1, Jordan & Bakos, 2008)
+   n = (ss.constants.gmsun*(ss.star[ss.planet[i].starndx].mstar.value+ss.planet[i].mpsun.value)/(ss.planet[i].a.value*ss.constants.au)^3)^(0.5d0) ;; rad/s
+   ss.planet[i].omegagr.value = 3d0*ss.constants.gmsun*ss.star[ss.planet[i].starndx].mstar.value*n/(ss.planet[i].a.value*ss.constants.au*ss.constants.c^2*(1d0-ss.planet[i].e.value^2)) * 180d0/!dpi*36525*86400d0 ;; deg/century
+
    ;; derive cosi, b, and chord (depending on which is fit)
    if ss.planet[i].chord.fit then begin
       ss.planet[i].b.value = sqrt((1d0+ss.planet[i].p.value)^2-ss.planet[i].chord.value^2)
@@ -241,24 +248,26 @@ endelse
                                     ss.planet[i].i.value,$
                                     ss.planet[i].omega.value,$
                                     ss.planet[i].period.value,/tt2tc)                                    
-   endif else begin
+   endif else if ss.planet[i].tt.derive then begin
       ss.planet[i].tt.value = tc2tt(ss.planet[i].tc.value,$
                                     ss.planet[i].e.value,$
                                     ss.planet[i].i.value,$
                                     ss.planet[i].omega.value,$
                                     ss.planet[i].period.value)
-   endelse
+   endif
 
    ss.planet[i].tp.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value)
    ss.planet[i].ts.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phase2)
    ss.planet[i].ta.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phasea)
    ss.planet[i].td.value = ss.planet[i].tc.value - ss.planet[i].period.value*(ss.planet[i].phase.value-phased)
 
-   ss.planet[i].te.value = tc2tt(ss.planet[i].ts.value,$
-                                 ss.planet[i].e.value,$
-                                 ss.planet[i].i.value,$
-                                 ss.planet[i].omega.value,$
-                                 ss.planet[i].period.value,/ts2te)
+   if ss.planet[i].te.derive then begin
+      ss.planet[i].te.value = tc2tt(ss.planet[i].ts.value,$
+                                    ss.planet[i].e.value,$
+                                    ss.planet[i].i.value,$
+                                    ss.planet[i].omega.value,$
+                                    ss.planet[i].period.value,/ts2te)
+   endif
 
    ;; if given a prior, select the epoch closest to that prior
    if ss.planet[i].ts.prior ne 0d0 then begin
