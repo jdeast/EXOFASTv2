@@ -85,7 +85,9 @@ if args.undeblend:
         if args.verbose: 
             print("Undoing deblending for " + str(v['Ncont']) + ' stars (' + str(v['Rcont']) + ')')
         contratio = float(v['Rcont'])
+    file_ext = '.undeblended.dat'
 else:
+    file_ext='.dat'
     contratio = 0.0
 
 t0 = datetime.datetime(2000,1,1)
@@ -156,10 +158,18 @@ for search_result in search_results[to_download]:
         sector = 'S' + str(int(str(search_result.mission[0]).split()[-1])).zfill(2)
         filter = 'TESS'
         telescope = 'TESS'
+    elif author=='CDIPS' or author=='TASOC':
+        # they don't have flux in the same place. Or errors. Are there any cases where these LCs are better?
+        print("WARNING: CDIPS and TASOC LCs are not supported (yet?)")
+        continue
+        bjd_offset = 2457000.0
+        sector = 'S' + str(int(str(search_result.mission[0]).split()[-1])).zfill(2)
+        filter = 'TESS'
+        telescope = 'TESS'
     else:
         print("WARNING: Skipping lightcurve with unrecognized author: " + author)
         continue
-    file_suffix = '.' + filter + '.' + telescope + '.' + args.id + '.' + sector + '.' + exptime + '.' + author + '.dat' 
+    file_suffix = '.' + filter + '.' + telescope + '.' + args.id + '.' + sector + '.' + exptime + '.' + author + file_ext
 
     # skip if I've already got it
     if not args.overwrite:
@@ -176,8 +186,8 @@ for search_result in search_results[to_download]:
     err = np.array(lc.flux_err.value)
 
     # replace nans in err with median absolute deviation
+    nan = np.where(np.isnan(err) | np.isinf(err))[0]
     maderr = np.median(abs(flux[1:] - flux[0:-1])) * 1.48 /np.sqrt(2.0)
-    nan = np.where(np.isnan(err))[0]
     err[nan] = maderr
 
     # lopsided 5 sigma clipping (keeping values that are low by transit depth)
@@ -201,6 +211,7 @@ for search_result in search_results[to_download]:
 
     # are they all bad?
     if ngood == 0:
+        ipdb.set_trace()
         print("WARNING: no good points after sigma clipping")
         print("Skipping lightcurve " + sector + ' ' + exptime + ' ' + author)
         continue
