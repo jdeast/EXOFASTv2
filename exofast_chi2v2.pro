@@ -1126,7 +1126,7 @@ for j=0L, ss.ntran-1 do begin
 
       matchstar = where(ss.seddeblend[j,*])
       ;; dilute transit according to other stars' SEDs
-      if ss.nstars gt 1 or n_elements(matchstar gt 1) then begin
+      if ss.nstars gt 1 and (matchstar[0] ne -1) then begin
          matchband = (where(*ss.dilutebandndx eq ss.transit[j].bandndx))[0]
          planetndx = ss.transit[j].pndx
          starndx = ss.planet[planetndx].starndx
