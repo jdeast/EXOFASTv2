@@ -290,6 +290,10 @@ if (size(qgaia3))[2] eq 8 then begin
    match = (where(qgaia3.source eq gaiaid))[0]
    if match ne -1 then begin
       qgaia3 = qgaia3[match]
+
+      printf, lun, "# Gaia DR3 RUWE = " + strtrim(qgaia3.ruwe,2)
+      printf, lun, "# RUWE is the renormalized sqrt(chi^2/dof) of the astrometric fit." 
+      printf, lun, "# A value above 1.4 is a strong indication of stellar multiplicity"
       
       if finite(qgaia3.plx) and finite(qgaia3.e_plx) and qgaia3.plx gt 0d0 then begin
 
