@@ -60,8 +60,8 @@ parser = argparse.ArgumentParser(
     prog='getData',
     description='Downloads TESS/Kepler data and formats it for EXOFASTv2')
 parser.add_argument('id',help='SIMBAD-resolvable star name')
-parser.add_argument('-d','--depth',default=0.03,dest='depth',help='Fractional transit depth. Flux >= 1-depth will not be clipped.')
-parser.add_argument('-n','--nsigma',default=5.0,dest='nsigma',help='N sigma clipping. Negative values will skip clipping.')
+parser.add_argument('-d','--depth',default=0.03,type=float,dest='depth',help='Fractional transit depth. Flux >= 1-depth will not be clipped.')
+parser.add_argument('-n','--nsigma',default=5.0,type=float,dest='nsigma',help='N sigma clipping. Negative values will skip clipping.')
 parser.add_argument('-p','--path',default='.',dest='path',help='path to output files')
 parser.add_argument('-u','--undeblend',default=False,action='store_true',dest='undeblend',help='Undo deblending from lightcurves')
 parser.add_argument('-v','--verbose',default=False,action='store_true',dest='verbose',help='Display clipping stats')
