@@ -1446,7 +1446,9 @@ pars = str2pars(ss,scale=scale,name=name, angular=angular)
 
 ;; plot the data + starting guess
 modelfile = prefix + 'start'
+ss.verbose=1B
 bestchi2 = call_function(chi2func, pars, psname=modelfile)
+ss.verbose = keyword_set(verbose)
 if ~finite(bestchi2) then begin
    printandlog, 'Starting model is out of bounds; cannot recover. You must change the starting parameter(s) via the prior file.', logname
    printandlog, 'Re-running starting model with /VERBOSE flag to identify the parameter', logname
