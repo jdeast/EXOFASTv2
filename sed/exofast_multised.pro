@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,verbose=verbose
+function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,spzeropoint=spzeropoint, verbose=verbose
 
 
 nstars = n_elements(teff)
@@ -30,7 +30,7 @@ if n_elements(flux) eq 0 or keyword_set(redo) then begin
    ;; read in the SED bands
    readsedfile, sedfile, nstars, sedbands=sedbands, mag=mag,errmag=errmag,blend=blend,$
                 filter_curves=filter_curves, weff=weff, widtheff=widtheff, zero_point=zero_point, $
-                flux=flux, errflux=errflux, filter_curve_sum=filter_curve_sum
+                flux=flux, errflux=errflux, filter_curve_sum=filter_curve_sum, logname=logname
 
    blend0 = blend
 
@@ -71,6 +71,18 @@ if n_elements(flux) eq 0 or keyword_set(redo) then begin
 
 endif
 
+if n_elements(spzeropoint) eq nspecfiles then begin
+   ;; good as is; do nothing
+endif else if n_elements(spzeropoint) eq 0 then begin
+   spzeropoint = dblarr(nspecfiles>1)
+endif else if n_elements(spzeropoint) eq 1 then begin
+   spzeropoint = dblarr(nspecfiles>1) + spzeropoint
+endif else begin
+   print, "SPZEROPOINT must be a 1 or NSPECFILES element array"
+   return, !values.d_infinity
+endelse
+
+
 sed = dblarr(nstars,nwaves)
 for j=0L, nstars-1 do begin
    if keyword_set(oned) then begin
@@ -89,7 +101,7 @@ for j=0L, nstars-1 do begin
    fbol0 = (lstar[j]*constants.lsun)/(4d0*!dpi*(distance[j]*pc)^2) 
    fbol1 = total(lamflam1temp*dlambda/wavelength) 
    lamflam1=lamflam1temp/fbol1*fbol0
-   
+
    ;lamflam1=lamflam1temp*rstar[j]*rstar[j]*rsun*rsun/distance[j]/distance[j]/pc/pc 
 
    ;; self consistency check. integral of unextincted atmosphere should be fbol
@@ -145,11 +157,32 @@ relative = where(modelfluxneg ne 0,complement=absolute)
 if absolute[0] ne -1 then sedchi2 += exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2)
 if relative[0] ne -1 then sedchi2 += exofast_like(mag[relative]+2.5d0*alog10(modelfluxpos[relative]/modelfluxneg[relative]),0d0,errmag[relative]*errscale,/chi2)
 
+if 0 then begin
+if randomu(seed) lt 0.03 then $
+print, teff, logg, feh, av, distance, lstar,$
+       errscale,$
+       spzeropoint[0], sperrscale[0],$
+       spzeropoint[1], sperrscale[1],$
+       total(((flux[absolute]-modelfluxpos[absolute])/errflux[absolute]*errscale)^2),$
+       total((((*specphotflux[0])-(*spectrophotometry[0])[*,1]*(1d0+spzeropoint[0]))/((*spectrophotometry[0])[*,2]*sperrscale[0]*(1d0+spzeropoint[0])))^2),$
+       total((((*specphotflux[1])-(*spectrophotometry[1])[*,1]*(1d0+spzeropoint[1]))/((*spectrophotometry[1])[*,2]*sperrscale[1]*(1d0+spzeropoint[1])))^2),$
+       exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2),$
+       exofast_like((*specphotflux[0])-(*spectrophotometry[0])[*,1]*(1d0+spzeropoint[0]),0d0,(*spectrophotometry[0])[*,2]*sperrscale[0]*(1d0+spzeropoint[0]),/chi2),$
+       exofast_like((*specphotflux[1])-(*spectrophotometry[1])[*,1]*(1d0+spzeropoint[1]),0d0,(*spectrophotometry[1])[*,2]*sperrscale[1]*(1d0+spzeropoint[1]),/chi2),$
+       exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2)+$
+       exofast_like((*specphotflux[0])-(*spectrophotometry[0])[*,1]*(1d0+spzeropoint[0]),0d0,(*spectrophotometry[0])[*,2]*sperrscale[0]*(1d0+spzeropoint[0]),/chi2)+$
+       exofast_like((*specphotflux[1])-(*spectrophotometry[1])[*,1]*(1d0+spzeropoint[1]),0d0,(*spectrophotometry[1])[*,2]*sperrscale[1]*(1d0+spzeropoint[1]),/chi2)
+endif
+
+
 ;; chi2 from spectrophotometry
 for i=0L, nspecfiles-1 do begin
-   sedchi2 += exofast_like((*specphotflux[i])-(*spectrophotometry[i])[*,1],0d0,(*spectrophotometry[i])[*,2]*sperrscale[i],/chi2)
+   specphotchi2 = exofast_like((*specphotflux[i])-(*spectrophotometry[i])[*,1]*(1d0+spzeropoint[i]),0d0,(*spectrophotometry[i])[*,2]*sperrscale[i]*(1d0+spzeropoint[i]),/chi2)
+   sedchi2 += specphotchi2
+   ;print, i, specphotchi2, spzeropoint[i], sperrscale[i], sedchi2, exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2)
 endfor
 
+;debug=1
 if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 
    ;; The Spectral Energy Distribution (black), with broad band
@@ -202,6 +235,10 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    ymin = alog10(min([flux[absolute],flux[absolute]-errflux[absolute]])) ;,reform(atmospheres,n_elements(atmospheres))]))
    ymax = alog10(max([flux[absolute],flux[absolute]+errflux[absolute],total(sed,1)]))
 
+   ;print, nspecfiles, teff, sperrscale[0], sperrscale[1], spzeropoint[0], spzeropoint[1], sedchi2
+
+   if n_elements(range) eq 0 then range = dblarr(6) + !values.d_nan
+;   range[4:5] = [-3,3]
    if finite(range[0]) then xmin = range[0]
    if finite(range[1]) then xmax = range[1]
    if finite(range[2]) then ymin = range[2]
@@ -285,7 +322,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    if nspecfiles gt 0 then specphotcolors = lonarr(nspecfiles)
    for i=0L, nspecfiles-1 do begin
       color = colors[colorndx mod ncolors]
-      oplot, (*spectrophotometry[i])[*,0], alog10((*spectrophotometry[i])[*,1]), color=color
+      oplot, (*spectrophotometry[i])[*,0], alog10((*spectrophotometry[i])[*,1]*(1d0+spzeropoint[i])), color=color
       if n_elements(legendlabels) eq 0 then begin
          legendlabels = labels[i]
          legendcolors = color
@@ -360,7 +397,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    ymax = -!values.d_infinity
    for i=0L, -1 do begin
 ;   for i=0L, nspecfiles-1 do begin
-      specres = -smooth(((*specphotflux[i])-(*spectrophotometry[i])[*,1])/((*spectrophotometry[i])[*,2]*sperrscale[i]),10)
+      specres = -smooth(((*specphotflux[i])-(*spectrophotometry[i])[*,1]*(1d0+spzeropoint[i]))/((*spectrophotometry[i])[*,2]*sperrscale[i]),10)
       ymin = min([specres,ymin]) 
       ymax = max([specres,ymax]) 
    endfor
@@ -386,7 +423,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 
    ;; plot the spectrophotometry residuals
    for i=0L, nspecfiles-1 do begin
-      specres = -smooth(((*specphotflux[i])-(*spectrophotometry[i])[*,1])/((*spectrophotometry[i])[*,2]*sperrscale[i]),10)
+      specres = -smooth(((*specphotflux[i])-(*spectrophotometry[i])[*,1]*(1d0+spzeropoint[i]))/((*spectrophotometry[i])[*,2]*sperrscale[i]),10)
 
       oplot, (*spectrophotometry[i])[*,0],$
              specres, color=specphotcolors[i]
