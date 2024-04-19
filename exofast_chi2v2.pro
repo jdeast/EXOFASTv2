@@ -88,7 +88,8 @@ for i=0L, n_elements(*ss.priors)-1 do begin
    
    ;; the prior is linked to another variable -- get its value
    if prior.value[4] ne -1 then begin
-      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].(prior.value[4])[prior.value[5]].value
+      value = (*ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]]).(prior.value[4])[prior.value[5]].value
+;      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].(prior.value[4])[prior.value[5]].value
    endif else if prior.value[2] ne -1 then begin
       value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].value
    endif else begin
@@ -97,7 +98,8 @@ for i=0L, n_elements(*ss.priors)-1 do begin
 
    ;; assign the value
    if prior.map[4] ne -1 then begin
-      ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].(prior.map[4])[prior.map[5]].value = value
+      (*ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]]).(prior.map[4])[prior.map[5]].value = value
+      ;ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].(prior.map[4])[prior.map[5]].value = value
    endif else if prior.map[2] ne -1 then begin
       ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].value = value
    endif else if prior.map[0] ne -1 then begin
@@ -207,10 +209,15 @@ if nbad gt 0 then begin
 endif
 
 ;; ramp boundary checking
-bad = where(ss.transit.rampexp.value le 0d0 and ss.transit.rampexp.fit,nbad)
-if nbad gt 0 then begin
-   if ss.debug or ss.verbose then printandlog, 'rampexp is bad (' + strtrim(bad,2) + ')', ss.logname
-   return, !values.d_infinity
+rampfit = where(ss.transit.rampexp.fit)
+if rampfit[0] ne -1 then begin
+   for i=0L, n_elements(rampfit)-1 do begin
+      transit = *(ss.transit[rampfit[i]].transitptrs)
+      if ss.transit[rampfit[i]].rampexp.value le 0d0 or ss.transit[rampfit[i]].rampexp.value gt transit.timerange*10d0 then begin
+         if ss.debug or ss.verbose then printandlog, 'rampexp ' + strtrim(rampfit[i],2) + ' is bad (' + strtrim(ss.transit[rampfit[i]].rampexp.value,2) + ')', ss.logname
+         return, !values.d_infinity
+      endif
+   endfor
 endif
 
 ;; -c < gamma < c
@@ -260,6 +267,14 @@ endif
 bad = where(ss.specphot.sperrscale.value lt 1d-2 or ss.specphot.sperrscale.value gt 1d5, nbad)
 if nbad gt 0 then begin
    if ss.debug or ss.verbose then printandlog, 'spectrophotometry error scale is bad (' + strtrim(ss.specphot[bad].sperrscale.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; -0.2 < spzeropoint < 0.2
+;bad = where(ss.specphot.spzeropoint.value lt -0.3d0 or ss.specphot.spzeropoint.value gt 0.3d0, nbad)
+bad = where(ss.specphot.spzeropoint.value lt -0.999d0 or ss.specphot.spzeropoint.value gt 999d0, nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'spectrophotometry zero point is bad (' + strtrim(ss.specphot[bad].spzeropoint.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
@@ -514,6 +529,58 @@ for i=0L, n_elements(*ss.priors)-1 do begin
       upperbound = prior.upperbound
    endelse
    
+   ;; if it's a (periodic) time, make sure we propagate to the right epoch
+   if prior.name eq 'tc' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].tc[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 'tt' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].tt[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 'ts' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].ts[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 't0' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].t0[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 'tp' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].tp[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 'td' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].td[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 'ta' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].ta[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif 
+
    if model_value gt upperbound or model_value lt lowerbound then begin
       if ss.debug or ss.verbose then $
          printandlog, label + '( ' + strtrim(model_value,2) + ') is out of user-defined bounds (' +$
@@ -523,44 +590,6 @@ for i=0L, n_elements(*ss.priors)-1 do begin
 
    ;; no gaussian prior, skip
    if prior.gaussian_width le 0d0 then continue
-
-   ;; if it's a (periodic) time, make sure we propagate to the right epoch
-   if prior.name eq 'tc' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].tc[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 'tt' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].tt[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 'ts' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].ts[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 't0' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].t0[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 'tp' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].tp[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 'td' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].td[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 'ta' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].ta[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif 
 
    ;; if it's an angular parameter, make sure we handle the boundary
    if unit eq 'RADIANS' then begin
@@ -903,7 +932,8 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
                                   ss.sedfile, rstar=ss.star.rstarsed.value,$
                                   debug=ss.debug, psname=epsname,$
                                   range=ss.sedrange,specphotpath=ss.specphotpath, $
-                                  sperrscale=ss.specphot.sperrscale.value)
+                                  sperrscale=ss.specphot.sperrscale.value,$
+                                  spzeropoint=ss.specphot.spzeropoint.value)
    endif else begin
       ;; Keivan Stassun's SED
       junk = exofast_sed(ss.star.fluxfile, teffsed, $
