@@ -215,6 +215,17 @@ for i=0L, mcmcss.nband-1 do begin
    endfor
 endfor
 
+;; spectrophotometry files
+for i=0L, mcmcss.nspecfiles-1 do begin
+   printf, lun, '# ' + mcmcss.specphot[i].label
+   for j=0, n_tags(mcmcss.specphot[i])-1 do begin
+      if (size(mcmcss.specphot[i].(j)))[2] eq 8 then begin        
+         line = getpriorline2(mcmcss.specphot[i].(j), ndx, num=i, ss=mcmcss)
+         if line ne '' then printf, lun, line
+      endif
+   endfor
+endfor
+
 ;; transits
 for i=0L, mcmcss.ntran-1 do begin
    printf, lun, '# ' + mcmcss.transit[i].label
