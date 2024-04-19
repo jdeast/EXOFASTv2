@@ -655,7 +655,9 @@ endif
 
 if n_elements(fittt) eq 0 then begin
    fittt = bytarr(nplanets>1)
-endif
+endif else if n_elements(fittt) eq 1 then begin
+   fittt = bytarr(nplanets>1) + keyword_set(fittt)
+endif  
 
 if n_elements(fitlogmp) eq 0 then fitlogmp = bytarr(nplanets>1)
 
@@ -2047,6 +2049,15 @@ sperrscale.scale = 10d0
 sperrscale.fit = 0
 sperrscale.derive = 0
 
+spzeropoint = parameter
+spzeropoint.description = 'SED zero point fractional correction'
+spzeropoint.latex = 'SP_{ZP}'
+spzeropoint.label = 'spzeropoint'
+spzeropoint.value = 0d0
+spzeropoint.scale = 0.5d0
+spzeropoint.fit = 0
+spzeropoint.derive = 0
+
 ;; Create the structures -- The order here dictates the order in the
 ;;                          output table.
 
@@ -2214,7 +2225,10 @@ planet = create_struct($
          'rootlabel','Planetary Parameters:',$
          'label','')
 
-specphot = create_struct(sperrscale.label, sperrscale) ;; spectrophotometry error scaling
+specphot = create_struct(sperrscale.label, sperrscale,$   ;; spectrophotometry error scaling
+                         spzeropoint.label, spzeropoint,$ ;; spectrophotometry zero point error
+                         'rootlabel','Spectrophotometry Parameters:',$
+                         'label', '')
 
 ;; for each wavelength
 band = create_struct(u1.label,u1,$ ;; linear limb darkening
@@ -2426,13 +2440,17 @@ if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begi
       sedchi2 = exofast_multised(replicate(6000d0,nstars), replicate(4.41d0,nstars), replicate(0d0,nstars), $
                                  replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
                                  replicate(1d0,nstars), sedfile, /redo, specphotpath=specphotpath,$
-                                 blend0=blend,rstar=replicate(1d0,nstars),sperrscale=ss.specphot.sperrscale.value)
+                                 blend0=blend,rstar=replicate(1d0,nstars),$
+                                 sperrscale=ss.specphot.sperrscale.value[0],spzeropoint=ss.specphot.spzeropoint.value[0])
       ss.sedfile = sedfile
       readcol, sedfile, junk, format='a', comment='#', /silent
       ndata += n_elements(junk) + 2 ;; two more because of links between rstar and rstarsed, teff and teffsed
       for i=0L, ss.nspecfiles-1 do begin
+         ss.specphot[i].label = specfiles[i]
          ss.specphot[i].sperrscale.fit = 1
          ss.specphot[i].sperrscale.derive = 1
+         ss.specphot[i].spzeropoint.fit = 1
+         ss.specphot[i].spzeropoint.derive = 1
       endfor
    endif else begin
       printandlog, 'WARNING: FLUXFILE has been deprecated. MISTSEDFILE should be used instead.', logname
@@ -3041,12 +3059,12 @@ while not eof(lun) do begin
 
    ;; ***** special behaviors for specific priors *****
 
-   ;; if there's a prior on the age, fit it  
-   ;; (if it's a map to another variable, we need to fit both)
-   if strpos(strupcase(prior.name), 'AGE') eq 0 then begin
-      parameter.fit = 1B
-      if prior.value[2] ne -1 then ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].fit = 1B
-   endif
+;   ;; if there's a prior on the age, fit it  
+;   ;; (if it's a map to another variable, we need to fit both)
+;   if strpos(strupcase(prior.name), 'AGE') eq 0 then begin
+;      parameter.fit = 1B
+;      if prior.value[2] ne -1 then ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].fit = 1B
+;   endif
 
    ;; if fbol prior is supplied, then we must derive it and fit the distance
    if prior.name eq 'fbol' then begin
