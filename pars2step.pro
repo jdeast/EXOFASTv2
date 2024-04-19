@@ -208,6 +208,7 @@ for i=0, ss.nplanets-1 do begin
       ;; derive e (pick the sign if not chosen)
       ss.planet[i].e.value = vcve2e(ss.planet[i].vcve.value,omega=ss.planet[i].omega.value, sign=sign)
       ss.planet[i].sign.value = sign
+      ss.planet[i].omegadeg.value = ss.planet[i].omega.value*180d0/!dpi
 
    endif else if ss.planet[i].tc.userchanged and ss.planet[i].ts.userchanged then begin
       ;; from eclipse timing
@@ -490,14 +491,15 @@ endelse
 
    if ~ss.planet[i].chord.userchanged then ss.planet[i].chord.value = sqrt((1d0+ss.planet[i].p.value)^2 - ss.planet[i].b.value^2)
 
-   if ss.planet[i].fittran then begin
-      if ~finite(ss.planet[i].chord.value) or $
-         (ss.planet[i].b.value gt (1d0+ss.planet[i].p.value)) or $
-         ~finite(ss.planet[i].cosi.value) then begin
-         printandlog, 'ERROR: the starting values for planet ' + strtrim(i,2) + ' does not transit, but a transit is fit. Revise i, ideg, cosi, b, or chord in the prior file', ss.logname
-         return, 0
-      endif
-   endif
+;; this is done in exofast_chi2v2.pro
+;   if ss.planet[i].fittran and ~ss.noprimary then begin
+;      if ~finite(ss.planet[i].chord.value) or $
+;         (ss.planet[i].b.value gt (1d0+ss.planet[i].p.value)) or $
+;         ~finite(ss.planet[i].cosi.value) then begin
+;         printandlog, 'ERROR: the starting values for planet ' + strtrim(i,2) + ' does not transit, but a transit is fit. Revise i, ideg, cosi, b, or chord in the prior file', ss.logname
+;         return, 0
+;      endif
+;   endif
 
 endfor
 
