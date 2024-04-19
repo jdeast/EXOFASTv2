@@ -285,6 +285,10 @@ function utc2bjd, jd_utc, ra, dec, B1950=b1950, DISTANCE=distance,$
 ;; speed of light in AU/sec
 c = 0.00200398880422056596d0
 au = 149597870.691d0 ;km/AU
+pctoau = 3600d0*180d0/!dpi
+year = 365.25d0*3600d0*24d0 ;; year in seconds
+kmstoauyr = year/AU ;; km/s in AU/yr
+
 if n_elements(path) eq 0 then path = '.'
 if n_elements(stepsize) eq 0 then stepsize = 10
 
@@ -292,7 +296,7 @@ if n_elements(stepsize) eq 0 then stepsize = 10
 if n_elements(pmra) eq 0 then pmra = 0d0
 if n_elements(pmdec) eq 0 then pmdec = 0d0
 if n_elements(px) eq 0 then begin
-   if n_elements(distance) eq 0 then px = 1d3/distance $
+   if n_elements(distance) ne 0 then px = 1d3/distance $
    else px = 0d0
 endif
 if n_elements(rv) eq 0 then rv = 0d0
@@ -494,7 +498,7 @@ endif else begin
 
     ;; stellar position at each time
     epoch0 = 2000d0 + (epoch-2451545d0)/365.25d0 
-    yearnow = 2000d0 + (jdtdb+tbase-2451545d0)/365.25d0  
+    yearnow = 2000d0 + (jd_tdb+tbase-2451545d0)/365.25d0  
     T = (yearnow-epoch0)##replicate(1d0,3)         ;; years
     vpi = rv/1d3 * kmstoauyr * (px/1d3/pctoau)     ;; rad/yr
     vel = mu + vpi*r0hat                           ;; rad/yr (m in AA)
