@@ -1,8 +1,9 @@
 pro readsedfile, sedfile, nstars, sedbands=sedbands, mag=mag, errmag=errmag, blend=blend, $
-                 flux=flux, errflux=errflux, filter_curves=filter_curves, weff=weff, widtheff=widtheff, zero_point=zero_point, download_new=download_new, filter_curve_sum=filter_curve_sum
+                 flux=flux, errflux=errflux, filter_curves=filter_curves, weff=weff, widtheff=widtheff, zero_point=zero_point, download_new=download_new, filter_curve_sum=filter_curve_sum, logname=logname
 
 
 line = ''
+line2 = ''
 nlines = file_lines(sedfile)
 sedbands = strarr(nlines)
 mag = dblarr(nlines)
@@ -18,10 +19,13 @@ filter_curve_sum = dblarr(nlines)
 
 openr, lun, sedfile, /get_lun
 for i=0L, nlines-1 do begin
-   readf, lun, line
+   readf, lun, line2
+   line = line2
    line = (strsplit(line,'#',/extract,/preserve_null))[0] ;; remove comments
+
    entries = strsplit(line,/extract)
    if n_elements(entries) lt 3 then begin
+      if line ne '' then printandlog, 'Line ' + strtrim(i+1,2) + ' in SED file not a legal line: ' + line2, logname
       continue ;; not a legal line
    endif else begin
       sedbands[i] = entries[0]
@@ -39,7 +43,7 @@ for i=0L, nlines-1 do begin
       if nmatch eq 1 then begin
          ;; they used Keivan's naming convention, translate
          if svoname[match[0]] eq 'Unsupported' then begin
-            print, sedbands[i] + ' is unsupported; try using the SVO name, or add it to filternames2.txt'
+            printandlog, sedbands[i] + ' is unsupported; try using the SVO name, or add it to filternames2.txt', logname
             continue
          endif else idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves']) 
       endif else begin
@@ -48,10 +52,10 @@ for i=0L, nlines-1 do begin
          if nmatch eq 1 then begin
             ;; they used MIST's naming convention, translate
             if svoname[match[0]] eq 'Unsupported' then begin
-               print, sedbands[i] + ' is unsupported; try using the SVO name, or add it to filternames2.txt'
+               printandlog, sedbands[i] + ' is unsupported; try using the SVO name, or add it to filternames2.txt', logname
                continue
             endif else idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves'])
-         endif else idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves']) 
+         endif else idlfile = '' ;; no match
       endelse
    endif
 
@@ -60,7 +64,8 @@ for i=0L, nlines-1 do begin
 
    ;; if still not recognized, skip it
    if not file_test(idlfile) then begin
-      print, sedbands[i] + ' not recognized; skipping'
+      printandlog, 'band="' + sedbands[i] + '" in SED file not recognized; skipping', logname
+      errmag[i] = 99d0
       continue
    endif
 
@@ -114,6 +119,7 @@ endfor
 free_lun, lun
 
 good = where(errmag lt 1d0, ngood)
+
 if ngood gt 1 then begin
    sedbands = sedbands[good]
    mag = mag[good]
@@ -129,7 +135,7 @@ if ngood gt 1 then begin
    filter_curve_sum = filter_curve_sum[good]
 
 endif else begin
-   print, 'Bands must have errors less than 1 mag; no good bands'
+   printandlog, 'Bands must have errors less than 1 mag; no good bands', logname
    stop
 endelse
 
