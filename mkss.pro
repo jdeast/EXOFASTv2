@@ -2245,6 +2245,7 @@ band = create_struct(u1.label,u1,$ ;; linear limb darkening
                      phottobary.label,phottobary,$
                      'starndx',0L,$
                      'name','',$
+                     'latex','',$
                      'rootlabel','Wavelength Parameters:',$
                      'label','')
 
@@ -2712,9 +2713,21 @@ for i=0, nband-1 do begin
    ss.band[i].name = bands[i]
 
    match = (where(bands[i] eq allowedbands))[0]
-   if match[0] eq -1 then ss.band[i].label = bands[i] $
-   else ss.band[i].label = prettybands[match]
-
+   if match[0] eq -1 then begin
+      bandstr = strjoin(strsplit(bands[i],'_',/regex,/extract),'.')
+      while strpos(bandstr,'0') eq 0 do bandstr = strmid(bandstr,1)
+      if valid_num(bandstr) then begin
+         ss.band[i].label = bandstr + '\mum'
+         ss.band[i].latex = bandstr + '\mum'
+      endif else begin
+         ss.band[i].label = bands[i] 
+         ss.band[i].latex = bands[i] 
+      endelse
+   endif else begin
+      ss.band[i].label = prettybands[match]
+      ss.band[i].latex = prettybands[match]
+   endelse
+      
    ldcoeffs = quadld(ss.star[0].logg.value, ss.star[0].teff.value, ss.star[0].feh.value, bands[i])
    if finite(ldcoeffs[0]) then ss.band[i].u1.value = ldcoeffs[0] $
    else ss.band[i].u1.value = 0d0
@@ -2911,9 +2924,6 @@ endelse
 for i=0, ss.ntel-1 do begin
    rv = *(ss.telescope[i].rvptrs)
    ss.telescope[i].gamma.value = mean(rv.rv)
-
-;   print, (*ss.telescope[i].rvptrs).planet, (*ss.telescope[i].rvptrs).planet eq -1
-;stop
 
    if (*ss.telescope[i].rvptrs).planet eq -1 then begin
       if n_elements(alltime) eq 0 then begin
