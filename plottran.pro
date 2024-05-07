@@ -86,6 +86,7 @@ t14s = period/!dpi*asin(sqrt((1d0+p)^2 - bs^2)/(sini*ar))*$
 ;; depth for each band in each transit
 noise = dblarr(ss.ntran)
 bandnames = strarr(ss.ntran)
+latexnames = strarr(ss.ntran)
 depth = dblarr(ss.nplanets, ss.ntran)
 depth2 = dblarr(ss.nplanets, ss.ntran)
 primary = bytarr(ss.nplanets, ss.ntran)
@@ -97,6 +98,7 @@ for i=0L, ss.nplanets-1 do begin
    for j=0L, ss.ntran-1 do begin
       band = ss.band[ss.transit[j].bandndx] 
       bandnames[j] = band.name
+      latexnames[j] = band.latex
       depth2[i,j] = band.thermal.value[ndx]/1d6
 
       if band.reflect.fit then phasecurve[i,j] = 1B
@@ -510,6 +512,9 @@ for jj=0L, 2 do begin
       sorted = sort(bandnames[match])
       sortband = (bandnames[match])[sorted]
       uniqbands = sortband[uniq(sortband)]
+      sortlatex = (latexnames[match])[sorted]
+      uniqlatexbands = sortlatex[uniq(sortlatex)]
+
       for kk=0L, n_elements(uniqbands)-1 do begin
          
          ;; get the right windows/page numbers
@@ -577,7 +582,7 @@ for jj=0L, 2 do begin
          ;; plot the shell, phased model, and phased data
          ;; this plot may have some wiggles in it because of the
          ;; different ld parameters between transits
-         plotbandname = uniqbands[kk]
+         plotbandname = exofast_textoidl(uniqlatexbands[kk])
          if strpos(plotbandname,'Sloan') ne -1 then $
             plotbandname = (strsplit(plotbandname,'Sloan',/regex,/extract))[0] + "'"
          
