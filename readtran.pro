@@ -34,15 +34,18 @@ allowedbands = ['U','B','V','R','I','J','H','K',$
                 'u','b','v','y']
 
 if keyword_set(skipallowed) then begin
-   bandstr = strjoin(strsplit(band,'_',/regex,/extract),'.') 
+   bandstr = strjoin(strsplit(band,'_',/regex,/extract),'.')
+   ;; trim leading zeros
+   while strpos(bandstr,'0') eq 0 do bandstr = strmid(bandstr,1)
+   
+   ;; if it's a valid number, then it's interpreted as a wavelength in microns
    if valid_num(bandstr) then begin
       wavelength = double(bandstr)
-      band = bandstr + textoidl(' \mu m')
+      bandname = bandstr + '\mum'
    endif
 endif else begin
    if (where(allowedbands eq band))[0] eq -1 then message, 'Filter (' + band + ') not allowed'
 endelse
-
 
 line = ""
 openr, lun, filename, /get_lun
@@ -192,7 +195,7 @@ prettymodel = prettytime*0d0
 night = strmid(basename,1,4)+'-'+strmid(basename,5,2)+'-'+strmid(basename,7,2)
 label = (strsplit(basename,'.',/extract))(2) + ' UT ' + night + ' ('+ bandname + ')'
 
-transit=create_struct('bjd',bjd,'flux',flux,'err',err,'band',band,'ndx',0,$
+transit=create_struct('bjd',bjd,'flux',flux,'err',err,'band',band,'bandstr',bandname, 'ndx',0,$
                       'epoch',0.0,'detrendadd',da,'detrendmult',dm,'label',label,$
                       'minbjd',minbjd,'maxbjd',maxbjd,'timerange',maxbjd-minbjd,$
                       'nadd',nadd,'nmult',nmult,$
