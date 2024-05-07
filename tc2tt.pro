@@ -67,7 +67,7 @@ endif else begin
    if keyword_set(tt2tc) then begin
       ;; computing tt from tc
 ;      tc = tt - period*(phase0-phase)
-      tfinal = tt - period*(phase0-phase)
+      tfinal = time - period*(phase0-phase)
    endif else begin
       ;; computing tc from tt
 ;      tt = tc + period*(phase0-phase)
