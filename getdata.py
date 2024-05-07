@@ -57,7 +57,7 @@ import argparse
 
 # parse command line arguments
 parser = argparse.ArgumentParser(
-    prog='getData',
+    prog='getdata.py',
     description='Downloads TESS/Kepler data and formats it for EXOFASTv2')
 parser.add_argument('id',help='SIMBAD-resolvable star name')
 parser.add_argument('-d','--depth',default=0.03,type=float,dest='depth',help='Fractional transit depth. Flux >= 1-depth will not be clipped.')
