@@ -51,15 +51,17 @@ for i=0L, nlines-1 do begin
 
    prior = (*parameter.prior_new)[i]
  
-   ;; if a map to a detrending variable
    if prior.value[4] ne -1 then begin
+      ;; if a map to a detrending variable
       priorval = (*(ss.(prior.value[0])))[prior.value[1]].(prior.value[2])[prior.value[3]].(prior.value[4])[prior.value[5]].label
-   ;; if a map to another variable
    endif else if prior.value[3] ne -1 then begin
+      ;; if a map to another variable (in a nested structure)
       priorval = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].label + '_' + strtrim(long(prior.value[1]),2)
    endif else if prior.value[2] ne -1 then begin
+      ;; if a map to another variable (in a nested structure)
       priorval = ss.(prior.value[0])[prior.value[1]].label      
    endif else begin 
+      ;; if a value
       priorval = strtrim(string(prior.value[0],format='(f0.30)'),2)
    endelse
    
@@ -116,10 +118,8 @@ if n_elements(priorfilename) ne 0 then nargs++
 
 ;; for use without a license
 if nargs lt 2 and (lmgr(/vm) or lmgr(/runtime)) then begin
-   par = command_line_args(count=numargs)
-   
+   par = command_line_args(count=numargs)  
    if numargs ne 2 then message, 'Must specify FILENAME and PRIORFILENAME'
-
    for i=0L, numargs-1 do begin
       if strpos(par[i],'=') ne -1 then begin
          entries = strsplit(par[i],'=',/extract)
@@ -127,7 +127,6 @@ if nargs lt 2 and (lmgr(/vm) or lmgr(/runtime)) then begin
          if strupcase(entries[0]) eq 'PRIORFILENAME' then priorfilename = entries[1]
       endif
    endfor
-
 endif
 
 
@@ -142,6 +141,32 @@ endif else if n_elements(mcmcss) eq 0 then $
 
 ;; use the best model as the starting values
 minchi2 = min(*mcmcss.chi2,ndx)
+
+;; first loop through the priors. if linked, we must make sure the
+;; linked parameters are defined first
+isinit = 0
+priors = *mcmcss.priors
+for i=0L, n_elements(priors)-1 do begin
+   map = priors[i].value
+
+   if map[1] eq -1d0 then continue ;; not a map, skip it
+
+   if not isinit then begin
+      printf, lun, '# intializing linked parameters'
+      isinit = 1
+   endif
+      
+   if map[4] ne -1 then begin
+      ;; detrending parameter
+      line = getpriorline2((*mcmcss.(map[0])[map[1]].(map[2])[map[3]]).(map[4])[map[5]], ndx, num=round(map[1]), ss=mcmcss)
+   endif else if map[2] ne -1 then begin
+      ;; not a detrending parameter
+      line = getpriorline2(mcmcss.(map[0])[map[1]].(map[2])[map[3]], ndx, num=round(map[1]), ss=mcmcss)
+   endif
+   
+   if line ne '' then printf, lun, line
+
+endfor
 
 ;; star
 for i=0L, mcmcss.nstars-1 do begin
