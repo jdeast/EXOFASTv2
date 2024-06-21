@@ -3047,7 +3047,7 @@ while not eof(lun) do begin
    ;; map the variable names to the structure
    prior.map = findvariable(ss,strtrim(entries[0],2),logname=logname, silent=silent, count=0)
    if prior.map[0] eq -1 then continue ;; didn't find it, skip (findvariable will print warning)
-
+   
    priorvalstr = entries[1]
    ;; see if the value is a string (create a map) or a number (use the value)
    if valid_num(entries[1]) then begin
@@ -3124,6 +3124,7 @@ while not eof(lun) do begin
             parameter.fit = 0B
             if ~keyword_set(silent) then printandlog, prior.name + ' = ' + priorvalstr + ' (fixed)', logname
             prior.gaussian_width = 0d0
+            
          endelse
       endif else begin
          prior.gaussian_width = double(entries[2]) 
