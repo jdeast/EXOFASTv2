@@ -89,24 +89,30 @@ for i=0L, n_elements(*ss.priors)-1 do begin
    ;; the prior is linked to another variable -- get its value
    if prior.value[4] ne -1 then begin
       value = (*ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]]).(prior.value[4])[prior.value[5]].value
-;      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].(prior.value[4])[prior.value[5]].value
+      label = (*ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]]).(prior.value[4])[prior.value[5]].label
    endif else if prior.value[2] ne -1 then begin
       value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].value
+      label = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].label
    endif else begin
       value = ss.(prior.value[0])[prior.value[1]].value
+      label = ss.(prior.value[0])[prior.value[1]].label
    endelse
 
    ;; assign the value
    if prior.map[4] ne -1 then begin
       (*ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]]).(prior.map[4])[prior.map[5]].value = value
-      ;ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].(prior.map[4])[prior.map[5]].value = value
    endif else if prior.map[2] ne -1 then begin
       ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].value = value
    endif else if prior.map[0] ne -1 then begin
       ss.(prior.map[0])[prior.map[1]].value = value
    endif     
 
+   if ss.verbose then printandlog, $
+      'linking ' + prior.name + ' to ' + label
+   
 endfor
+
+
 
 ;; *** First make sure step parameters are in bounds ***
 
