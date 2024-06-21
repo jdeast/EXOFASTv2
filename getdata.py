@@ -93,35 +93,52 @@ else:
 t0 = datetime.datetime(2000,1,1)
 jd0 = 2451544.5
 
-search_results = lk.search_lightcurve(args.id,author=('SPOC','TESS-SPOC','QLP','TASOC','CDIPS','Kepler'))
+search_results = lk.search_lightcurve(args.id,author=('SPOC','TESS-SPOC','QLP','TASOC','CDIPS','Kepler','K2','K2SFF','EVEREST'))
+
+# lightkurve doesn't support K2VARCAT
+#search_results = lk.search_lightcurve(args.id,author=('SPOC','TESS-SPOC','QLP','TASOC','CDIPS','Kepler','K2','K2SFF','K2VARCAT','EVEREST'))
+
 
 if len(search_results) == 0:
     print("No light curves found for " + args.id + ". Name must be SIMBAD-resolveable")
     sys.exit()
 
 # sometimes IDs match to multiple TIC IDs
-# warn the user to select by TIC ID
+# warn the user to select by TIC ID0
 unique_ids = list(set(search_results.target_name))
-if len(unique_ids) > 1 and 'TIC' in args.id: 
-    match = np.where(search_results.target_name == args.id[3:])
-    if len(match) > 0:
-        search_results = search_results[match]
-        unique_ids = list(set(search_results.target_name))
 
-if len(unique_ids) > 1:
-    print("Multiple TIC IDs match " + args.id)
-    print(unique_ids)
-    print("Specify target by TIC ID")
-    sys.exit()
+
+# K2 has unique names (ktwoEPICID) for the same target, that's ok
+match = []
+for id in unique_ids:
+    if 'ktwo' in id:
+        match.append(id)
+        
+if len(match) == 1 and len(unique_ids) <= 2:
+    pass
+else:
+    if len(unique_ids) > 1 and 'TIC' in args.id: 
+        match = np.where(search_results.target_name == args.id[3:])
+        if len(match) > 0:
+            search_results = search_results[match]
+            unique_ids = list(set(search_results.target_name))
+
+    if len(unique_ids) > 1:
+        print("Multiple IDs match " + args.id)
+        print(unique_ids)
+        print("Specify target by TIC ID")
+        sys.exit()
 
 unique_sectors = list(set(search_results.mission))
 
-# only get one light curve per sector
 if args.download_all: 
+    # download everything
     to_download = list(range(len(search_results)))
 else:
+    # only get unique lightcurves (prioritized by cadence and pipeline)
     to_download = []
     for sector in unique_sectors:
+        
         match = np.where(search_results.mission == sector)[0]
         if len(match) == 1: to_download.append(match[0])
         if len(match) > 1:
@@ -133,11 +150,15 @@ else:
             if len(match2) == 0: match2 = np.where(search_results[match].exptime.value == 1800)[0]
             if len(match2) == 1: to_download.append(match[match2[0]])
             if len(match2) > 1:
-                # prioritize by author: TESS, TESS-SPOC, QLP, Kepler, CDIPS, then TASOC
+                # prioritize by author: TESS, SPOC, TESS-SPOC, QLP, Kepler, K2SFF, EVEREST, K2, CDIPS, then TASOC
                 match3 = np.where(search_results[match[match2]].author == 'TESS')[0]
+                if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'SPOC')[0]
                 if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'TESS-SPOC')[0]
                 if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'QLP')[0]
                 if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'Kepler')[0]
+                if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'K2SFF')[0]
+                if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'EVEREST')[0]
+                if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'K2')[0]
                 if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'CDIPS')[0]
                 if len(match3) == 0: match3 = np.where(search_results[match[match2]].author == 'TASOC')[0]
                 if len(match3) == 1: to_download.append(match[match2[match3[0]]])
@@ -149,11 +170,19 @@ for search_result in search_results[to_download]:
     ticid = 'TIC' + search_result.target_name[0]
 
     if author == "Kepler":
+        # Quarters of Kepler (prime) data
         bjd_offset = 2454833.0
         sector = 'Q' + search_result.mission[0][-2:]
         filter = 'Kepler'
         telescope = 'Kepler'
+    elif author == 'K2' or author == 'EVEREST' or author == 'K2SFF' or author == 'K2VARCAT':
+        # Campaigns of K2 data
+        bjd_offset = 2454833.0
+        sector = 'C' + search_result.mission[0][-2:]
+        filter = 'Kepler'
+        telescope = 'Kepler'        
     elif author == "TESS-SPOC" or author=='QLP' or author=='SPOC':
+        # TESS sectors
         bjd_offset = 2457000.0
         sector = 'S' + str(int(str(search_result.mission[0]).split()[-1])).zfill(2)
         filter = 'TESS'
