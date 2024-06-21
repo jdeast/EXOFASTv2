@@ -134,7 +134,7 @@ for i=0, n_tags(ss)-1 do begin
                               (*ss.(i)[j].(k)).(l)[m].medvalue = strtrim(value,2)
                               (*ss.(i)[j].(k)).(l)[m].upper = strtrim(errhi,2)
                               (*ss.(i)[j].(k)).(l)[m].lower = strtrim(errlo,2)
-                              (*ss.(i)[j].(k)).(l)[m].scinote = scinote
+                              if tag_exist((*ss.(i)[j].(k)).(l)[m],'SCINOTE') then (*ss.(i)[j].(k)).(l)[m].scinote = scinote
                               (*ss.(i)[j].(k)).(l)[m].best = (*(ss.(i)[j].(k))).(l)[m].value[bestndx]
                               
                               if n_elements(csvfile) ne 0 then begin
@@ -197,7 +197,7 @@ for i=0, n_tags(ss)-1 do begin
                      ss.(i)[j].(k).medvalue = strtrim(value,2)
                      ss.(i)[j].(k).upper = strtrim(errhi,2)
                      ss.(i)[j].(k).lower = strtrim(errlo,2)
-                     ss.(i)[j].(k).scinote = scinote
+                     if tag_exist(ss.(i)[j].(k),'SCINOTE') then ss.(i)[j].(k).scinote = scinote
                      ss.(i)[j].(k).best = ss.(i)[j].(k).value[bestndx]
 
                      if n_elements(csvfile) ne 0 then begin
