@@ -1,4 +1,4 @@
-function readeep, mstar, feh, vvcrit=vvcrit, alpha=alpha, rstar=rstar, teff=teff, age=age
+function readeep, mstar, feh, vvcrit=vvcrit, alpha=alpha, rstar=rstar, teff=teff, age=age, v1_2=v1_2
 
 if n_elements(alpha) eq 0 then alpha = 0d0
 if n_elements(vvcrit) eq 0 then vvcrit = 0d0
@@ -70,10 +70,17 @@ if match[0] eq -1 then begin
 endif
 mstarstr = string(round(mstar*100d0),format='(i05)')
 
-eepfile = filepath(mstarstr + 'M.track.eep.idl',$
-                   root_dir=getenv('EXOFAST_PATH'),$
-                   subdir=['mist','MIST_v1.0_tracks','feh_' + fehstr + '_afe_' + alphastr + $
-                           '_vvcrit' + vvcritstr,'eeps'])
+if keyword_set(v1_2) then begin
+   eepfile = filepath(mstarstr + 'M.track.eep.idl',$
+                      root_dir=getenv('EXOFAST_PATH'),$
+                      subdir=['mist','MIST_v1.2_tracks','feh_' + fehstr + '_afe_' + alphastr + $
+                              '_vvcrit' + vvcritstr])
+endif else begin
+   eepfile = filepath(mstarstr + 'M.track.eep.idl',$
+                      root_dir=getenv('EXOFAST_PATH'),$
+                      subdir=['mist','MIST_v1.0_tracks','feh_' + fehstr + '_afe_' + alphastr + $
+                              '_vvcrit' + vvcritstr,'eeps'])
+endelse
 
 restore, eepfile
 return, track
