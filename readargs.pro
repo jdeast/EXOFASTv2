@@ -30,7 +30,7 @@ pro readargs, argfile, priorfile=priorfile, $
               rejectflatmodel=rejectflatmodel,$
               noprimary=noprimary, requiresecondary=requiresecondary,$
               fitspline=fitspline, splinespace=splinespace, $
-              fitwavelet=fitwavelet, $              
+              fitramp=fitramp, fitwavelet=fitwavelet, $              
               fitlogmp=fitlogmp,$
               novcve=novcve, nochord=nochord, fitsign=fitsign, $
               fittt=fittt, earth=earth, $             
@@ -184,17 +184,17 @@ while not eof(lun) do begin
          endif else if strupcase(strtrim(entries[0],2)) eq 'MINTZ' then begin
             mintz = double(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'YY' then begin
-            yy = boolean(entries[1])
+            yy = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'TORRES' then begin
-            torres = boolean(entries[1])
+            torres = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOMIST' then begin
-            nomist = boolean(entries[1])
+            nomist = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'PARSEC' then begin
-            parsec = boolean(entries[1])
+            parsec = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'MANNRAD' then begin
-            mannrad = boolean(entries[1])
+            mannrad = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'MANNMASS' then begin
-            mannmass = boolean(entries[1])
+            mannmass = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'NOCLARET' then begin
             noclaret = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'TIDES' then begin
