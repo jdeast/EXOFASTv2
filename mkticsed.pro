@@ -143,6 +143,10 @@ endif else begin
    qtic = Exofast_Queryvizier('IV/39/tic82',ticid,2d0,/allcolumns,cfa=cfa)
    qgaia = Exofast_Queryvizier('I/345/gaia2',ticid,2d0,/allcolumns,cfa=cfa)   
 
+   if (size(qgaia))[2] ne 8 then begin
+      message, 'no matching star found. try using the TIC ID directly'
+   endif
+   
    sorted = sort(qgaia.gmag)
 
    nstars = n_elements(qgaia)
