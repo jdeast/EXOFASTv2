@@ -75,7 +75,7 @@ for i=0, ss.nstars-1 do begin
          if ss.mist[i] then begin
             mistchi2 =  massradius_mist(eeps[j],ss.star[i].mstar.value,ss.star[i].initfeh.value,$
                                         ss.star[i].age.value,ss.star[i].teff.value,$
-                                        ss.star[i].rstar.value,ss.star[i].feh.value,mistage=mistage,fitage=ss.star[i].age.fit,$
+                                        ss.star[i].rstar.value,ss.star[i].feh.value,mistage=mistage,fitage=1,$
                                         /allowold,tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
                                         rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
             if eeps[j] lt 202 then mistchi2+=30 ;; penalize PMS stars
@@ -88,7 +88,7 @@ for i=0, ss.nstars-1 do begin
             parsecchi2 =  massradius_parsec(eeps[j],ss.star[i].mstar.value,ss.star[i].initfeh.value,$
                                             ss.star[i].age.value,ss.star[i].teff.value,$
                                             ss.star[i].rstar.value,ss.star[i].feh.value,$
-                                            parsec_age=parsec_age,fitage=ss.star[i].age.fit,/allowold,$
+                                            parsec_age=parsec_age,fitage=1,/allowold,$
                                             tefffloor=ss.teffemfloor,fehfloor=ss.fehemfloor,$
                                             rstarfloor=ss.rstaremfloor, agefloor=ss.ageemfloor)
             if eeps[j] lt 202 then parsecchi2+=30 ;; penalize PMS stars
