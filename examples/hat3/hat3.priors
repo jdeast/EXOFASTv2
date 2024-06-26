@@ -1,7 +1,7 @@
 # HAT-3 priors 
 # see $EXOFAST_PATH/parnames.README for a detailed description of each prior
-mstar 0.904 # independent fit, if necessary
-rstar 0.818 # independent fit, if necessary
+mstar 0.904 # TICv8.2 or independent fit, if necessary
+rstar 0.818 # TICv8.2 or independent fit, if necessary
 period_0 2.899703 0.000054
 tc 2454218.76016
 teff 5185 #80
