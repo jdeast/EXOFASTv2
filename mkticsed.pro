@@ -620,7 +620,10 @@ if long(tag_exist(qkis,'KIS',/quiet)) ne 0L then begin
    if n_elements(qkis) gt 1 then begin
       print,'Warning: More than 1 KIS source found; using nearest one only.'
       printf, lun,'# Warning: More than 1 KIS source found; using nearest one only.'
-      match = crossref(ra, dec, qkis.raj2000, qkis.dej2000)
+
+      sep = angsep(qtic.raj2000*!dpi/180d0,qtic.dej2000*!dpi/180d0,qkis.raj2000*!dpi/180d0, qkis.dej2000*!dpi/180d0)*180d0/!dpi*3600d0 ;; arcsec
+      junk = min(sep,match)
+      ;match = crossref(star[0], star[1], qkis.raj2000, qkis.dej2000)
       qkis = qkis[match]
    endif
    
