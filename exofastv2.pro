@@ -1006,7 +1006,7 @@
 ;             windows users, and maybe some mac users.
 ;
 ;  NOCOVAR  - A keyword that skips the generation of the covariance
-;             corner plot. This is somewhat expensive and ugly for
+;             corner plot. This is somewhat expensive, large, and ugly for
 ;             high dimensional fits. GDL users cannot generate this
 ;             anyway. Users interested in better corner plots should
 ;             look at $EXOFAST_PATH/remake_corner.pro.
