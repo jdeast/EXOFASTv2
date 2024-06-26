@@ -1,12 +1,18 @@
-priorfile=$EXOFAST_PATH/examples/hat3_nolicense/hat3.priors
-prefix=$HOME/modeling/hat3_nolicense/fitresults/HAT-P-3b.
-tranpath=$EXOFAST_PATH/examples/hat3_nolicense/n20070428.Sloani.KepCam.dat
-rvpath=$EXOFAST_PATH/examples/hat3_nolicense/hat3.rv
+prefix=$HOME/modeling/hat3_nolicense/fitresults/HAT-P-3b.   # this is what the output files will be prefaced with
+priorfile=$EXOFAST_PATH/examples/hat3_nolicense/hat3.priors # point to the prior file 
+# Use $EXOFAST_PATH/getdata.py to retreive TESS/Kepler data
+#tranpath=$EXOFAST_PATH/examples/hat3_nolicense/n2007*.dat   # swap this with the next line for faster testing
+tranpath=$EXOFAST_PATH/examples/hat3_nolicense/n2019*.dat   # point to the transit data (delete "2019" to use all data). 
+rvpath=$EXOFAST_PATH/examples/hat3_nolicense/hat3.rv        # point to the RV data
+mistsedfile=$EXOFAST_PATH/examples/hat3_nolicense/hat3.sed  # point to the SED data
 nplanets=1
-fittran=[1]
-fitrv=[1]
-circular=[0]
-nomist=1
-torres=1
-maxsteps=100
-#debug=0
+# the time to completion and fit quality will scale as NTHIN*MAXSTEPS
+# the higher MAXSTEPS, the more memory it takes. don't use more than ~1 GB
+# once you get to a MAXSTEPS that uses 1 GB, increase NTHIN to improve fit quality
+maxsteps=100 # this is very low just for testing. Typical values are 5000-10000
+nthin=1 # this is very low for a preliminary fit. Typical values for publication-quality fits are 20-50
+ntemps=8 # this enables parallel tempering, which usually takes ~2x longer, but explores further from the starting point for more robust optimization
+#fitspline=[1] # uncomment and match to transit files to account for stellar variability
+#exptime=[2] # uncomment and match to transit files if some exposure times are long (> 3 minutes)
+#ninterp=[1] # this should be ~ceil(exptime/3)
+#verbose=0 
