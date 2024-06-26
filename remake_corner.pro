@@ -99,7 +99,7 @@ if n_elements(psname) ne 0 then begin
 
    ;; https://venngage.com/tools/accessible-color-palette-generator
 ;   colors = ['00A35B'x,'00CE89'x,'E67300'x,'8A30E6'x,'6319B5'x] ; contrasting palette 2
-   colors = ['00A35B'x,'E67300'x,'6319B5'x] ; contrasting palette 2
+   colors = ['000000'x,'00A35B'x,'E67300'x,'6319B5'x] ; contrasting palette 2
    legendsize = 0.5
    thick=2
 endif else begin
