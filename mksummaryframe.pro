@@ -5,6 +5,44 @@ pro mksummaryframe, ss0, ndx, base=base, idlfile=idlfile, printthisval=printthis
   if n_elements(idlfile) ne 0 then begin
      ;; this is the (1 element) structure used by exofast_chi2v2
      restore, idlfile
+
+if 1 then begin
+     ;; hack for backward compatibility
+     mcmcss.star.age.fit = 1 
+     tofit = [-1,-1,-1,-1,-1]
+     for i=0L, n_tags(mcmcss)-1 do begin
+        for j=0L, n_elements(mcmcss.(i))-1 do begin
+           for k=0L, n_tags(mcmcss.(i)[j])-1 do begin
+              
+              ;; this captures the detrending variables                              
+              if (size(mcmcss.(i)[j].(k)))[1] eq 10 then begin
+                 if ptr_valid(mcmcss.(i)[j].(k)) then begin
+                    for l=0L, n_tags(*(mcmcss.(i)[j].(k)))-1 do begin
+                       if (size((*(mcmcss.(i)[j].(k))).(l)))[2] eq 8 then begin
+                          for m=0L, n_elements((*(mcmcss.(i)[j].(k))).(l))-1 do begin
+                             if tag_exist((*(mcmcss.(i)[j].(k))).(l)[m],'fit') then begin
+                                if (*(mcmcss.(i)[j].(k))).(l)[m].fit then tofit = [[tofit],[i,j,k,l,m]]
+                                if (*(mcmcss.(i)[j].(k))).(l)[m].fit or (*(mcmcss.(i)[j].(k))).(l)[m].derive then mcmcss.npars++
+                             endif
+                          endfor
+                       endif
+                    endfor
+                 endif
+              endif else if n_tags(mcmcss.(i)[j].(k)) ne 0 then begin
+                 ;; and this captures everything else                                
+                 if tag_exist(mcmcss.(i)[j].(k),'fit') then begin
+                    if mcmcss.(i)[j].(k).fit then tofit = [[tofit],[i,j,k,-1,-1]]
+                    if mcmcss.(i)[j].(k).fit or mcmcss.(i)[j].(k).derive then mcmcss.npars++
+                 endif
+              endif
+           endfor
+        endfor
+     endfor
+     tofit = tofit[*,1:*]
+     *(mcmcss.tofit) = tofit
+endif
+
+
      ss = mcmcss2ss(mcmcss)
 ;     junk = step2pars(ss)
 ;     stop
@@ -15,14 +53,13 @@ pro mksummaryframe, ss0, ndx, base=base, idlfile=idlfile, printthisval=printthis
      ss = ss0
      pars = str2pars(ss,ndx=ndx)
   endelse
-  
   chi2 = exofast_chi2v2(pars,psname=base)
   
   evolutionarymodel = 'mist'
   summaryfile = base + '.exofastv2.png'
-
-  extractpgno, base+'.transit.ps', stacked_primary=stackedpage, primary=transitpage
   
+  extractpgno, base+'.transit.ps', stacked_primary=stackedpage, primary=transitpage
+
   ;; convert multi-page ps files to pdfs, crop, convert to png
   if file_test(base+'.transit.ps') then begin
      spawn, 'ps2pdf ' + base + '.transit.ps '  + base + '.transit.pdf'
@@ -35,6 +72,7 @@ pro mksummaryframe, ss0, ndx, base=base, idlfile=idlfile, printthisval=printthis
   for i=0L, ss.nplanets-1 do begin
      
      ;; *********** phased transit plot *********
+     if i ge n_elements(transitpage) then continue
      pageno = strtrim(transitpage[i],2)
 
      ;; can these be combined into one step?
@@ -121,17 +159,18 @@ pro mksummaryframe, ss0, ndx, base=base, idlfile=idlfile, printthisval=printthis
         parname = varnames[j] + '_' + strtrim(i,2)
 
         map = findvariable(ss,parname,count=0)
+        map2 = findvariable(mcmcss,parname,count=0)
 
         ;; extract the parameter using the map
         if map[4] ne -1 then begin
            parameter = (*ss.(map[0])[map[1]].(map[2])[map[3]]).(map[4])[map[5]]
-           mcmcpar = (*mcmcss.(map[0])[map[1]].(map[2])[map[3]]).(map[4])[map[5]]
+           mcmcpar = (*mcmcss.(map2[0])[map2[1]].(map2[2])[map2[3]]).(map2[4])[map2[5]]
         endif else if map[2] ne -1 then begin 
            parameter = ss.(map[0])[map[1]].(map[2])[map[3]]
-           mcmcpar = mcmcss.(map[0])[map[1]].(map[2])[map[3]]
+           mcmcpar = mcmcss.(map2[0])[map2[1]].(map2[2])[map2[3]]
         endif else if map[0] ne -1 then begin
            parameter = ss.(map[0])[map[1]]
-           mcmcpar = mcmcss.(map[0])[map[1]]
+           mcmcpar = mcmcss.(map2[0])[map2[1]]
         endif
 
         ;; median + 68% CI
@@ -158,17 +197,18 @@ pro mksummaryframe, ss0, ndx, base=base, idlfile=idlfile, printthisval=printthis
         parname = varnames[j] + '_' + strtrim(i,2)
         
         map = findvariable(ss,parname,count=0)
+        map2 = findvariable(mcmcss,parname,count=0)
 
         ;; extract the parameter using the map
         if map[4] ne -1 then begin
            parameter = (*ss.(map[0])[map[1]].(map[2])[map[3]]).(map[4])[map[5]]
-           mcmcpar =  (*mcmcss.(map[0])[map[1]].(map[2])[map[3]]).(map[4])[map[5]]
+           mcmcpar =  (*mcmcss.(map2[0])[map2[1]].(map2[2])[map2[3]]).(map2[4])[map2[5]]
         endif else if map[2] ne -1 then begin 
            parameter = ss.(map[0])[map[1]].(map[2])[map[3]]
-           mcmcpar = mcmcss.(map[0])[map[1]].(map[2])[map[3]]
+           mcmcpar = mcmcss.(map2[0])[map2[1]].(map2[2])[map2[3]]
         endif else if map[0] ne -1 then begin
            parameter = ss.(map[0])[map[1]]
-           mcmcpar = mcmcss.(map[0])[map[1]]
+           mcmcpar = mcmcss.(map2[0])[map2[1]]
         endif
         
         ;; median + 68% CI
@@ -204,7 +244,7 @@ pro mksummaryframe, ss0, ndx, base=base, idlfile=idlfile, printthisval=printthis
      ;; in line with each planet
      spawn, 'convert -gravity SouthWest ' + summaryfile + $
             ' -font NimbusSans-Regular' +$
-            ' -annotate +100+' + strtrim(75+(i+2)*190,2) + " '"  + $
+            ' -annotate +100+' + strtrim(75+(ss.nplanets+1-i)*190,2) + " '"  + $
             annotation[i+1] + "' " + summaryfile, output 
 
      ;; add the phased transit to the canvas
@@ -325,7 +365,8 @@ pro mksummaryframe, ss0, ndx, base=base, idlfile=idlfile, printthisval=printthis
   device, set_resolution=[xsizechain,ysizechain], set_pixel_depth=24, set_font='Times',/tt_font
   chi2 = reform(*mcmcss.chi2,mcmcss.nsteps/mcmcss.nchains,mcmcss.nchains)
   loglike = -chi2/2d0
-
+  burnndx = getburnndx(chi2,goodchains=goodchains)
+  
   ymin = min(loglike,max=ymax)
   if ymin lt 0 then sign = ' + ' else sign = ' - '
   latex = textoidl('\Delta log(Like)') ; + sign + strtrim(abs(ymax),2)                                                                            
