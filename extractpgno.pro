@@ -23,7 +23,7 @@ while not eof(lun) do begin
    if strpos(line, '(C)') ne -1 then isprimary = 1
 
    ;; stacked plot
-   if strpos(line, '(Normalized flux + Constant)') ne -1 then begin
+   if strpos(line, '(Norm flux + Constant)') ne -1 then begin
       if issecondary then stacked_secondary = [stacked_secondary,pageno]
       if isprimary then stacked_primary = [stacked_primary,pageno]
    endif else if strpos(line, '(O-C)') ne -1 then begin
