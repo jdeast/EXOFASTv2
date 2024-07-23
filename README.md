@@ -1,35 +1,25 @@
-EXOFASTv2 -- Jason Eastman (jason.eastman@cfa.harvard.edu) An
-exoplanet transit and radial velocity fitting software package in IDL
-If you use this in a publication cite:
-https://arxiv.org/abs/1907.09480
-and see acknowledgements.tex within this distribution.
+EXOFASTv2 -- Jason Eastman (jason.eastman@cfa.harvard.edu) \
+An exoplanet transit and radial velocity fitting software package in IDL.\
+If you use this in a publication, please cite [Eastman et al. 2019](https://arxiv.org/abs/1907.09480) and see acknowledgements.tex within this distribution.
 
-A tutorial with exercises can be found here:
-https://docs.google.com/document/d/1H-HMe1No5B4JE93V9kSEW91uSIQcG2eUVScf037biZw/edit
+A tutorial with exercises can be found [here](https://docs.google.com/document/d/1H-HMe1No5B4JE93V9kSEW91uSIQcG2eUVScf037biZw/edit).
 
-For detailed installation directions (and directions for Windows), see
-https://docs.google.com/document/d/1kcm7_mgfoCdDx6lUeqUJdDkpxtejyTNQf3sIveq3lkk/edit
+For detailed installation directions (and directions for Windows), see [here](https://docs.google.com/document/d/1kcm7_mgfoCdDx6lUeqUJdDkpxtejyTNQf3sIveq3lkk/edit).
 
-# Installation instructions (linux/mac)#
+# Installation instructions (linux/mac)
 
 License-free use still requires a (free) IDL installation and runs a
 pre-compiled version with the virtual machine. You still must follow
 the installation instructions below.
 
 To install a free version of IDL:
+   - Create an Harris Geospatial account [here](https://www.harrisgeospatial.com/Company/Create-Account).
+   - When logged in, download the latest version of IDL for your platform from [here](http://www.harrisgeospatial.com/MyAccount/Downloads.aspx).
+   
 
-   Create an Harris Geospatial account here:
-   https://www.harrisgeospatial.com/Company/Create-Account
+Note the IDL Astronomy library is required. If you don't already have it, install it from [here](https://github.com/wlandsman/IDLAstro).
 
-   When logged in, download the latest version of IDL for your
-   platform from here:
-   http://www.harrisgeospatial.com/MyAccount/Downloads.aspx
-
-Note the IDL Astronomy library is required. If you don't already have
-it, install it from here: https://github.com/wlandsman/IDLAstro
-
-You also need the Coyote library. If you don't already have it, install it here:
-http://www.idlcoyote.com/documents/programs.php#COYOTE_LIBRARY_DOWNLOAD
+You also need the Coyote library. If you don't already have it, install it [here](https://github.com/idl-coyote/coyote).
 
 EXOFASTv2 is best installed with git
 
@@ -42,7 +32,9 @@ with git and git is in your path (i.e., it can be invoked via "git").
 define environment variables (bash shell, e.g., .bashrc)
 
   export EXOFAST_PATH="$HOME/idl/EXOFASTv2/"
-  # if IDL_PATH is not defined, add EXOFAST_PATH and subdirectories to the default IDL path
+  
+  **if IDL_PATH is not defined, add EXOFAST_PATH and subdirectories to the default IDL path**
+  
   if [ -z "$IDL_PATH" ]; then 
      export IDL_PATH="<IDL_DEFAULT>:+${EXOFAST_PATH}"
   else 
@@ -50,10 +42,10 @@ define environment variables (bash shell, e.g., .bashrc)
      export IDL_PATH="${IDL_PATH}:+${EXOFAST_PATH}"
   fi
 
-  # this is only required if you want to use the BJD timing library
-  # you may already have this defined for other libraries, in which
-  # case you need not redefine it. However, it must contain
-  # JPLEPH.405 and you must have write access here.
+  **this is only required if you want to use the BJD timing library**\
+  **you may already have this defined for other libraries, in which**\
+  **case you need not redefine it. However, it must contain**\
+  **JPLEPH.405 and you must have write access here.**\
   export ASTRO_DATA="${EXOFAST_PATH}/timing/" 
 
 --- OR ---
@@ -61,7 +53,7 @@ define environment variables (bash shell, e.g., .bashrc)
 define environment variables (c shell, e.g., .tcshrc)
 
   setenv EXOFAST_PATH "${HOME}/idl/EXOFASTv2/"
-  # if IDL_PATH is not defined, add EXOFAST_PATH and subdirectories to the default IDL path
+  **if IDL_PATH is not defined, add EXOFAST_PATH and subdirectories to the default IDL path**
   if ("$IDL_PATH" == "") then 
      setenv IDL_PATH "<IDL_DEFAULT>:+${EXOFAST_PATH}"
   else
@@ -69,10 +61,10 @@ define environment variables (c shell, e.g., .tcshrc)
      setenv IDL_PATH "${IDL_PATH}:+${EXOFAST_PATH}"
   endif
 
-  # this is only required if you want to use the BJD timing library
-  # you may already have this defined for other libraries, in which
-  # case you need not redefine it. However, it must contain
-  # JPLEPH.405 and you must have write access here.
+  **this is only required if you want to use the BJD timing library**\
+  **you may already have this defined for other libraries, in which**\
+  **case you need not redefine it. However, it must contain**\
+  **JPLEPH.405 and you must have write access here.**\
   setenv ASTRO_DATA "${EXOFAST_PATH}/timing/" 
 
 NOTE: If you have used the old version of EXOFAST, you must remove it
