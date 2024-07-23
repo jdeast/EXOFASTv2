@@ -1,48 +1,39 @@
-EXOFASTv2 -- Jason Eastman (jason.eastman@cfa.harvard.edu) An
-exoplanet transit and radial velocity fitting software package in IDL
-If you use this in a publication cite:
-https://arxiv.org/abs/1907.09480
-and see acknowledgements.tex within this distribution.
+EXOFASTv2 -- Jason Eastman (jason.eastman@cfa.harvard.edu) \
+An exoplanet transit and radial velocity fitting software package in IDL.\
+If you use this in a publication, please cite [Eastman et al. 2019](https://arxiv.org/abs/1907.09480) and see acknowledgements.tex within this distribution.
 
-A tutorial with exercises can be found here:
-https://docs.google.com/document/d/1H-HMe1No5B4JE93V9kSEW91uSIQcG2eUVScf037biZw/edit
+A tutorial with exercises can be found [here](https://docs.google.com/document/d/1H-HMe1No5B4JE93V9kSEW91uSIQcG2eUVScf037biZw/edit).
 
-For detailed installation directions (and directions for Windows), see
-https://docs.google.com/document/d/1kcm7_mgfoCdDx6lUeqUJdDkpxtejyTNQf3sIveq3lkk/edit
+For detailed installation directions (and directions for Windows), see [here](https://docs.google.com/document/d/1kcm7_mgfoCdDx6lUeqUJdDkpxtejyTNQf3sIveq3lkk/edit).
 
-# Installation instructions (linux/mac)#
+# Installation instructions (linux/mac)
 
+
+## To install a free version of IDL
 License-free use still requires a (free) IDL installation and runs a
 pre-compiled version with the virtual machine. You still must follow
 the installation instructions below.
 
-To install a free version of IDL:
+   - Create an Harris Geospatial account [here](https://www.harrisgeospatial.com/Company/Create-Account).
+   - When logged in, download the latest version of IDL for your platform from [here](http://www.harrisgeospatial.com/MyAccount/Downloads.aspx).
+   
+## Additional IDL Astronomy libraries are required
+- IDLAstro. Install it from [here](https://github.com/wlandsman/IDLAstro).
+- Coyote.  Install it from [here](https://github.com/idl-coyote/coyote).
+## EXOFASTv2 is best installed with git
 
-   Create an Harris Geospatial account here:
-   https://www.harrisgeospatial.com/Company/Create-Account
-
-   When logged in, download the latest version of IDL for your
-   platform from here:
-   http://www.harrisgeospatial.com/MyAccount/Downloads.aspx
-
-Note the IDL Astronomy library is required. If you don't already have
-it, install it from here: https://github.com/wlandsman/IDLAstro
-
-You also need the Coyote library. If you don't already have it, install it here:
-http://www.idlcoyote.com/documents/programs.php#COYOTE_LIBRARY_DOWNLOAD
-
-EXOFASTv2 is best installed with git
-
-  cd $HOME/idl
-  git clone https://github.com/jdeast/EXOFASTv2.git
-
+- cd $HOME/idl
+- git clone https://github.com/jdeast/EXOFASTv2.git
+  
 NOTE: EXOFASTv2 logs the version number used for each fit if installed
 with git and git is in your path (i.e., it can be invoked via "git").
+## Define environment variables
 
-define environment variables (bash shell, e.g., .bashrc)
-
+### For bash shell, e.g., .bashrc
+```bash
   export EXOFAST_PATH="$HOME/idl/EXOFASTv2/"
   # if IDL_PATH is not defined, add EXOFAST_PATH and subdirectories to the default IDL path
+
   if [ -z "$IDL_PATH" ]; then 
      export IDL_PATH="<IDL_DEFAULT>:+${EXOFAST_PATH}"
   else 
@@ -55,11 +46,9 @@ define environment variables (bash shell, e.g., .bashrc)
   # case you need not redefine it. However, it must contain
   # JPLEPH.405 and you must have write access here.
   export ASTRO_DATA="${EXOFAST_PATH}/timing/" 
-
---- OR ---
-
-define environment variables (c shell, e.g., .tcshrc)
-
+```
+### For c shell, e.g., .tcshrc
+```bash
   setenv EXOFAST_PATH "${HOME}/idl/EXOFASTv2/"
   # if IDL_PATH is not defined, add EXOFAST_PATH and subdirectories to the default IDL path
   if ("$IDL_PATH" == "") then 
@@ -74,15 +63,15 @@ define environment variables (c shell, e.g., .tcshrc)
   # case you need not redefine it. However, it must contain
   # JPLEPH.405 and you must have write access here.
   setenv ASTRO_DATA "${EXOFAST_PATH}/timing/" 
-
+```
 NOTE: If you have used the old version of EXOFAST, you must remove it
 from your IDL_PATH to run correctly.
-
+### Quick Verification for your Installation
 To test your installation, try the HAT-3b example:
-
+```bash
   cd $EXOFAST_PATH/examples/hat3
   idl -e "fithat3"
-
+```
 TIP 1: make your terminal wide so the MCMC updates don't spam the screen
 
 TIP 2: If you don't care about the results, run a very short fit by
@@ -95,13 +84,15 @@ It will generate many output files
 $EXOFAST_PATH/exofastv2.pro for an explanation of outputs). The last
 file it generates is HAT-3b.transits.tex. If that is generated
 without error, you're good to go!
+### Want to get future updates?
 
 To get future updates, simply type
-
+```bash
   cd $EXOFAST_PATH
   git pull
+```
 
-# Troubleshooting #
+# Troubleshooting 
 
 I try hard to test thoroughly before pushing new code (but I'm not
 perfect!). If it does not compile or you get a syntax error, it is
@@ -130,21 +121,21 @@ than 6.4. If you find any incompatibilites on any version, IDL 5.0
 pointers and structures, which were introduced in IDL 5.0. Older
 versions will never be supported.
 
-Note 1: The latest IDL version can be installed for free and EXOFASTv2
-can be run within a virtual machine without a license.
+   Note 1: The latest IDL version can be installed for free and EXOFASTv2
+   can be run within a virtual machine without a license.
+   
+   Note 2: The HAT-3 example runs to completion in GDL but many things are
+   sub-optimal:
+   
+      a) The results are unverified and many features are untested\
+      b) Limb darkening models outside of the grid are rejected a priori.\
+      c) Multi-page postscript files (chains, pdfs, models) are not supported in GDL.\
+      d) The covariance plot is disabled\
+      e) It is ~3.5x slower\
+      f) Error messages spam the screen
 
-Note 2: The HAT-3 example runs to completion in GDL but many things are
-sub-optimal:
-
-   a) The results are unverified and many features are untested 
-   b) Limb darkening models outside of the grid are rejected a priori.
-   c) Multi-page postscript files (chains, pdfs, models) are not supported in GDL.
-   d) The covariance plot is disabled
-   e) It is ~3.5x slower
-   f) Error messages spam the screen
-
-If you're interested in making it work better with GDL, please contact
-me.
+      If you're interested in making it work better with GDL, please contact
+      me.
 
 5) I have introduced a bug. Even if your problem is not a bug, if
 you've read the documentation, given it some thought, and still can't
