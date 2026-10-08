@@ -299,7 +299,12 @@ endelse
                               (1d0+6d0*ss.planet[i].e.value^2) ;; Adams & Laughlin, 2006, eq 2 (in Gyr)
 ;   ss.planet[i].tcirc.value = 1.6d0*ss.planet[i].mp.value*ss.star[ss.planet[i].starndx].mstar.value^(-3d0/2d0)*ss.planet[i].rp.value^(-5d0)*(ss.planet[i].a.value/0.05d0)^(13d0/2d0) ;; Adams & Laughlin, 2006, eq 3
 
-   ss.planet[i].fave.value = ss.constants.sigmab*ss.star[ss.planet[i].starndx].teff.value^4/(ss.planet[i].ar.value*(1d0+ss.planet[i].e.value^2/2d0))^2/1d9    ;; 10^9 erg/s/cm^2
+   ;; time-averaged incident flux: <(a/r)^2> over a Keplerian orbit is
+   ;; exactly 1/sqrt(1-e^2) (Kepler's 2nd law, r^2 dnu/dt = const;
+   ;; Williams & Pollard 2002, IJAsB, 1, 61). The
+   ;; previous 1/(1+e^2/2)^2 was the flux at the time-averaged separation,
+   ;; which falls with e instead of rising (wrong by 1.46x at e=0.5)
+   ss.planet[i].fave.value = ss.constants.sigmab*ss.star[ss.planet[i].starndx].teff.value^4/ss.planet[i].ar.value^2/sqrt(1d0-ss.planet[i].e.value^2)/1d9    ;; 10^9 erg/s/cm^2
 
    ss.planet[i].b.value  = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0+ss.planet[i].esinw.value)  ;; eq 7, Winn 2010
    ss.planet[i].bs.value = ss.planet[i].ar.value*ss.planet[i].cosi.value*(1d0-ss.planet[i].e.value^2)/(1d0-ss.planet[i].esinw.value)  ;; eq 8, Winn 2010
