@@ -59,6 +59,9 @@
 ; MODIFICATION HISTORY
 ; 
 ;  2018/01 -- Written, JDE
+;  2026/10 -- Add the 2*ln(sigma) normalization to the rstar, teff,
+;              feh, and age penalties, since their sigmas scale with
+;              fitted or model values (see issue #17), JDE
 ;-
 function massradius_mist, eep, mstar, initfeh, age, teff, rstar, feh, vvcrit=vvcrit, alpha=alpha, $
                           mistage=mistage, mistrstar=mistrstar, mistteff=mistteff, mistfeh=mistfeh,$
@@ -253,18 +256,18 @@ endif
 percenterror = 0.03d0 -0.025d0*alog10(mstar) + 0.045d0*alog10(mstar)^2
 
 ;; or overwrite with user supplied floors
-if rstarfloor gt 0 then chi2 = ((mistrstar - rstar)/(rstarfloor*mistrstar))^2 $
-else chi2 = ((mistrstar - rstar)/(percenterror*mistrstar))^2
+if rstarfloor gt 0 then chi2 = ((mistrstar - rstar)/(rstarfloor*mistrstar))^2 + 2d0*alog(rstarfloor*mistrstar) $
+else chi2 = ((mistrstar - rstar)/(percenterror*mistrstar))^2 + 2d0*alog(percenterror*mistrstar)
 
-if tefffloor gt 0 then chi2 += ((mistteff - teff)/(tefffloor*mistteff))^2 $
-else chi2 += ((mistteff - teff)/(percenterror*mistteff))^2 
+if tefffloor gt 0 then chi2 += ((mistteff - teff)/(tefffloor*mistteff))^2 + 2d0*alog(tefffloor*mistteff) $
+else chi2 += ((mistteff - teff)/(percenterror*mistteff))^2 + 2d0*alog(percenterror*mistteff)
 
 if fehfloor gt 0 then chi2 += ((mistfeh - feh)/(fehfloor))^2 $
-else chi2 += ((mistfeh - feh)/(percenterror))^2 
+else chi2 += ((mistfeh - feh)/(percenterror))^2 + 2d0*alog(percenterror)
               
 ;if keyword_set(fitage) then begin
-   if agefloor gt 0 then chi2 += ((mistage - age)/(agefloor*mistage))^2 $
-   else chi2 += ((mistage - age)/(percenterror*mistage))^2           
+   if agefloor gt 0 then chi2 += ((mistage - age)/(agefloor*mistage))^2 + 2d0*alog(agefloor*mistage) $
+   else chi2 += ((mistage - age)/(percenterror*mistage))^2 + 2d0*alog(percenterror*mistage)
 ;endif
 
 ;; plot it

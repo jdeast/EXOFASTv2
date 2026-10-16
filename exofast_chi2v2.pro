@@ -44,6 +44,9 @@
 ; MODIFICATION HISTORY
 ; 
 ;  2018/03 -- Create documentation -- Jason Eastman (CfA)
+;  2026/10 -- Add the 2*ln(sigma) normalization to the teffsed, fbol,
+;             and dilution penalties, whose sigmas scale with the
+;             parameter (issue #17), JDE
 ;-
 
 function exofast_chi2v2, pars, determinant=determinant, $
@@ -882,7 +885,7 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
    teffsed = ss.star.teff.value
    if nfit gt 0 then begin
       teffsed[tofit] = ss.star[tofit].teffsed.value
-      sedchi2 += total(((ss.star[tofit].teff.value - ss.star[tofit].teffsed.value)/(ss.teffsedfloor*ss.star[tofit].teffsed.value))^2)
+      sedchi2 += total(((ss.star[tofit].teff.value - ss.star[tofit].teffsed.value)/(ss.teffsedfloor*ss.star[tofit].teffsed.value))^2 + 2d0*alog(ss.teffsedfloor*ss.star[tofit].teffsed.value))
    endif
 
    tofit = where(ss.star.fehsed.fit,nfit)
@@ -900,7 +903,7 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
    if nfit gt 0 then begin
       rstarsed[tofit] = ss.star[tofit].rstarsed.value
       lstarsed[tofit] = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
-      sedchi2 += total(((lstarsed[tofit] - ss.star[tofit].lstar.value)/(ss.fbolsedfloor*lstarsed[tofit]))^2)
+      sedchi2 += total(((lstarsed[tofit] - ss.star[tofit].lstar.value)/(ss.fbolsedfloor*lstarsed[tofit]))^2 + 2d0*alog(ss.fbolsedfloor*lstarsed[tofit]))
    endif
 
    if file_test(ss.mistsedfile) then begin
@@ -1167,7 +1170,7 @@ for j=0L, ss.ntran-1 do begin
          planetndx = ss.transit[j].pndx
          starndx = ss.planet[planetndx].starndx
          dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])      
-         dilutechi2 = ((ss.transit[j].dilute.value - dilute)/(dilute*0.05d0))^2   
+         dilutechi2 = ((ss.transit[j].dilute.value - dilute)/(dilute*0.05d0))^2 + 2d0*alog(dilute*0.05d0)
          chi2 += dilutechi2
 
          if ss.verbose then begin
