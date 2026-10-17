@@ -107,7 +107,11 @@ else om = omega
 ;; z grows with distance
 z = r*sin(trueanom+om)*sin(inclination)
 
-return, bjd_target - z/c
+;; light from a body farther away (z > 0) arrives LATER, so the light
+;; travel time is ADDED: a transit (planet in front, z < 0) is observed
+;; early and an occultation (z > 0) late, giving the 2a/c
+;; occultation delay. (0f641621 flipped z without flipping this sign.)
+return, bjd_target + z/c
 
 end    
     
