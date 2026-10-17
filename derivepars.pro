@@ -371,7 +371,7 @@ endelse
       for j=0L, ss.nsteps-1L do begin
          
          u1 = ss.band[k].u1.value[j]
-         u2 = ss.band[k].u1.value[j]
+         u2 = ss.band[k].u2.value[j]
 
          exofast_occultquad_cel, abs(ss.planet[i].b.value[j]), u1, u2, ss.planet[i].p.value[j],mu1
          ss.planet[i].(match).value[j] = 1d0-mu1[0]
