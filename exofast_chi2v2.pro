@@ -1157,6 +1157,10 @@ if (*ss.dilutebandndx)[0] ne -1 then begin
 endif
 
 ;; Transit model
+;; the Claret limb-darkening prior constrains a BAND's u1/u2, so apply it
+;; once per band, not once per transit file (which shrank its width by
+;; sqrt(number of files in the band); issue #9)
+claretdone = bytarr(ss.nband > 1)
 for j=0L, ss.ntran-1 do begin
 
    transit = *(ss.transit[j].transitptrs)
@@ -1193,7 +1197,8 @@ for j=0L, ss.ntran-1 do begin
    starndx = ss.planet[planetndx].starndx
 
    ;; quadratic limb darkening
-   if ss.transit[j].claret then begin
+   if ss.transit[j].claret && ~claretdone[ss.transit[j].bandndx] then begin
+      claretdone[ss.transit[j].bandndx] = 1B
       ldcoeffs = quadld(ss.star[starndx].logg.value, $
                         ss.star[starndx].teff.value, $
                         ss.star[starndx].feh.value, band.name, $
